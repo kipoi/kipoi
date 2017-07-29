@@ -1,4 +1,7 @@
+# python2, 3 compatibility
 from __future__ import absolute_import, division, print_function
+from builtins import str, open, range, dict
+
 
 import itertools
 import numpy as np
@@ -15,7 +18,7 @@ def batch_iter(iterable, batch_size):
     try:
         while True:
             values = []
-            for n in xrange(batch_size):
+            for n in range(batch_size):
                 values += (it.next(),)
             yield values
     except StopIteration:
@@ -44,10 +47,10 @@ def extractor(intervals_file, input_data_sources, target_data_sources=None, batc
     for intervals_batch in intervals_generator:
         out = {}
         # get data
-        out['inputs'] = {key: extractor(intervals_batch)[..., None] ## adds channel axis for conv1d
+        out['inputs'] = {key: extractor(intervals_batch)[..., None]  # adds channel axis for conv1d
                          for key, extractor in input_data_extractors.items()}
         if target_data_sources is not None:
-            out['targets'] = {key: extractor(intervals_batch)[..., None] ## adds channel axis for conv1d
+            out['targets'] = {key: extractor(intervals_batch)[..., None]  # adds channel axis for conv1d
                               for key, extractor in target_data_extractors.items()}
         # get metadata
         out['metadata'] = {}

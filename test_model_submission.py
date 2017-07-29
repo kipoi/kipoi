@@ -64,15 +64,23 @@ def main():
         assert data_spec['type'] in DATA_TYPES
 
     # import function_name from extractor.py
+    extractor_file = os.path.join(model_dir, 'extractor.py')
     if sys.version_info[0] == 2:
         import imp
-        extractor = imp.load_source(
-            'extractor', os.path.join(model_dir, 'extractor.py'))
+        extractor = imp.load_source('extractor', extractor_file)
     else:  # TODO: implement dynamic loading of extractor module for python3
         """
         import importlib.machinery
         loader = importlib.machinery.SourceFileLoader
         handle = loader.load_module
+        # way 1 (=python3.4)
+        from importlib.machinery import SourceFileLoader
+        extractor = SourceFileLoader("extractor", extractor_file).load_module()
+        # way 2 (>=python3.5)
+        import importlib.util
+        extractor_spec = importlib.util.spec_from_file_location("extractor", extractor_file)
+        extractor = importlib.util.module_from_spec(extractor_spec)
+        extractor_spec.loader.exec_module(extractor)
         """
         raise RuntimeError(
             'dynamic loading of extractor module is not implemented for python3!')
@@ -128,6 +136,7 @@ def main():
         _logger.info('test_files not found.')
 
     _logger.info('model submission test finished successfully!')
+
 
 if __name__ == '__main__':
     main()

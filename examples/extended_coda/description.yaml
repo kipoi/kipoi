@@ -1,28 +1,19 @@
-{
-    "author": "Johnny Israeli",
-    "name": "extended CODA",
-    "version": 0.1,
-    "description": "Single bp resolution ChIP-seq denoising",
-    "data_extractor": {
-        "function_name": "extractor",
-        "type": "generator",
-        "arguments": {
-            "intervals_file": "string; tsv file with `chrom start end`",
-            "input_data_sources": "dict; {data_name: <path to genomelake directory>}",
-            "target_data_sources": "dict, optional; {data_name: <path to genomelake directory>}",
-            "batch_size": 128
-        },
-    },
-    "model": {
-        "inputs": {
-            "H3K27ac_subsampled": {
-                "type": "bigwig"
-            }
-        },
-        "targets": {
-            "H3K27ac": {
-                "type": "bigwig"
-            }
-        }
-    }
-}
+author: Johnny Israeli
+name: extended CODA
+version: 0.1
+description: Single bp resolution ChIP-seq denoising
+data_extractor:
+    function_name: extractor
+    type: generator
+    arguments:
+        intervals_file: "string; tsv file with `chrom start end`"
+        input_data_sources: "dict; {data_name: <path to genomelake directory>}"
+        target_data_sources: "dict, optional; {data_name: <path to genomelake directory>}"
+        batch_size: 128
+model:
+    inputs:
+        H3K27ac_subsampled:
+            type: bigwig
+    targets:
+        H3K27ac:
+            type: bigwig
