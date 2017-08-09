@@ -16,6 +16,7 @@ PREPROC_IFILE_TYPES = ['DNA_regions']
 PREPROC_IFILE_FORMATS = ['bed3']
 MODEL_FIELDS = ['inputs', 'targets']
 DATA_TYPES = ['dna', 'bigwig', 'v-plot']
+RESERVED_PREPROC_KWS = ['intervals_file']
 
 
 log_formatter = logging.Formatter(
@@ -27,112 +28,16 @@ _handler.setFormatter(log_formatter)
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(_handler)
 
-class model_handler:
-    def validate_preproc_spec(self):
-        # check preprocessor fields
-        assert (all(field in self.preproc_spec for field in PREPROC_FIELDS))
 
-        # check preproc type
-        assert self.preproc_spec['type'] in PREPROC_TYPES
-
-        # check whether the input formats are valid for reserved input file types
-        [self.get_preproc_argument(k) for k in PREPROC_IFILE_TYPES]
-
-    def validate_model_spec(self):
-        # check model fields
-        assert (all(field in self.model_spec for field in MODEL_FIELDS))
-
-        # check input and target data types
-        for data_name, data_spec in self.model_spec['inputs'].items():
-            assert data_spec['type'] in DATA_TYPES
-        for data_name, data_spec in self.model_spec['targets'].items():
-            assert data_spec['type'] in DATA_TYPES
-
-    def get_preproc_argument(self, file_type, file_format = None):
-        assert(file_type in PREPROC_IFILE_TYPES)
-        if file_format is not None:
-            assert (file_format in PREPROC_IFILE_FORMATS)
-        arg_matches = []
-        arg_formats = []
-        for arg in self.preproc_spec['arguments']:
-            for el in self.preproc_spec['arguments'].split(";"):
-                tokens = el.split(":")
-                if (len(tokens) ==2) and (tokens[0] == file_type):
-                    if file_format is not None:
-                        if file_format == tokens[1]:
-                            arg_matches.append(arg)
-                            arg_formats.append(file_format)
-                    else:
-                        assert(tokens[1] in PREPROC_IFILE_FORMATS)
-                        arg_matches.append(arg)
-                        arg_formats.append(tokens[1])
-        return [arg_matches, arg_formats]
-
-    def run_preproc(self, files_path=None, extra_files = None):
-        if extra_files is not None:
-            assert(isinstance(extra_files, dict))
-        else:
-            extra_files = {}
-
-        args = yaml.load(open(files_path))
-        for k in extra_files:
-            if k in self.preproc_spec['arguments']:
-                args[k] = extra_files[k]
-
-        # check if there is a value for every argument and there are not more inputs
-        # given than preprocessor arguments are available
-        assert (all(arg in args for arg in self.preproc_spec['arguments'].keys()))
-        assert (len(self.preproc_spec['arguments']) == len(args))
-
-        #TODO: Check if this works with a generator preprocessor function
-        #TODO: Return and yield cannot be combined in python 2, what do we want to support?!
-        if self.preproc_func_type == "generator":
-            for el in self.preproc_func(**args):
-                yield el
-        else:
-            yield self.preproc_func(**args)
-
-    def predict(self, files_path=None, extra_files = None):
-        """
-        :param files_path: yaml file containing values for all arguments necessary for running preproc_func  
-        :param extra_files: If a key in extra_files matches a preproc_func the value in extra_files will be used for that key
-        :return: model prediction result, list in case preprocessor is a generator
-        """
-
-        ret = []
-        _logger.info('Initialized data generator. Running batches...')
-        for i, batch in enumerate(self.run_preproc(files_path, extra_files)):
-            ret.append(self.model.predict_on_batch(batch['inputs']))
-        _logger.info('Successfully ran predict_on_batch')
-        return ret
-
-    def install_requirements(self, requirements_fname):
-        if os.path.exists(requirements_fname):  # install dependencies
-            _logger.info('found requirements.txt in {}'.format(self.model_dir))
-            _logger.info('Running pip install -r {}...'.format(requirements_fname))
-            subprocess.call(['pip', 'install', '-r', requirements_fname])
-        else:
-            _logger.info('requirements.txt not found in {}'.format(self.model_dir))
-
-    def __init__(self, model_dir, install_requirements=False):
-        self.model_dir = model_dir
-
-        if install_requirements:
-            requirements_fname = os.path.join(model_dir, 'requirements.txt')
-            self.install_requirements(requirements_fname)
-
-        description_yaml = yaml.load(
-            open(os.path.join(model_dir, 'description.yaml')))
-
-        self.preproc_spec = description_yaml['data_preprocessor']
-
-        self.model_spec = description_yaml['model']
-
+class Preprocessor:
+    def __init__(self, preprocessor_dir):
+        with open(os.path.join(preprocessor_dir, 'preprocessor_description.yaml')) as ifh:
+            description_yaml = yaml.load(ifh)
+        self.preproc_spec = description_yaml['preprocessor']
         self.validate_preproc_spec()
-        self.validate_model_spec()
 
         # import function_name from preprocessor.py
-        preproc_file = os.path.join(model_dir, 'preprocessor.py')
+        preproc_file = os.path.join(preprocessor_dir, 'preprocessor.py')
         if sys.version_info[0] == 2:
             import imp
             preproc = imp.load_source('preprocessor', preproc_file)
@@ -158,6 +63,55 @@ class model_handler:
 
         self.preproc_func_type = self.preproc_spec['type']
 
+    def get_avail_arguments(self):
+        return self.preproc_spec['arguments'].keys()
+
+    def get_output_label_by_type(self, typestr):
+        return [el for el in self.preproc_spec['output'] if el['type']==typestr]
+
+    def validate_preproc_spec(self):
+        # check preprocessor fields
+        assert (all(field in self.preproc_spec for field in PREPROC_FIELDS))
+
+        # check preproc type
+        assert self.preproc_spec['type'] in PREPROC_TYPES
+
+        assert (all('type' in el.keys() for el in self.preproc_spec['output']))
+
+
+    def run_preproc(self, files_path=None, extra_files = None):
+        if extra_files is not None:
+            assert(isinstance(extra_files, dict))
+        else:
+            extra_files = {}
+        kwargs = {}
+        if files_path is not None:
+            kwargs = yaml.load(open(files_path))
+
+        for k in extra_files:
+            if k in self.preproc_spec['arguments']:
+                kwargs[k] = extra_files[k]
+
+        # check if there is a value for every argument and there are not more inputs
+        # given than preprocessor arguments are available
+        assert (all(arg in kwargs for arg in self.preproc_spec['arguments'].keys()))
+        assert (len(self.preproc_spec['arguments']) == len(kwargs))
+
+        #TODO: Check if this works with a generator preprocessor function
+        #TODO: Return and yield cannot be combined in python 2, what do we want to support?!
+        if self.preproc_func_type == "generator":
+            for el in self.preproc_func(**kwargs):
+                yield el
+        else:
+            yield self.preproc_func(**kwargs)
+
+class Model:
+    def __init__(self, model_dir):
+        with open(os.path.join(model_dir, 'model_description.yaml')) as ifh:
+            description_yaml = yaml.load(ifh)
+        self.model_spec = description_yaml['model']
+        self.validate_model_spec()
+
         # test model loading
         _logger.info('Testing model files...')
         from keras.models import model_from_json
@@ -169,4 +123,57 @@ class model_handler:
         self.model.load_weights(weights_fname)
         _logger.info(
             'successfully loaded model weights from {}'.format(weights_fname))
+
+    def validate_model_spec(self):
+        # check model fields
+        assert (all(field in self.model_spec for field in MODEL_FIELDS))
+
+        # check input and target data types
+        for data_name, data_spec in self.model_spec['inputs'].items():
+            assert data_spec['type'] in DATA_TYPES
+        for data_name, data_spec in self.model_spec['targets'].items():
+            assert data_spec['type'] in DATA_TYPES
+
+    def predict_on_batch(self, input):
+        return self.model.predict_on_batch(input)
+
+class Model_handler:
+    def __init__(self, model_dir, install_requirements=False):
+        self.model_dir = model_dir
+
+        # TODO: This should not be done here, but a new environment should have been created before calling this.
+        if install_requirements:
+            requirements_fname = os.path.join(model_dir, 'requirements.txt')
+            self.install_requirements(requirements_fname)
+
+        self.model = Model(model_dir)
+        self.preproc = Preprocessor(model_dir)
+
+    def validate_compatibility(self):
+        # Test whether all the model input requirements are fulfilled by the preprocessor output and whether types match
+        raise Exception("Not yet implemented")
+
+    def predict(self, files_path=None, extra_files = None):
+        """
+        :param files_path: yaml file containing values for all arguments necessary for running preproc_func  
+        :param extra_files: If a key in extra_files matches a preproc_func the value in extra_files will be used for that key
+        :return: model prediction result, list in case preprocessor is a generator
+        """
+
+        ret = []
+        _logger.info('Initialized data generator. Running batches...')
+        for i, batch in enumerate(self.preproc.run_preproc(files_path, extra_files)):
+            ret.append(self.model.predict_on_batch(batch['inputs']))
+        _logger.info('Successfully ran predict_on_batch')
+        return ret
+
+    def install_requirements(self, requirements_fname):
+        if os.path.exists(requirements_fname):  # install dependencies
+            _logger.info('found requirements.txt in {}'.format(self.model_dir))
+            _logger.info('Running pip install -r {}...'.format(requirements_fname))
+            subprocess.call(['pip', 'install', '-r', requirements_fname])
+        else:
+            _logger.info('requirements.txt not found in {}'.format(self.model_dir))
+
+
 

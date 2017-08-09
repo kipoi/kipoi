@@ -33,21 +33,19 @@ def _generate_seq_sets(model_input):
     pass
 
 def predict_variants(model_handle, vcf_fpath, seq_length, evaluation_function, other_files_path = None):
-
-    # Where can I put the DNA regions?
-    arg_name, f_fmt = model_handle.get_preproc_argument("DNA_regions")
-    if len(arg_name) == 0:
-        raise Exception("Model does not support DNA regions as a preprocessor input.")
-    regions = _vcf_to_regions(vcf_fpath)
-    region_files = {}
-    for n, f in zip(arg_name, f_fmt):
-        if f == "bed3":
-            temp_bed3_file = tempfile.mktemp()[1] # file path of the temp file
-            _bed3(regions, temp_bed3_file)
-            region_files[n] = temp_bed3_file
+    if 'intervals_file' not in model_handle.preproc.get_avail_arguments():
+        raise Exception("Preprocessor does not support DNA regions as input.")
+    seq_pp_outputs = model_handle.preproc.get_output_label_by_type("dna")
+    if len(seq_pp_outputs)==0:
+        raise Exception("Preprocessor does not generate DNA sequences.")
+    regions = _vcf_to_regions(vcf_fpath, seq_length)
+    region_file = {}
+    temp_bed3_file = tempfile.mktemp()[1] # file path of the temp file
+    _bed3(regions, temp_bed3_file)
+    region_file['intervals_file'] = temp_bed3_file
 
     res = []
-    for batch in model_handle.run_preproc(other_files_path, region_files):
+    for batch in model_handle.run_preproc(other_files_path, region_file):
         res.append(evaluation_function(model_handle.model, **_generate_seq_sets(batch)))
 
     return res

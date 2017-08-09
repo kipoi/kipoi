@@ -18,7 +18,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model_dir = os.path.abspath(args.model_dir)
 
-    mh = model_handling.model_handler(model_dir)
+    mh = model_handling.Model_handler(model_dir)
 
     test_dir = os.path.join(model_dir, 'test_files')
 
