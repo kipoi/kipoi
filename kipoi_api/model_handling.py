@@ -31,7 +31,7 @@ _logger.addHandler(_handler)
 
 class Preprocessor:
     def __init__(self, preprocessor_dir):
-        with open(os.path.join(preprocessor_dir, 'preprocessor_description.yaml')) as ifh:
+        with open(os.path.join(preprocessor_dir, 'preprocessor.yaml')) as ifh:
             description_yaml = yaml.load(ifh)
         self.preproc_spec = description_yaml['preprocessor']
         self.validate_preproc_spec()
@@ -107,7 +107,7 @@ class Preprocessor:
 
 class Model:
     def __init__(self, model_dir):
-        with open(os.path.join(model_dir, 'model_description.yaml')) as ifh:
+        with open(os.path.join(model_dir, 'model.yaml')) as ifh:
             description_yaml = yaml.load(ifh)
         self.model_spec = description_yaml['model']
         self.validate_model_spec()
