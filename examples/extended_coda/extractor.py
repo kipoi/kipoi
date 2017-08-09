@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 from builtins import str, open, range, dict
 
 
-import itertools
 import numpy as np
 import pybedtools
 
@@ -19,7 +18,7 @@ def batch_iter(iterable, batch_size):
         while True:
             values = []
             for n in range(batch_size):
-                values += (it.next(),)
+                values += (next(it),)
             yield values
     except StopIteration:
         # yield remaining values
