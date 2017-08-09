@@ -46,7 +46,7 @@ def predict_variants(model_handle, vcf_fpath, seq_length, evaluation_function, o
 
     res = []
     for batch in model_handle.run_preproc(other_files_path, region_file):
-        res.append(evaluation_function(model_handle.model, **_generate_seq_sets(batch)))
+        res.append(evaluation_function(model_handle.get_model_obj(), **_generate_seq_sets(batch)))
 
     return res
 

@@ -137,6 +137,9 @@ class Model:
     def predict_on_batch(self, input):
         return self.model.predict_on_batch(input)
 
+    def get_model_obj(self):
+        return self.model
+
 class Model_handler:
     def __init__(self, model_dir, install_requirements=False):
         self.model_dir = model_dir
@@ -152,6 +155,12 @@ class Model_handler:
     def validate_compatibility(self):
         # Test whether all the model input requirements are fulfilled by the preprocessor output and whether types match
         raise Exception("Not yet implemented")
+
+    def run_preproc(self, files_path=None, extra_files=None):
+        self.preproc.run_preproc(files_path, extra_files)
+
+    def get_model_obj(self):
+        self.model.get_model_obj()
 
     def predict(self, files_path=None, extra_files = None):
         """
