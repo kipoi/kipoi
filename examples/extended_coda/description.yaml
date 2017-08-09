@@ -2,7 +2,7 @@ author: Johnny Israeli
 name: extended CODA
 version: 0.1
 description: Single bp resolution ChIP-seq denoising
-data_extractor:
+data_preprocessor:
     function_name: extractor
     type: generator
     arguments:
