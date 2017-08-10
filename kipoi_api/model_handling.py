@@ -9,6 +9,7 @@ import subprocess
 import sys
 import yaml
 import copy
+import inspect
 
 PREPROC_FIELDS = ['function_name', 'type', 'arguments']
 PREPROC_TYPES = ['generator', 'return']
@@ -41,24 +42,29 @@ class Preprocessor:
         if sys.version_info[0] == 2:
             import imp
             preproc = imp.load_source('preprocessor', preproc_file)
-        else:  # TODO: implement dynamic loading of preprocessor module for python3
+        elif sys.version_info[0] == 3:  # TODO: implement dynamic loading of preprocessor module for python3
             """
             import importlib.machinery
             loader = importlib.machinery.SourceFileLoader
             handle = loader.load_module
-            # way 1 (=python3.4)
-            from importlib.machinery import SourceFileLoader
-            preproc = SourceFileLoader("preprocessor", preproc_file).load_module()
-            # way 2 (>=python3.5)
-            import importlib.util
-            preproc_spec = importlib.util.spec_from_file_location("preprocessor", preproc_file)
-            preproc = importlib.util.module_from_spec(preproc_spec)
-            preproc_spec.loader.exec_module(preprocessor)
             """
-            raise RuntimeError(
-                'dynamic loading of preprocessor module is not implemented for python3!')
+            if sys.version_info[1]==4:
+                # way 1 (=python3.4)
+                from importlib.machinery import SourceFileLoader
+                preproc = SourceFileLoader("preprocessor", preproc_file).load_module()
+            if sys.version_info[1] >= 5:
+                # way 2 (>=python3.5)
+                import importlib.util
+                preproc_spec_ = importlib.util.spec_from_file_location("preprocessor", preproc_file)
+                preproc = importlib.util.module_from_spec(preproc_spec_)
+                preproc_spec_.loader.exec_module(preproc)
+            else:
+                raise RuntimeError(
+                    'dynamic loading of preprocessor module is not implemented for python3!')
 
         self.preproc_func = getattr(preproc, self.preproc_spec['function_name'])
+        fargs = inspect.getargspec(self.preproc_func)
+        self.req_preproc_func_args = fargs.args[:-len(fargs.defaults)]
         _logger.info('successfully imported {} from preprocessor.py'.format(self.preproc_spec['function_name']))
 
         self.preproc_func_type = self.preproc_spec['type']
@@ -76,7 +82,7 @@ class Preprocessor:
         # check preproc type
         assert self.preproc_spec['type'] in PREPROC_TYPES
 
-        assert (all('type' in el.keys() for el in self.preproc_spec['output']))
+        assert (all('type' in el.keys() for el in self.preproc_spec['output'].values()))
 
 
     def run_preproc(self, files_path=None, extra_files = None):
@@ -92,10 +98,8 @@ class Preprocessor:
             if k in self.preproc_spec['arguments']:
                 kwargs[k] = extra_files[k]
 
-        # check if there is a value for every argument and there are not more inputs
-        # given than preprocessor arguments are available
-        assert (all(arg in kwargs for arg in self.preproc_spec['arguments'].keys()))
-        assert (len(self.preproc_spec['arguments']) == len(kwargs))
+        # check if there is a value for every required preprocessor function parameter is given
+        assert (all(arg in kwargs for arg in self.req_preproc_func_args))
 
         #TODO: Check if this works with a generator preprocessor function
         #TODO: Return and yield cannot be combined in python 2, what do we want to support?!
