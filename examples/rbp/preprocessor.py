@@ -112,8 +112,6 @@ def preprocessor(intervals_file, fasta_file, gtf_file, preproc_transformer,
             Assumes bed-like `chrom start end id score strand` format.
         fasta_file: file path; Genome sequence
         gtf_file: file path; Genome annotation GTF file pickled using pandas.
-        target_data_sources: dict, optional
-            mapping from input name to genomelake directory
         preproc_transformer: file path; tranformer used for pre-processing.
         target_file: file path; path to the targets
         batch_size: int

@@ -12,6 +12,6 @@
 
 ## TODO
 
-- [ ] implement your pre-processor in python
-  - familiarize with the tools like pybedtools etc
-- explore how to encapsulate the pre-processor
+- [x] implement your pre-processor in python
+- [x] explore how to encapsulate the pre-processor
+- [x] loading custom keras objects

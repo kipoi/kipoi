@@ -1,0 +1,24 @@
+author: Ziga Avsec
+name: rbp_eclip
+version: 0.1
+description: RBP binding prediction
+preprocessor:
+    function_name: preprocessor
+    type: generator
+    arguments:
+        intervals_file: "string; tsv file with `chrom start end id score strand`"
+        fasta_file: "string: Reference genome sequence"
+        gtf_file: "file path; Genome annotation GTF file pickled using pandas."
+        preproc_transformer: "file path; tranformer used for pre-processing."
+        target: # TODO - doesn't fit with the testing framework...
+          target_file: "file path; path to the targets (txt) file"
+        batch_size: 4
+    output:
+        inputs:
+            seq:
+                type: DNA
+                provide_ranges: True
+            dist_polya_st:
+                shape: (None, 1, 10)
+                description: Distance to poly-a site transformed with B-splines
+        targets: binding_site
