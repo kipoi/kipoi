@@ -1,0 +1,7 @@
+{"intervals_file": "test_files/intervals.tsv",
+ "fasta_file": "test_files/hg38_chr22.fa",
+ "preproc_transformer": "preprocessor/encodeSplines.pkl",
+ "gtf_file": "test_files/gencode_v25_chr22.gtf.pkl.gz",
+ "target_file": "test_files/targets.tsv",
+ "batch_size": 4
+ }

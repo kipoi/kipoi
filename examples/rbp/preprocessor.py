@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import six
 from builtins import str, open, range, dict
 
+import pickle
 import numpy as np
 import pandas as pd
 import pybedtools
@@ -26,12 +27,13 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
     def __init__(self, gtf_file, landmarks=ALL_LANDMARKS, use_strand=True, **kwargs):
         super(DistToClosestLandmarkExtractor, self).__init__(gtf_file, **kwargs)
         self._gtf_file = gtf_file
-        self.landmarks = extract_landmarks(gtf_file, landmarks=ALL_LANDMARKS)
-        self.columns = ALL_LANDMARKS  # column names. Reqired for concating distances into array
+        self.landmarks = extract_landmarks(gtf_file, landmarks=landmarks)
+        self.columns = landmarks  # column names. Reqired for concating distances into array
         self.use_strand = use_strand
 
         # set index to chromosome and strand - faster access
-        self.landmarks = {k: v.set_index(["seqnames", "strand"]) for k, v in six.iteritems(self.landmarks)}
+        self.landmarks = {k: v.set_index(["seqnames", "strand"])
+                          for k, v in six.iteritems(self.landmarks)}
 
     def _extract(self, intervals, out, **kwargs):
 
@@ -62,15 +64,30 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
         return (num_intervals, len(self.columns))
 
 
+def read_txt_gen(path):
+    """Generator for a txt file
+    """
+    file_object = open(path, "r")
+    while True:
+        data = file_object.readline()
+        if not data:
+            file_object.close()
+            break
+        yield float(data.strip())
 
-# Get the intervals
+
+# File paths
 intervals_file = "test_files/intervals.tsv"
+target_file = "test_files/targets.tsv"
 gtf_file = "test_files/gencode_v25_chr22.gtf.pkl.gz"
 fasta_file = "test_files/hg38_chr22.fa"
-bt = pybedtools.BedTool(intervals_file)
-intervals = [i for i in bt[:10]]
+preproc_transformer = "preprocessor/encodeSplines.pkl"
+# bt = pybedtools.BedTool(intervals_file)
+# intervals = [i for i in bt[:10]]
 
 # --------------------------------------------
+
+
 def batch_iter(iterable, batch_size):
     """
     iterates in batches.
@@ -87,30 +104,38 @@ def batch_iter(iterable, batch_size):
         yield values
 
 
-def extractor(intervals_file, fasta_file, gtf_file, target_data_sources=None, batch_size=4):
+def preprocessor(intervals_file, fasta_file, gtf_file, preproc_transformer,
+                 target_file=None, batch_size=4):
     """
     Args:
-        intervals_file: tsv file
-            Assumes bed - like `chrom start end id` format.
-        input_data_sources: dict
-            mapping from input name to genomelake directory
+        intervals_file: file path; tsv file
+            Assumes bed-like `chrom start end id score strand` format.
+        fasta_file: file path; Genome sequence
+        gtf_file: file path; Genome annotation GTF file pickled using pandas.
         target_data_sources: dict, optional
             mapping from input name to genomelake directory
+        preproc_transformer: file path; tranformer used for pre-processing.
+        target_file: file path; path to the targets
         batch_size: int
     """
-    # use only protein-coding genes
     gtf = pd.read_pickle(gtf_file)
-    # gtf.rename(columns={"seqname": "seqnames"}, inplace=True)
-    gtf = read_gtf(gtf_file)
     gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
+
+    # distance transformer
+    with open(preproc_transformer, "rb") as f:
+        transformer = pickle.load(f)
 
     # intervals
     bt = pybedtools.BedTool(intervals_file)
 
     # extractors
-    input_data_extractors = {"seq": FastaFile(fasta_file),
-                             "distance": DistToClosestLandmarkExtractor(gtf_file=gtf)
-                             }
+    input_data_extractors = {
+        "seq": FastaExtractor(fasta_file),
+        "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=gtf,
+                                                        landmarks=["polya"])
+    }
+    if target_file:
+        target_generator = batch_iter(read_txt_gen(target_file), batch_size)
 
     intervals_generator = batch_iter(bt, batch_size)
     for intervals_batch in intervals_generator:
@@ -119,8 +144,10 @@ def extractor(intervals_file, fasta_file, gtf_file, target_data_sources=None, ba
         out['inputs'] = {key: extractor(intervals_batch)
                          for key, extractor in input_data_extractors.items()}
 
-        # TODO - use trained spline transformation to transform it
-        out["inputs"]["distance"] = out["inputs"]["distance"]
+        # use trained spline transformation to transform it
+        out["inputs"]["dist_polya_st"] = transformer.transform(out["inputs"]["dist_polya_st"], warn=False)
+        if target_file:
+            out["targets"] = {"binding_site": next(target_generator)}
 
         # get metadata
         out['metadata'] = {}
