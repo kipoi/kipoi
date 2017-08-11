@@ -1,0 +1,11 @@
+author: Johnny Israeli
+name: extended CODA
+version: 0.1
+description: Single bp resolution ChIP-seq denoising
+model:
+    inputs:
+        H3K27ac_subsampled:
+            type: bigwig
+    targets:
+        H3K27ac:
+            type: bigwig

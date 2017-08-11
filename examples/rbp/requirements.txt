@@ -1,0 +1,7 @@
+git+git://github.com/kundajelab/genomelake.git#egg=genomelake
+# git+git://github.com/gagneurlab/concise.git#egg=concise
+concise
+tensorflow>=1.0.0
+keras>=2.0.4
+pybedtools
+pysam

@@ -45,7 +45,7 @@ def main():
     _logger.info('parsing description.yaml')
     description_yaml = yaml.load(
         open(os.path.join(model_dir, 'description.yaml')))
-    extractor_spec = description_yaml['data_extractor']
+    extractor_spec = description_yaml['preprocessor']
     model_spec = description_yaml['model']
 
     # check extractor fields
@@ -63,8 +63,8 @@ def main():
     for data_name, data_spec in model_spec['targets'].items():
         assert data_spec['type'] in DATA_TYPES
 
-    # import function_name from extractor.py
-    extractor_file = os.path.join(model_dir, 'extractor.py')
+    # import function_name from preprocessor.py
+    extractor_file = os.path.join(model_dir, 'preprocessor.py')
     if sys.version_info[0] == 2:
         import imp
         extractor = imp.load_source('extractor', extractor_file)
@@ -86,7 +86,7 @@ def main():
             'dynamic loading of extractor module is not implemented for python3!')
 
     extractor_func = getattr(extractor, extractor_spec['function_name'])
-    _logger.info('successfully imported {} from extractor.py'.format(
+    _logger.info('successfully imported {} from preprocessor.py'.format(
         extractor_spec['function_name']))
 
     # test model loading
@@ -131,7 +131,7 @@ def main():
         else:
             # TODO
             raise RuntimeError(
-                'Testing extraction for non-generator extractor is not implemented!')
+                'Testing preprocessing for non-generator preprocessor is not implemented!')
     else:
         _logger.info('test_files not found.')
 

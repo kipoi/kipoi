@@ -1,0 +1,28 @@
+author: Johnny Israeli
+name: extended CODA
+version: 0.1
+description: Preprocessor for single bp resolution ChIP-seq denoising
+preprocessor:
+    function_name: preprocess
+    type: generator
+    arguments:
+        intervals_file: "string; tsv file with `chrom start end`"
+        input_data_sources: "dict; {data_name: <path to genomelake directory>}"
+        target_data_sources: "dict, optional; {data_name: <path to genomelake directory>}"
+        batch_size: 128
+    output:
+        H3K27ac_subsampled:
+            type: bigwig
+            provide_ranges: True
+        metadata:
+            type: dict
+            ranges:
+                chrom:
+                    type:str
+                start:
+                    type:int
+                end:
+                    type:int
+                id:
+                    type:str
+
