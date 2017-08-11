@@ -28,4 +28,4 @@ if __name__ == "__main__":
         # cd to test directory
         os.chdir(test_dir)
 
-    mh.predict(os.path.join(test_dir, 'test.yaml'))
+    mh.predict(os.path.join(test_dir, 'test.json'))
