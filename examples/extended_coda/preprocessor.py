@@ -25,7 +25,7 @@ def batch_iter(iterable, batch_size):
         yield values
 
 
-def extractor(intervals_file, input_data_sources, target_data_sources=None, batch_size=128):
+def preprocess(intervals_file, input_data_sources, target_data_sources=None, batch_size=128):
     """
     Args:
         intervals_file: tsv file
@@ -52,7 +52,7 @@ def extractor(intervals_file, input_data_sources, target_data_sources=None, batc
             out['targets'] = {key: extractor(intervals_batch)[..., None]  # adds channel axis for conv1d
                               for key, extractor in target_data_extractors.items()}
         # get metadata
-        out['metadata'] = {}
+        out['metadata'] = {"ranges":{}}
         chrom = []
         start = []
         end = []
@@ -62,9 +62,9 @@ def extractor(intervals_file, input_data_sources, target_data_sources=None, batc
             start.append(interval.start)
             end.append(interval.stop)
             ids.append(interval.name)
-        out['metadata']['chrom'] = np.array(chrom)
-        out['metadata']['start'] = np.array(start)
-        out['metadata']['end'] = np.array(end)
-        out['metadata']['id'] = np.array(ids)
+        out['metadata']["ranges"]['chrom'] = np.array(chrom)
+        out['metadata']["ranges"]['start'] = np.array(start)
+        out['metadata']["ranges"]['end'] = np.array(end)
+        out['metadata']["ranges"]['id'] = np.array(ids)
 
         yield out
