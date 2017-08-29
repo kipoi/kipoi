@@ -72,7 +72,7 @@ Setup your preference in: `.model_zoo/config.yaml`
 
 ```
 cache_dir: .model_zoo/models/
-add_model_dirs: [] # additional model directories
+add_model_dirs: [] # additional model directories, file_paths
 ```
 
 ### Python SDK
@@ -87,54 +87,53 @@ add_model_dirs: [] # additional model directories
 
 ## TODO
 
-- Refactor current repo into a proper python package
-  - call it modelzoo ? 
+- [ ] Refactor current repo into a proper python package - modelzoo
+  - [ ] Setup the command-line interface
 - Setup unit-tests
   - Run the examples on TravisCI
-- Figure out where to upload the models
-  - Or host it yourself?
-- Setup Wiki for documentation
+- [ ] Setup Wiki for documentation
   - Uploading models
+	- Leave for later
   - Using models
 	- CLI
 	- In python
-
+- [ ] Figure out where to upload the models for now
+  - Need to have a table  listing all the models
+    - model_name, repo URL
+      - Users contribute by making a PR to that URL
+		- TravisCI tests only models that were changed in the PR
+          - test by saving a version + meta-info in a DB
+	    - Model+version = one row
+  - Use Synapse to host models at the beginning?
+- Refactor:
+  - have a class:
+    - Model
+      - KerasModel - inherits from Model?
+  	- self.predict()
+      - cls.load_model()
+        - could also contain custom python code?
+  		- use with other packages...
+      - .save_model() ? 
+    - Preprocessor (see pytorch)
+  	- next()
+      - length
+        - Maybe enhance it with parallel processing
+  		- the preprocessor runs in a separate thread within a custom python environment?
+  - model and preprocessor factory methods
 
 ## Dev ideas
 
-- have a class:
-  - Model
-    - KerasModel - inherits from Model?
-	- self.predict()
-    - cls.load_model()
-      - could also contain custom python code?
-		- use with other packages...
-    - .save_model() ? 
-  - Preprocessor (see pytorch)
-	- next()
-    - length
-      - Maybe enhance it with parallel processing
-		- the preprocessor runs in a separate thread within a custom python environment?
-- model and preprocessor factory methods
-- cache models in .model_zoo/
-  - config in .model_zoo/config
-
-- Use Synapse to host models at the beginning?
-  - 
 
 ## Issues
 
 What are we missing?
 - preprocessors from other languages?
   - maybe put it on hold for now?
-- Using multiple preprocessors in parallel
+- Using multiple preprocessors in parallel, each running in a separate environment?
 
 How to check for malicious software?
   - running preprocessors
     - make the preprocessor code well available
-
-How to setup docs?
-  - have a wiki?
 
 
 ## Link collection
