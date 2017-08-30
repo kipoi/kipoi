@@ -13,13 +13,15 @@ requirements = [
     "pyyaml",
     "future",
     "h5py",
+    "keras>=2.0.4"
 ]
 
 test_requirements = [
     "pytest",
     "virtualenv",
 ]
-# TODO - require conda to be installed?
+# TODO - require conda to be installed? - to create custom environments
+
 
 setup(
     name='modelzoo',
