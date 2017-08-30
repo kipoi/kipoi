@@ -2,6 +2,10 @@ sudo: required
 dist: trusty
 language: python
 
+# required for github access
+env:
+  global:
+    - secure: "prWi9imQlZe3BdbUjJEQYAYGsCTyZEoY0/jEA9vGeNB4DY4TcDYdFudPwsfWK1lgmAP3vbxR1FswLUEaCspDNFV0cJff6Khmf1x1QbfFjCbLJtZ/zvi1wg2hSEJiZNhtJhs5bgEG5F2EKKJPcPaw+5jBAbIHGOVmoDw/3ioG2oxHWdniPi4EVj4aqZLYaI9GWhGZDrzfiHUgV8HMoE+bXmNl0cH1ycXBEqZFpqyhalsl24jzgJSM5x84xS2sudmh0VXnmBonZuR3DNXQ0UAX235O8OczzZLB7f5OP3rzbbW8KFrQaTqsZeaV6d12tPMZPDBxn2QI2HCXn001TWUFcQq7sQjmlURAFJnZ+envr7ufBuWRP10d9d+kw5kCZOk3dYL2cY/Uf6csozn21mB9g60o8BEyk9tJ8ivoAh5uRvou1qx4CllVf9ZfyVu0Ac4KaoGlj5bxeJjA7CYAuJPdINJSBc/hcGAWspfKaKOD4UZmcpp5v1aiB3b++BEnRtCn1fedQx9+2LEobThEaN+nr6TckP+KYz5ERWy65/WqHSHB4A1EX6VdKIdhMeMXAlGTI4p1H209E+wf/iCrJp4TKijzOQt3m6Z8ZVQ5o4AN6VctB0AbcPFzJUTFO68e2QLK9TFMAS48cyty3m95Zqaxzw8LH85qLzRalmKdqgTp/qg="
 # Test all branches
 # branches:
 #   only:
@@ -14,8 +18,8 @@ matrix:
   - python: 3.5
 
 before_install:
-  # required for `git clone git@github.com:Avsecz/genomelake.git`
-  # https://github.com/alrra/travis-scripts/blob/master/doc/github-deploy-keys.md
+# required for `git clone git@github.com:Avsecz/genomelake.git`
+# https://github.com/alrra/travis-scripts/blob/master/doc/github-deploy-keys.md
 - npm install --save-dev @alrra/travis-scripts
 - |
      $(npm bin)/set-up-ssh --key "$encrypted_27b2060facfe_key" \
