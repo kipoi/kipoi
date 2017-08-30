@@ -1,7 +1,7 @@
 # Model-zoo
 
 
-[![Build Status](https://travis-ci.com/kipoi/model-zoo.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master)
+![Build Status](https://travis-ci.com/kipoi/model-zoo.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master)
 
 ## Install
 
