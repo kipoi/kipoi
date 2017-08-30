@@ -15,6 +15,9 @@ from .utils import load_module
 # HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
 import genomelake
 
+_logger = logging.getLogger('model-zoo')
+
+
 PREPROC_FIELDS = ['function_name', 'type', 'arguments']
 PREPROC_TYPES = ['generator', 'return']
 PREPROC_IFILE_TYPES = ['DNA_regions']
@@ -25,16 +28,6 @@ RESERVED_PREPROC_KWS = ['intervals_file']
 
 # Special files
 MODULE_KERAS_OBJ = "custom_keras_objects.py"
-
-
-log_formatter = logging.Formatter(
-    '%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-_logger = logging.getLogger('kipoi model-zoo')
-_handler = logging.StreamHandler()
-_handler.setLevel(logging.DEBUG)
-_handler.setFormatter(log_formatter)
-_logger.setLevel(logging.DEBUG)
-_logger.addHandler(_handler)
 
 
 class Preprocessor:
@@ -116,7 +109,7 @@ class Model:
 
         # load custom Keras objects
         custom_objects_path = os.path.join(model_dir, MODULE_KERAS_OBJ)
-        if custom_objects_path:
+        if os.path.exists(custom_objects_path):
             self.custom_objects = load_module(custom_objects_path).OBJECTS
         else:
             self.custom_objects = {}
@@ -208,3 +201,28 @@ class Model_handler:
         else:
             _logger.info('requirements.txt not found in {}'.format(self.model_dir))
 
+
+def cli_test(command, args):
+    """CLI interface
+    """
+    assert command == "test"
+
+    # setup the arg-parsing
+    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+                                     description='script to test model zoo submissions')
+    parser.add_argument('model_dir', help='Model zoo submission directory.')
+    parsed_args = parser.parse_args(args)
+
+    # run the model
+    model_dir = os.path.abspath(parsed_args.model_dir)
+    mh = Model_handler(model_dir)
+
+    test_dir = os.path.join(model_dir, 'test_files')
+
+    if os.path.exists(test_dir):
+        _logger.info(
+            'Found test files in {}. Initiating test...'.format(test_dir))
+        # cd to test directory
+        os.chdir(test_dir)
+
+    mh.predict(os.path.join(test_dir, 'test.json'))

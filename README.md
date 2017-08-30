@@ -1,72 +1,45 @@
 # Model-zoo
 
 
+[![Build Status](https://travis-ci.com/kipoi/model-zoo.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master)
+
+## Install
+
+After cloning the repository `git clone https://github.com/kipoi/model-zoo.git`, run:
+
+```
+pip install -U .
+```
+
 ## Usage
 
-```
-python test_model_submission_api.py <example-directory>
-```
-
-Available examples:
-- rbp
-- extended_coda
-
----------------------------------------------------------------
-## Usage
-
-### CLI definition
-
-Main arguments
-
-- `<model>`: can be a git repository, local file path, remote file path or a short model string.
-
-#### Pre-process
-
-Returns an hdf5 array.
 
 ```
-model_zoo preproc <model> <preprocessor inputs...> -o <output.h5>
-```
+usage: modelzoo <command> [-h] ...
 
-#### Predict
+    Kipoi model-zoo command line tool. Available sub-commands:
 
-```
-model_zoo predict <model> <preprocessor inputs...> -o <output>
-```
+    # Using the models
+    predict          Run the model prediction.
+    score_variants   Run prediction on a list of regions
+    pull             Downloads the directory associated with the model
+    preproc          Returns an hdf5 array.
+    test             Runs a set of unit-tests for the model
 
-where `<model>` can be the directory containing the required files
-
-#### Score variants
-
-```
-model_zoo score_variants <model> <preprocessor inputs...> <vcf file> -o <output>
-```
-
-#### Pull the model
-
-Downloads the directory associated with the model
+    # Uploading your model
+    push             Push
 
 ```
-model_zoo pull <model> -o path
-```
 
-#### Push the model
+## Running the examples
 
-- Maybe use the tools from docker?
+Try out running the examples in `examples/`
 
 ```
-model_zoo push <model-dir>
+modelzoo test examples/extended_coda
 ```
 
-#### Test the model
-
-Runs a set of unit-tests for the model
-
-```
-model_zoo test <model>
-```
-
-### Configure `model_zoo`
+## Configure `model_zoo`
 
 Setup your preference in: `.model_zoo/config.yaml`
 
@@ -75,23 +48,28 @@ cache_dir: .model_zoo/models/
 add_model_dirs: [] # additional model directories, file_paths
 ```
 
-### Python SDK
+## Python SDK
 
 - Load the model
 - Predict
 - Run the pre-processor
 - List all available models
 
+## Documentation
+
+Explore the markdown files in [docs/](docs/):
+- Command-line interface [docs/cli.md](docs/cli.md/)
+- Python interface [docs/py-interface.md](docs/py-interface.md)
 
 ---------------------------------------------------------------
 
 ## TODO
 
-- [ ] Refactor current repo into a proper python package - modelzoo
-  - [ ] Setup the command-line interface
+- [x] Refactor current repo into a proper python package - modelzoo
+  - [x] Setup the command-line interface
 - Setup unit-tests
-  - Run the examples on TravisCI
-- [ ] Setup Wiki for documentation
+  - [ ] Run the examples on TravisCI
+- [x] Setup Wiki for documentation
   - Uploading models
 	- Leave for later
   - Using models
@@ -125,6 +103,11 @@ add_model_dirs: [] # additional model directories, file_paths
 
 
 ## Issues
+
+How to start a pre-processor in a separate environment?
+- Enforce using conda?
+- Use a separate process?
+
 
 What are we missing?
 - preprocessors from other languages?

@@ -6,9 +6,7 @@ import os
 import logging
 from kipoi_api import model_handling
 
-log_formatter = logging.Formatter(
-    '%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-_logger = logging.getLogger('kipoi model-zoo')
+_logger = logging.getLogger('model-zoo')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
