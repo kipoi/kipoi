@@ -9,7 +9,7 @@ preprocessor:
         intervals_file: "string; tsv file with `chrom start end`"
         input_data_sources: "dict; {data_name: <path to genomelake directory>}"
         target_data_sources: "dict, optional; {data_name: <path to genomelake directory>}"
-        batch_size: 128
+        batch_size: 32
     output:
         H3K27ac_subsampled:
             type: bigwig

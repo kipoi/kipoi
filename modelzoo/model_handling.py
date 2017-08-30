@@ -211,11 +211,13 @@ def cli_test(command, args):
     parser = argparse.ArgumentParser('modelzoo {}'.format(command),
                                      description='script to test model zoo submissions')
     parser.add_argument('model_dir', help='Model zoo submission directory.')
+    parser.add_argument("-i", "--install-req", action='store_true',
+                        help="Install required packages from requirements.txt")
     parsed_args = parser.parse_args(args)
 
     # run the model
     model_dir = os.path.abspath(parsed_args.model_dir)
-    mh = Model_handler(model_dir)
+    mh = Model_handler(model_dir, install_requirements=parsed_args.install_req)  # force the requirements to be installed
 
     test_dir = os.path.join(model_dir, 'test_files')
 

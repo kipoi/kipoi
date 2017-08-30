@@ -12,5 +12,7 @@ EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 def test_example_dir(example):
     example_dir = "examples/{0}".format(example)
 
-    returncode = subprocess.call(args=["python", "./modelzoo/__main__.py", "test", example_dir])
+    # TODO - check if you are on travis or not...
+    returncode = subprocess.call(args=["python", "./modelzoo/__main__.py", "test",
+                                       "--install-req", example_dir])
     assert returncode == 0
