@@ -14,8 +14,12 @@ requirements = [
     "future",
     "h5py",
     "keras",
-    "pytorch"
+    # "pytorch"
 ]
+
+# TODO - don't explicitly require pytorch
+#        - how can we get the DatasetLoader functionality?
+
 
 test_requirements = [
     "pytest",
