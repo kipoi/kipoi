@@ -9,6 +9,8 @@ from . import model_handling
 from . import utils
 from . import variant_effects
 
+from . import model
+from .model import load_model
 
 # Setup logging
 import logging

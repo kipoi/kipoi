@@ -4,6 +4,11 @@ version: 0.1
 description: RBP binding prediction
 # Duplicated entry!
 model:
+    type: keras
+    args:
+      arch: model/model.json
+      weights: model/weights.h5
+      custom_objects: model/custom_keras_objects.py
     inputs:
         seq:
             type: DNA

@@ -30,6 +30,8 @@ RESERVED_PREPROC_KWS = ['intervals_file']
 MODULE_KERAS_OBJ = "custom_keras_objects.py"
 
 
+# TODO - append the preprocessor yaml to the preproc __doc___
+# Make Preprocessor a class-factory method?
 class Preprocessor:
 
     def __init__(self, preprocessor_dir):

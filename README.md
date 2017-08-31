@@ -65,16 +65,6 @@ Explore the markdown files in [docs/](docs/):
 
 ## TODO
 
-- [x] Refactor current repo into a proper python package - modelzoo
-  - [x] Setup the command-line interface
-- Setup unit-tests
-  - [ ] Run the examples on TravisCI
-- [x] Setup Wiki for documentation
-  - Uploading models
-	- Leave for later
-  - Using models
-	- CLI
-	- In python
 - [ ] Figure out where to upload the models for now
   - Need to have a table  listing all the models
     - model_name, repo URL
