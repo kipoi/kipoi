@@ -10,7 +10,10 @@ import sys
 import yaml
 import copy
 import inspect
-from .utils import load_module
+from .utils import load_module, pip_install_requirements
+from .model import load_model
+from .data import load_extractor, numpy_collate
+from torch.utils.data import DataLoader
 
 # HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
 import genomelake
@@ -71,6 +74,7 @@ class Preprocessor:
         # assert (all('type' in el.keys() for el in self.preproc_spec['output'].values()))
 
     def run_preproc(self, files_path=None, extra_files=None):
+        # TODO - why do we need extra files?
         if extra_files is not None:
             assert(isinstance(extra_files, dict))
         else:
@@ -95,113 +99,46 @@ class Preprocessor:
             yield self.preproc_func(**kwargs)
 
 
-class Model:
+class ModelExtractor(object):
 
-    def __init__(self, model_dir):
-        """Main interface to provided models
-        """
-        with open(os.path.join(model_dir, 'model.yaml')) as ifh:
-            description_yaml = yaml.load(ifh)
-        self.model_spec = description_yaml['model']
-        self.validate_model_spec()
-
-        # test model loading
-        _logger.info('Testing model files...')
-        from keras.models import model_from_json
-
-        # load custom Keras objects
-        custom_objects_path = os.path.join(model_dir, MODULE_KERAS_OBJ)
-        if os.path.exists(custom_objects_path):
-            self.custom_objects = load_module(custom_objects_path).OBJECTS
-        else:
-            self.custom_objects = {}
-
-        arch_fname = os.path.join(model_dir, 'model.json')
-        weights_fname = os.path.join(model_dir, 'weights.h5')
-
-        # load arch
-        with open(arch_fname, "r") as arch:
-            self.model = model_from_json(arch.read(),
-                                         custom_objects=self.custom_objects)
-        _logger.info('successfully loaded model architecture from {}'.
-                     format(arch_fname))
-
-        # load weights
-        self.model.load_weights(weights_fname)
-        _logger.info('successfully loaded model weights from {}'.
-                     format(weights_fname))
-
-    def validate_model_spec(self):
-        # check model fields
-        assert (all(field in self.model_spec for field in MODEL_FIELDS))
-
-        # check input and target data types
-        for data_name, data_spec in self.model_spec['inputs'].items():
-            if type in data_spec:
-                assert data_spec['type'] in DATA_TYPES
-        for data_name, data_spec in self.model_spec['targets'].items():
-            if type in data_spec:
-                assert data_spec['type'] in DATA_TYPES
-
-    def predict_on_batch(self, input):
-        return self.model.predict_on_batch(input)
-
-    def get_model_obj(self):
-        return self.model
-
-
-class Model_handler:
-
-    def __init__(self, model_dir, install_requirements=False):
+    def __init__(self, model_dir, install_req=False):
         """Combines model + preprocessor
         """
         self.model_dir = model_dir
 
         # TODO: This should not be done here, but a new environment
         # should have been created before calling this.
-        if install_requirements:
-            requirements_fname = os.path.join(model_dir, 'requirements.txt')
-            self.install_requirements(requirements_fname)
+        if install_req:
+            pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
 
-        self.model = Model(model_dir)
-        self.preproc = Preprocessor(model_dir)
+        self.model = load_model(model_dir)
+        self.extractor = load_extractor(model_dir)
 
     def validate_compatibility(self):
         # Test whether all the model input requirements are fulfilled
         # by the preprocessor output and whether types match
         raise Exception("Not yet implemented")
 
-    def run_preproc(self, files_path=None, extra_files=None):
-        self.preproc.run_preproc(files_path, extra_files)
-
-    def get_model_obj(self):
-        self.model.get_model_obj()
-
-    def predict(self, files_path=None, extra_files=None):
+    def predict(self, extractor_kwargs, batch_size=32):
         """
-        :param files_path: yaml file containing values for all arguments
-        necessary for running preproc_func
-
-        :param extra_files: If a key in extra_files matches a preproc_func
-        the value in extra_files will be used for that key
+        # Arguments
+            preproc_kwargs: Keyword arguments passed to the pre-processor
 
         :return: model prediction result, list in case preprocessor is a generator
         """
+        # TODO - don't return just a list... or?
 
         ret = []
         _logger.info('Initialized data generator. Running batches...')
-        for i, batch in enumerate(self.preproc.run_preproc(files_path, extra_files)):
+        it = DataLoader(self.extractor(**extractor_kwargs),
+                        batch_size=batch_size, collate_fn=numpy_collate)
+
+        for i, batch in enumerate(it):
             ret.append(self.model.predict_on_batch(batch['inputs']))
+
+        # TODO - test that predicted == true_target
         _logger.info('Successfully ran predict_on_batch')
         return ret
-
-    def install_requirements(self, requirements_fname):
-        if os.path.exists(requirements_fname):  # install dependencies
-            _logger.info('found requirements.txt in {}'.format(self.model_dir))
-            _logger.info('Running pip install -r {}...'.format(requirements_fname))
-            subprocess.call(['pip', 'install', '-r', requirements_fname])
-        else:
-            _logger.info('requirements.txt not found in {}'.format(self.model_dir))
 
 
 def cli_test(command, args):
@@ -212,14 +149,17 @@ def cli_test(command, args):
     # setup the arg-parsing
     parser = argparse.ArgumentParser('modelzoo {}'.format(command),
                                      description='script to test model zoo submissions')
-    parser.add_argument('model_dir', help='Model zoo submission directory.')
+    parser.add_argument('model_dir',
+                        help='Model zoo submission directory.')
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size to use in prediction')
     parser.add_argument("-i", "--install-req", action='store_true',
                         help="Install required packages from requirements.txt")
     parsed_args = parser.parse_args(args)
 
     # run the model
     model_dir = os.path.abspath(parsed_args.model_dir)
-    mh = Model_handler(model_dir, install_requirements=parsed_args.install_req)  # force the requirements to be installed
+    mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
 
     test_dir = os.path.join(model_dir, 'test_files')
 
@@ -229,4 +169,6 @@ def cli_test(command, args):
         # cd to test directory
         os.chdir(test_dir)
 
-    mh.predict(os.path.join(test_dir, 'test.json'))
+    with open(os.path.join(test_dir, 'test.json')) as f_kwargs:
+        extractor_kwargs = yaml.parse(f_kwargs)
+    mh.predict(extractor_kwargs, batch_size=parsed_args.batch_size)

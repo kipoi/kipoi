@@ -19,6 +19,8 @@ class Model(object):
     def predict_on_batch(self, x):
         raise NotImplementedError
 
+    # TODO - define the .model attribute?
+
 
 def load_model(model_dir):
     """Load the model
@@ -48,9 +50,13 @@ def load_model(model_dir):
                                   object_name=model_spec["args"]["object"])
 
     elif model_spec["type"] == "keras":
+        cobj = model_spec["args"].get("custom_objects", None)
+        if cobj is not None:
+            cobj = os.path.join(model_dir, cobj)
+
         model = KerasModel(weights_file=os.path.join(model_dir, model_spec["args"]["weights"]),
                            arch_file=os.path.join(model_dir, model_spec["args"]["arch"]),
-                           custom_objects_file=os.path.join(model_dir, model_spec["args"].get("custom_objects", None)))
+                           custom_objects_file=cobj)
 
     elif model_spec["type"] == "sklearn":
         model = SklearnModel(pkl_flie=os.path.join(model_dir, model_spec["args"]["file"]))
@@ -141,7 +147,7 @@ class KerasModel(Model):
 
         from keras.models import model_from_json, load_model
 
-        if os.path.exists(custom_objects_file):
+        if custom_objects_file is not None and os.path.exists(custom_objects_file):
             self.custom_objects = load_module(custom_objects_file).OBJECTS
         else:
             self.custom_objects = {}

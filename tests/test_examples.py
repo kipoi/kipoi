@@ -14,5 +14,7 @@ def test_example_dir(example):
 
     # TODO - check if you are on travis or not...
     returncode = subprocess.call(args=["python", "./modelzoo/__main__.py", "test",
-                                       "--install-req", example_dir])
+                                       "--batch_size=4",
+                                       "--install-req",
+                                       example_dir])
     assert returncode == 0

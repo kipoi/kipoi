@@ -9,9 +9,12 @@ import pandas as pd
 import pybedtools
 from pybedtools import BedTool
 
-from genomelake.extractors import ArrayExtractor, BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
+from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
 from pysam import FastaFile
 from concise.utils.position import extract_landmarks, read_gtf, ALL_LANDMARKS
+
+
+from modelzoo.data import Dataset
 
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
@@ -64,16 +67,16 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
         return (num_intervals, len(self.columns))
 
 
-def read_txt_gen(path):
-    """Generator for a txt file
-    """
-    file_object = open(path, "r")
-    while True:
-        data = file_object.readline()
-        if not data:
-            file_object.close()
-            break
-        yield float(data.strip())
+class TxtDataset(Dataset):
+    def __init__(self, path):
+        with open(path, "r") as f:
+            self.lines = f.readlines()
+
+    def __len__(self):
+        return len(self.lines)
+
+    def __getitem__(self, idx):
+        return self.lines[idx]
 
 
 # File paths
@@ -81,31 +84,14 @@ intervals_file = "test_files/intervals.tsv"
 target_file = "test_files/targets.tsv"
 gtf_file = "test_files/gencode_v25_chr22.gtf.pkl.gz"
 fasta_file = "test_files/hg38_chr22.fa"
-preproc_transformer = "preprocessor/encodeSplines.pkl"
+preproc_transformer = "extractor_files/encodeSplines.pkl"
 # bt = pybedtools.BedTool(intervals_file)
 # intervals = [i for i in bt[:10]]
 
 # --------------------------------------------
 
 
-def batch_iter(iterable, batch_size):
-    """
-    iterates in batches.
-    """
-    it = iter(iterable)
-    try:
-        while True:
-            values = []
-            for n in range(batch_size):
-                values += (next(it),)
-            yield values
-    except StopIteration:
-        # yield remaining values
-        yield values
-
-
-def preprocessor(intervals_file, fasta_file, gtf_file, preproc_transformer,
-                 target_file=None, batch_size=4):
+class SeqDistDataset(Dataset):
     """
     Args:
         intervals_file: file path; tsv file
@@ -116,51 +102,66 @@ def preprocessor(intervals_file, fasta_file, gtf_file, preproc_transformer,
         target_file: file path; path to the targets
         batch_size: int
     """
-    gtf = pd.read_pickle(gtf_file)
-    gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
 
-    # distance transformer
-    with open(preproc_transformer, "rb") as f:
-        transformer = pickle.load(f)
+    def __init__(self, intervals_file, fasta_file, gtf_file, preproc_transformer, target_file=None):
+        gtf = pd.read_pickle(gtf_file)
+        self.gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
 
-    # intervals
-    bt = pybedtools.BedTool(intervals_file)
+        # distance transformer
+        with open(preproc_transformer, "rb") as f:
+            self.transformer = pickle.load(f)
 
-    # extractors
-    input_data_extractors = {
-        "seq": FastaExtractor(fasta_file),
-        "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=gtf,
-                                                        landmarks=["polya"])
-    }
-    if target_file:
-        target_generator = batch_iter(read_txt_gen(target_file), batch_size)
+        # intervals
+        self.bt = pybedtools.BedTool(intervals_file)
 
-    intervals_generator = batch_iter(bt, batch_size)
-    for intervals_batch in intervals_generator:
+        # extractors
+        self.input_data_extractors = {
+            "seq": FastaExtractor(fasta_file),
+            "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
+                                                            landmarks=["polya"])
+        }
+
+        # target
+        if target_file:
+            self.target_dataset = TxtDataset(target_file)
+            assert len(self.target_dataset) == len(self.bt)
+        else:
+            self.target_dataset = None
+
+    def __len__(self):
+        return len(self.bt)
+
+    def __getitem__(self, idx):
+        interval = self.bt[idx]
+
         out = {}
-        # get data
-        out['inputs'] = {key: extractor(intervals_batch)
-                         for key, extractor in input_data_extractors.items()}
+
+        out['inputs'] = {key: np.squeeze(extractor([interval]), axis=0)
+                         for key, extractor in self.input_data_extractors.items()}
 
         # use trained spline transformation to transform it
-        out["inputs"]["dist_polya_st"] = transformer.transform(out["inputs"]["dist_polya_st"], warn=False)
-        if target_file:
-            out["targets"] = {"binding_site": next(target_generator)}
+        out["inputs"]["dist_polya_st"] = np.squeeze(self.transformer.transform(out["inputs"]["dist_polya_st"][np.newaxis],
+                                                                               warn=False), axis=0)
+
+        if self.target_dataset is not None:
+            out["targets"] = {"binding_site": self.target_dataset[idx]}
 
         # get metadata
         out['metadata'] = {}
-        chrom = []
-        start = []
-        end = []
-        ids = []
-        for interval in intervals_batch:
-            chrom.append(interval.chrom)
-            start.append(interval.start)
-            end.append(interval.stop)
-            ids.append(interval.name)
-        out['metadata']['chrom'] = np.array(chrom)
-        out['metadata']['start'] = np.array(start)
-        out['metadata']['end'] = np.array(end)
-        out['metadata']['id'] = np.array(ids)
+        out['metadata']['chrom'] = interval.chrom
+        out['metadata']['start'] = interval.start
+        out['metadata']['end'] = interval.stop
+        out['metadata']['id'] = interval.name
 
-        yield out
+        return out
+
+# test batching
+# from torch.utils.data import DataLoader
+
+# dl = DataLoader(a, batch_size=3, collate_fn=numpy_collate)
+
+# it = iter(dl)
+# sample = next(it)
+
+# sample["inputs"]["dist_polya_st"].shape
+# sample["inputs"]["seq"].shape

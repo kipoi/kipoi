@@ -5,12 +5,13 @@ __version__ = '0.0.1'
 
 
 # available modules
-from . import model_handling
+from . import pipeline
 from . import utils
 from . import variant_effects
 
 from . import model
 from .model import load_model
+from .data import load_extractor
 
 # Setup logging
 import logging

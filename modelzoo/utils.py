@@ -1,5 +1,9 @@
 import os
 import sys
+import subprocess
+import logging
+
+_logger = logging.getLogger('model-zoo')
 
 
 def load_module(path, module_name=None):
@@ -40,3 +44,11 @@ def load_module(path, module_name=None):
             raise RuntimeError(
                 'dynamic loading of preprocessor module is not implemented for python3!')
     return module
+
+
+def pip_install_requirements(requirements_fname):
+    if os.path.exists(requirements_fname):  # install dependencies
+        _logger.info('Running pip install -r {}...'.format(requirements_fname))
+        subprocess.call(['pip', 'install', '-r', requirements_fname])
+    else:
+        _logger.info('requirements.txt not found under {}'.format(requirements_fname))

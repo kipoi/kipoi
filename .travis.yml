@@ -62,6 +62,7 @@ install:
 - pip install genomelake/
 
 # install the repository, use tensorflow as backend by default
+- conda install -y pytorch -c soumith
 - pip install .
 - pip install tensorflow
 

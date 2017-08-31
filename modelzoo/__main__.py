@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from modelzoo import model_handling
+from modelzoo import pipeline
 
 import argparse
 import sys
@@ -24,7 +24,7 @@ command_functions = {
     'score_variants': not_implemented,
     'pull': not_implemented,
     'preproc': not_implemented,
-    'test': model_handling.cli_test,
+    'test': pipeline.cli_test,
     'push': not_implemented,
 }
 commands_str = ', '.join(command_functions.keys())

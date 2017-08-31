@@ -13,7 +13,8 @@ requirements = [
     "pyyaml",
     "future",
     "h5py",
-    "keras"
+    "keras",
+    "pytorch"
 ]
 
 test_requirements = [
