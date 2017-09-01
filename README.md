@@ -11,6 +11,14 @@ After cloning the repository `git clone https://github.com/kipoi/model-zoo.git`,
 pip install -U .
 ```
 
+If you wish to develop, run instead:
+
+```
+pip install -e '.[develop]'
+```
+
+This will install some additional packages like `pytest`.
+
 ## Usage
 
 
@@ -50,6 +58,7 @@ add_model_dirs: [] # additional model directories, file_paths
 
 ## Python SDK
 
+Provides functionality to:
 - Load the model
 - Predict
 - Run the pre-processor
@@ -58,8 +67,12 @@ add_model_dirs: [] # additional model directories, file_paths
 ## Documentation
 
 Explore the markdown files in [docs/](docs/):
-- Command-line interface [docs/cli.md](docs/cli.md/)
+- Command-line interface [docs/cli.md](docs/cli.md)
 - Python interface [docs/py-interface.md](docs/py-interface.md)
+- Contributing models [docs/contributing_models.md](docs/contributing_models.md)
+- **Examples**
+  - Python interface [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+
 
 ---------------------------------------------------------------
 
@@ -73,41 +86,26 @@ Explore the markdown files in [docs/](docs/):
           - test by saving a version + meta-info in a DB
 	    - Model+version = one row
   - Use Synapse to host models at the beginning?
-- Refactor:
-  - have a class:
-    - Model
-      - KerasModel - inherits from Model?
-  	- self.predict()
-      - cls.load_model()
-        - could also contain custom python code?
-  		- use with other packages...
-      - .save_model() ? 
-    - Preprocessor (see pytorch)
-  	- next()
-      - length
-        - Maybe enhance it with parallel processing
-  		- the preprocessor runs in a separate thread within a custom python environment?
-  - model and preprocessor factory methods
+
 
 ## Dev ideas
 
 
 ## Issues
 
+What are we missing?
+- virtual-env setup
+- preprocessors from other languages?
+  - maybe put it on hold for now?
+  
 How to start a pre-processor in a separate environment?
 - Enforce using conda?
 - Use a separate process?
-
-
-What are we missing?
-- preprocessors from other languages?
-  - maybe put it on hold for now?
-- Using multiple preprocessors in parallel, each running in a separate environment?
+- this could allow running preprocessor from multiple versions in parallel
 
 How to check for malicious software?
   - running preprocessors
     - make the preprocessor code well available
-
 
 ## Link collection
 

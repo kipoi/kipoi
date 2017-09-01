@@ -21,7 +21,7 @@ def not_implemented(command, arg_list):
 
 command_functions = {
     'preproc': pipeline.cli_extract_to_hdf5,
-    'predict': not_implemented,
+    'predict': pipeline.cli_predict,
     'score_variants': not_implemented,
     'test': pipeline.cli_test,
     'pull': not_implemented,

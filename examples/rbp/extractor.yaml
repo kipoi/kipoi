@@ -30,4 +30,19 @@ extractor:
                 shape: (1, 10)
                 descr: Distance to poly-a site transformed with B-splines
         targets: binding_site
+        metadata:
+            type: dict
+            ranges:
+                chr:
+                    type: str
+                start:
+                    type: int
+                end:
+                    type: int
+                id:
+                    type: str
+                strand:
+                    type: str
+
+
 # d: is an alias for description

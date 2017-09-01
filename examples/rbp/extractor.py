@@ -148,10 +148,12 @@ class SeqDistDataset(Dataset):
 
         # get metadata
         out['metadata'] = {}
-        out['metadata']['chrom'] = interval.chrom
-        out['metadata']['start'] = interval.start
-        out['metadata']['end'] = interval.stop
-        out['metadata']['id'] = interval.name
+        out['metadata']['ranges'] = {}
+        out['metadata']['ranges']['chr'] = interval.chrom
+        out['metadata']['ranges']['start'] = interval.start
+        out['metadata']['ranges']['end'] = interval.stop
+        out['metadata']['ranges']['id'] = interval.name
+        out['metadata']['ranges']['strand'] = interval.strand
 
         return out
 

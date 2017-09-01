@@ -34,17 +34,22 @@ Extractor = modelzoo.load_extractor("username/model1")
 print(Extractor.__doc__)
 ```
 
-
 ### Initialize it
 
 ```python
-preproc = Extractor(infile="~/file.txt", seq_len=10)
+extractor = Extractor(infile="~/file.txt", seq_len=10)
 ```
 
 ### Draw a few batches
 
 ```python
-x = next(preproc)
+from torch.utils.data import DataLoader
+from modelzoo.data import numpy_collate
+batch_iter = iter(DataLoader(extractor,
+                             batch_size=3,
+                             collate_fn=numpy_collate,
+							 num_workers=3))
+x = next(batch_iter)
 print(x)
 ```
 
@@ -71,7 +76,7 @@ model = modelzoo.load_model("https://github.com/kipoi/model-zoo/tree/master/exam
 ### Run predictions
 
 ```python
-y = model.predict(preproc)
+y = model.predict_on_batch(x["inputs"])
 ```
 
 ## Extractor + Model bundle
@@ -86,4 +91,5 @@ print(Me.__doc__)
 me = Me(infile="~/file.txt", seq_len=10)
 
 y = me.predict()
+batch_iter = me.predict_generator(batch_size=3)
 ```

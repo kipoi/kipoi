@@ -50,9 +50,6 @@ install:
 - python --version
 - pip --version
 
-# install all the requirements
-- pip install -r requirements_dev.txt
-
 # HACK - remove it after making genomelake public
 - eval "$(ssh-agent -s)"
 - git config --global user.email $GH_USER_EMAIL
@@ -63,7 +60,7 @@ install:
 
 # install the repository, use tensorflow as backend by default
 - conda install -y pytorch -c soumith
-- pip install .
+- pip install -e '.[develop]'
 - pip install tensorflow
 
 script:

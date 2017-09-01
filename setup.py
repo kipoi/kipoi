@@ -13,6 +13,8 @@ requirements = [
     "pyyaml",
     "future",
     "h5py",
+    "numpy",
+    "pandas",
     "keras",
     "tqdm",
     "deepdish"
@@ -40,6 +42,13 @@ setup(
     long_description=readme,
     packages=find_packages(),
     install_requires=requirements,
+    extras_require={
+        "develop": ["bumpversion",
+                    "wheel",
+                    "pytest",
+                    "pytest-pep8",
+                    "pytest-cov"],
+    },
     entry_points={'console_scripts': ['modelzoo = modelzoo.__main__:main']},
     license="MIT license",
     zip_safe=False,

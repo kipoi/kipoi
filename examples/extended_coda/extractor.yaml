@@ -24,12 +24,12 @@ extractor:
         metadata:
             type: dict
             ranges:
-                chrom:
-                    type:str
+                chr:
+                    type: str
                 start:
-                    type:int
+                    type: int
                 end:
-                    type:int
+                    type: int
                 id:
-                    type:str
+                    type: str
 
