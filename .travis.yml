@@ -50,6 +50,9 @@ install:
 - python --version
 - pip --version
 
+# TODO - remove this line
+- pip install -r requirements_dev.txt
+
 # HACK - remove it after making genomelake public
 - eval "$(ssh-agent -s)"
 - git config --global user.email $GH_USER_EMAIL
