@@ -8,7 +8,7 @@ import yaml
 from contextlib import contextmanager
 import modelzoo
 from modelzoo.data import numpy_collate
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 
 
 # TODO - check if you are on travis or not regarding the --install-req flag
@@ -69,8 +69,15 @@ def test_extractor_model(example):
         modelzoo.data.validate_extractor(extractor)
 
         # sample a batch of data
-        dl = DataLoader(extractor, collate_fn=numpy_collate)
-        it = iter(dl)
-        batch = next(it)
+        batch = numpy_collate([extractor[i] for i in range(5)])
+
+        # current BUG in pytorch
+        # ../../../miniconda/envs/test-environment/lib/python2.7/site-packages/torch/__init__.py:53: in <module>
+        #     from torch._C import *
+        # E   ImportError: dlopen: cannot load any more object with static TLS
+        # -----
+        # dl = DataLoader(extractor, collate_fn=numpy_collate)
+        # it = iter(dl)
+        # batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])

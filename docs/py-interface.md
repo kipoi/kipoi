@@ -48,7 +48,7 @@ from modelzoo.data import numpy_collate
 batch_iter = iter(DataLoader(extractor,
                              batch_size=3,
                              collate_fn=numpy_collate,
-							 num_workers=3))
+                             num_workers=3))
 x = next(batch_iter)
 print(x)
 ```
