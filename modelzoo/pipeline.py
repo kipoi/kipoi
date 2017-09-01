@@ -7,11 +7,15 @@ import argparse
 import logging
 import os
 import yaml
-from .utils import pip_install_requirements
+from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
-from .data import load_extractor, numpy_collate
+from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
-
+import h5py
+import six
+import numpy as np
+from tqdm import tqdm
+import deepdish
 # HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
 import genomelake
 
@@ -27,6 +31,7 @@ DATA_TYPES = ['dna', 'bigwig', 'v-plot']
 RESERVED_PREPROC_KWS = ['intervals_file']
 
 
+# TODO - have the same API as for the extractor?
 class ModelExtractor(object):
 
     def __init__(self, model_dir, install_req=False):
@@ -47,27 +52,56 @@ class ModelExtractor(object):
         # by the preprocessor output and whether types match
         raise Exception("Not yet implemented")
 
+    def test_predict(self, extractor_kwargs, batch_size=32, test_equal=False):
+        _logger.info('Initialized data generator. Running batches...')
+
+        ex = self.extractor(**extractor_kwargs)
+        # test that the extractor indeed matches our definition
+        validate_extractor(ex)
+        _logger.info('Returned data schema correct')
+
+        it = DataLoader(ex, batch_size=batch_size, collate_fn=numpy_collate)
+
+        # test that all predictions go through
+        for i, batch in enumerate(it):
+            self.model.predict_on_batch(batch['inputs'])
+
+        # ?TODO? - check that the predicted values match the targets
+
+        #     if test_equal:
+        #         match.append(compare_numpy_dict(y_pred, batch['targets'], exact=False))
+        # if not all(match):
+        #     _logger.warning("For {0}/{1} batch samples: target != model(inputs)")
+        # else:
+        #     _logger.info("All target values match model predictions")
+
+        _logger.info('test_predict done!')
+
     def predict(self, extractor_kwargs, batch_size=32):
         """
         # Arguments
             preproc_kwargs: Keyword arguments passed to the pre-processor
 
-        :return: model prediction result, list in case preprocessor is a generator
+        :return: Predict the whole array
         """
-        # TODO - don't return just a list... or?
+        return numpy_collate_concat(list(self.predict_generator(extractor_kwargs, batch_size)))
 
-        ret = []
+    def predict_generator(self, extractor_kwargs, batch_size=32):
+        """Prediction generator
+
+        # Arguments
+            preproc_kwargs: Keyword arguments passed to the pre-processor
+
+        # Yields
+            model batch prediction
+        """
         _logger.info('Initialized data generator. Running batches...')
 
         it = DataLoader(self.extractor(**extractor_kwargs),
                         batch_size=batch_size, collate_fn=numpy_collate)
 
         for i, batch in enumerate(it):
-            ret.append(self.model.predict_on_batch(batch['inputs']))
-
-        # TODO - test that predicted == true_target
-        _logger.info('Successfully ran predict_on_batch')
-        return ret
+            yield self.model.predict_on_batch(batch['inputs'])
 
 
 def cli_test(command, args):
@@ -100,4 +134,116 @@ def cli_test(command, args):
 
     with open(os.path.join(test_dir, 'test.json')) as f_kwargs:
         extractor_kwargs = yaml.load(f_kwargs)
-    mh.predict(extractor_kwargs, batch_size=parsed_args.batch_size)
+    match = mh.test_predict(extractor_kwargs, batch_size=parsed_args.batch_size)
+    # if not match:
+    #     # _logger.error("Expected targets don't match model predictions")
+    #     raise Exception("Expected targets don't match model predictions")
+
+    _logger.info('Successfully ran test_predict')
+
+
+def cli_extract_to_hdf5(command, args):
+    """CLI interface to run the extractor
+    """
+
+    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+                                     description='Run the model prediction.')
+    parser.add_argument('model_dir',
+                        help='Model zoo submission directory.')
+    parser.add_argument('--extractor_args',
+                        help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
+                        "as a file path to a json file")
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size to use in prediction')
+    parser.add_argument("-i", "--install-req", action='store_true',
+                        help="Install required packages from requirements.txt")
+    # parser.add_argument("-w", "--workers", type=int, default=1,
+    #                     help="Number of parallel workers for loading the dataset")
+    parser.add_argument("-o", "--output",
+                        help="Output hdf5 file")
+    parsed_args = parser.parse_args(args)
+
+    extractor_kwargs = parse_json_file_str(parsed_args.extractor_args)
+
+    # run the model
+    model_dir = os.path.abspath(parsed_args.model_dir)
+
+    # install args
+    if parsed_args.install_req:
+        pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+
+    Extractor = load_extractor(parsed_args.model_dir)
+    extractor = Extractor(**extractor_kwargs)
+
+    _logger.info("Loading all the points into memory")
+    obj = numpy_collate_concat([x for x in tqdm(extractor)])
+
+    _logger.info("Writing everything to the hdf5 array at {0}".format(parsed_args.output))
+    deepdish.io.save(parsed_args.output, obj)
+    _logger.info("Done!")
+
+    # TODO - hack - read the whole dataset into memory at first...
+
+    # sample = extractor[0]
+    # n = len(extractor)
+
+    # f = h5py.File(args.output, "w")
+    # inputs = f.create_group("inputs")
+    # arr_inputs = {k: inputs.create_dataset(k, (n, ) + v.shape) for k, v in six.iteritems(sample["inputs"])}
+    # targets = f.create_group("targets")
+
+    # if "targets" in sample and isinstance(sample["targets"], dict):
+    #     arr_inputs = {k: inputs.create_dataset(k, (n, ) + v.shape) for k, v in six.iteritems(sample["targets"])}
+    # else:
+    #     arr_targets = None
+
+    # metadata = f.create_group("metadata")
+    # arr_inputs = {k: inputs.create_dataset(k, (n, ) + np.asarray(v)) for k, v in six.iteritems(sample["metadata"])}
+
+
+def cli_predict(command, args):
+    """CLI interface to predict
+    """
+
+    assert command == "predict"
+
+    # TODO - specify the arguments
+
+    # argpars
+    # setup the arg-parsing
+    # TODO - pass the required arguments
+    # - either as a json/yaml file or a bunch of arguments
+    # - TODO - how to correctly parse them? - specify it in the preprocessor
+    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+                                     description='Run the model prediction.')
+    parser.add_argument('model_dir',
+                        help='Model zoo submission directory.')
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size to use in prediction')
+    parser.add_argument("-w", "--workers", type=int, default=1,
+                        help="Number of parallel workers for loading the dataset")
+    parser.add_argument("-i", "--install-req", action='store_true',
+                        help="Install required packages from requirements.txt")
+    parsed_args = parser.parse_args(args)
+
+    # run the model
+    model_dir = os.path.abspath(parsed_args.model_dir)
+    mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
+
+    test_dir = os.path.join(model_dir, 'test_files')
+
+    if os.path.exists(test_dir):
+        _logger.info(
+            'Found test files in {}. Initiating test...'.format(test_dir))
+        # cd to test directory
+        os.chdir(test_dir)
+
+    with open(os.path.join(test_dir, 'test.json')) as f_kwargs:
+        extractor_kwargs = yaml.load(f_kwargs)
+    match = mh.test_predict(extractor_kwargs, batch_size=parsed_args.batch_size)
+    if not match:
+        # _logger.error("Expected targets don't match model predictions")
+        raise Exception("Expected targets don't match model predictions")
+
+    _logger.info('Successfully ran test_predict')
+    # TODO - write the results to a tsv or HDF5 file

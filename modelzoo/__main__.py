@@ -23,7 +23,7 @@ command_functions = {
     'predict': not_implemented,
     'score_variants': not_implemented,
     'pull': not_implemented,
-    'preproc': not_implemented,
+    'preproc': pipeline.cli_extract_to_hdf5,
     'test': pipeline.cli_test,
     'push': not_implemented,
 }

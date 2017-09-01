@@ -2,6 +2,8 @@ import os
 import sys
 import subprocess
 import logging
+import numpy as np
+import yaml
 
 _logger = logging.getLogger('model-zoo')
 
@@ -52,3 +54,56 @@ def pip_install_requirements(requirements_fname):
         subprocess.call(['pip', 'install', '-r', requirements_fname])
     else:
         _logger.info('requirements.txt not found under {}'.format(requirements_fname))
+
+
+def compare_numpy_dict(a, b, exact=True):
+    """
+    Compare two recursive numpy dictionaries or lists
+    """
+    if type(a) != type(b) and type(a) != np.ndarray and type(b) != np.ndarray:
+        return False
+
+    # Compare two dictionaries
+    if type(a) == dict and type(b) == dict:
+        if not a.keys() == b.keys():
+            return False
+        for key in a.keys():
+            res = compare_numpy_dict(a[key], b[key], exact)
+            if not res:
+                print("false for key = ", key)
+                return False
+        return True
+
+    # compare two lists
+    if type(a) == list and type(b) == list:
+        assert len(a) == len(b)
+        return all([compare_numpy_dict(a[i], b[i], exact=exact)
+                    for i in range(len(a))])
+
+    # if type(a) == np.ndarray and type(b) == np.ndarray:
+    if type(a) == np.ndarray or type(b) == np.ndarray:
+        if exact:
+            return (a == b).all()
+        else:
+            return np.testing.assert_almost_equal(a, b)
+
+    if a is None and b is None:
+        return True
+
+    raise NotImplementedError
+
+
+def parse_json_file_str(extractor_args):
+    """Parse a string either as a json string or
+    as a file path to a .json file
+    """
+    if extractor_args.startswith("{") or extractor_args.endswith("}"):
+        _logger.debug("Parsing the extractor_args as a json string")
+        return yaml.load(extractor_args)
+    else:
+        if not os.path.exists(extractor_args):
+            raise ValueError("File path: {0} doesn't exist".format(extractor_args))
+        _logger.debug("Parsing the extractor_args as a json file path")
+        with open(extractor_args, "r") as f:
+            return yaml.load(f.read())
+

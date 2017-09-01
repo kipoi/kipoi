@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pybedtools
-
+import six
 from genomelake.extractors import ArrayExtractor
 
 from modelzoo.data import Dataset
@@ -24,12 +24,12 @@ class CodaDataset(Dataset):
         """
         self.bt = pybedtools.BedTool(intervals_file)
         self.input_data_extractors = {key: ArrayExtractor(data_source)
-                                      for key, data_source in input_data_sources.items()}
+                                      for key, data_source in six.iteritems(input_data_sources)}
 
         self.target_data_sources = target_data_sources
         if self.target_data_sources is not None:
             self.target_data_extractors = {key: ArrayExtractor(data_source)
-                                           for key, data_source in target_data_sources.items()}
+                                           for key, data_source in six.iteritems(target_data_sources)}
 
     def __len__(self):
         return len(self.bt)
@@ -39,11 +39,11 @@ class CodaDataset(Dataset):
 
         out = {}
         out['inputs'] = {key: np.squeeze(extractor([interval])[..., None], 0)  # adds channel axis for conv1d
-                         for key, extractor in self.input_data_extractors.items()}
+                         for key, extractor in six.iteritems(self.input_data_extractors)}
 
         if self.target_data_sources is not None:
             out['targets'] = {key: np.squeeze(extractor(interval)[..., None], 0)  # adds channel axis for conv1d
-                              for key, extractor in self.target_data_extractors.items()}
+                              for key, extractor in six.iteritems(self.target_data_extractors)}
         # get metadata
         out['metadata'] = {}
         out['metadata']['chrom'] = interval.chrom

@@ -6,7 +6,7 @@ import logging
 import yaml
 from .utils import load_module
 import abc
-
+import six
 
 _logger = logging.getLogger('model-zoo')
 
@@ -94,10 +94,10 @@ def validate_model_spec(model_spec):
     assert (all(field in model_spec for field in MODEL_FIELDS))
 
     # check input and target data types
-    for data_name, data_spec in model_spec['inputs'].items():
+    for data_name, data_spec in six.iteritems(model_spec['inputs']):
         if type in data_spec:
             assert data_spec['type'] in DATA_TYPES
-    for data_name, data_spec in model_spec['targets'].items():
+    for data_name, data_spec in six.iteritems(model_spec['targets']):
         if type in data_spec:
             assert data_spec['type'] in DATA_TYPES
 

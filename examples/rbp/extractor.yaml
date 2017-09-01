@@ -6,18 +6,28 @@ extractor:
     type: Dataset
     defined_as: SeqDistDataset
     arguments:
-        intervals_file: "string; tsv file with `chrom start end id score strand`"
-        fasta_file: "string: Reference genome sequence"
-        gtf_file: "file path; Genome annotation GTF file pickled using pandas."
-        preproc_transformer: "file path; tranformer used for pre-processing."
-        target: # TODO - doesn't fit with the testing framework...
-          target_file: "file path; path to the targets (txt) file"
+      # TODO - should we use some special file-names?
+        # if any of the arguments is numeric, the type specification is mandatory
+        intervals_file:
+            descr: tsv file with `chrom start end id score strand`
+            type: str
+        fasta_file:
+            descr: Reference genome sequence
+        gtf_file:
+            descr: file path; Genome annotation GTF file pickled using pandas.
+        preproc_transformer:
+            descr: path to the serialized tranformer used for pre-processing.
+        target_file:
+            descr: path to the targets (txt) file
+            optional: True # use the same semantics as for the CLI interface?
     output:
         inputs:
             seq:
                 type: DNA
+                # TODO - sequence length ? - 
                 provide_ranges: True
             dist_polya_st:
                 shape: (1, 10)
-                description: Distance to poly-a site transformed with B-splines
+                descr: Distance to poly-a site transformed with B-splines
         targets: binding_site
+# d: is an alias for description

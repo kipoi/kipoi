@@ -21,24 +21,24 @@ Get all available information about some particular model (as python dictionary)
 modelzoo.model_info(df.iloc[1,"model"])
 ```
 
-## Preprocessor
+## Extracor
 
-### Load the pre-processor
+### Load the extractor
 
 ```python
-Preproc = modelzoo.load_preproc("username/model1")
+Extractor = modelzoo.load_extractor("username/model1")
 ```
 ### Get information
 
 ```python
-print(Preproc.__doc__)
+print(Extractor.__doc__)
 ```
 
 
 ### Initialize it
 
 ```python
-preproc = Preproc(infile="~/file.txt", seq_len=10)
+preproc = Extractor(infile="~/file.txt", seq_len=10)
 ```
 
 ### Draw a few batches
@@ -74,16 +74,16 @@ model = modelzoo.load_model("https://github.com/kipoi/model-zoo/tree/master/exam
 y = model.predict(preproc)
 ```
 
-## Preprocessor + Model bundle
+## Extractor + Model bundle
 
 ```python
-Pm = modelzoo.load_preproc_model("username/model1")
+Me = modelzoo.pieline.ModelExtractor("username/model1")
 
 ## Get info
-print(Pm.__doc__)
+print(Me.__doc__)
 
 ## Setup
-pm = Pm(infile="~/file.txt", seq_len=10)
+me = Me(infile="~/file.txt", seq_len=10)
 
-y = pm.predict()
+y = me.predict()
 ```

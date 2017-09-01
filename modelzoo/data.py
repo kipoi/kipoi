@@ -3,6 +3,7 @@ import logging
 import yaml
 import inspect
 import abc
+import six
 
 from modelzoo.utils import load_module
 
@@ -17,6 +18,19 @@ if sys.version_info[0] == 2:
 else:
     string_classes = (str, bytes)
 
+
+def getargs(x):
+    """Get function arguments
+    """
+    if sys.version_info[0] == 2:
+        if inspect.isfunction(x):
+            return set(inspect.getargspec(x).args[1:])
+        else:
+            return set(inspect.getargspec(x.__init__).args[1:])
+    else:
+        return set(inspect.signature(x).parameters.keys())
+
+
 _logger = logging.getLogger('model-zoo')
 
 # PREPROC_FIELDS = ['function_name', 'type', 'arguments']
@@ -26,28 +40,36 @@ PREPROC_IFILE_TYPES = ['DNA_regions']
 PREPROC_IFILE_FORMATS = ['bed3']
 
 
-def numpy_collate(batch):
-    "Puts each data field into a tensor with outer dimension batch size"
-    if type(batch[0]).__module__ == 'numpy':
-        elem = batch[0]
-        if type(elem).__name__ == 'ndarray':
-            return np.stack(batch, 0)
-        if elem.shape == ():  # scalars
-            return np.array(batch)
-    elif isinstance(batch[0], int):
-        return np.asarray(batch)
-    elif isinstance(batch[0], float):
-        return np.asarray(batch)
-    elif isinstance(batch[0], string_classes):
-        return batch
-    elif isinstance(batch[0], collections.Mapping):
-        return {key: numpy_collate([d[key] for d in batch]) for key in batch[0]}
-    elif isinstance(batch[0], collections.Sequence):
-        transposed = zip(*batch)
-        return [numpy_collate(samples) for samples in transposed]
+def _numpy_collate(stack_fn=np.stack):
+    def numpy_collate_fn(batch):
+        "Puts each data field into a tensor with outer dimension batch size"
+        if type(batch[0]).__module__ == 'numpy':
+            elem = batch[0]
+            if type(elem).__name__ == 'ndarray':
+                return stack_fn(batch, 0)
+            if elem.shape == ():  # scalars
+                return np.array(batch)
+        elif isinstance(batch[0], int):
+            return np.asarray(batch)
+        elif isinstance(batch[0], float):
+            return np.asarray(batch)
+        elif isinstance(batch[0], string_classes):
+            # Also convert to a numpy array
+            return np.asarray(batch)
+            # return batch
+        elif isinstance(batch[0], collections.Mapping):
+            return {key: numpy_collate_fn([d[key] for d in batch]) for key in batch[0]}
+        elif isinstance(batch[0], collections.Sequence):
+            transposed = zip(*batch)
+            return [numpy_collate_fn(samples) for samples in transposed]
 
-    raise TypeError(("batch must contain tensors, numbers, dicts or lists; found {}"
-                     .format(type(batch[0]))))
+        raise TypeError(("batch must contain tensors, numbers, dicts or lists; found {}"
+                         .format(type(batch[0]))))
+    return numpy_collate_fn
+
+
+numpy_collate = _numpy_collate(np.stack)
+numpy_collate_concat = _numpy_collate(np.concatenate)
 
 
 # inspired by PyTorch
@@ -122,7 +144,12 @@ def load_extractor(preproc_dir):
     extractor = getattr(load_module(os.path.join(preproc_dir, 'extractor.py')),
                         preproc_spec['defined_as'])
 
-    # TODO - check that the extractor arguments match yml arguments
+    # check that the extractor arguments match yml arguments
+    assert getargs(extractor) == set(preproc_spec["arguments"].keys())
+
+    # TODO - save these arguments as attributes?
+    extractor.definition = preproc_spec
+
     _logger.info('successfully imported {} from extractor.py'.
                  format(preproc_spec['defined_as']))
 
@@ -145,8 +172,32 @@ def load_extractor(preproc_dir):
 
 
 def validate_extractor_spec(preproc_spec):
+    """Validate the extractor.yaml file
+    """
     # check extractor fields
     assert (all(field in preproc_spec for field in PREPROC_FIELDS))
 
     # check preproc type
     assert preproc_spec['type'] in PREPROC_TYPES
+
+
+def validate_extractor(ex):
+    """Check that the extractor indeed returns promised features
+    """
+    sample = ex[0]
+
+    # all inputs need to be numpy arrays
+    for k, v in six.iteritems(sample["inputs"]):
+        if type(v) != np.ndarray:
+            raise ValueError("extractor needs to preduce numpy arrays in output['inputs']")
+
+    assert set(sample["inputs"].keys()) == \
+        set(ex.definition["output"]["inputs"].keys())
+
+    # TODO - check also the shape of features...
+    # for feat in sample["output"]["inputs"].keys():
+    #     arr = sample["output"]["inputs"][feat]
+
+    #     arr.shape
+
+    # TODO - check if the ranges are indeed provided

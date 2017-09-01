@@ -6,13 +6,21 @@ extractor:
     type: Dataset
     defined_as: CodaDataset
     arguments:
-        intervals_file: "string; tsv file with `chrom start end`"
-        input_data_sources: "dict; {data_name: <path to genomelake directory>}"
-        target_data_sources: "dict, optional; {data_name: <path to genomelake directory>}"
+        intervals_file:
+            descr: "tsv file with `chrom start end`"
+            type: str
+        input_data_sources:
+            descr: "{data_name: <path to genomelake directory>}"
+            type: dict
+        target_data_sources:
+            descr: "optional; {data_name: <path to genomelake directory>}"
+            type: dict
+            optional: True
     output:
-        H3K27ac_subsampled:
-            type: bigwig
-            provide_ranges: True
+        inputs:
+            H3K27AC_subsampled:
+                type: bigwig
+                provide_ranges: True
         metadata:
             type: dict
             ranges:

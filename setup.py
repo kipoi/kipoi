@@ -14,6 +14,8 @@ requirements = [
     "future",
     "h5py",
     "keras",
+    "tqdm",
+    "deepdish"
     # "pytorch"
 ]
 
