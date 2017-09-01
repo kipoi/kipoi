@@ -22,7 +22,7 @@ def test_example_dir(example):
     # TODO - check if you are on travis or not regarding the --install-req flag
     returncode = subprocess.call(args=["python", "./modelzoo/__main__.py", "test",
                                        "--batch_size=4",
-                                       # "--install-req",
+                                       "--install-req",
                                        example_dir])
     assert returncode == 0
 
@@ -43,8 +43,8 @@ def test_example_to_hdf5(example, tmpdir):
                                        "../",  # directory
                                        "--batch_size=4",
                                        "--extractor_args=test.json",
+                                       "--install-req",
                                        "--output", tmpfile],
-                                 # "--install-req",
                                  cwd=os.path.realpath(example_dir + "/test_files"))
     assert returncode == 0
 

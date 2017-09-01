@@ -20,11 +20,11 @@ def not_implemented(command, arg_list):
 
 
 command_functions = {
+    'preproc': pipeline.cli_extract_to_hdf5,
     'predict': not_implemented,
     'score_variants': not_implemented,
-    'pull': not_implemented,
-    'preproc': pipeline.cli_extract_to_hdf5,
     'test': pipeline.cli_test,
+    'pull': not_implemented,
     'push': not_implemented,
 }
 commands_str = ', '.join(command_functions.keys())
@@ -44,7 +44,6 @@ parser = argparse.ArgumentParser(
 
     # Uploading your model
     push             Push
-
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
