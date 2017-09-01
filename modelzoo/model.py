@@ -5,6 +5,7 @@ import os
 import logging
 import yaml
 from .utils import load_module
+import abc
 
 
 _logger = logging.getLogger('model-zoo')
@@ -15,6 +16,7 @@ DATA_TYPES = ['dna', 'bigwig', 'v-plot']
 
 
 class Model(object):
+    __metaclass__ = abc.ABCMeta
 
     def predict_on_batch(self, x):
         raise NotImplementedError
@@ -69,15 +71,18 @@ def load_model(model_dir):
                          format(model_spec["type"]))
 
     # Append yaml description to __doc__
-    model.__doc__ = """Model instance
+    try:
+        model.__doc__ = """Model instance
 
-    # Methods
-      predict_on_batch(x)
+        # Methods
+          predict_on_batch(x)
 
-    # model.yaml
+        # model.yaml
 
-        {0}
-    """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
+            {0}
+        """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
+    except AttributeError:
+        _logger.warning("Unable to set the docstring")
 
     return model
 

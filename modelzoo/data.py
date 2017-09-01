@@ -2,6 +2,7 @@ import os
 import logging
 import yaml
 import inspect
+import abc
 
 from modelzoo.utils import load_module
 
@@ -66,6 +67,7 @@ class Dataset(object):
     ``__len__``, that provides the size of the dataset, and ``__getitem__``,
     supporting integer indexing in range from 0 to len(self) exclusive.
     """
+    __metaclass__ = abc.ABCMeta
 
     def __getitem__(self, index):
         raise NotImplementedError
@@ -124,16 +126,20 @@ def load_extractor(preproc_dir):
     _logger.info('successfully imported {} from extractor.py'.
                  format(preproc_spec['defined_as']))
 
-    extractor.__doc__ = """Model instance
+    try:
+        extractor.__doc__ = """Model instance
 
-    # Methods
-        - .__getitem__(idx) - Get items via subsetting obj.[idx]
-        - .__len__() - Get the length - len(obj)
+        # Methods
+            - .__getitem__(idx) - Get items via subsetting obj.[idx]
+            - .__len__() - Get the length - len(obj)
 
-    # extractor.yaml
+        # extractor.yaml
 
-        {0}
-    """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
+            {0}
+        """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
+    except AttributeError:
+        _logger.warning("Unable to set the docstring. " +
+                        "Defined extractor is not ineriting from the abstract class Dataset in python2")
 
     return extractor
 
