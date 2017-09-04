@@ -10,7 +10,7 @@ import pandas as pd
 
 # TODO - check if you are on travis or not regarding the --install-req flag
 INSTALL_FLAG = "--install-req"
-# INSTALL_FLAG = ""
+INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 

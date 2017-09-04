@@ -42,16 +42,13 @@ install:
 
 # test-environment
 - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy pandas pytest
-  h5py bcolz
+  h5py bcolz scipy
 # HACK - added bcolz explicitly due to error in examples/extended_coda:
 #   File "bcolz/carray_ext.pyx", line 1386, in bcolz.carray_ext.carray._read_meta (bcolz/carray_ext.c:20281)
 #       TypeError: __init__() got an unexpected keyword argument 'quantize'
 - source activate test-environment
 - python --version
 - pip --version
-
-# TODO - remove this line
-- pip install -r requirements_dev.txt
 
 # HACK - remove it after making genomelake public
 - eval "$(ssh-agent -s)"

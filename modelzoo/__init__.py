@@ -12,6 +12,7 @@ from . import variant_effects
 from . import model
 from .model import load_model
 from .data import load_extractor
+from .pipeline import install_model_requirements
 
 # Setup logging
 import logging

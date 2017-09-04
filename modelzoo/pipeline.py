@@ -39,6 +39,10 @@ DATA_TYPES = ['dna', 'bigwig', 'v-plot']
 RESERVED_PREPROC_KWS = ['intervals_file']
 
 
+def install_model_requirements(model_dir):
+    pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+
+
 # TODO - have the same API as for the extractor?
 class ModelExtractor(object):
 
@@ -50,7 +54,7 @@ class ModelExtractor(object):
         # TODO: This should not be done here, but a new environment
         # should have been created before calling this.
         if install_req:
-            pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+            install_model_requirements(model_dir)
 
         self.model = load_model(model_dir)
         self.extractor = load_extractor(model_dir)

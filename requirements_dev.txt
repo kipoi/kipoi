@@ -1,8 +1,0 @@
-pip
-bumpversion
-wheel
-tox
-pytest
-pytest-pep8
-pytest-cov
-pyyaml

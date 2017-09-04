@@ -1,5 +1,7 @@
 """Test the CLI interface
 """
+import torch  # need it before keras otherwise I get the following error: ImportError: dlopen: cannot load any more object with static TLS
+from torch.utils.data import DataLoader
 import keras  # otherwise I get a segfault from keras ?!
 import pytest
 import sys
@@ -8,12 +10,11 @@ import yaml
 from contextlib import contextmanager
 import modelzoo
 from modelzoo.data import numpy_collate
-# from torch.utils.data import DataLoader
+from modelzoo.pipeline import install_model_requirements
 
 
 # TODO - check if you are on travis or not regarding the --install-req flag
-INSTALL_FLAG = "--install-req"
-# INSTALL_FLAG = ""
+INSTALL_REQ = False
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -54,6 +55,10 @@ def test_extractor_model(example):
     modelzoo.data.validate_extractor_spec(cfg["extractor"])
     test_kwargs = get_test_kwargs(example_dir)
 
+    # install the dependencies
+    # - TODO maybe put it implicitly in load_extractor?
+    if INSTALL_REQ:
+        install_model_requirements(example_dir)
     # get extractor
     Extractor = modelzoo.load_extractor(example_dir)
 
@@ -69,15 +74,8 @@ def test_extractor_model(example):
         modelzoo.data.validate_extractor(extractor)
 
         # sample a batch of data
-        batch = numpy_collate([extractor[i] for i in range(5)])
-
-        # current BUG in pytorch
-        # ../../../miniconda/envs/test-environment/lib/python2.7/site-packages/torch/__init__.py:53: in <module>
-        #     from torch._C import *
-        # E   ImportError: dlopen: cannot load any more object with static TLS
-        # -----
-        # dl = DataLoader(extractor, collate_fn=numpy_collate)
-        # it = iter(dl)
-        # batch = next(it)
+        dl = DataLoader(extractor, collate_fn=numpy_collate)
+        it = iter(dl)
+        batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])
