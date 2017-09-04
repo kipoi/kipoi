@@ -1,0 +1,67 @@
+sudo: required
+dist: trusty
+language: python
+
+# required for github access
+env:
+  global:
+    - secure: "prWi9imQlZe3BdbUjJEQYAYGsCTyZEoY0/jEA9vGeNB4DY4TcDYdFudPwsfWK1lgmAP3vbxR1FswLUEaCspDNFV0cJff6Khmf1x1QbfFjCbLJtZ/zvi1wg2hSEJiZNhtJhs5bgEG5F2EKKJPcPaw+5jBAbIHGOVmoDw/3ioG2oxHWdniPi4EVj4aqZLYaI9GWhGZDrzfiHUgV8HMoE+bXmNl0cH1ycXBEqZFpqyhalsl24jzgJSM5x84xS2sudmh0VXnmBonZuR3DNXQ0UAX235O8OczzZLB7f5OP3rzbbW8KFrQaTqsZeaV6d12tPMZPDBxn2QI2HCXn001TWUFcQq7sQjmlURAFJnZ+envr7ufBuWRP10d9d+kw5kCZOk3dYL2cY/Uf6csozn21mB9g60o8BEyk9tJ8ivoAh5uRvou1qx4CllVf9ZfyVu0Ac4KaoGlj5bxeJjA7CYAuJPdINJSBc/hcGAWspfKaKOD4UZmcpp5v1aiB3b++BEnRtCn1fedQx9+2LEobThEaN+nr6TckP+KYz5ERWy65/WqHSHB4A1EX6VdKIdhMeMXAlGTI4p1H209E+wf/iCrJp4TKijzOQt3m6Z8ZVQ5o4AN6VctB0AbcPFzJUTFO68e2QLK9TFMAS48cyty3m95Zqaxzw8LH85qLzRalmKdqgTp/qg="
+# Test all branches
+# branches:
+#   only:
+#   - master
+#   - /^devel.*$/
+
+matrix:
+  include:
+  - python: 2.7
+  - python: 3.5
+
+before_install:
+# required for `git clone git@github.com:Avsecz/genomelake.git`
+# https://github.com/alrra/travis-scripts/blob/master/doc/github-deploy-keys.md
+- npm install --save-dev @alrra/travis-scripts
+- |
+     $(npm bin)/set-up-ssh --key "$encrypted_27b2060facfe_key" \
+                           --iv "$encrypted_27b2060facfe_iv" \
+                           --path-encrypted-key ".travis/github_deploy_key.enc"
+
+install:
+# setup conda
+# Used from https://conda.io/docs/user-guide/tasks/use-conda-with-travis-ci.html
+- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+  -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  -O miniconda.sh; fi
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH="$HOME/miniconda/bin:$PATH"
+- hash -r
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+
+
+# test-environment
+- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy pandas pytest
+  h5py bcolz scipy
+# HACK - added bcolz explicitly due to error in examples/extended_coda:
+#   File "bcolz/carray_ext.pyx", line 1386, in bcolz.carray_ext.carray._read_meta (bcolz/carray_ext.c:20281)
+#       TypeError: __init__() got an unexpected keyword argument 'quantize'
+- source activate test-environment
+- python --version
+- pip --version
+
+# HACK - remove it after making genomelake public
+- eval "$(ssh-agent -s)"
+- git config --global user.email $GH_USER_EMAIL
+- git config --global user.name $GH_USER_NAME
+- git clone git@github.com:Avsecz/genomelake.git
+- pip install cython
+- pip install genomelake/
+
+# install the repository, use tensorflow as backend by default
+- conda install -y pytorch -c soumith
+- pip install '.[develop]'
+- pip install tensorflow
+
+script:
+- PYTHONPATH=$PWD:$PYTHONPATH py.test tests/

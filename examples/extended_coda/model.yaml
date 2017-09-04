@@ -3,6 +3,10 @@ name: extended CODA
 version: 0.1
 description: Single bp resolution ChIP-seq denoising
 model:
+    type: keras
+    args:
+        weights: weights.h5
+        arch: model.json
     inputs:
         H3K27ac_subsampled:
             type: bigwig
