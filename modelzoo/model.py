@@ -84,6 +84,11 @@ def load_model(model_dir):
     except AttributeError:
         _logger.warning("Unable to set the docstring")
 
+    try:
+        model.model_spec = model_spec
+    except:
+        _logger.warning("Unable to set model_spec")
+
     return model
 
 
