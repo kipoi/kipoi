@@ -5,6 +5,7 @@ __version__ = '0.0.1'
 
 
 # available modules
+from . import config
 from . import pipeline
 from . import utils
 from . import variant_effects
