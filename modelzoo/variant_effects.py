@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import pandas as pd
 import numpy as np
 import copy
@@ -5,7 +8,7 @@ import tempfile
 
 def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     colnames = ["chrom", "pos", "id", "ref", "alt"]
-    vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols= range(len(colnames)))
+    vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols=range(len(colnames)))
     vcf.columns = colnames
     vcf["chrom"] = "chr" + vcf["chrom"].str.lstrip("chr")
     seq_length = int(seq_length)
@@ -18,7 +21,7 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
 
 def _bed3(regions, fpath):
     regions_0based = copy.deepcopy(regions)
-    regions_0based["start"] = regions_0based["start"]-1
+    regions_0based["start"] = regions_0based["start"] - 1
     regions_0based[["chrom", "start", "end"]].to_csv(fpath, sep="\t", header=False, index=False)
 
 def _generate_seq_sets(model_input):
@@ -32,15 +35,15 @@ def _generate_seq_sets(model_input):
     raise Exception("Not implemented")
     pass
 
-def predict_variants(model_handle, vcf_fpath, seq_length, evaluation_function, other_files_path = None):
+def predict_variants(model_handle, vcf_fpath, seq_length, evaluation_function, other_files_path=None):
     if 'intervals_file' not in model_handle.preproc.get_avail_arguments():
         raise Exception("Preprocessor does not support DNA regions as input.")
     seq_pp_outputs = model_handle.preproc.get_output_label_by_type("dna")
-    if len(seq_pp_outputs)==0:
+    if len(seq_pp_outputs) == 0:
         raise Exception("Preprocessor does not generate DNA sequences.")
     regions = _vcf_to_regions(vcf_fpath, seq_length)
     region_file = {}
-    temp_bed3_file = tempfile.mktemp()[1] # file path of the temp file
+    temp_bed3_file = tempfile.mktemp()[1]  # file path of the temp file
     _bed3(regions, temp_bed3_file)
     region_file['intervals_file'] = temp_bed3_file
 

@@ -15,7 +15,7 @@ from modelzoo.pipeline import install_model_requirements
 
 # TODO - check if you are on travis or not regarding the --install-req flag
 INSTALL_REQ = True
-INSTALL_REQ = False
+# INSTALL_REQ = False
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
