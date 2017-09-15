@@ -5,6 +5,7 @@ import os
 import logging
 import yaml
 from .utils import load_module
+from . import config
 import abc
 import six
 
@@ -24,7 +25,7 @@ class Model(object):
     # TODO - define the .model attribute?
 
 
-def load_model(model_dir):
+def dir_load_model(model_dir):
     """Load the model
 
     1. Parse the model.yml
@@ -85,6 +86,21 @@ def load_model(model_dir):
         _logger.warning("Unable to set the docstring")
 
     return model
+
+
+def load_model(model, source="kipoi"):
+    """Load the model
+
+    source: source from which to pull the model
+    """
+    if source == "dir":
+        return dir_load_model(model)
+    else:
+        if source not in config.model_sources():
+            raise ValueError("source={0} needs to be in model_sources()" +
+                             "available sources: {1}".
+                             format(source, list(config.model_sources().keys())))
+        return config.model_sources()[source].load_extractor(model)
 
 
 def validate_model_spec(model_spec):

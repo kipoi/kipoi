@@ -5,8 +5,8 @@ import inspect
 import abc
 import six
 
-from modelzoo.utils import load_module
-
+from .utils import load_module
+from . import config
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -123,7 +123,7 @@ class Dataset(object):
 # Extractor, Dataset, Preprocessor, Dataloader?
 
 # main functionality - factory class
-def load_extractor(preproc_dir):
+def dir_load_extractor(preproc_dir):
     """Load the extractor from disk
 
     1. Parse the yaml file
@@ -169,6 +169,21 @@ def load_extractor(preproc_dir):
                         "Defined extractor is not ineriting from the abstract class Dataset in python2")
 
     return extractor
+
+
+def load_extractor(extractor, source="kipoi"):
+    """Load the extractor
+
+    source: source from which to pull the model
+    """
+    if source == "dir":
+        return dir_load_extractor(extractor)
+    else:
+        if source not in config.model_sources():
+            raise ValueError("source={0} needs to be in model_sources()" +
+                             "available sources: {1}".
+                             format(source, list(config.model_sources().keys())))
+        return config.model_sources()[source].load_extractor(extractor)
 
 
 def validate_extractor_spec(preproc_spec):

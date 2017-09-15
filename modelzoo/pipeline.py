@@ -9,6 +9,8 @@ import os
 import yaml
 from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
+from .remote import get_source
+from .config import model_sources
 from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
 import h5py
@@ -56,8 +58,8 @@ class ModelExtractor(object):
         if install_req:
             install_model_requirements(model_dir)
 
-        self.model = load_model(model_dir)
-        self.extractor = load_extractor(model_dir)
+        self.model = load_model(model_dir, source="dir")
+        self.extractor = load_extractor(model_dir, source="dir")
 
     def validate_compatibility(self):
         # Test whether all the model input requirements are fulfilled
@@ -123,8 +125,11 @@ def cli_test(command, args):
     # setup the arg-parsing
     parser = argparse.ArgumentParser('modelzoo {}'.format(command),
                                      description='script to test model zoo submissions')
-    parser.add_argument('model_dir',
-                        help='Model zoo submission directory.')
+    parser.add_argument('model', help='Model name.')
+    parser.add_argument('--source', default="dir",
+                        choices=list(model_sources().keys()) + ["dir"],
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        "under model_sources")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-i", "--install-req", action='store_true',
@@ -133,7 +138,10 @@ def cli_test(command, args):
     # --------------------------------------------
 
     # run the model
-    model_dir = os.path.abspath(parsed_args.model_dir)
+    if parsed_args.source == "dir":
+        model_dir = os.path.abspath(parsed_args.model)
+    else:
+        model_dir = get_source(parsed_args.source).pull_model(parsed_args.model)
     mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
 
     test_dir = os.path.join(model_dir, 'test_files')
@@ -160,8 +168,11 @@ def cli_extract_to_hdf5(command, args):
     assert command == "preproc"
     parser = argparse.ArgumentParser('modelzoo {}'.format(command),
                                      description='Run the extractor and save the output to an hdf5 file.')
-    parser.add_argument('model_dir',
-                        help='Model zoo submission directory.')
+    parser.add_argument('model', help='Model name.')
+    parser.add_argument('--source', default="kipoi",
+                        choices=list(model_sources().keys()) + ["dir"],
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        "under model_sources")
     parser.add_argument('--extractor_args',
                         help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -179,13 +190,16 @@ def cli_extract_to_hdf5(command, args):
     # --------------------------------------------
 
     # run the model
-    model_dir = os.path.abspath(parsed_args.model_dir)
+    if parsed_args.source == "dir":
+        model_dir = os.path.abspath(parsed_args.model)
+    else:
+        model_dir = get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
         pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
 
-    Extractor = load_extractor(parsed_args.model_dir)
+    Extractor = load_extractor(model_dir, source="dir")
     extractor = Extractor(**extractor_kwargs)
 
     _logger.info("Loading all the points into memory")
@@ -220,8 +234,11 @@ def cli_predict(command, args):
     assert command == "predict"
     parser = argparse.ArgumentParser('modelzoo {}'.format(command),
                                      description='Run the model prediction.')
-    parser.add_argument('model_dir',
-                        help='Model zoo submission directory.')
+    parser.add_argument('model', help='Model name.')
+    parser.add_argument('--source', default="kipoi",
+                        choices=list(model_sources().keys()) + ["dir"],
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        "under model_sources")
     parser.add_argument('--extractor_args',
                         help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -247,15 +264,18 @@ def cli_predict(command, args):
     # --------------------------------------------
 
     # run the model
-    model_dir = os.path.abspath(parsed_args.model_dir)
+    if parsed_args.source == "dir":
+        model_dir = os.path.abspath(parsed_args.model)
+    else:
+        model_dir = get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
         pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
 
     # load model & extractor
-    model = load_model(parsed_args.model_dir)
-    Extractor = load_extractor(parsed_args.model_dir)
+    model = load_model(model_dir, source="dir")
+    Extractor = load_extractor(model_dir, source="dir")
     extractor = Extractor(**extractor_kwargs)
 
     # setup batching

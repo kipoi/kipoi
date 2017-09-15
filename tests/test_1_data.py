@@ -15,6 +15,7 @@ from modelzoo.pipeline import install_model_requirements
 
 # TODO - check if you are on travis or not regarding the --install-req flag
 INSTALL_REQ = True
+INSTALL_REQ = False
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -60,10 +61,10 @@ def test_extractor_model(example):
     if INSTALL_REQ:
         install_model_requirements(example_dir)
     # get extractor
-    Extractor = modelzoo.load_extractor(example_dir)
+    Extractor = modelzoo.load_extractor(example_dir, source="dir")
 
     # get model
-    model = modelzoo.load_model(example_dir)
+    model = modelzoo.load_model(example_dir, source="dir")
 
     with cd(example_dir + "/test_files"):
         # initialize the extractor

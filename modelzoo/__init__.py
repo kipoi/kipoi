@@ -9,11 +9,14 @@ from . import config
 from . import pipeline
 from . import utils
 from . import variant_effects
+from . import remote
 
 from . import model
 from .model import load_model
 from .data import load_extractor
 from .pipeline import install_model_requirements
+
+sources = config.model_sources
 
 # Setup logging
 import logging

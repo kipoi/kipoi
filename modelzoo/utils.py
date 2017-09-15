@@ -4,7 +4,6 @@ import subprocess
 import logging
 import numpy as np
 import yaml
-from .config import kipoi_models_repo
 
 _logger = logging.getLogger('model-zoo')
 
@@ -107,80 +106,3 @@ def parse_json_file_str(extractor_args):
         _logger.debug("Parsing the extractor_args as a json file path")
         with open(extractor_args, "r") as f:
             return yaml.load(f.read())
-
-# --------------- GIT functionality ----------------
-
-
-def cmd_exists(cmd):
-    """Check if a certain command exists
-    """
-    return subprocess.call("type " + cmd, shell=True,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
-
-
-def lfs_installed(raise_exception=False):
-    """Check if git lfs is installed localls
-    """
-    ce = cmd_exists("git-lfs")
-    if raise_exception:
-        if not ce:
-            raise OSError("git-lfs not installed")
-    return ce
-
-
-def clone_kipoi_models():
-    """Clone the kipoi/models repo without the model weights
-    """
-    lfs_installed(raise_exception=True)
-
-    # git lfs clone git@github.com:kipoi/models.git '-I /'
-
-    _logger.info("Cloning git@github.com:kipoi/models.git into {0}".
-                 format(kipoi_models_repo()))
-    subprocess.call(["git-lfs",
-                     "clone",
-                     "-I /",
-                     "git@github.com:kipoi/models.git",
-                     kipoi_models_repo()])
-
-
-def pull_kipoi_models():
-    """Update the kipoi models repository
-    """
-    lfs_installed(raise_exception=True)
-
-    assert os.path.exists(kipoi_models_repo())
-
-    _logger.info("Update {0}".
-                 format(kipoi_models_repo()))
-    subprocess.call(["git",
-                     "pull"],
-                    cwd=kipoi_models_repo())
-    subprocess.call(["git-lfs",
-                     "pull",
-                     "-I /"],
-                    cwd=kipoi_models_repo())
-
-
-def pull_kipoi_model(model):
-    """Pull the weights of a particular model
-    """
-    lfs_installed(raise_exception=True)
-
-    if not os.path.exists(kipoi_models_repo()):
-        clone_kipoi_models()
-    else:
-        pull_kipoi_models()
-
-    if not os.path.exists(os.path.join(kipoi_models_repo(), model)):
-        raise ValueError("Model: {0} doesn't exist in https://github.com/kipoi/models".
-                         format(model))
-
-    cmd = ["git-lfs",
-           "pull",
-           "-I {model}/**".format(model=model)]
-    _logger.info(" ".join(cmd))
-    subprocess.call(cmd,
-                    cwd=kipoi_models_repo()
-                    )
-    _logger.info("model {0} loaded".format(model))

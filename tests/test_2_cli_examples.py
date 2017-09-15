@@ -9,8 +9,8 @@ import yaml
 import pandas as pd
 
 # TODO - check if you are on travis or not regarding the --install-req flag
-INSTALL_FLAG = "--install-req"
-# INSTALL_FLAG = ""
+# INSTALL_FLAG = "--install-req"
+INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -47,6 +47,7 @@ def test_preproc_example(example, tmpdir):
     # run the
     args = ["python", os.path.abspath("./modelzoo/__main__.py"), "preproc",
             "../",  # directory
+            "--source=dir",
             "--batch_size=4",
             "--extractor_args=test.json",
             "--output", tmpfile]
@@ -88,6 +89,7 @@ def test_predict_example(example, tmpdir):
     # run the
     args = ["python", os.path.abspath("./modelzoo/__main__.py"), "predict",
             "../",  # directory
+            "--source=dir",
             "--batch_size=4",
             "--extractor_args=test.json",
             "--file_format", file_format,
@@ -107,3 +109,14 @@ def test_predict_example(example, tmpdir):
         data = pd.read_csv(tmpfile, sep="\t")
         assert list(data.columns[:6]) == ['chr', 'start', 'end', 'name', 'score', 'strand']
         assert data.columns[6].startswith("y")
+
+
+def test_pull_kipoi():
+    """Test that pull indeed pulls the right model
+    """
+    args = ["python", os.path.abspath("./modelzoo/__main__.py"), "pull",
+            "rbp"]
+    returncode = subprocess.call(args=args)
+    assert returncode == 0
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp/model.yaml'))
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp/model_files/weights.h5'))

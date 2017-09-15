@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from modelzoo import pipeline
+from modelzoo import remote
 
 import argparse
 import sys
@@ -24,8 +25,7 @@ command_functions = {
     'predict': pipeline.cli_predict,
     'score_variants': not_implemented,
     'test': pipeline.cli_test,
-    'pull': not_implemented,
-    'push': not_implemented,
+    'pull': remote.cli_pull,
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -41,9 +41,6 @@ parser = argparse.ArgumentParser(
     pull             Downloads the directory associated with the model
     preproc          Returns an hdf5 array.
     test             Runs a set of unit-tests for the model
-
-    # Uploading your model
-    push             Push
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
