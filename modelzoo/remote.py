@@ -57,12 +57,10 @@ class ModelSource(object):
         """
         return
 
-    @abstractmethod
     def load_model(self, model):
         m_dir = self.pull_model(model)
         return dir_load_model(m_dir)
 
-    @abstractmethod
     def load_extractor(self, model):
         m_dir = self.pull_model(model)
         return dir_load_extractor(m_dir)
