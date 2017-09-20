@@ -51,7 +51,7 @@ def get_source(source):
     return model_sources()[source]
 
 
-def append_source(name, obj):
+def add_source(name, obj):
     """Append a custom source to global model_sources
 
     # Arguments
