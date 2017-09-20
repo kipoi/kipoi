@@ -74,7 +74,8 @@ install:
 - replace "github.com" "github_kipoi.com" -- ~/.kipoi/config.yaml
 # replace 3rd Host github.com instance
 # https://stackoverflow.com/questions/6994947/how-to-replace-a-string-in-an-existing-file-in-perl
-- perl -pi.bak -e 's{Host github.com}{++$n == 3 ? "Host github_kipoi.com\n  HostName github.com" : $&}ge' ~/.ssh/config
+- |
+    perl -pi.bak -e 's{Host github.com}{++$n == 3 ? "Host github_kipoi.com\n  HostName github.com" : $&}ge' ~/.ssh/config
 
 script:
 - PYTHONPATH=$PWD:$PYTHONPATH py.test tests/

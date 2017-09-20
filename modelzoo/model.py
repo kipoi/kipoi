@@ -5,7 +5,6 @@ import os
 import logging
 import yaml
 from .utils import load_module
-from . import config
 import abc
 import six
 
@@ -96,11 +95,8 @@ def load_model(model, source="kipoi"):
     if source == "dir":
         return dir_load_model(model)
     else:
-        if source not in config.model_sources():
-            raise ValueError("source={0} needs to be in model_sources()" +
-                             "available sources: {1}".
-                             format(source, list(config.model_sources().keys())))
-        return config.model_sources()[source].load_extractor(model)
+        from .config import get_source
+        return get_source(source).load_extractor(model)
 
 
 def validate_model_spec(model_spec):

@@ -9,8 +9,6 @@ import logging
 import glob
 from .data import dir_load_extractor
 from .model import dir_load_model
-from . import config
-import argparse
 from collections import OrderedDict
 
 _logger = logging.getLogger('model-zoo')
@@ -265,26 +263,3 @@ def load_source(config):
 
     cls = type_cls[config["type"]]
     return cls.from_config(config)
-
-
-def get_source(source):
-    if source not in config.model_sources():
-        raise ValueError("source={0} needs to be in model_sources()" +
-                         "available sources: {1}".
-                         format(source, list(config.model_sources().keys())))
-    return config.model_sources()[source]
-
-
-def cli_pull(command, unparsed_args):
-    assert command == "pull"
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
-                                     description="Downloads the directory associated with the model.")
-    parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        "under model_sources")
-
-    args = parser.parse_args(unparsed_args)
-
-    get_source(args.source).pull_model(args.model)

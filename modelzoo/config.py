@@ -59,6 +59,14 @@ def set_model_sources(_model_sources):
     _MODEL_SOURCES = _model_sources
 
 
+def get_source(source):
+    if source not in model_sources():
+        raise ValueError("source={0} needs to be in model_sources()" +
+                         "available sources: {1}".
+                         format(source, list(model_sources().keys())))
+    return model_sources()[source]
+
+
 # Attempt to read Kipoi config file.
 _config_path = os.path.expanduser(os.path.join(_kipoi_dir, 'config.yaml'))
 if os.path.exists(_config_path):

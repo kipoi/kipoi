@@ -9,7 +9,6 @@ import abc
 import six
 
 from .utils import load_module
-from modelzoo import config
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -182,11 +181,8 @@ def load_extractor(extractor, source="kipoi"):
     if source == "dir":
         return dir_load_extractor(extractor)
     else:
-        if source not in config.model_sources():
-            raise ValueError("source={0} needs to be in model_sources()" +
-                             "available sources: {1}".
-                             format(source, list(config.model_sources().keys())))
-        return config.model_sources()[source].load_extractor(extractor)
+        from .config import get_source
+        return get_source(source).load_extractor(extractor)
 
 
 def validate_extractor_spec(preproc_spec):

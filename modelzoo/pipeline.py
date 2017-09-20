@@ -9,8 +9,7 @@ import os
 import yaml
 from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
-from .remote import get_source
-from .config import model_sources
+from .config import model_sources, get_source
 from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
 import h5py
@@ -129,7 +128,7 @@ def cli_test(command, args):
     parser.add_argument('--source', default="dir",
                         choices=list(model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        "under model_sources")
+                        " under model_sources")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-i", "--install-req", action='store_true',
@@ -172,7 +171,7 @@ def cli_extract_to_hdf5(command, args):
     parser.add_argument('--source', default="kipoi",
                         choices=list(model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        "under model_sources")
+                        " under model_sources")
     parser.add_argument('--extractor_args',
                         help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -238,7 +237,7 @@ def cli_predict(command, args):
     parser.add_argument('--source', default="kipoi",
                         choices=list(model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        "under model_sources")
+                        " under model_sources")
     parser.add_argument('--extractor_args',
                         help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -336,3 +335,20 @@ def io_batch2df(batch, pred_batch):
                                               ("strand", rng.get("strand", None))]))
         df = pd.concat([df_ranges, df], axis=1)
     return df
+
+
+def cli_pull(command, unparsed_args):
+    """Pull the repository
+    """
+    assert command == "pull"
+    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+                                     description="Downloads the directory associated with the model.")
+    parser.add_argument('model', help='Model name.')
+    parser.add_argument('--source', default="kipoi",
+                        choices=list(model_sources().keys()) + ["dir"],
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
+                        "under model_sources")
+
+    args = parser.parse_args(unparsed_args)
+
+    get_source(args.source).pull_model(args.model)
