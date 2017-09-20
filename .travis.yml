@@ -73,6 +73,7 @@ install:
 - echo "import modelzoo" | python
 - replace "github.com" "github_kipoi.com" -- ~/.kipoi/config.yaml
 - echo -e "Host github_kipoi.com\n  HostName github.com\n  IdentityFile /home/travis/.ssh/hgvoU" >> ~/.ssh/config
+- eval "$(ssh-agent -s)"
 
 script:
 - PYTHONPATH=$PWD:$PYTHONPATH py.test tests/
