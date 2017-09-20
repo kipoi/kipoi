@@ -7,27 +7,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-import yaml
 from collections import OrderedDict
+import pandas as pd
 import six
 from .remote import load_source, GitLFSModelSource
-
-_mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
-
-# --------------------------------------------
-# allow yaml to use orderedDict
-
-
-def dict_representer(dumper, data):
-    return dumper.represent_dict(six.iteritems(data))
-
-
-def dict_constructor(loader, node):
-    return OrderedDict(loader.construct_pairs(node))
-
-
-yaml.add_representer(OrderedDict, dict_representer)
-yaml.add_constructor(_mapping_tag, dict_constructor)
+from .utils import yaml_ordered_dump, yaml_ordered_load
 # --------------------------------------------
 
 
@@ -83,11 +67,22 @@ def append_source(name, obj):
     set_model_sources(c_dict)
 
 
+def list_models():
+    """List models as a `pandas.DataFrame`
+    """
+    def get_df(source_name, source):
+        df = source.list_models_df()
+        df.insert(0, "source", source_name)
+        return df
+
+    return pd.concat([get_df(name, source) for name, source in six.iteritems(model_sources())])
+
+
 # Attempt to read Kipoi config file.
 _config_path = os.path.expanduser(os.path.join(_kipoi_dir, 'config.yaml'))
 if os.path.exists(_config_path):
     try:
-        _config = yaml.load(open(_config_path))
+        _config = yaml_ordered_load(open(_config_path))
     except ValueError:
         _config = {}
     _model_sources = _config.get('model_sources', None)
@@ -121,7 +116,7 @@ if not os.path.exists(_config_path):
     }
     try:
         with open(_config_path, 'w') as f:
-            f.write(yaml.dump(_config, indent=4, default_flow_style=False))
+            f.write(yaml_ordered_dump(_config, indent=4, default_flow_style=False))
     except IOError:
         # Except permission denied.
         pass

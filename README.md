@@ -72,16 +72,6 @@ Explore the markdown files in [docs/](docs/):
 
 ---------------------------------------------------------------
 
-## TODO
-
-- [ ] Figure out where to upload the models for now
-  - Need to have a table  listing all the models
-    - model_name, repo URL
-      - Users contribute by making a PR to that URL
-		- TravisCI tests only models that were changed in the PR
-          - test by saving a version + meta-info in a DB
-	    - Model+version = one row
-
 ## Issues
 
 What are we missing?

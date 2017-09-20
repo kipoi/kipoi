@@ -25,6 +25,15 @@ class Model(object):
     # TODO - define the .model attribute?
 
 
+def dir_model_info(model_dir):
+    """Load model yaml file
+    """
+    # Parse the model.yaml
+    with open(os.path.join(model_dir, 'model.yaml')) as ifh:
+        description_yaml = yaml.load(ifh)
+    return description_yaml
+
+
 def dir_load_model(model_dir):
     """Load the model
 
@@ -97,6 +106,19 @@ def load_model(model, source="kipoi"):
         return dir_load_model(model)
     else:
         return modelzoo.config.get_source(source).load_extractor(model)
+
+
+def model_info(model, source="kipoi"):
+    """Get information about the model
+
+    # Arguments
+      model: model's relative path/name in the source. 2nd column in the `modelzoo.list_models()` `pd.DataFrame`.
+      source: Model source. 1st column in the `modelzoo.list_models()` `pd.DataFrame`.
+    """
+    if source == "dir":
+        return dir_model_info(model)
+    else:
+        return modelzoo.config.get_source(source).get_model_info(model)
 
 
 def validate_model_spec(model_spec):

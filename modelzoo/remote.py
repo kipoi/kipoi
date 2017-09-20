@@ -2,14 +2,16 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod, abstractproperty
+import sys
 import os
 import six
 import subprocess
 import logging
 import glob
 from .data import dir_load_extractor
-from .model import dir_load_model
+from .model import dir_load_model, dir_model_info
 from collections import OrderedDict
+import pandas as pd
 
 _logger = logging.getLogger('model-zoo')
 
@@ -32,8 +34,14 @@ def lfs_installed(raise_exception=False):
 
 
 def list_models_recursively(root_dir):
-    return [os.path.dirname(filename)[len(root_dir):] for filename in
-            glob.iglob(root_dir + '**/model.yaml', recursive=True)]
+    if sys.version_info >= (3, 5):
+        return [os.path.dirname(filename)[len(root_dir):] for filename in
+                glob.iglob(root_dir + '**/model.yaml', recursive=True)]
+    else:
+        import fnmatch
+        return [os.path.dirname(os.path.join(root, filename))[len(root_dir):]
+                for root, dirnames, filenames in os.walk(root_dir)
+                for filename in fnmatch.filter(filenames, 'model.yaml')]
 
 
 class ModelSource(object):
@@ -64,6 +72,29 @@ class ModelSource(object):
     def load_extractor(self, model):
         m_dir = self.pull_model(model)
         return dir_load_extractor(m_dir)
+
+    def list_models_df(self):
+        """List all the models as a data.frame
+        """
+        def dict2df_dict(d, model):
+            return OrderedDict([
+                ("model", model),
+                ("name", d["name"]),
+                ("version", d["version"]),
+                ("author", d["author"]),
+                ("description", d["description"]),
+                ("type", d["model"]["type"]),
+                ("inputs", list(d["model"]["inputs"])),
+                ("targets", list(d["model"]["targets"])),
+                ("tags", d["model"].get("tags", [])),  # TODO add special tags to model.yaml
+            ])
+
+        return pd.DataFrame([dict2df_dict(self.get_model_info(model), model)
+                             for model in self.list_models()])
+
+    @abstractmethod
+    def get_model_info(self, model):
+        pass
 
     @abstractmethod
     def get_config(self):
@@ -137,6 +168,17 @@ class GitLFSModelSource(ModelSource):
                         cwd=self.local_path)
         self._pulled = True
 
+    def get_model_info(self, model):
+        if not self._pulled:
+            self.pull_source()
+
+        mpath = os.path.join(self.local_path, model)
+        if not os.path.exists(mpath):
+            raise ValueError("Model: {0} doesn't exist in {1}".
+                             format(model, self.remote_url))
+
+        return dir_model_info(mpath)
+
     def pull_model(self, model):
         if not self._pulled:
             self.pull_source()
@@ -206,6 +248,9 @@ class GitModelSource(ModelSource):
                         cwd=self.local_path)
         self._pulled = True
 
+    def get_model_info(self, model):
+        return dir_model_info(self.pull_model(model))
+
     def pull_model(self, model):
         if not self._pulled:
             self.pull_source()
@@ -234,6 +279,9 @@ class LocalModelSource(ModelSource):
 
     def list_models(self):
         return list_models_recursively(self.local_path)
+
+    def get_model_info(self, model):
+        return dir_model_info(self.pull_model(model))
 
     def pull_model(self, model):
         mpath = os.path.join(self.local_path, model)
