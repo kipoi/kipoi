@@ -9,7 +9,7 @@ import os
 import yaml
 from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
-from modelzoo import config
+from . import config
 from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
 import h5py

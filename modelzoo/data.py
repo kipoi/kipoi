@@ -8,7 +8,7 @@ import inspect
 import abc
 import six
 
-from modelzoo import config
+from . import config
 from .utils import load_module
 from torch.utils.data import DataLoader
 
