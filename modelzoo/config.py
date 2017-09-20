@@ -67,6 +67,22 @@ def get_source(source):
     return model_sources()[source]
 
 
+def append_source(name, obj):
+    """Append a custom source to global model_sources
+
+    # Arguments
+      name: source name
+      obj: source object. Can be a dictionary or a ModelSource instance (say `modelzoo.remote.LocalModelSource("mydir/")`).
+
+    """
+    if isinstance(obj, dict):
+        # parse the object
+        obj = load_source(obj)
+    c_dict = model_sources()
+    c_dict.update({name: obj})
+    set_model_sources(c_dict)
+
+
 # Attempt to read Kipoi config file.
 _config_path = os.path.expanduser(os.path.join(_kipoi_dir, 'config.yaml'))
 if os.path.exists(_config_path):

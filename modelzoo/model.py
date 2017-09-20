@@ -4,7 +4,7 @@ from __future__ import print_function
 import os
 import logging
 import yaml
-from . import config
+import modelzoo  # for .config module
 from .utils import load_module
 import abc
 import six
@@ -96,7 +96,7 @@ def load_model(model, source="kipoi"):
     if source == "dir":
         return dir_load_model(model)
     else:
-        return config.get_source(source).load_extractor(model)
+        return modelzoo.config.get_source(source).load_extractor(model)
 
 
 def validate_model_spec(model_spec):

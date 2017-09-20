@@ -9,7 +9,7 @@ import os
 import yaml
 from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
-from . import config
+import modelzoo  # for .config module
 from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
 import h5py
@@ -126,7 +126,7 @@ def cli_test(command, args):
                                      description='script to test model zoo submissions')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="dir",
-                        choices=list(config.model_sources().keys()) + ["dir"],
+                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--batch_size', type=int, default=32,
@@ -140,7 +140,7 @@ def cli_test(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
     mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
 
     test_dir = os.path.join(model_dir, 'test_files')
@@ -169,7 +169,7 @@ def cli_extract_to_hdf5(command, args):
                                      description='Run the extractor and save the output to an hdf5 file.')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(config.model_sources().keys()) + ["dir"],
+                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--extractor_args',
@@ -192,7 +192,7 @@ def cli_extract_to_hdf5(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
@@ -235,7 +235,7 @@ def cli_predict(command, args):
                                      description='Run the model prediction.')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(config.model_sources().keys()) + ["dir"],
+                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--extractor_args',
@@ -266,7 +266,7 @@ def cli_predict(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
@@ -345,10 +345,10 @@ def cli_pull(command, unparsed_args):
                                      description="Downloads the directory associated with the model.")
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(config.model_sources().keys()) + ["dir"],
+                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
                         "under model_sources")
 
     args = parser.parse_args(unparsed_args)
 
-    config.get_source(args.source).pull_model(args.model)
+    modelzoo.config.get_source(args.source).pull_model(args.model)
