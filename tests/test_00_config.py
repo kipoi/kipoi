@@ -10,5 +10,5 @@ def test_config_file_exists():
 
 
 def test_load_config():
-    assert modelzoo.config.kipoi_models_repo() == os.path.join(os.path.expanduser('~'), ".kipoi/models/")
-    assert modelzoo.config.other_models_repo() == []
+    assert modelzoo.config.model_sources()["kipoi"].local_path == \
+        os.path.join(os.path.expanduser('~'), ".kipoi/models/")

@@ -4,6 +4,7 @@ from __future__ import print_function
 import os
 import logging
 import yaml
+import modelzoo  # for .config module
 from .utils import load_module
 import abc
 import six
@@ -24,7 +25,16 @@ class Model(object):
     # TODO - define the .model attribute?
 
 
-def load_model(model_dir):
+def dir_model_info(model_dir):
+    """Load model yaml file
+    """
+    # Parse the model.yaml
+    with open(os.path.join(model_dir, 'model.yaml')) as ifh:
+        description_yaml = yaml.load(ifh)
+    return description_yaml
+
+
+def dir_load_model(model_dir):
     """Load the model
 
     1. Parse the model.yml
@@ -85,6 +95,30 @@ def load_model(model_dir):
         _logger.warning("Unable to set the docstring")
 
     return model
+
+
+def load_model(model, source="kipoi"):
+    """Load the model
+
+    source: source from which to pull the model
+    """
+    if source == "dir":
+        return dir_load_model(model)
+    else:
+        return modelzoo.config.get_source(source).load_extractor(model)
+
+
+def model_info(model, source="kipoi"):
+    """Get information about the model
+
+    # Arguments
+      model: model's relative path/name in the source. 2nd column in the `modelzoo.list_models()` `pd.DataFrame`.
+      source: Model source. 1st column in the `modelzoo.list_models()` `pd.DataFrame`.
+    """
+    if source == "dir":
+        return dir_model_info(model)
+    else:
+        return modelzoo.config.get_source(source).get_model_info(model)
 
 
 def validate_model_spec(model_spec):
