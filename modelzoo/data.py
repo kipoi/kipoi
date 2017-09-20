@@ -9,7 +9,7 @@ import abc
 import six
 
 from .utils import load_module
-from . import config
+from modelzoo import config
 from torch.utils.data import DataLoader
 
 import numpy as np
