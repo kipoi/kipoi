@@ -9,10 +9,12 @@ def test_load_models():
 
     l = k.list_models()  # all the available models
 
-    m_dir = k.pull_model(l[1])
+    assert "extended_coda" in l
+    model = "extended_coda"
+    m_dir = k.pull_model(model)
 
     # load the model
     m = modelzoo.load_model(m_dir)
 
-    m2 = modelzoo.load_model(l[1])
-    d2 = modelzoo.load_extractor(l[1])
+    m2 = modelzoo.load_model(model)
+    d2 = modelzoo.load_extractor(model)

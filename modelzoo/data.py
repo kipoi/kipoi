@@ -8,6 +8,7 @@ import inspect
 import abc
 import six
 
+from modelzoo import config
 from .utils import load_module
 from torch.utils.data import DataLoader
 
@@ -181,8 +182,7 @@ def load_extractor(extractor, source="kipoi"):
     if source == "dir":
         return dir_load_extractor(extractor)
     else:
-        from .config import get_source
-        return get_source(source).load_extractor(extractor)
+        return config.get_source(source).load_extractor(extractor)
 
 
 def validate_extractor_spec(preproc_spec):

@@ -9,18 +9,20 @@ Main arguments
 ### Pre-process
 
 ```
-$ modelzoo preproc --help
-usage: modelzoo preproc [-h] [--extractor_args EXTRACTOR_ARGS]
+usage: modelzoo preproc [-h] [--source {kipoi,dir}]
+                        [--extractor_args EXTRACTOR_ARGS]
                         [--batch_size BATCH_SIZE] [-i] [-o OUTPUT]
-                        model_dir
+                        model
 
 Run the extractor and save the output to an hdf5 file.
 
 positional arguments:
-  model_dir             Model zoo submission directory.
+  model                 Model name.
 
 optional arguments:
   -h, --help            show this help message and exit
+  --source {kipoi,dir}  Model source to use. Specified in ~/.kipoi/config.yaml
+                        under model_sources
   --extractor_args EXTRACTOR_ARGS
                         Extractor arguments either as a json string:'{"arg1":
                         1} or as a file path to a json file
@@ -35,18 +37,21 @@ optional arguments:
 ### Predict
 
 ```
-usage: modelzoo predict [-h] [--extractor_args EXTRACTOR_ARGS]
-                        [-f {tsv,bed,hdf5}] [--batch_size BATCH_SIZE]
-                        [-n NUM_WORKERS] [-i] [-k] [-o OUTPUT]
-                        model_dir
+usage: modelzoo predict [-h] [--source {kipoi,dir}]
+                        [--extractor_args EXTRACTOR_ARGS] [-f {tsv,bed,hdf5}]
+                        [--batch_size BATCH_SIZE] [-n NUM_WORKERS] [-i] [-k]
+                        [-o OUTPUT]
+                        model
 
 Run the model prediction.
 
 positional arguments:
-  model_dir             Model zoo submission directory.
+  model                 Model name.
 
 optional arguments:
   -h, --help            show this help message and exit
+  --source {kipoi,dir}  Model source to use. Specified in ~/.kipoi/config.yaml
+                        under model_sources
   --extractor_args EXTRACTOR_ARGS
                         Extractor arguments either as a json string:'{"arg1":
                         1} or as a file path to a json file
@@ -68,16 +73,19 @@ optional arguments:
 Runs a set of unit-tests for the model
 
 ```
-$ modelzoo test --help   
-usage: modelzoo test [-h] [--batch_size BATCH_SIZE] [-i] model_dir
+usage: modelzoo test [-h] [--source {kipoi,dir}] [--batch_size BATCH_SIZE]
+                     [-i]
+                     model
 
 script to test model zoo submissions
 
 positional arguments:
-  model_dir             Model zoo submission directory.
+  model                 Model name.
 
 optional arguments:
   -h, --help            show this help message and exit
+  --source {kipoi,dir}  Model source to use. Specified in ~/.kipoi/config.yaml
+                        under model_sources
   --batch_size BATCH_SIZE
                         Batch size to use in prediction
   -i, --install-req     Install required packages from requirements.txt
@@ -97,14 +105,16 @@ model_zoo score_variants <model> <preprocessor inputs...> <vcf file> -o <output>
 Downloads the directory associated with the model
 
 ```
-model_zoo pull <model> -o path
+$ modelzoo pull -h
+usage: modelzoo pull [-h] [--source {kipoi}] model
+
+Downloads the directory associated with the model.
+
+positional arguments:
+  model                 Model name.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --source {kipoi}      Model source to use. Specified in
+                        ~/.kipoi/config.yaml under model_sources
 ```
-
-### Push the model
-
-- Maybe use the tools from docker?
-
-```
-model_zoo push <model-dir>
-```
-
