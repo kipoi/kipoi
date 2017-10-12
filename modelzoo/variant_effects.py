@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import pandas as pd
 import numpy as np
 import copy
@@ -12,7 +15,7 @@ from torch.utils.data import DataLoader
 def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     # VCF files are 1-based, so the return value here is 1-based
     colnames = ["chrom", "pos", "id", "ref", "alt"]
-    vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols= range(len(colnames)))
+    vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols=range(len(colnames)))
     vcf.columns = colnames
     vcf["chrom"] = "chr" + vcf["chrom"].str.lstrip("chr")
     seq_length_half = int(seq_length/2)
@@ -28,7 +31,7 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
 
 def _bed3(regions, fpath):
     regions_0based = copy.deepcopy(regions)
-    regions_0based["start"] = regions_0based["start"]-1
+    regions_0based["start"] = regions_0based["start"] - 1
     regions_0based[["chrom", "start", "end"]].to_csv(fpath, sep="\t", header=False, index=False)
 
 def _generate_seq_sets(model_input, annotated_regions, extractor_function):
@@ -123,6 +126,7 @@ def modify_bases(seq_obj, lines, pos, base, is_rc):
     seq_obj[lines, pos, :] = 0
     # Set the allele
     seq_obj[lines, pos, base_sel_idx] = 1
+
 
 def predict_variants(model_handle, vcf_fpath, seq_length, evaluation_function, exec_files_path, extractor_function, batch_size, numpy_collate, model_out_annotation, debug=False, evaluation_function_kwargs = None):
     #if 'intervals_file' not in model_handle.preproc.get_avail_arguments():

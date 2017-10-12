@@ -1,9 +1,14 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import sys
 import subprocess
 import logging
 import numpy as np
 import yaml
+import six
+from collections import OrderedDict
 
 _logger = logging.getLogger('model-zoo')
 
@@ -107,3 +112,27 @@ def parse_json_file_str(extractor_args):
         with open(extractor_args, "r") as f:
             return yaml.load(f.read())
 
+
+# https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
+
+
+def yaml_ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
+    class OrderedLoader(Loader):
+        pass
+
+    def dict_constructor(loader, node):
+        return OrderedDict(loader.construct_pairs(node))
+
+    _mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+    OrderedLoader.add_constructor(_mapping_tag, dict_constructor)
+    return yaml.load(stream, OrderedLoader)
+
+
+def yaml_ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
+    class OrderedDumper(Dumper):
+        pass
+
+    def dict_representer(dumper, data):
+        return dumper.represent_dict(six.iteritems(data))
+    OrderedDumper.add_representer(OrderedDict, dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)

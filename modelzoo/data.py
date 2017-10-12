@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import logging
 import yaml
@@ -5,8 +8,8 @@ import inspect
 import abc
 import six
 
-from modelzoo.utils import load_module
-
+import modelzoo  # for .config module
+from .utils import load_module
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -123,7 +126,7 @@ class Dataset(object):
 # Extractor, Dataset, Preprocessor, Dataloader?
 
 # main functionality - factory class
-def load_extractor(preproc_dir):
+def dir_load_extractor(preproc_dir):
     """Load the extractor from disk
 
     1. Parse the yaml file
@@ -169,6 +172,17 @@ def load_extractor(preproc_dir):
                         "Defined extractor is not ineriting from the abstract class Dataset in python2")
 
     return extractor
+
+
+def load_extractor(extractor, source="kipoi"):
+    """Load the extractor
+
+    source: source from which to pull the model
+    """
+    if source == "dir":
+        return dir_load_extractor(extractor)
+    else:
+        return modelzoo.config.get_source(source).load_extractor(extractor)
 
 
 def validate_extractor_spec(preproc_spec):

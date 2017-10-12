@@ -23,6 +23,7 @@ This will install some additional packages like `pytest`.
 
 
 ```
+$ modelzoo
 usage: modelzoo <command> [-h] ...
 
     Kipoi model-zoo command line tool. Available sub-commands:
@@ -33,10 +34,6 @@ usage: modelzoo <command> [-h] ...
     pull             Downloads the directory associated with the model
     preproc          Returns an hdf5 array.
     test             Runs a set of unit-tests for the model
-
-    # Uploading your model
-    push             Push
-
 ```
 
 ## Running the examples
@@ -49,12 +46,9 @@ modelzoo test examples/extended_coda
 
 ## Configure `model_zoo`
 
-Setup your preference in: `.model_zoo/config.yaml`
+Setup your preference in: `.kipoi/config.yaml`
 
-```
-cache_dir: .model_zoo/models/
-add_model_dirs: [] # additional model directories, file_paths
-```
+You can add your own model sources. See [docs/model_sources.md](docs/model_sources.md) for more information.
 
 ## Python SDK
 
@@ -69,27 +63,14 @@ Provides functionality to:
 Explore the markdown files in [docs/](docs/):
 - Command-line interface [docs/cli.md](docs/cli.md)
 - Python interface [docs/py-interface.md](docs/py-interface.md)
+- Model sources configuration [docs/model_sources.md](docs/model_sources.md)
+  - setup your own model zoo
 - Contributing models [docs/contributing_models.md](docs/contributing_models.md)
 - **Examples**
   - Python interface [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
 
 
 ---------------------------------------------------------------
-
-## TODO
-
-- [ ] Figure out where to upload the models for now
-  - Need to have a table  listing all the models
-    - model_name, repo URL
-      - Users contribute by making a PR to that URL
-		- TravisCI tests only models that were changed in the PR
-          - test by saving a version + meta-info in a DB
-	    - Model+version = one row
-  - Use Synapse to host models at the beginning?
-
-
-## Dev ideas
-
 
 ## Issues
 
