@@ -14,9 +14,9 @@ import numpy as np
 def test_var_eff_pred():
     # Take the rbp model
     model_dir = "examples/rbp/"
-    model = modelzoo.load_model(model_dir)
+    model = modelzoo.load_model(model_dir, source="dir")
     # The preprocessor
-    Extractor = modelzoo.load_extractor(model_dir)
+    Extractor = modelzoo.load_extractor(model_dir, source="dir")
 
     # Hacky: take the example arguments
     import yaml
