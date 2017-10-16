@@ -9,7 +9,7 @@ import os
 import yaml
 from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
 from .model import load_model
-import modelzoo  # for .config module
+import kipoi  # for .config module
 from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
 from torch.utils.data import DataLoader
 import h5py
@@ -28,7 +28,7 @@ import genomelake
 
 # TODO - handle environment creation
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 PREPROC_FIELDS = ['function_name', 'type', 'arguments']
@@ -122,11 +122,11 @@ def cli_test(command, args):
     """
     assert command == "test"
     # setup the arg-parsing
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="dir",
-                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
+                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--batch_size', type=int, default=32,
@@ -140,7 +140,7 @@ def cli_test(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
     mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
 
     test_dir = os.path.join(model_dir, 'test_files')
@@ -165,11 +165,11 @@ def cli_extract_to_hdf5(command, args):
     """CLI interface to run the extractor
     """
     assert command == "preproc"
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the extractor and save the output to an hdf5 file.')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
+                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--extractor_args',
@@ -192,7 +192,7 @@ def cli_extract_to_hdf5(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
@@ -231,11 +231,11 @@ def cli_predict(command, args):
     """CLI interface to predict
     """
     assert command == "predict"
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the model prediction.')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
+                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
     parser.add_argument('--extractor_args',
@@ -266,7 +266,7 @@ def cli_predict(command, args):
     if parsed_args.source == "dir":
         model_dir = os.path.abspath(parsed_args.model)
     else:
-        model_dir = modelzoo.config.get_source(parsed_args.source).pull_model(parsed_args.model)
+        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
 
     # install args
     if parsed_args.install_req:
@@ -341,14 +341,14 @@ def cli_pull(command, unparsed_args):
     """Pull the repository
     """
     assert command == "pull"
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Downloads the directory associated with the model.")
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
-                        choices=list(modelzoo.config.model_sources().keys()) + ["dir"],
+                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
                         "under model_sources")
 
     args = parser.parse_args(unparsed_args)
 
-    modelzoo.config.get_source(args.source).pull_model(args.model)
+    kipoi.config.get_source(args.source).pull_model(args.model)

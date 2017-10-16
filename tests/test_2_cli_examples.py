@@ -17,14 +17,14 @@ EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example):
-    """modelzoo test ...
+    """kipoi test ...
     """
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
 
-    args = ["python", "./modelzoo/__main__.py", "test",
+    args = ["python", "./kipoi/__main__.py", "test",
             "--batch_size=4",
             example_dir]
     if INSTALL_FLAG:
@@ -35,7 +35,7 @@ def test_test_example(example):
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_preproc_example(example, tmpdir):
-    """modelzoo preproc ...
+    """kipoi preproc ...
     """
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
@@ -45,7 +45,7 @@ def test_preproc_example(example, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
 
     # run the
-    args = ["python", os.path.abspath("./modelzoo/__main__.py"), "preproc",
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
@@ -70,7 +70,7 @@ def test_preproc_example(example, tmpdir):
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_predict_example(example, tmpdir):
-    """modelzoo predict ...
+    """kipoi predict ...
     """
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
@@ -87,7 +87,7 @@ def test_predict_example(example, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.{0}".format(file_format)))
 
     # run the
-    args = ["python", os.path.abspath("./modelzoo/__main__.py"), "predict",
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
@@ -114,7 +114,7 @@ def test_predict_example(example, tmpdir):
 def test_pull_kipoi():
     """Test that pull indeed pulls the right model
     """
-    args = ["python", os.path.abspath("./modelzoo/__main__.py"), "pull",
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "pull",
             "rbp"]
     returncode = subprocess.call(args=args)
     assert returncode == 0

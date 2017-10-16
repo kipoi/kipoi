@@ -139,7 +139,7 @@ extractor:
 
 ### `preprocessor.py`
 
-Defines a class inheriting from `modelzoo.data.Dataset`, i.e. you have to implement two methods:
+Defines a class inheriting from `kipoi.data.Dataset`, i.e. you have to implement two methods:
 
 - `def __getitem__(self, index):` - get the item with index `index`` from your dataset
 - `def __len__(self):` - return the number of elements in your dataset

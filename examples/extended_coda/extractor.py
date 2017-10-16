@@ -6,7 +6,7 @@ import pybedtools
 import six
 from genomelake.extractors import ArrayExtractor
 
-from modelzoo.data import Dataset
+from kipoi.data import Dataset
 
 
 class CodaDataset(Dataset):

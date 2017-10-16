@@ -1,9 +1,9 @@
-import modelzoo
-from modelzoo.data import numpy_collate
-from modelzoo.variant_effects import predict_variants
+import kipoi
+from kipoi.data import numpy_collate
+from kipoi.variant_effects import predict_variants
 import numpy as np
-import sys
 import pytest
+import sys
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -17,14 +17,14 @@ def test_var_eff_pred():
         pytest.skip("rbp example not supported on python 2 ")
     # Take the rbp model
     model_dir = "examples/rbp/"
-    model = modelzoo.load_model(model_dir, source="dir")
+    model = kipoi.load_model(model_dir, source="dir")
     # The preprocessor
-    Extractor = modelzoo.load_extractor(model_dir, source="dir")
+    Extractor = kipoi.load_extractor(model_dir, source="dir")
 
     # Hacky: take the example arguments
     import yaml
     with open(model_dir + "test_files/test.json", "r") as f:
-        exec_files_path=yaml.load(f)
+        exec_files_path = yaml.load(f)
 
     for k in exec_files_path:
         exec_files_path[k] = model_dir + "test_files/" + exec_files_path[k]
@@ -40,6 +40,9 @@ def test_var_eff_pred():
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
     from concise.effects.ism import ism
-    res = predict_variants(model.model, vcf_path, seq_length = 101, evaluation_function = ism, exec_files_path = exec_files_path_here,
-                     extractor_function = Extractor, batch_size =32, numpy_collate = numpy_collate,
-                     model_out_annotation=model_out_annotation,evaluation_function_kwargs = {"diff_type":"diff"})
+    res = predict_variants(model.model, vcf_path, seq_length=101,
+                           evaluation_function=ism, exec_files_path=exec_files_path_here,
+                           extractor_function=Extractor, batch_size=32,
+                           numpy_collate=numpy_collate,
+                           model_out_annotation=model_out_annotation,
+                           evaluation_function_kwargs={"diff_type": "diff"})

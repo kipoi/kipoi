@@ -4,12 +4,12 @@ from __future__ import print_function
 import os
 import logging
 import yaml
-import modelzoo  # for .config module
+import kipoi  # for .config module
 from .utils import load_module
 import abc
 import six
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 MODEL_FIELDS = ['inputs', 'targets']
@@ -110,20 +110,20 @@ def load_model(model, source="kipoi"):
     if source == "dir":
         return dir_load_model(model)
     else:
-        return modelzoo.config.get_source(source).load_extractor(model)
+        return kipoi.config.get_source(source).load_extractor(model)
 
 
 def model_info(model, source="kipoi"):
     """Get information about the model
 
     # Arguments
-      model: model's relative path/name in the source. 2nd column in the `modelzoo.list_models()` `pd.DataFrame`.
-      source: Model source. 1st column in the `modelzoo.list_models()` `pd.DataFrame`.
+      model: model's relative path/name in the source. 2nd column in the `kipoi.list_models()` `pd.DataFrame`.
+      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
     if source == "dir":
         return dir_model_info(model)
     else:
-        return modelzoo.config.get_source(source).get_model_info(model)
+        return kipoi.config.get_source(source).get_model_info(model)
 
 
 def validate_model_spec(model_spec):

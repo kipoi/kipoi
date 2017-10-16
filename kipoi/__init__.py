@@ -24,7 +24,7 @@ from .config import model_sources as sources
 import logging
 
 log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 _handler = logging.StreamHandler()
 _handler.setLevel(logging.INFO)

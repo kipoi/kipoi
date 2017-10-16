@@ -3,7 +3,7 @@ This docs shows how our API should ideally look like.
 ## Load the library
 
 ```python
-import modelzoo
+import kipoi
 ```
 
 ## List all available models
@@ -11,7 +11,7 @@ import modelzoo
 Returns a pandas data.frame
 
 ```python
->>> df = modelzoo.list_models()
+>>> df = kipoi.list_models()
 >>> df
   source          model           name  version          author  \
 0  kipoi            rbp      rbp_eclip      0.1      Ziga Avsec   
@@ -29,7 +29,7 @@ Returns a pandas data.frame
 Get all available information about some particular model (as python dictionary)
 
 ```python
->>> modelzoo.model_info("rbp", source="kipoi")
+>>> kipoi.model_info("rbp", source="kipoi")
 {'author': 'Ziga Avsec',
  'description': 'RBP binding prediction',
  'model': {'args': {'arch': 'model_files/model.json',
@@ -51,7 +51,7 @@ Get all available information about some particular model (as python dictionary)
 ### Load the extractor
 
 ```python
-Extractor = modelzoo.load_extractor("username/model1")
+Extractor = kipoi.load_extractor("username/model1")
 ```
 ### Get information
 
@@ -69,7 +69,7 @@ extractor = Extractor(infile="~/file.txt", seq_len=10)
 
 ```python
 from torch.utils.data import DataLoader
-from modelzoo.data import numpy_collate
+from kipoi.data import numpy_collate
 batch_iter = iter(DataLoader(extractor,
                              batch_size=3,
                              collate_fn=numpy_collate,
@@ -86,23 +86,23 @@ Refer by `username/model`
 
 ```python
 # Kipoi model
-model = modelzoo.load_model("model1", source="kipoi")
-model = modelzoo.load_model("model1") # source defaults to "kipoi"
+model = kipoi.load_model("model1", source="kipoi")
+model = kipoi.load_model("model1") # source defaults to "kipoi"
 
 # Most recent model - TODO - implement the versioning logic...
-model = modelzoo.load_model("username/model1")
+model = kipoi.load_model("username/model1")
 # Specific version
-model = modelzoo.load_model("username/model1/v0.1")
+model = kipoi.load_model("username/model1/v0.1")
 
 # From directory
-model = modelzoo.load_model("~/mymodels/model1", source="dir")
+model = kipoi.load_model("~/mymodels/model1", source="dir")
 
 # From github
 # Add source in ~/.kipoi/config.yaml or run
-modelzoo.config.add_source("my_github_zoo",
-                           modelzoo.remote.GitModelSource(remote_url="git@github.com/username/repo",
+kipoi.config.add_source("my_github_zoo",
+                           kipoi.remote.GitModelSource(remote_url="git@github.com/username/repo",
 						                                  local_path="/tmp/models/"))
-model = modelzoo.load_model("mymodel", source="my_github_zoo")
+model = kipoi.load_model("mymodel", source="my_github_zoo")
 ```
 
 ### Run predictions
@@ -114,7 +114,7 @@ y = model.predict_on_batch(x["inputs"])
 ## Extractor + Model bundle
 
 ```python
-Me = modelzoo.pieline.ModelExtractor("username/model1")
+Me = kipoi.pieline.ModelExtractor("username/model1")
 
 ## Get info
 print(Me.__doc__)

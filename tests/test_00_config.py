@@ -1,6 +1,6 @@
 """Test the Kipoi configuration setup
 """
-import modelzoo
+import kipoi
 import os
 
 
@@ -10,5 +10,5 @@ def test_config_file_exists():
 
 
 def test_load_config():
-    assert modelzoo.config.model_sources()["kipoi"].local_path == \
+    assert kipoi.config.model_sources()["kipoi"].local_path == \
         os.path.join(os.path.expanduser('~'), ".kipoi/models/")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Main CLI to modelzoo
+"""Main CLI to kipoi
 
 adopted from https://github.com/kundajelab/tf-dragonn/blob/master/tfdragonn/__main__.py
 """
@@ -7,12 +7,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from modelzoo import pipeline
+from kipoi import pipeline
 
 import argparse
 import sys
 import logging
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 def not_implemented(command, arg_list):
@@ -30,7 +30,7 @@ commands_str = ', '.join(command_functions.keys())
 
 parser = argparse.ArgumentParser(
     description='Kipoi model-zoo command line tool',
-    usage='''modelzoo <command> [-h] ...
+    usage='''kipoi <command> [-h] ...
 
     Kipoi model-zoo command line tool. Available sub-commands:
 

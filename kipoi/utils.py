@@ -10,7 +10,7 @@ import yaml
 import six
 from collections import OrderedDict
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 def load_module(path, module_name=None):
