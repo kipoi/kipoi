@@ -1,11 +1,11 @@
-import keras
-import warnings
-warnings.filterwarnings('ignore')
 import modelzoo
 from modelzoo.data import numpy_collate
 from modelzoo.variant_effects import predict_variants
 import numpy as np
 import sys
+import pytest
+import warnings
+warnings.filterwarnings('ignore')
 
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
