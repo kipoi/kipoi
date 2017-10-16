@@ -23,8 +23,8 @@ This will install some additional packages like `pytest`.
 
 
 ```
-$ modelzoo
-usage: modelzoo <command> [-h] ...
+$ kipoi
+usage: kipoi <command> [-h] ...
 
     Kipoi model-zoo command line tool. Available sub-commands:
 
@@ -41,7 +41,7 @@ usage: modelzoo <command> [-h] ...
 Try out running the examples in `examples/`
 
 ```
-modelzoo test examples/extended_coda
+kipoi test examples/extended_coda
 ```
 
 ## Configure `model_zoo`

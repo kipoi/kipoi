@@ -14,7 +14,7 @@ from pysam import FastaFile
 from concise.utils.position import extract_landmarks, read_gtf, ALL_LANDMARKS
 
 
-from modelzoo.data import Dataset
+from kipoi.data import Dataset
 
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
@@ -68,6 +68,7 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
 
 
 class TxtDataset(Dataset):
+
     def __init__(self, path):
         with open(path, "r") as f:
             self.lines = f.readlines()

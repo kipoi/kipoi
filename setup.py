@@ -33,7 +33,7 @@ test_requirements = [
 
 
 setup(
-    name='modelzoo',
+    name='kipoi',
     version='0.0.1',
     description="Kipoi model-zoo command-line tool",
     author="Kipoi team",  # whom to put here?
@@ -49,7 +49,7 @@ setup(
                     "pytest-pep8",
                     "pytest-cov"],
     },
-    entry_points={'console_scripts': ['modelzoo = modelzoo.__main__:main']},
+    entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
     zip_safe=False,
     keywords=["model zoo", "deep learning",

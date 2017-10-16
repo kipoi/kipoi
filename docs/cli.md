@@ -9,7 +9,7 @@ Main arguments
 ### Pre-process
 
 ```
-usage: modelzoo preproc [-h] [--source {kipoi,dir}]
+usage: kipoi preproc [-h] [--source {kipoi,dir}]
                         [--extractor_args EXTRACTOR_ARGS]
                         [--batch_size BATCH_SIZE] [-i] [-o OUTPUT]
                         model
@@ -37,7 +37,7 @@ optional arguments:
 ### Predict
 
 ```
-usage: modelzoo predict [-h] [--source {kipoi,dir}]
+usage: kipoi predict [-h] [--source {kipoi,dir}]
                         [--extractor_args EXTRACTOR_ARGS] [-f {tsv,bed,hdf5}]
                         [--batch_size BATCH_SIZE] [-n NUM_WORKERS] [-i] [-k]
                         [-o OUTPUT]
@@ -73,7 +73,7 @@ optional arguments:
 Runs a set of unit-tests for the model
 
 ```
-usage: modelzoo test [-h] [--source {kipoi,dir}] [--batch_size BATCH_SIZE]
+usage: kipoi test [-h] [--source {kipoi,dir}] [--batch_size BATCH_SIZE]
                      [-i]
                      model
 
@@ -105,8 +105,8 @@ model_zoo score_variants <model> <preprocessor inputs...> <vcf file> -o <output>
 Downloads the directory associated with the model
 
 ```
-$ modelzoo pull -h
-usage: modelzoo pull [-h] [--source {kipoi}] model
+$ kipoi pull -h
+usage: kipoi pull [-h] [--source {kipoi}] model
 
 Downloads the directory associated with the model.
 

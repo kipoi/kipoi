@@ -8,9 +8,9 @@ import sys
 import os
 import yaml
 from contextlib import contextmanager
-import modelzoo
-from modelzoo.data import numpy_collate
-from modelzoo.pipeline import install_model_requirements
+import kipoi
+from kipoi.data import numpy_collate
+from kipoi.pipeline import install_model_requirements
 
 
 # TODO - check if you are on travis or not regarding the --install-req flag
@@ -53,7 +53,7 @@ def test_extractor_model(example):
     example_dir = "examples/{0}".format(example)
     cfg = get_extractor_cfg(example_dir)
 
-    modelzoo.data.validate_extractor_spec(cfg["extractor"])
+    kipoi.data.validate_extractor_spec(cfg["extractor"])
     test_kwargs = get_test_kwargs(example_dir)
 
     # install the dependencies
@@ -61,10 +61,10 @@ def test_extractor_model(example):
     if INSTALL_REQ:
         install_model_requirements(example_dir)
     # get extractor
-    Extractor = modelzoo.load_extractor(example_dir, source="dir")
+    Extractor = kipoi.load_extractor(example_dir, source="dir")
 
     # get model
-    model = modelzoo.load_model(example_dir, source="dir")
+    model = kipoi.load_model(example_dir, source="dir")
 
     with cd(example_dir + "/test_files"):
         # initialize the extractor
@@ -72,7 +72,7 @@ def test_extractor_model(example):
         # get first sample
         extractor[0]
         len(extractor)
-        modelzoo.data.validate_extractor(extractor)
+        kipoi.data.validate_extractor(extractor)
 
         # sample a batch of data
         dl = DataLoader(extractor, collate_fn=numpy_collate)

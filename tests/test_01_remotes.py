@@ -1,12 +1,12 @@
 """Test the Kipoi remotes
 """
-import modelzoo
+import kipoi
 import os
 import pandas as pd
 
 
 def test_load_models_kipoi():
-    k = modelzoo.config.get_source("kipoi")
+    k = kipoi.config.get_source("kipoi")
 
     l = k.list_models()  # all the available models
 
@@ -15,20 +15,20 @@ def test_load_models_kipoi():
     m_dir = k.pull_model(model)
 
     # load the model
-    modelzoo.load_model(m_dir)
+    kipoi.load_model(m_dir)
 
-    modelzoo.load_model(model)
-    modelzoo.load_extractor(model)
+    kipoi.load_model(model)
+    kipoi.load_extractor(model)
 
 
 def test_load_models_local():
     model = "examples/extended_coda"
-    modelzoo.load_model(model, source="dir")
-    modelzoo.load_extractor(model, source="dir")
+    kipoi.load_model(model, source="dir")
+    kipoi.load_extractor(model, source="dir")
 
 
 def test_list_models():
-    k = modelzoo.config.get_source("kipoi")
+    k = kipoi.config.get_source("kipoi")
 
     df = k.list_models_df()
     assert isinstance(df, pd.DataFrame)
@@ -38,12 +38,12 @@ def test_list_models():
     assert df_model_columns == list(df.columns)
 
     #
-    df_all = modelzoo.list_models()
+    df_all = kipoi.list_models()
     assert ["source"] + df_model_columns == list(df_all.columns)
 
-    modelzoo.model_info("extended_coda")
+    kipoi.model_info("extended_coda")
 
-    modelzoo.model_info("extended_coda", source="kipoi")
+    kipoi.model_info("extended_coda", source="kipoi")
 
     # local files
-    modelzoo.model_info("examples/extended_coda", source="dir")
+    kipoi.model_info("examples/extended_coda", source="dir")

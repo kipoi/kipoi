@@ -56,7 +56,7 @@ def add_source(name, obj):
 
     # Arguments
       name: source name
-      obj: source object. Can be a dictionary or a ModelSource instance (say `modelzoo.remote.LocalModelSource("mydir/")`).
+      obj: source object. Can be a dictionary or a ModelSource instance (say `kipoi.remote.LocalModelSource("mydir/")`).
 
     """
     if isinstance(obj, dict):

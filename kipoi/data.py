@@ -8,7 +8,7 @@ import inspect
 import abc
 import six
 
-import modelzoo  # for .config module
+import kipoi  # for .config module
 from .utils import load_module
 from torch.utils.data import DataLoader
 
@@ -34,7 +34,7 @@ def getargs(x):
         return set(inspect.signature(x).parameters.keys())
 
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 # PREPROC_FIELDS = ['function_name', 'type', 'arguments']
 PREPROC_FIELDS = ['type', 'defined_as', 'arguments']
@@ -182,7 +182,7 @@ def load_extractor(extractor, source="kipoi"):
     if source == "dir":
         return dir_load_extractor(extractor)
     else:
-        return modelzoo.config.get_source(source).load_extractor(extractor)
+        return kipoi.config.get_source(source).load_extractor(extractor)
 
 
 def validate_extractor_spec(preproc_spec):

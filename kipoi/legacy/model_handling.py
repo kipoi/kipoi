@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 # HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
 import genomelake
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 PREPROC_FIELDS = ['function_name', 'type', 'arguments']
@@ -147,7 +147,7 @@ def cli_test(command, args):
     assert command == "test"
 
     # setup the arg-parsing
-    parser = argparse.ArgumentParser('modelzoo {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions')
     parser.add_argument('model_dir',
                         help='Model zoo submission directory.')

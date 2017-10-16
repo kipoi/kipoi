@@ -70,7 +70,7 @@ install:
 - pip install tensorflow
 
 # setup the models repo: github.com -> github_kipoi.com
-- echo "import modelzoo" | python
+- echo "import kipoi" | python
 - replace "github.com" "github_kipoi.com" -- ~/.kipoi/config.yaml
 # replace 3rd Host github.com instance
 # https://stackoverflow.com/questions/6994947/how-to-replace-a-string-in-an-existing-file-in-perl

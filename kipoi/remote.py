@@ -13,7 +13,7 @@ from .model import dir_load_model, dir_model_info
 from collections import OrderedDict
 import pandas as pd
 
-_logger = logging.getLogger('model-zoo')
+_logger = logging.getLogger('kipoi')
 
 
 def cmd_exists(cmd):
