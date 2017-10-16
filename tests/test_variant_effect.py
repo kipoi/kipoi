@@ -11,7 +11,10 @@ import numpy as np
 # TODO: which other arguments should we use for variant effect predictions?
 # Only viable model at the moment is rbp, so not offering to test anything else
 
+
 def test_var_eff_pred():
+    if example == "rbp" and sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
     # Take the rbp model
     model_dir = "examples/rbp/"
     model = modelzoo.load_model(model_dir, source="dir")
