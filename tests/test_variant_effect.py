@@ -5,7 +5,7 @@ import modelzoo
 from modelzoo.data import numpy_collate
 from modelzoo.variant_effects import predict_variants
 import numpy as np
-
+import sys
 
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
@@ -13,7 +13,7 @@ import numpy as np
 
 
 def test_var_eff_pred():
-    if example == "rbp" and sys.version_info[0] == 2:
+    if sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
     # Take the rbp model
     model_dir = "examples/rbp/"
