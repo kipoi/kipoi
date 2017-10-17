@@ -125,7 +125,7 @@ class GitLFSModelSource(ModelSource):
         """
         lfs_installed(raise_exception=True)
         self.remote_url = remote_url
-        self.local_path = local_path
+        self.local_path = os.path.join(local_path, '') # add trailing slash
         self._pulled = False
 
     def list_models(self):
@@ -136,8 +136,8 @@ class GitLFSModelSource(ModelSource):
     def clone(self):
         """Clone the self.remote_url into self.local_path
         """
-        if os.path.exists(self.local_path):
-            raise IOError("Directory {0} already exists".
+        if os.path.exists(self.local_path) and os.listdir(self.local_path):
+            raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
         _logger.info("Cloning {remote} into {local}".
@@ -154,7 +154,7 @@ class GitLFSModelSource(ModelSource):
     def pull_source(self):
         """Pull/update the source
         """
-        if not os.path.exists(self.local_path):
+        if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
         _logger.info("Update {0}".
@@ -210,19 +210,19 @@ class GitModelSource(ModelSource):
         """Git ModelSource
         """
         self.remote_url = remote_url
-        self.local_path = local_path
+        self.local_path = os.path.join(local_path, '') # add trailing slash
         self._pulled = False
 
     def list_models(self):
         if not self._pulled:
-            self.pull_model()
+            self.pull_source()
         return list_models_recursively(self.local_path)
 
     def clone(self):
         """Clone the self.remote_url into self.local_path
         """
-        if os.path.exists(self.local_path):
-            raise IOError("Directory {0} already exists".
+        if os.path.exists(self.local_path) and os.listdir(self.local_path):
+            raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
         _logger.info("Cloning {remote} into {local}".
@@ -238,7 +238,7 @@ class GitModelSource(ModelSource):
     def pull_source(self):
         """Pull/update the source
         """
-        if not os.path.exists(self.local_path):
+        if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
         _logger.info("Update {0}".
@@ -275,7 +275,7 @@ class LocalModelSource(ModelSource):
     def __init__(self, local_path):
         """Local files
         """
-        self.local_path = local_path
+        self.local_path =  os.path.join(local_path, '') # add trailing slash
 
     def list_models(self):
         return list_models_recursively(self.local_path)
