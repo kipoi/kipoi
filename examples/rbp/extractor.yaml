@@ -31,7 +31,7 @@ extractor:
                 descr: Distance to poly-a site transformed with B-splines
         targets: binding_site
         metadata:
-            type: dict
+            # type: dict - redundant
             ranges:
                 chr:
                     type: str
