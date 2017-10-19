@@ -55,3 +55,50 @@ class Info():
                 "version": self.version,
                 "description": self.description,
                 "tags": self.tags}
+
+
+#
+class ArraySchema():
+    def __init__(self, shape, description, special_type=None, metadata_entries=[]):
+        """
+
+        Args:
+          shape: Tuple of shape (same as in Keras for the input)
+          description: Description of the array
+          special_type: str, special type name. Could also be an array of special entries?
+          metadata_entries: str or list of metadata
+        """
+        self.shape = shape
+        self.description = description
+        self.special_type = special_type
+
+        me = metadata_entries
+        self.metadata = [me] if isinstance(me, str) else list(me)
+
+
+class ModelSchema():
+
+    def __init__(self, inputs, targets, metadata=None, ):
+        """
+
+        """
+        self.inputs = inputs
+        self.targets = targets
+        self.metadata = metadata
+
+
+class DataLoaderSchema():
+
+    def __init__(self, arguments, inputs, targets, metadata=None, ):
+        """
+
+        """
+        self.arguments = arguments
+        self.inputs = inputs
+        self.targets = targets
+        self.metadata = metadata
+
+
+# allways requirespecify:
+# - shape
+# - description
