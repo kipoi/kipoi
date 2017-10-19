@@ -18,7 +18,8 @@ requirements = [
     "keras",
     "tqdm",
     "deepdish",
-    "related"
+    "related",
+    "enum34",
     # "pytorch"
 ]
 
