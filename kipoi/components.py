@@ -6,7 +6,7 @@ from .fields import StrSequenceField
 # TODO additionally validate the special type properties
 
 
-class RelatedConfigMixin():
+class RelatedConfigMixin(object):
     """Provides from_config and get_config to @related.immutable decorated classes
     """
     @classmethod

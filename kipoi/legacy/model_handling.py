@@ -35,7 +35,7 @@ MODULE_KERAS_OBJ = "custom_keras_objects.py"
 
 # TODO - append the preprocessor yaml to the preproc __doc___
 # Make Preprocessor a class-factory method?
-class Preprocessor:
+class Preprocessor(object):
 
     def __init__(self, preprocessor_dir):
         """Main interface to provided preprocessors
