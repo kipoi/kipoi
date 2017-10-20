@@ -32,6 +32,14 @@ extractor:
         targets: binding_site
         metadata:
             # type: dict - redundant
+            # TODO - how to deal with the fact that these can be either a number or a vector?
+            #   - how can we define special types for the dictionary?
+            #      - we would need to allow classes that contain also dictionaries
+            #        -> leaf can be an
+            #          - array
+            #          - scalar
+            #          - SpecialType (say ranges, which will
+            #                         effectively be a dicitonary of scalars)
             ranges:
                 chr:
                     type: str

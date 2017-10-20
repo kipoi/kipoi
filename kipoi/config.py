@@ -27,6 +27,8 @@ _MODEL_SOURCES = {
                                local_path=os.path.join(_kipoi_dir, "models/"))
 }
 
+# TODO - use related to model the config file as a class?
+
 
 def model_sources():
     return _MODEL_SOURCES

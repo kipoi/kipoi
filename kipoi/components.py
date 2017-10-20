@@ -2,7 +2,7 @@
 """
 import related
 import enum
-from .fields import StrSequenceField
+from .fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
 
@@ -63,13 +63,17 @@ class ArraySchema(RelatedConfigMixin):
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
-    shape = related.ChildField(tuple)
+    shape = related.ChildField(tuple)   # TODO - can be None - for scalars?
     description = related.StringField()
     # MAYBE - allow a list of strings?
     #         - could be useful when a single array can have multiple 'attributes'
     name = related.StringField(required=False)
     special_type = related.ChildField(ArraySpecialType, required=False)
     associated_metadata = StrSequenceField(str, default=[], required=False)
+    # TODO shall we have
+    # - associated_metadata in ArraySchema
+    # OR
+    # - associated_array in MetadataField?
 
 
 @related.immutable
@@ -81,6 +85,19 @@ class ModelSchema(RelatedConfigMixin):
     targets = related.MappingField(ArraySchema, "name")
 
 
+@enum.unique
+class MetadataSpecialType(enum.Enum):
+    RANGES = "ranges"
+    # TODO - add bed3 or bed6 ranges
+
+
+@related.immutable
+class MetadataStruct(RelatedConfigMixin):
+
+    description = related.StringField()
+    special_type = related.ChildField(MetadataSpecialType, required=False)
+
+
 @related.immutable
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
@@ -90,9 +107,22 @@ class DataLoaderSchema(RelatedConfigMixin):
     targets = related.MappingField(ArraySchema, "name", required=False)
     # TODO - define a special metadata field
     #       - nested data structure
-    metadata = related.MappingField(ArraySchema, "name", required=False)
+    metadata = NestedMappingField(MetadataStruct, keyword="description",
+                                  required=False)
+    #      - we would need to allow classes that contain also dictionaries
+    #        -> leaf can be an
+    #          - array
+    #          - scalar
+    #          - custom dictionary (recursive data-type)
+    #          - SpecialType (say ArrayRanges, BatchArrayRanges, which will
+    #                         effectively be a dicitonary of scalars)
+
 
 # TODO
 # - DataLoaderArgs
 # - KipoiDataloader
 # - KipoiModel
+
+
+# TODO - special metadata classes should just extend the dictionary field
+# (to be fully compatible with batching etc)
