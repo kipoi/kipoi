@@ -79,6 +79,7 @@ class Info(RelatedConfigMixin):
 class ArraySpecialType(enum.Enum):
     DNASeq = "DNASeq"
     BIGWIG = "bigwig"
+    VPLOT = "v-plot"
     Array = "Array"
 
 

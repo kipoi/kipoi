@@ -8,8 +8,7 @@ import six
 import subprocess
 import logging
 import glob
-from .data import dir_load_extractor
-from .model import dir_load_model, dir_model_info
+from .model import dir_model_info
 from collections import OrderedDict
 import pandas as pd
 
@@ -65,13 +64,15 @@ class ModelSource(object):
         """
         return
 
-    def load_model(self, model):
-        m_dir = self.pull_model(model)
-        return dir_load_model(m_dir)
+    # # TODO - deprecate
+    # def load_model(self, model):
+    #     m_dir = self.pull_model(model)
+    #     return dir_load_model(m_dir)
 
-    def load_extractor(self, model):
-        m_dir = self.pull_model(model)
-        return dir_load_extractor(m_dir)
+    # # TODO - deprecate
+    # def load_extractor(self, model):
+    #     m_dir = self.pull_model(model)
+    #     return dir_load_extractor(m_dir)
 
     def list_models_df(self):
         """List all the models as a data.frame
@@ -125,7 +126,7 @@ class GitLFSModelSource(ModelSource):
         """
         lfs_installed(raise_exception=True)
         self.remote_url = remote_url
-        self.local_path = os.path.join(local_path, '') # add trailing slash
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
     def list_models(self):
@@ -210,7 +211,7 @@ class GitModelSource(ModelSource):
         """Git ModelSource
         """
         self.remote_url = remote_url
-        self.local_path = os.path.join(local_path, '') # add trailing slash
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
     def list_models(self):
@@ -275,7 +276,7 @@ class LocalModelSource(ModelSource):
     def __init__(self, local_path):
         """Local files
         """
-        self.local_path =  os.path.join(local_path, '') # add trailing slash
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
 
     def list_models(self):
         return list_models_recursively(self.local_path)

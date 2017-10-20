@@ -13,7 +13,7 @@ from . import remote
 from . import model
 
 # shortcuts
-from .model import load_model, model_info
+from .model import load_model, model_info, KipoiModel
 from .data import load_extractor
 from .pipeline import install_model_requirements
 from .config import list_models, get_source

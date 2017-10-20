@@ -9,6 +9,7 @@ import numpy as np
 import yaml
 import six
 from collections import OrderedDict
+from contextlib import contextmanager
 
 _logger = logging.getLogger('kipoi')
 
@@ -136,3 +137,15 @@ def yaml_ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
         return dumper.represent_dict(six.iteritems(data))
     OrderedDumper.add_representer(OrderedDict, dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
+
+
+@contextmanager
+def cd(newdir):
+    """Temporarily change the directory
+    """
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
