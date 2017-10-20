@@ -5,60 +5,62 @@ from pytest import raises
 from kipoi.components import ArraySchema
 from related import from_yaml
 
-GOOD_SCHEMAS = ["""
+CLS = ArraySchema
+
+GOOD_EXAMPLES = ["""
 shape: (100, )
-description: some input
+descr: some input
 """, """
 shape: (None, 100)
-description: some input
+descr: some input
 """, """
 shape: (None, )
-description: some input
+descr: some input
 """, """
 shape: (100, )
-description: some input
+descr: some input
 special_type: DNASeq
 """, """
 shape: (100, )
-description: some input
+descr: some input
 associated_metadata:  # as a list
   - ranges
 """, """
 shape: (100, )
-description: some input
+descr: some input
 associated_metadata: ranges  # as a single element
 """]
 
-BAD_SCHEMAS = ["""
+BAD_EXAMPLES = ["""
 shape: (100, )
-# description missing
+# descr missing
 """, """
 # shape missing
-description: some input
+descr: some input
 """, """
 shape: 100  # not a tuple
-description: some input
+descr: some input
 """, """
 shape: (100, )
-description: some input
+descr: some input
 special_type: something # type not supported
 """]
 
 
-@pytest.mark.parametrize("info_str", GOOD_SCHEMAS)
+@pytest.mark.parametrize("info_str", GOOD_EXAMPLES)
 def test_parse_correct_info(info_str):
     # loading works
-    info = ArraySchema.from_config(from_yaml(info_str))
+    info = CLS.from_config(from_yaml(info_str))
 
     # cfg works
     cfg = info.get_config()
-    info2 = ArraySchema.from_config(cfg)
+    info2 = CLS.from_config(cfg)
     assert str(info) == str(info2)
 
 
-@pytest.mark.parametrize("info_str", BAD_SCHEMAS)
+@pytest.mark.parametrize("info_str", BAD_EXAMPLES)
 def test_parse_bad_info(info_str):
     bim = from_yaml(info_str)
 
     with raises(Exception):
-        ArraySchema.from_config(bim)
+        CLS.from_config(bim)

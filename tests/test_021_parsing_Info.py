@@ -5,40 +5,39 @@ import pytest
 from kipoi.components import Info
 from related import from_yaml
 
-GOOD_INFO = """
-author: Ziga Avsec
-name: rbp_eclip
-version: 0.1
-description: RBP binding prediction
-"""
+CLS = Info
 
-GOOD_INFO2 = """
+GOOD_EXAMPLES = ["""
 author: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-description: RBP binding prediction
+descr: RBP binding prediction
+""", """
+author: Ziga Avsec
+name: rbp_eclip
+version: 0.1
+descr: RBP binding prediction
 tags: ['var_interpretation']
-"""
+"""]
 
-BAD_INFO_EXTRA = """
+
+BAD_EXAMPLES = ["""
 author: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-description: RBP binding prediction
+descr: RBP binding prediction
 extra_field: asd
-"""
-
-BAD_INFO_MISSING = """
+""", """
 author: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-"""
+"""]
 
 
-@pytest.mark.parametrize("info_str", [GOOD_INFO, GOOD_INFO2])
+@pytest.mark.parametrize("info_str", GOOD_EXAMPLES)
 def test_parse_correct_info(info_str):
     # loading works
-    info = Info.from_config(from_yaml(info_str))
+    info = CLS.from_config(from_yaml(info_str))
 
     # repr works
     info2 = eval(info.__repr__())
@@ -46,13 +45,13 @@ def test_parse_correct_info(info_str):
 
     # cfg works
     cfg = info.get_config()
-    info = Info.from_config(cfg)
+    info = CLS.from_config(cfg)
     assert str(info) == str(info2)
 
 
-@pytest.mark.parametrize("info_str", [BAD_INFO_EXTRA, BAD_INFO_MISSING])
+@pytest.mark.parametrize("info_str", BAD_EXAMPLES)
 def test_parse_bad_info(info_str):
     bim = from_yaml(info_str)
 
     with pytest.raises(Exception):
-        Info.from_config(bim)
+        CLS.from_config(bim)

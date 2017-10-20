@@ -63,8 +63,10 @@ def to_sequence_field_w_str(cls):
             # if values is a string, consider it to be a single argument
             if isinstance(values, str):
                 args = [values]
-            else:
+            elif isinstance(values, list):
                 args = [to_model(self.cls, value) for value in values]
+            else:
+                raise ValueError("Field has to be a string or a list of strings")
             return TypedSequence(cls=self.cls, args=args)
 
     return SequenceConverter(cls)

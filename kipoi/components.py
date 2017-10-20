@@ -6,6 +6,9 @@ from .fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
 
+# --------------------------------------------
+# Abstract classes & Mixins for models defined using related
+
 class RelatedConfigMixin(object):
     """Provides from_config and get_config to @related.immutable decorated classes
     """
@@ -29,6 +32,31 @@ class RelatedConfigMixin(object):
         return related.to_dict(self)
 
 
+class RelatedLoadSaveMixin(RelatedConfigMixin):
+    """Adds load and dump on top of RelatedConfigMixin for reading and writing from a yaml file
+    """
+
+    @classmethod
+    def load(cls, path):
+        """Loads model from a yaml file
+        """
+        original_yaml = open(path).read().strip()
+        parsed_dict = related.from_yaml(original_yaml)
+        return cls.from_config(parsed_dict)
+
+    def dump(self, path):
+        """Dump the object to a yaml file
+        """
+        generated_yaml = related.to_yaml(self,
+                                         suppress_empty_values=True,
+                                         suppress_map_key_values=True)  # .strip()
+        with open(path, "w") as f:
+            f.write(generated_yaml)
+
+
+# --------------------------------------------
+# Common components (model and dataloader)
+
 @related.immutable
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
@@ -38,19 +66,20 @@ class Info(RelatedConfigMixin):
       author: Ziga Avsec
       name: rbp_eclip
       version: 0.1
-      description: RBP binding prediction
+      descr: RBP binding prediction
     """
     author = related.StringField()
     name = related.StringField()
     version = related.StringField()
-    description = related.StringField()
-    tags = related.SequenceField(str, default=[], required=False)
+    descr = related.StringField()
+    tags = StrSequenceField(str, default=[], required=False)
 
 
 @enum.unique
 class ArraySpecialType(enum.Enum):
     DNASeq = "DNASeq"
     BIGWIG = "bigwig"
+    Array = "Array"
 
 
 @related.immutable
@@ -59,12 +88,12 @@ class ArraySchema(RelatedConfigMixin):
 
     Args:
       shape: Tuple of shape (same as in Keras for the input)
-      description: Description of the array
+      descr: Description of the array
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
     shape = related.ChildField(tuple)   # TODO - can be None - for scalars?
-    description = related.StringField()
+    descr = related.StringField()
     # MAYBE - allow a list of strings?
     #         - could be useful when a single array can have multiple 'attributes'
     name = related.StringField(required=False)
@@ -76,6 +105,9 @@ class ArraySchema(RelatedConfigMixin):
     # - associated_array in MetadataField?
 
 
+# --------------------------------------------
+# Model specific components
+
 @related.immutable
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
@@ -85,17 +117,25 @@ class ModelSchema(RelatedConfigMixin):
     targets = related.MappingField(ArraySchema, "name")
 
 
+# --------------------------------------------
+# DataLoader specific components
+
 @enum.unique
-class MetadataSpecialType(enum.Enum):
-    RANGES = "ranges"
+class MetadataType(enum.Enum):
+    # TODO - make capital
+    RANGES = "Ranges"
+    STR = "str"
+    INT = "int"
+    FLOAT = "float"
+    ARRAY = "array"
     # TODO - add bed3 or bed6 ranges
 
 
 @related.immutable
 class MetadataStruct(RelatedConfigMixin):
 
-    description = related.StringField()
-    special_type = related.ChildField(MetadataSpecialType, required=False)
+    descr = related.StringField()
+    type = related.ChildField(MetadataType, required=False)
 
 
 @related.immutable
@@ -107,7 +147,7 @@ class DataLoaderSchema(RelatedConfigMixin):
     targets = related.MappingField(ArraySchema, "name", required=False)
     # TODO - define a special metadata field
     #       - nested data structure
-    metadata = NestedMappingField(MetadataStruct, keyword="description",
+    metadata = NestedMappingField(MetadataStruct, keyword="descr",
                                   required=False)
     #      - we would need to allow classes that contain also dictionaries
     #        -> leaf can be an
@@ -118,10 +158,40 @@ class DataLoaderSchema(RelatedConfigMixin):
     #                         effectively be a dicitonary of scalars)
 
 
-# TODO
-# - DataLoaderArgs
-# - KipoiDataloader
-# - KipoiModel
+@related.immutable
+class DataLoaderArgument(RelatedConfigMixin):
+    # MAYBE - make this a general argument class
+    descr = related.StringField()
+    name = related.StringField(required=False)
+    type = related.StringField(default='str', required=False)
+    optional = related.BooleanField(default=False, required=False)
+    tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
+
+
+# --------------------------------------------
+# Final description classes modelling the yaml files
+
+@related.immutable
+class ModelDescription(RelatedLoadSaveMixin):
+    """Class representation of model.yaml
+    """
+    type = related.StringField()
+    args = related.ChildField(dict)
+    info = related.ChildField(Info)
+    schema = related.ChildField(ModelSchema)
+    default_dataloader = related.StringField(default='dataloader.yaml')
+    # TODO - add after loading validation for the arguments class?
+
+
+@related.immutable
+class DataLoaderDescription(RelatedLoadSaveMixin):
+    """Class representation of dataloader.yaml
+    """
+    type = related.StringField()
+    defined_as = related.StringField()
+    args = related.MappingField(DataLoaderArgument, "name")
+    info = related.ChildField(Info)
+    schema = related.ChildField(DataLoaderSchema)
 
 
 # TODO - special metadata classes should just extend the dictionary field
