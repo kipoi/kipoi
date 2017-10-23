@@ -164,7 +164,7 @@ def cli_extract_to_hdf5(command, raw_args):
                         "as a file path to a json file")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in data loading')
-    parser.add_argument("-i", "--install-req", action='store_true',
+    parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
@@ -234,7 +234,7 @@ def cli_predict(command, raw_args):
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
-    parser.add_argument("-i", "--install-req", action='store_true',
+    parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. " +

@@ -9,8 +9,8 @@ import yaml
 import pandas as pd
 
 # TODO - check if you are on travis or not regarding the --install_req flag
-#INSTALL_FLAG = "--install_req"
-INSTALL_FLAG = ""
+INSTALL_FLAG = "--install_req"
+# INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
