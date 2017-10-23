@@ -11,11 +11,8 @@ from . import utils
 from . import variant_effects
 from . import remote
 from . import model
-from . import data_helper
+from . import data_utils
 from . import data
-# TODO - rename
-from . import torch_data
-from . import torch_sampler
 
 # shortcuts
 from .model import Model

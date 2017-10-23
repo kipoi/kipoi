@@ -1,16 +1,12 @@
 """Test the CLI interface
 """
-import torch  # need it before keras otherwise I get the following error: ImportError: dlopen: cannot load any more object with static TLS
-from torch.utils.data import DataLoader
-import keras  # otherwise I get a segfault from keras ?!
+# import keras  # otherwise I get a segfault from keras ?!
 import pytest
 import sys
 import os
 import yaml
-from contextlib import contextmanager
 import kipoi
-from kipoi.data import numpy_collate
-from kipoi.utils import cd
+import kipoi.utils
 from kipoi.pipeline import install_model_requirements
 
 
@@ -56,7 +52,7 @@ def test_dataloader_model(example):
     # get model
     model = kipoi.Model(example_dir, source="dir")
 
-    with cd(example_dir + "/test_files"):
+    with kipoi.utils.cd(example_dir + "/test_files"):
         # initialize the dataloader
         dataloader = Dl(**test_kwargs)
         # get first sample
@@ -64,8 +60,7 @@ def test_dataloader_model(example):
         len(dataloader)
 
         # sample a batch of data
-        dl = DataLoader(dataloader, collate_fn=numpy_collate)
-        it = iter(dl)
+        it = dataloader.batch_iter()
         batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])

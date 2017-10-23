@@ -1,5 +1,4 @@
 import kipoi
-from kipoi.data import numpy_collate
 from kipoi.variant_effects import predict_variants
 import numpy as np
 import pytest
@@ -19,7 +18,7 @@ def test_var_eff_pred():
     model_dir = "examples/rbp/"
     model = kipoi.Model(model_dir, source="dir")
     # The preprocessor
-    Extractor = kipoi.DataLoader_factory(model_dir, source="dir")
+    Dataloader = kipoi.DataLoader_factory(model_dir, source="dir")
 
     # Hacky: take the example arguments
     import yaml
@@ -35,7 +34,7 @@ def test_var_eff_pred():
             exec_files_path_here[k] = exec_files_path[k]
 
     # Derive a list model output labels
-    model_out_annotation = np.array(list(model.model_spec['targets'].keys()))
+    model_out_annotation = np.array(list(model.schema.targets.keys()))
 
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
@@ -43,9 +42,9 @@ def test_var_eff_pred():
     # TODO - model.model is a workaround. we would define the required
     # functionality at the abstract class level
     # (and then support different model types not just Keras)
+    # - probably requires changing the Concise code as well...
     res = predict_variants(model.model, vcf_path, seq_length=101,
                            evaluation_function=ism, exec_files_path=exec_files_path_here,
-                           extractor_function=Extractor, batch_size=32,
-                           numpy_collate=numpy_collate,
+                           dataloader_function=Dataloader, batch_size=32,
                            model_out_annotation=model_out_annotation,
                            evaluation_function_kwargs={"diff_type": "diff"})

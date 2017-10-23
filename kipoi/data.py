@@ -8,12 +8,9 @@ import abc
 import kipoi  # for .config module
 from kipoi.components import DataLoaderDescription
 from .utils import load_module, cd, getargs
-from kipoi.torch_data import DataLoader
-
-# TODO - moved to a different directory
-from kipoi.data_helper import numpy_collate, numpy_collate_concat
-
-
+from .external.torch.data import DataLoader
+from kipoi.data_utils import numpy_collate, numpy_collate_concat
+from tqdm import tqdm
 # TODO - put to remote
 
 
@@ -75,8 +72,44 @@ class Dataset(BaseDataLoader):
     def __len__(self):
         raise NotImplementedError
 
-    # TODO - implement batch_iter(self, batch_size=32):
-    # TODO - implement load_all(self):
+    def batch_iter(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False):
+        """Return a batch-iterator
+
+        Arguments:
+            dataset (Dataset): dataset from which to load the data.
+            batch_size (int, optional): how many samples per batch to load
+                (default: 1).
+            shuffle (bool, optional): set to ``True`` to have the data reshuffled
+                at every epoch (default: False).
+            num_workers (int, optional): how many subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process
+                (default: 0)
+            drop_last (bool, optional): set to ``True`` to drop the last incomplete batch,
+                if the dataset size is not divisible by the batch size. If False and
+                the size of dataset is not divisible by the batch size, then the last batch
+                will be smaller. (default: False)
+
+        Returns:
+            iterator
+        """
+        dl = DataLoader(self, batch_size=batch_size,
+                        collate_fn=numpy_collate,
+                        shuffle=shuffle,
+                        num_workers=num_workers,
+                        drop_last=drop_last)
+        return iter(dl)
+
+    def load_all(self, batch_size=32, num_workers=0):
+        """Load the whole dataset into memory
+        Arguments:
+            batch_size (int, optional): how many samples per batch to load
+                (default: 1).
+            num_workers (int, optional): how many subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process
+                (default: 0)
+        """
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size,
+                                                                     num_workers=num_workers))])
 
 
 # TODO - implement some of the synthactic shugar - i.e. get_avail_arguments etc...?

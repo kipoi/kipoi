@@ -18,13 +18,14 @@ _logger = logging.getLogger('kipoi')
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def predict_on_batch(self, x):
         raise NotImplementedError
 
     # TODO - define the .model attribute?
 
 
-class Model(BaseModel):
+class Model(object):
     # # Append yaml description to __doc__
     # with open(os.path.join(model_dir, 'model.yaml')) as ifh:
     #     unparsed_yaml = ifh.read()
@@ -67,11 +68,10 @@ class Model(BaseModel):
         self.args = md.args
         self.info = md.info
         self.schema = md.schema
+        # --------------------------------------------
         # TODO - load it into memory?
 
-        # TODO - validate md.default_dataloader
-
-        # TODO - allow to use relative and absolute paths for referring to the dataloader
+        # TODO - validate md.default_dataloader <-> model
 
         # attach the default dataloader already to the model
         if ":" in md.default_dataloader:
@@ -80,14 +80,10 @@ class Model(BaseModel):
             dl_source = self.source_name
             dl_path = md.default_dataloader
 
+        # allow to use relative and absolute paths for referring to the dataloader
         default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
         self.default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
                                                            dl_source)
-
-        # TODO - can it be from different sources?
-
-        # TODO - add the default pipeline?
-        #        - this would use the default dataloader and the default model?
 
         # Read the Model - append methods, attributes to self
         with cd(self.source_dir):  # move to the model directory temporarily
@@ -96,6 +92,7 @@ class Model(BaseModel):
                 assert issubclass(Mod, BaseModel)  # it should inherit from Model
                 Mod.__init__(self)
             elif self.type in AVAILABLE_MODELS:
+                # TODO - this doesn't seem to work
                 AVAILABLE_MODELS[self.type].__init__(self, **self.args)
             else:
                 raise ValueError("Unsupported model type: {0}. " +
@@ -105,13 +102,12 @@ class Model(BaseModel):
 
         self.pipeline = Pipeline(model=self, dataloader_cls=self.default_dataloader)
 
-        # TODO - how to combine with self.default_dataloader?
-        # def predict_pipeline(self):
-        #    pass
+    def predict_on_batch(self, x):
+        """TODO - is there a way to do this more elegantly?
+                  - through __new__?
+        """
+        return self.model.predict_on_batch(x)
 
-# TODO - rgrep model_spec and replace it with class accessors
-
-# --------------------------------------------
 
 # ------ individual implementations ----
 # each requires a special module to be installed (?)

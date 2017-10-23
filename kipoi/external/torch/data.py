@@ -4,13 +4,12 @@ As I was getting the ImportError: dlopen: cannot load any more object with stati
 error
 """
 import multiprocessing
-import multiprocessing.queues
-
-from .torch_sampler import SequentialSampler, RandomSampler, BatchSampler
+from .sampler import SequentialSampler, RandomSampler, BatchSampler
 import collections
 import sys
 import traceback
 import threading
+from kipoi.data_utils import numpy_collate
 # string_classes
 if sys.version_info[0] == 2:
     string_classes = basestring
@@ -22,45 +21,13 @@ if sys.version_info[0] == 2:
 else:
     import queue
 
-from kipoi.data_helper import numpy_collate
-# TODO - remove
+# default collate
 default_collate = numpy_collate
 
 _use_shared_memory = False
 """Whether to use shared memory in default_collate"""
 
 # -------
-from multiprocessing.reduction import ForkingPickler
-import io
-import pickle
-
-class ConnectionWrapper(object):
-    """Proxy class for _multiprocessing.Connection which uses ForkingPickler to
-    serialize objects"""
-
-    def __init__(self, conn):
-        self.conn = conn
-
-    def send(self, obj):
-        buf = io.BytesIO()
-        ForkingPickler(buf, pickle.HIGHEST_PROTOCOL).dump(obj)
-        self.send_bytes(buf.getvalue())
-
-    def recv(self):
-        buf = self.recv_bytes()
-        return pickle.loads(buf)
-
-    def __getattr__(self, name):
-        return getattr(self.conn, name)
-
-
-class SimpleQueue(multiprocessing.queues.SimpleQueue):
-
-    def _make_methods(self):
-        if not isinstance(self._reader, ConnectionWrapper):
-            self._reader = ConnectionWrapper(self._reader)
-            self._writer = ConnectionWrapper(self._writer)
-        super(SimpleQueue, self)._make_methods()
 
 
 class ExceptionWrapper(object):
@@ -137,8 +104,8 @@ class DataLoaderIter(object):
         self.sample_iter = iter(self.batch_sampler)
 
         if self.num_workers > 0:
-            self.index_queue = SimpleQueue()
-            self.data_queue = SimpleQueue()
+            self.index_queue = multiprocessing.SimpleQueue()
+            self.data_queue = multiprocessing.SimpleQueue()
             self.batches_outstanding = 0
             self.shutdown = False
             self.send_idx = 0

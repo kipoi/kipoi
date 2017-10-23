@@ -10,7 +10,6 @@ import yaml
 from .utils import pip_install_requirements, parse_json_file_str
 import kipoi  # for .config module
 from .data import numpy_collate, numpy_collate_concat
-from torch.utils.data import DataLoader
 # import h5py
 # import six
 import numpy as np
@@ -60,8 +59,7 @@ class Pipeline(object):
         dl = self.dataloader_cls(**dataloader_kwargs)
         _logger.info('Returned data schema correct')
 
-        # TODO - use batch_iter
-        it = DataLoader(dl, batch_size=batch_size, collate_fn=numpy_collate)
+        it = dl.batch_iter(batch_size=batch_size)
 
         # test that all predictions go through
         for i, batch in enumerate(tqdm(it)):
@@ -100,8 +98,7 @@ class Pipeline(object):
         _logger.info('Initialized data generator. Running batches...')
 
         # TODO - implement batch_iter
-        it = DataLoader(self.dataloader_cls(**dataloader_kwargs),
-                        batch_size=batch_size, collate_fn=numpy_collate)
+        it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
 
         for i, batch in enumerate(it):
             yield self.model.predict_on_batch(batch['inputs'])
@@ -138,8 +135,10 @@ def cli_test(command, raw_args):
             'Found test files in {}. Initiating test...'.format(test_dir))
         # cd to test directory
         os.chdir(test_dir)
+    else:
+        raise ValueError("The test directory: {0} doesn't exist".format(test_dir))
 
-    with open(os.path.join(test_dir, 'test.json')) as f_kwargs:
+    with open('test.json') as f_kwargs:
         dataloader_kwargs = yaml.load(f_kwargs)
     match = mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
     # if not match:
@@ -164,12 +163,12 @@ def cli_extract_to_hdf5(command, raw_args):
                         help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
     parser.add_argument('--batch_size', type=int, default=32,
-                        help='Batch size to use in prediction')
+                        help='Batch size to use in data loading')
     parser.add_argument("-i", "--install-req", action='store_true',
                         help="Install required packages from requirements.txt")
-    # parser.add_argument("-n", "--num_workers", type=int, default=1,
-    #                     help="Number of parallel workers for loading the dataset")
-    parser.add_argument("-o", "--output",
+    parser.add_argument("-n", "--num_workers", type=int, default=0,
+                        help="Number of parallel workers for loading the dataset")
+    parser.add_argument("-o", "--output", required=True,
                         help="Output hdf5 file")
     args = parser.parse_args(raw_args)
 
@@ -183,7 +182,7 @@ def cli_extract_to_hdf5(command, raw_args):
     dataloader = Dataloader(**dataloader_kwargs)
 
     _logger.info("Loading all the points into memory")
-    obj = numpy_collate_concat([x for x in tqdm(dataloader)])
+    obj = dataloader.load_all(args.batch_size, num_workers=args.num_workers)
 
     _logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
     deepdish.io.save(args.output, obj)
@@ -233,14 +232,14 @@ def cli_predict(command, raw_args):
                         help='File format.')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
-    parser.add_argument("-n", "--num_workers", type=int, default=1,
+    parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-i", "--install-req", action='store_true',
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. " +
                         "Only compatible with hdf5 file format")
-    parser.add_argument('-o', '--output',
+    parser.add_argument('-o', '--output', required=True,
                         help="Output hdf5 file")
     args = parser.parse_args(raw_args)
 
@@ -264,9 +263,8 @@ def cli_predict(command, raw_args):
     dl = Dl(**dataloader_kwargs)
 
     # setup batching
-    it = DataLoader(dl, batch_size=args.batch_size,
-                    num_workers=args.num_workers,
-                    collate_fn=numpy_collate)
+    it = dl.batch_iter(batch_size=args.batch_size,
+                       num_workers=args.num_workers)
 
     obj_list = []
     for i, batch in enumerate(tqdm(it)):

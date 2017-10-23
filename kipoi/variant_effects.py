@@ -8,9 +8,8 @@ import tempfile
 from tqdm import tqdm
 import itertools
 import os
-
-from torch.utils.data import DataLoader
-
+from kipoi.components import ArraySpecialType, MetadataType
+import six
 
 def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     # VCF files are 1-based, so the return value here is 1-based
@@ -36,30 +35,33 @@ def _bed3(regions, fpath):
     regions_0based[["chrom", "start", "end"]].to_csv(fpath, sep="\t", header=False, index=False)
 
 
-def _generate_seq_sets(model_input, annotated_regions, extractor_function):
+def _generate_seq_sets(model_input, annotated_regions, dataloader):
     # annotated_regions comes from the vcf file
     # This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
     # return a dictionary of which the keys are compliant with evaluation_function arguments
     #
     # TODO: Implement checking for preprocessors that output fwd and rc sequences themselves
     # TODO: Implement support for models that have fwd + rc sequence input at once
-    preproc_spec = extractor_function.definition
     #
     dna_slots = []
     ranges_slots = []
-    for k in preproc_spec['output']['inputs']:
-        if "type" in preproc_spec['output']['inputs'][k]:
-            if preproc_spec['output']['inputs'][k]['type'] == "DNA":
-                dna_slots.append(k)
-    #
-    if 'ranges' in preproc_spec['output']['metadata']:
-        if {'chr', 'start', 'end'}.issubset(set(preproc_spec['output']['metadata']['ranges'].keys())):
-            ranges_slots.append('ranges')
+
+    # check for inputs with special_type ArraySpecialType.DNASeq
+    for k in dataloader.schema.inputs:
+        if dataloader.schema.inputs[k].special_type == ArraySpecialType.DNASeq:
+            dna_slots.append(k)
+
+    # check for metadata with type MetadataType.RANGES
+    for k, v in six.iteritems(dataloader.schema.metadata):
+        if v.type == MetadataType.RANGES:
+            ranges_slots.append(k)
     #
     if len(ranges_slots) == 0:
-        raise Exception("")
+        raise ValueError("No metadata with type: Ranges found")
     #
     # there will at max be one element in the ranges_slots object
+    # extract the metadata output
+    # TODO - use associated_metadata to check
     ranges_input_obj = model_input['metadata'][ranges_slots[0]]
     #
     # annotated_regions are 1-based coordinates!
@@ -139,9 +141,8 @@ def predict_variants(model_handle,
                      seq_length,
                      evaluation_function,
                      exec_files_path,
-                     extractor_function,
+                     dataloader_function,
                      batch_size,
-                     numpy_collate,
                      model_out_annotation,
                      debug=False,
                      evaluation_function_kwargs=None):
@@ -158,12 +159,12 @@ def predict_variants(model_handle,
     #
     res = []
     #
-    extractor_function(**exec_files_path)
+    dataloader_function(**exec_files_path)
     #
-    it = DataLoader(extractor_function(**exec_files_path), batch_size=batch_size, collate_fn=numpy_collate)
+    it = dataloader_function(**exec_files_path).batch_iter(batch_size=batch_size)
     # test that all predictions go through
     for i, batch in enumerate(tqdm(it)):
-        eval_kwargs = _generate_seq_sets(batch, regions, extractor_function)
+        eval_kwargs = _generate_seq_sets(batch, regions, dataloader_function)
         if evaluation_function_kwargs is not None:
             assert isinstance(evaluation_function_kwargs, dict)
             for k in evaluation_function_kwargs:
