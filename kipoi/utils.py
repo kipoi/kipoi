@@ -10,7 +10,7 @@ import yaml
 import six
 from collections import OrderedDict
 from contextlib import contextmanager
-
+import inspect
 _logger = logging.getLogger('kipoi')
 
 
@@ -149,3 +149,20 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
+
+
+def getargs(x):
+    """Get function arguments
+    """
+    if sys.version_info[0] == 2:
+        if inspect.isfunction(x):
+            return set(inspect.getargspec(x).args[1:])
+        else:
+            return set(inspect.getargspec(x.__init__).args[1:])
+    else:
+        return set(inspect.signature(x).parameters.keys())
+
+
+def read_yaml(path):
+    with open(path) as f:
+        return yaml.load(f)

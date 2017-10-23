@@ -1,4 +1,4 @@
-"""Test the KipoiModel loading
+"""Test the KipoiDataLoader loading
 """
 import pytest
 import kipoi
@@ -15,16 +15,13 @@ def test_load_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
-    m = kipoi.Model(example_dir, source="dir")
+    Dl = kipoi.DataLoader_factory(example_dir, source="dir")
 
-    m.arch
-    m.info
-    m.schema
-    m.schema.inputs
-    m.source
-    m.weights
-    m.default_dataloader
-    m.model
-    m.predict_on_batch
-
-
+    Dl.type
+    Dl.defined_as
+    Dl.args
+    Dl.info
+    Dl.schema
+    Dl.source
+    Dl.__len__
+    Dl.__getitem__

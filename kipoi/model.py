@@ -10,11 +10,12 @@ import abc
 import six
 
 from .components import ModelDescription
+from kipoi.pipeline import Pipeline
 
 _logger = logging.getLogger('kipoi')
 
 
-class Model(object):
+class BaseModel(object):
     __metaclass__ = abc.ABCMeta
 
     def predict_on_batch(self, x):
@@ -23,7 +24,7 @@ class Model(object):
     # TODO - define the .model attribute?
 
 
-class KipoiModel(Model):
+class Model(BaseModel):
     # # Append yaml description to __doc__
     # with open(os.path.join(model_dir, 'model.yaml')) as ifh:
     #     unparsed_yaml = ifh.read()
@@ -43,8 +44,9 @@ class KipoiModel(Model):
         """
 
         """
+        # TODO - model can be a yaml file or a directory
         self.model = model
-        self.source = source
+        self.source_name = source
 
         if source == "dir":
             # TODO - maybe add it already to the config - to prevent code copying
@@ -53,15 +55,9 @@ class KipoiModel(Model):
             self.source = kipoi.config.get_source(source)
 
         # pull the model & get the model directory
-        self.model_dir = self.source.pull_model(model)
+        self.source_dir = self.source.pull_model(model)
 
-        # validate the model.yaml path
-        if os.path.exists(os.path.join(self.model_dir, "model.yaml")):
-            self.yaml_path = os.path.join(self.model_dir, "model.yaml")
-        elif os.path.exists(os.path.join(self.model_dir, "model.yml")):
-            self.yaml_path = os.path.join(self.model_dir, "model.yml")
-        else:
-            raise ValueError("File path doesn't exists: {0}/model.y(a)ml".format(self.model_dir))
+        self.yaml_path = kipoi.remote.get_model_file(self.source_dir)
 
         # Setup model description
         md = ModelDescription.load(self.yaml_path)
@@ -71,64 +67,57 @@ class KipoiModel(Model):
         self.args = md.args
         self.info = md.info
         self.schema = md.schema
+        # TODO - load it into memory?
+
+        # TODO - validate md.default_dataloader
+
+        # TODO - allow to use relative and absolute paths for referring to the dataloader
+
+        # attach the default dataloader already to the model
+        if ":" in md.default_dataloader:
+            dl_source, dl_path = md.default_dataloader.split(":")
+        else:
+            dl_source = self.source_name
+            dl_path = md.default_dataloader
+
+        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+        self.default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
+                                                           dl_source)
+
+        # TODO - can it be from different sources?
+
+        # TODO - add the default pipeline?
+        #        - this would use the default dataloader and the default model?
 
         # Read the Model - append methods, attributes to self
-        with cd(self.model_dir):  # move to the model directory temporarily
+        with cd(self.source_dir):  # move to the model directory temporarily
             if self.type == 'custom':
                 Mod = load_model_custom(**self.args)
-                assert issubclass(Mod, Model)  # it should inherit from Model
+                assert issubclass(Mod, BaseModel)  # it should inherit from Model
                 Mod.__init__(self)
             elif self.type in AVAILABLE_MODELS:
                 AVAILABLE_MODELS[self.type].__init__(self, **self.args)
             else:
                 raise ValueError("Unsupported model type: {0}. " +
                                  "Model type needs to be one of: {1}".
-                                 format(self.type, ['custom'] + list(AVAILABLE_MODELS.keys())))
+                                 format(self.type,
+                                        ['custom'] + list(AVAILABLE_MODELS.keys())))
 
+        self.pipeline = Pipeline(model=self, dataloader_cls=self.default_dataloader)
+
+        # TODO - how to combine with self.default_dataloader?
+        # def predict_pipeline(self):
+        #    pass
 
 # TODO - rgrep model_spec and replace it with class accessors
 
-# update the remote specification
-
-
-def load_model(model, source="kipoi"):
-    """Load the model
-
-    source: source from which to pull the model
-    """
-    if source == "dir":
-        return dir_load_model(model)
-    else:
-        return kipoi.config.get_source(source).load_extractor(model)
-
-
-# TODO - deprecate
-def dir_model_info(model_dir):
-    """Load model yaml file
-    """
-    # Parse the model.yaml
-    with open(os.path.join(model_dir, 'model.yaml')) as ifh:
-        description_yaml = yaml.load(ifh)
-    return description_yaml
-
-
-def model_info(model, source="kipoi"):
-    """Get information about the model
-
-    # Arguments
-      model: model's relative path/name in the source. 2nd column in the `kipoi.list_models()` `pd.DataFrame`.
-      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
-    """
-    if source == "dir":
-        return dir_model_info(model)
-    else:
-        return kipoi.config.get_source(source).get_model_info(model)
-
+# --------------------------------------------
 
 # ------ individual implementations ----
 # each requires a special module to be installed (?)
 # - TODO - where to specify those requirements?
-#      model: model's relative path / name in the source. 2nd column in the `kipoi.list_models()` `pd.DataFrame`.
+#      model: model's relative path / name in the source.
+#      2nd column in the `kipoi.list_models()` `pd.DataFrame`.
 
 
 def load_model_custom(file, object):
@@ -147,7 +136,7 @@ def load_model_custom(file, object):
     return getattr(load_module(file), object)
 
 
-class KerasModel(Model):
+class KerasModel(BaseModel):
     """Loads the serialized Keras model
 
     # Arguments
@@ -170,7 +159,7 @@ class KerasModel(Model):
         ```
     """
 
-    def __init__(self, weights, arch, custom_objects):
+    def __init__(self, weights, arch, custom_objects=None):
         # TODO - check that Keras is indeed installed + specific requirements?
 
         from keras.models import model_from_json, load_model
@@ -205,7 +194,7 @@ class KerasModel(Model):
         return self.model.predict_on_batch(x)
 
 
-# def PyTorchModel(Model):
+# def PyTorchModel(BaseModel):
 # TODO - implement and test
 #     def __init__(self, path):
 #         import torch
@@ -215,7 +204,7 @@ class KerasModel(Model):
 #         return self.model(x)
 
 
-class SklearnModel(Model):
+class SklearnModel(BaseModel):
     """Loads the serialized scikit learn model
 
     # Arguments

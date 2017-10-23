@@ -180,7 +180,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     args = related.ChildField(dict)
     info = related.ChildField(Info)
     schema = related.ChildField(ModelSchema)
-    default_dataloader = related.StringField(default='dataloader.yaml')
+    default_dataloader = related.StringField(default='.')
     # TODO - add after loading validation for the arguments class?
 
 

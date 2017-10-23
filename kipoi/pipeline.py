@@ -7,13 +7,12 @@ import argparse
 import logging
 import os
 import yaml
-from .utils import pip_install_requirements, compare_numpy_dict, parse_json_file_str
-from .model import load_model
+from .utils import pip_install_requirements, parse_json_file_str
 import kipoi  # for .config module
-from .data import load_extractor, numpy_collate, numpy_collate_concat, validate_extractor
+from .data import numpy_collate, numpy_collate_concat
 from torch.utils.data import DataLoader
-import h5py
-import six
+# import h5py
+# import six
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -31,49 +30,38 @@ import genomelake
 _logger = logging.getLogger('kipoi')
 
 
-PREPROC_FIELDS = ['function_name', 'type', 'arguments']
-PREPROC_TYPES = ['generator', 'return']
-PREPROC_IFILE_TYPES = ['DNA_regions']
-PREPROC_IFILE_FORMATS = ['bed3']
-MODEL_FIELDS = ['inputs', 'targets']
-DATA_TYPES = ['dna', 'bigwig', 'v-plot']
-RESERVED_PREPROC_KWS = ['intervals_file']
+# TODO - remove these as they are duplicates...
+# PREPROC_FIELDS = ['function_name', 'type', 'arguments']
+# PREPROC_TYPES = ['generator', 'return']
+# PREPROC_IFILE_TYPES = ['DNA_regions']
+# PREPROC_IFILE_FORMATS = ['bed3']
+# MODEL_FIELDS = ['inputs', 'targets']
+# DATA_TYPES = ['dna', 'bigwig', 'v-plot']
+# RESERVED_PREPROC_KWS = ['intervals_file']
 
 
 def install_model_requirements(model_dir):
     pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
 
 
-# TODO - have the same API as for the extractor?
-class ModelExtractor(object):
+class Pipeline(object):
+    """Provides the test_predict, predict and predict_generator to the kipoi.Model
+    """
 
-    def __init__(self, model_dir, install_req=False):
-        """Combines model + preprocessor
-        """
-        self.model_dir = model_dir
+    def __init__(self, model, dataloader_cls):
+        self.model = model
+        self.dataloader_cls = dataloader_cls
 
-        # TODO: This should not be done here, but a new environment
-        # should have been created before calling this.
-        if install_req:
-            install_model_requirements(model_dir)
+        # TODO - validate if model and datalaoder_cls are compatible
 
-        self.model = load_model(model_dir, source="dir")
-        self.extractor = load_extractor(model_dir, source="dir")
-
-    def validate_compatibility(self):
-        # Test whether all the model input requirements are fulfilled
-        # by the preprocessor output and whether types match
-        raise Exception("Not yet implemented")
-
-    def test_predict(self, extractor_kwargs, batch_size=32, test_equal=False):
+    def test_predict(self, dataloader_kwargs, batch_size=32, test_equal=False):
         _logger.info('Initialized data generator. Running batches...')
 
-        ex = self.extractor(**extractor_kwargs)
-        # test that the extractor indeed matches our definition
-        validate_extractor(ex)
+        dl = self.dataloader_cls(**dataloader_kwargs)
         _logger.info('Returned data schema correct')
 
-        it = DataLoader(ex, batch_size=batch_size, collate_fn=numpy_collate)
+        # TODO - use batch_iter
+        it = DataLoader(dl, batch_size=batch_size, collate_fn=numpy_collate)
 
         # test that all predictions go through
         for i, batch in enumerate(tqdm(it)):
@@ -90,16 +78,17 @@ class ModelExtractor(object):
 
         _logger.info('test_predict done!')
 
-    def predict(self, extractor_kwargs, batch_size=32):
+    def predict(self, dataloader_kwargs, batch_size=32):
         """
         # Arguments
             preproc_kwargs: Keyword arguments passed to the pre-processor
 
         :return: Predict the whole array
         """
-        return numpy_collate_concat(list(self.predict_generator(extractor_kwargs, batch_size)))
+        return numpy_collate_concat(list(self.predict_generator(dataloader_kwargs,
+                                                                batch_size)))
 
-    def predict_generator(self, extractor_kwargs, batch_size=32):
+    def predict_generator(self, dataloader_kwargs, batch_size=32):
         """Prediction generator
 
         # Arguments
@@ -110,14 +99,15 @@ class ModelExtractor(object):
         """
         _logger.info('Initialized data generator. Running batches...')
 
-        it = DataLoader(self.extractor(**extractor_kwargs),
+        # TODO - implement batch_iter
+        it = DataLoader(self.dataloader_cls(**dataloader_kwargs),
                         batch_size=batch_size, collate_fn=numpy_collate)
 
         for i, batch in enumerate(it):
             yield self.model.predict_on_batch(batch['inputs'])
 
 
-def cli_test(command, args):
+def cli_test(command, raw_args):
     """CLI interface
     """
     assert command == "test"
@@ -131,19 +121,17 @@ def cli_test(command, args):
                         " under model_sources")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
-    parser.add_argument("-i", "--install-req", action='store_true',
+    parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
-    parsed_args = parser.parse_args(args)
+    args = parser.parse_args(raw_args)
     # --------------------------------------------
 
-    # run the model
-    if parsed_args.source == "dir":
-        model_dir = os.path.abspath(parsed_args.model)
-    else:
-        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
-    mh = ModelExtractor(model_dir, install_req=parsed_args.install_req)  # force the requirements to be installed
+    mh = kipoi.Model(args.model, args.source)
+    if args.install_req:
+        pip_install_requirements(os.path.join(mh.source_dir, 'requirements.txt'))
+    # force the requirements to be installed
 
-    test_dir = os.path.join(model_dir, 'test_files')
+    test_dir = os.path.join(mh.source_dir, 'test_files')
 
     if os.path.exists(test_dir):
         _logger.info(
@@ -152,8 +140,8 @@ def cli_test(command, args):
         os.chdir(test_dir)
 
     with open(os.path.join(test_dir, 'test.json')) as f_kwargs:
-        extractor_kwargs = yaml.load(f_kwargs)
-    match = mh.test_predict(extractor_kwargs, batch_size=parsed_args.batch_size)
+        dataloader_kwargs = yaml.load(f_kwargs)
+    match = mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
     # if not match:
     #     # _logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")
@@ -161,19 +149,19 @@ def cli_test(command, args):
     _logger.info('Successfully ran test_predict')
 
 
-def cli_extract_to_hdf5(command, args):
-    """CLI interface to run the extractor
+def cli_extract_to_hdf5(command, raw_args):
+    """CLI interface to run the dataloader
     """
     assert command == "preproc"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
-                                     description='Run the extractor and save the output to an hdf5 file.')
+                                     description='Run the dataloader and save the output to an hdf5 file.')
     parser.add_argument('model', help='Model name.')
     parser.add_argument('--source', default="kipoi",
                         choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
-    parser.add_argument('--extractor_args',
-                        help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
+    parser.add_argument('--dataloader_args',
+                        help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
@@ -183,35 +171,28 @@ def cli_extract_to_hdf5(command, args):
     #                     help="Number of parallel workers for loading the dataset")
     parser.add_argument("-o", "--output",
                         help="Output hdf5 file")
-    parsed_args = parser.parse_args(args)
+    args = parser.parse_args(raw_args)
 
-    extractor_kwargs = parse_json_file_str(parsed_args.extractor_args)
+    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
     # --------------------------------------------
-
-    # run the model
-    if parsed_args.source == "dir":
-        model_dir = os.path.abspath(parsed_args.model)
-    else:
-        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
-
     # install args
-    if parsed_args.install_req:
-        pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+    Dataloader = kipoi.DataLoader_factory(args.model, args.source)
+    if args.install_req:
+        pip_install_requirements(os.path.join(Dataloader.source_dir, 'requirements.txt'))
 
-    Extractor = load_extractor(model_dir, source="dir")
-    extractor = Extractor(**extractor_kwargs)
+    dataloader = Dataloader(**dataloader_kwargs)
 
     _logger.info("Loading all the points into memory")
-    obj = numpy_collate_concat([x for x in tqdm(extractor)])
+    obj = numpy_collate_concat([x for x in tqdm(dataloader)])
 
-    _logger.info("Writing everything to the hdf5 array at {0}".format(parsed_args.output))
-    deepdish.io.save(parsed_args.output, obj)
+    _logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
+    deepdish.io.save(args.output, obj)
     _logger.info("Done!")
 
     # TODO - hack - read the whole dataset into memory at first...
 
-    # sample = extractor[0]
-    # n = len(extractor)
+    # sample = dataloader[0]
+    # n = len(dataloader)
 
     # f = h5py.File(args.output, "w")
     # inputs = f.create_group("inputs")
@@ -227,7 +208,7 @@ def cli_extract_to_hdf5(command, args):
     # arr_inputs = {k: inputs.create_dataset(k, (n, ) + np.asarray(v)) for k, v in six.iteritems(sample["metadata"])}
 
 
-def cli_predict(command, args):
+def cli_predict(command, raw_args):
     """CLI interface to predict
     """
     assert command == "predict"
@@ -238,9 +219,15 @@ def cli_predict(command, args):
                         choices=list(kipoi.config.model_sources().keys()) + ["dir"],
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                         " under model_sources")
-    parser.add_argument('--extractor_args',
-                        help="Extractor arguments either as a json string:'{\"arg1\": 1} or " +
-                        "as a file path to a json file")
+    parser.add_argument('--dataloader', default=None,
+                        help="Dataloader name. If not specified, the model's default" +
+                        "DataLoader will be used")
+    parser.add_argument('--dataloader_source', default="kipoi",
+                        help="Dataloader source. If not specified, the model's default" +
+                        "DataLoader will be used")
+    parser.add_argument('--dataloader_args',
+                        help="Dataloader arguments either as a json string:" +
+                        "'{\"arg1\": 1} or as a file path to a json file")
     parser.add_argument('-f', '--file_format', default="tsv",
                         choices=["tsv", "bed", "hdf5"],
                         help='File format.')
@@ -251,35 +238,34 @@ def cli_predict(command, args):
     parser.add_argument("-i", "--install-req", action='store_true',
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
-                        help="Keep the inputs in the output file. Only compatible with hdf5 file format")
+                        help="Keep the inputs in the output file. " +
+                        "Only compatible with hdf5 file format")
     parser.add_argument('-o', '--output',
                         help="Output hdf5 file")
-    parsed_args = parser.parse_args(args)
+    args = parser.parse_args(raw_args)
 
-    extractor_kwargs = parse_json_file_str(parsed_args.extractor_args)
+    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
 
-    if parsed_args.keep_inputs and parsed_args.file_format != "hdf5":
+    if args.keep_inputs and args.file_format != "hdf5":
         raise ValueError("--keep_inputs flag is only compatible with --file_format=hdf5")
     # --------------------------------------------
-
-    # run the model
-    if parsed_args.source == "dir":
-        model_dir = os.path.abspath(parsed_args.model)
-    else:
-        model_dir = kipoi.config.get_source(parsed_args.source).pull_model(parsed_args.model)
+    # load model & dataloader
+    model = kipoi.Model(args.model, args.source)
 
     # install args
-    if parsed_args.install_req:
-        pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+    if args.install_req:
+        pip_install_requirements(os.path.join(model.source_dir, 'requirements.txt'))
 
-    # load model & extractor
-    model = load_model(model_dir, source="dir")
-    Extractor = load_extractor(model_dir, source="dir")
-    extractor = Extractor(**extractor_kwargs)
+    if args.dataloader is not None:
+        Dl = kipoi.DataLoader_factory(args.dataloader, args.dataloader_source)
+    else:
+        Dl = model.default_dataloader
+
+    dl = Dl(**dataloader_kwargs)
 
     # setup batching
-    it = DataLoader(extractor, batch_size=parsed_args.batch_size,
-                    num_workers=parsed_args.num_workers,
+    it = DataLoader(dl, batch_size=args.batch_size,
+                    num_workers=args.num_workers,
                     collate_fn=numpy_collate)
 
     obj_list = []
@@ -287,26 +273,26 @@ def cli_predict(command, args):
         pred_batch = model.predict_on_batch(batch['inputs'])
 
         # tabular files
-        if parsed_args.file_format in ["tsv", "bed"]:
+        if args.file_format in ["tsv", "bed"]:
             df = io_batch2df(batch, pred_batch)
             if i == 0:
-                df.to_csv(parsed_args.output, sep="\t", index=False)
+                df.to_csv(args.output, sep="\t", index=False)
             else:
-                df.to_csv(parsed_args.output, sep="\t", index=False, header=None, mode="a")
+                df.to_csv(args.output, sep="\t", index=False, header=None, mode="a")
 
         # binary nested arrays
-        elif parsed_args.file_format == "hdf5":
+        elif args.file_format == "hdf5":
             batch["predictions"] = pred_batch
-            if not parsed_args.keep_inputs:
+            if not args.keep_inputs:
                 del batch["inputs"]
             # TODO - implement the batching version of it
             obj_list.append(batch)
         else:
-            raise ValueError("Unknown file format: {0}".format(parsed_args.file_format))
+            raise ValueError("Unknown file format: {0}".format(args.file_format))
 
     # Write hdf5 file in bulk
-    if parsed_args.file_format == "hdf5":
-        deepdish.io.save(parsed_args.output, numpy_collate_concat(obj_list))
+    if args.file_format == "hdf5":
+        deepdish.io.save(args.output, numpy_collate_concat(obj_list))
 
     _logger.info('Successfully predictde samples')
 
@@ -337,7 +323,7 @@ def io_batch2df(batch, pred_batch):
     return df
 
 
-def cli_pull(command, unparsed_args):
+def cli_pull(command, raw_args):
     """Pull the repository
     """
     assert command == "pull"
@@ -349,6 +335,6 @@ def cli_pull(command, unparsed_args):
                         help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
                         "under model_sources")
 
-    args = parser.parse_args(unparsed_args)
+    args = parser.parse_args(raw_args)
 
     kipoi.config.get_source(args.source).pull_model(args.model)

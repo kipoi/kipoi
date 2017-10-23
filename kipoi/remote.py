@@ -8,9 +8,11 @@ import six
 import subprocess
 import logging
 import glob
-from .model import dir_model_info
 from collections import OrderedDict
+from .utils import read_yaml
 import pandas as pd
+import yaml
+import kipoi
 
 _logger = logging.getLogger('kipoi')
 
@@ -30,6 +32,55 @@ def lfs_installed(raise_exception=False):
         if not ce:
             raise OSError("git-lfs not installed")
     return ce
+
+
+def dir_model_info(mpath):
+    """Return the parsed yaml file
+    """
+    return read_yaml(get_model_file(mpath))
+
+
+def model_info(model, source="kipoi"):
+    """Get information about the model
+
+    # Arguments
+      model: model's relative path/name in the source. 2nd column in the `kipoi.list_models() `pd.DataFrame`.
+      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
+    """
+    if source == "dir":
+        return dir_model_info(model)
+    else:
+        return kipoi.config.get_source(source).get_model_info(model)
+
+
+# TODO - unify the two functions into one
+def get_dataloader_file(dataloader_dir):
+    """Get a dataloader file path from a directory
+    """
+
+    # validate the dataloader.yaml path
+    if os.path.exists(os.path.join(dataloader_dir, "dataloader.yaml")):
+        yaml_path = os.path.join(dataloader_dir, "dataloader.yaml")
+    elif os.path.exists(os.path.join(dataloader_dir, "dataloader.yml")):
+        yaml_path = os.path.join(dataloader_dir, "dataloader.yml")
+    else:
+        raise ValueError("File path doesn't exists: {0}/dataloader.y(a)ml".
+                         format(dataloader_dir))
+    return yaml_path
+
+
+def get_model_file(model_dir):
+    """Get a model file path from a directory
+    """
+
+    # validate the model.yaml path
+    if os.path.exists(os.path.join(model_dir, "model.yaml")):
+        yaml_path = os.path.join(model_dir, "model.yaml")
+    elif os.path.exists(os.path.join(model_dir, "model.yml")):
+        yaml_path = os.path.join(model_dir, "model.yml")
+    else:
+        raise ValueError("File path doesn't exists: {0}/model.y(a)ml".format(model_dir))
+    return yaml_path
 
 
 def list_models_recursively(root_dir):
@@ -78,16 +129,18 @@ class ModelSource(object):
         """List all the models as a data.frame
         """
         def dict2df_dict(d, model):
+            # TODO - use with ModelDescription parsing
+            inf = d["info"]
             return OrderedDict([
                 ("model", model),
-                ("name", d["name"]),
-                ("version", d["version"]),
-                ("author", d["author"]),
-                ("description", d["description"]),
-                ("type", d["model"]["type"]),
-                ("inputs", list(d["model"]["inputs"])),
-                ("targets", list(d["model"]["targets"])),
-                ("tags", d["model"].get("tags", [])),  # TODO add special tags to model.yaml
+                ("name", inf["name"]),
+                ("version", inf["version"]),
+                ("author", inf["author"]),
+                ("descr", inf["descr"]),
+                ("type", d["type"]),
+                ("inputs", list(d["schema"]["inputs"])),
+                ("targets", list(d["schema"]["targets"])),
+                ("tags", d["info"].get("tags", [])),  # TODO add special tags to model.yaml
             ])
 
         return pd.DataFrame([dict2df_dict(self.get_model_info(model), model)

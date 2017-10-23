@@ -11,10 +11,16 @@ from . import utils
 from . import variant_effects
 from . import remote
 from . import model
+from . import data_helper
+from . import data
+# TODO - rename
+from . import torch_data
+from . import torch_sampler
 
 # shortcuts
-from .model import load_model, model_info, KipoiModel
-from .data import load_extractor
+from .model import Model
+from .data import DataLoader_factory
+from .remote import model_info
 from .pipeline import install_model_requirements
 from .config import list_models, get_source
 from .config import model_sources as sources
