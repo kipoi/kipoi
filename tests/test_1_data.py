@@ -39,14 +39,15 @@ def test_dataloader_model(example):
 
     example_dir = "examples/{0}".format(example)
 
+    # install the dependencies
+    # - TODO maybe put it implicitly in load_dataloader?
+    if INSTALL_REQ:
+        install_model_requirements(example_dir, "dir")
+
     Dl = kipoi.DataLoader_factory(example_dir, source="dir")
 
     test_kwargs = get_test_kwargs(example_dir)
 
-    # install the dependencies
-    # - TODO maybe put it implicitly in load_dataloader?
-    if INSTALL_REQ:
-        install_model_requirements(example_dir)
     # get dataloader
 
     # get model

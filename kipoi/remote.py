@@ -53,6 +53,16 @@ def model_info(model, source="kipoi"):
         return kipoi.config.get_source(source).get_model_info(model)
 
 
+def requirements_file(model, source="kipoi"):
+    """Get the requirements file path
+    """
+    if source == "dir":
+        source = kipoi.remote.LocalModelSource(".")
+    else:
+        source = kipoi.config.get_source(source)
+    return os.path.join(source.pull_model(model), 'requirements.txt')
+
+
 # TODO - unify the two functions into one
 def get_dataloader_file(dataloader_dir):
     """Get a dataloader file path from a directory

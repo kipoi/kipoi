@@ -39,8 +39,8 @@ _logger = logging.getLogger('kipoi')
 # RESERVED_PREPROC_KWS = ['intervals_file']
 
 
-def install_model_requirements(model_dir):
-    pip_install_requirements(os.path.join(model_dir, 'requirements.txt'))
+def install_model_requirements(model, source="kipoi"):
+    pip_install_requirements(kipoi.requirements_file(model, source))
 
 
 class Pipeline(object):
@@ -122,10 +122,9 @@ def cli_test(command, raw_args):
                         help="Install required packages from requirements.txt")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
-
-    mh = kipoi.Model(args.model, args.source)
     if args.install_req:
-        pip_install_requirements(os.path.join(mh.source_dir, 'requirements.txt'))
+        install_model_requirements(args.model, args.source)
+    mh = kipoi.Model(args.model, args.source)
     # force the requirements to be installed
 
     test_dir = os.path.join(mh.source_dir, 'test_files')
@@ -175,9 +174,9 @@ def cli_extract_to_hdf5(command, raw_args):
     dataloader_kwargs = parse_json_file_str(args.dataloader_args)
     # --------------------------------------------
     # install args
-    Dataloader = kipoi.DataLoader_factory(args.model, args.source)
     if args.install_req:
-        pip_install_requirements(os.path.join(Dataloader.source_dir, 'requirements.txt'))
+        install_model_requirements(args.model, args.source)
+    Dataloader = kipoi.DataLoader_factory(args.model, args.source)
 
     dataloader = Dataloader(**dataloader_kwargs)
 
@@ -248,12 +247,11 @@ def cli_predict(command, raw_args):
     if args.keep_inputs and args.file_format != "hdf5":
         raise ValueError("--keep_inputs flag is only compatible with --file_format=hdf5")
     # --------------------------------------------
-    # load model & dataloader
-    model = kipoi.Model(args.model, args.source)
-
     # install args
     if args.install_req:
-        pip_install_requirements(os.path.join(model.source_dir, 'requirements.txt'))
+        install_model_requirements(args.model, args.source)
+    # load model & dataloader
+    model = kipoi.Model(args.model, args.source)
 
     if args.dataloader is not None:
         Dl = kipoi.DataLoader_factory(args.dataloader, args.dataloader_source)
