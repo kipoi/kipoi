@@ -83,6 +83,7 @@ def Model(model, source="kipoi"):
     mod.schema = md.schema
     mod.default_dataloader = default_dataloader
     mod.name = model
+    mod.source = source
     mod.source_name = source_name
     mod.source_dir = source_dir
     mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
