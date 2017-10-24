@@ -25,88 +25,68 @@ class BaseModel(object):
     # TODO - define the .model attribute?
 
 
-class Model(object):
-    # # Append yaml description to __doc__
-    # with open(os.path.join(model_dir, 'model.yaml')) as ifh:
-    #     unparsed_yaml = ifh.read()
-    # try:
-    #     model.__doc__ = """Model instance
+def Model(model, source="kipoi"):
+    # TODO - model can be a yaml file or a directory
+    source_name = source
 
-    #     # Methods
-    #       predict_on_batch(x)
+    if source == "dir":
+        # TODO - maybe add it already to the config - to prevent code copying
+        source = kipoi.remote.LocalModelSource(".")
+    else:
+        source = kipoi.config.get_source(source)
 
-    #     # model.yaml
+    # pull the model & get the model directory
+    source_dir = source.pull_model(model)
 
-    #     """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
-    # except AttributeError:
-    #     _logger.warning("Unable to set the docstring")
+    yaml_path = kipoi.remote.get_model_file(source_dir)
 
-    def __init__(self, model, source="kipoi"):
-        """
+    # Setup model description
+    md = ModelDescription.load(yaml_path)
+    # TODO - is there a way to prevent code duplication here?
+    # TODO - possible to inherit from both classes and call the corresponding inits?
+    # --------------------------------------------
+    # TODO - load it into memory?
 
-        """
-        # TODO - model can be a yaml file or a directory
-        self.model = model
-        self.source_name = source
+    # TODO - validate md.default_dataloader <-> model
 
-        if source == "dir":
-            # TODO - maybe add it already to the config - to prevent code copying
-            self.source = kipoi.remote.LocalModelSource(".")
+    # attach the default dataloader already to the model
+    if ":" in md.default_dataloader:
+        dl_source, dl_path = md.default_dataloader.split(":")
+    else:
+        dl_source = source_name
+        dl_path = md.default_dataloader
+
+    # allow to use relative and absolute paths for referring to the dataloader
+    default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+    default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
+                                                  dl_source)
+
+    # Read the Model - append methods, attributes to self
+    with cd(source_dir):  # move to the model directory temporarily
+        if md.type == 'custom':
+            Mod = load_model_custom(**md.args)
+            assert issubclass(Mod, BaseModel)  # it should inherit from Model
+            mod = Mod()
+        elif md.type in AVAILABLE_MODELS:
+            # TODO - this doesn't seem to work
+            mod = AVAILABLE_MODELS[md.type](**md.args)
         else:
-            self.source = kipoi.config.get_source(source)
+            raise ValueError("Unsupported model type: {0}. " +
+                             "Model type needs to be one of: {1}".
+                             format(md.type,
+                                    ['custom'] + list(AVAILABLE_MODELS.keys())))
 
-        # pull the model & get the model directory
-        self.source_dir = self.source.pull_model(model)
-
-        self.yaml_path = kipoi.remote.get_model_file(self.source_dir)
-
-        # Setup model description
-        md = ModelDescription.load(self.yaml_path)
-        # TODO - is there a way to prevent code duplication here?
-        # TODO - possible to inherit from both classes and call the corresponding inits?
-        self.type = md.type
-        self.args = md.args
-        self.info = md.info
-        self.schema = md.schema
-        # --------------------------------------------
-        # TODO - load it into memory?
-
-        # TODO - validate md.default_dataloader <-> model
-
-        # attach the default dataloader already to the model
-        if ":" in md.default_dataloader:
-            dl_source, dl_path = md.default_dataloader.split(":")
-        else:
-            dl_source = self.source_name
-            dl_path = md.default_dataloader
-
-        # allow to use relative and absolute paths for referring to the dataloader
-        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-        self.default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
-                                                           dl_source)
-
-        # Read the Model - append methods, attributes to self
-        with cd(self.source_dir):  # move to the model directory temporarily
-            if self.type == 'custom':
-                Mod = load_model_custom(**self.args)
-                assert issubclass(Mod, BaseModel)  # it should inherit from Model
-                Mod.__init__(self)
-            elif self.type in AVAILABLE_MODELS:
-                # TODO - this doesn't seem to work
-                AVAILABLE_MODELS[self.type].__init__(self, **self.args)
-            else:
-                raise ValueError("Unsupported model type: {0}. " +
-                                 "Model type needs to be one of: {1}".
-                                 format(self.type,
-                                        ['custom'] + list(AVAILABLE_MODELS.keys())))
-
-        self.pipeline = Pipeline(model=self, dataloader_cls=self.default_dataloader)
-
-    def predict_on_batch(self, x):
-        """TODO - is there a way to do this more elegantly?
-                  - through __new__?
-        """
-        return self.model.predict_on_batch(x)
+    # populate the returned class
+    mod.type = md.type
+    mod.args = md.args
+    mod.info = md.info
+    mod.schema = md.schema
+    mod.default_dataloader = default_dataloader
+    mod.name = model
+    mod.source_name = source_name
+    mod.source_dir = source_dir
+    mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
+    return mod
 
 
 # ------ individual implementations ----
