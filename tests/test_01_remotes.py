@@ -15,16 +15,16 @@ def test_load_models_kipoi():
     m_dir = k.pull_model(model)
 
     # load the model
-    kipoi.load_model(m_dir)
+    kipoi.Model(m_dir, source="dir")
 
-    kipoi.load_model(model)
-    kipoi.load_extractor(model)
+    kipoi.Model(model, source="kipoi")
+    kipoi.DataLoader_factory(model)
 
 
 def test_load_models_local():
     model = "examples/extended_coda"
-    kipoi.load_model(model, source="dir")
-    kipoi.load_extractor(model, source="dir")
+    kipoi.Model(model, source="dir")
+    kipoi.DataLoader_factory(model, source="dir")
 
 
 def test_list_models():
@@ -34,7 +34,7 @@ def test_list_models():
     assert isinstance(df, pd.DataFrame)
 
     # column names
-    df_model_columns = ['model', 'name', 'version', 'author', 'description', 'type', 'inputs', 'targets', 'tags']
+    df_model_columns = ['model', 'name', 'version', 'author', 'descr', 'type', 'inputs', 'targets', 'tags']
     assert df_model_columns == list(df.columns)
 
     #

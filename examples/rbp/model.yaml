@@ -1,21 +1,26 @@
-author: Ziga Avsec
-name: rbp_eclip
-version: 0.1
-description: RBP binding prediction
-# Duplicated entry!
-model:
-    type: keras
-    args:
-      arch: model/model.json
-      weights: model/weights.h5
-      custom_objects: model/custom_keras_objects.py
+type: keras # TODO - use a class name?
+args:
+    arch: model/model.json
+    weights: model/weights.h5
+    custom_objects: model/custom_keras_objects.py
+default_dataloader: . # path to the directory
+info:
+    author: Ziga Avsec
+    name: rbp_eclip
+    version: 0.1
+    descr: RBP binding prediction
+schema:
     inputs:
         seq:
-            type: DNA
-            provide_ranges: True
+            shape: (4, 101)
+            special_type: DNASeq
+            descr: One-hot encoded RNA sequence
+            # associated_metadata: ranges # --> has to be defined in dataloader.yaml.
+            #                                   This field is ignored in model.yaml.
         dist_polya_st:
             shape: (None, 1, 10)
-            description: Distance to poly-a site transformed with B-splines
+            descr: Distance to poly-a site transformed with B-splines
     targets:
         binding_site:
-            shape: (None, 1)
+            shape: (1, )
+            descr: Predicted binding strength

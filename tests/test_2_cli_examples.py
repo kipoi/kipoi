@@ -8,8 +8,8 @@ import deepdish
 import yaml
 import pandas as pd
 
-# TODO - check if you are on travis or not regarding the --install-req flag
-INSTALL_FLAG = "--install-req"
+# TODO - check if you are on travis or not regarding the --install_req flag
+INSTALL_FLAG = "--install_req"
 # INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
@@ -49,7 +49,7 @@ def test_preproc_example(example, tmpdir):
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
-            "--extractor_args=test.json",
+            "--dataloader_args=test.json",
             "--output", tmpfile]
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
@@ -62,16 +62,28 @@ def test_preproc_example(example, tmpdir):
 
     data = deepdish.io.load(tmpfile)
 
-    with open(example_dir + "/extractor.yaml", "r") as f:
+    with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    assert data["inputs"].keys() == ex_descr["extractor"]["output"]["inputs"].keys()
+    assert data["inputs"].keys() == ex_descr["schema"]["inputs"].keys()
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_predict_example(example, tmpdir):
     """kipoi predict ...
     """
+    # TODO - test -out
+    # Traceback (most recent call last):
+#   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 60, in <module>
+#     main()
+#   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 56, in main
+#     command_fn(args.command, sys.argv[2:])
+#   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/pipeline.py", line 273, in cli_predict
+#     pred_batch = model.predict_on_batch(batch['inputs'])
+#   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/model.py", line 22, in predict_on_batch
+#     raise NotImplementedError
+# NotImplementedError
+# _________________________
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
@@ -91,7 +103,7 @@ def test_predict_example(example, tmpdir):
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
-            "--extractor_args=test.json",
+            "--dataloader_args=test.json",
             "--file_format", file_format,
             "--output", tmpfile]
     if INSTALL_FLAG:

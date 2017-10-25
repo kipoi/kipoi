@@ -5,150 +5,100 @@ import os
 import logging
 import yaml
 import kipoi  # for .config module
-from .utils import load_module
+from .utils import load_module, cd
 import abc
 import six
+
+from .components import ModelDescription
+from kipoi.pipeline import Pipeline
 
 _logger = logging.getLogger('kipoi')
 
 
-MODEL_FIELDS = ['inputs', 'targets']
-DATA_TYPES = ['dna', 'bigwig', 'v-plot']
-
-
-class Model(object):
+class BaseModel(object):
     __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def predict_on_batch(self, x):
         raise NotImplementedError
 
     # TODO - define the .model attribute?
 
 
-def dir_model_info(model_dir):
-    """Load model yaml file
-    """
-    # Parse the model.yaml
-    with open(os.path.join(model_dir, 'model.yaml')) as ifh:
-        description_yaml = yaml.load(ifh)
-    return description_yaml
+def Model(model, source="kipoi"):
+    # TODO - model can be a yaml file or a directory
+    source_name = source
 
-
-def dir_load_model(model_dir):
-    """Load the model
-
-    1. Parse the model.yml
-    2. Load the Model
-    3. Append yaml description to __doc__
-    4. Return the Model
-    """
-    # TODO - handle different model specifications:
-    # - [x] local directory
-    #   - [ ] Also allow .yml path?
-    # - [ ] local yaml file path
-    # - [ ] <username>/<model>:<version>
-    # - [ ] Remote directory URL (git repo)
-
-    # Parse the model.yaml
-    with open(os.path.join(model_dir, 'model.yaml')) as ifh:
-        unparsed_yaml = ifh.read()
-    description_yaml = yaml.load(unparsed_yaml)
-    model_spec = description_yaml['model']
-    validate_model_spec(model_spec)
-
-    # load the model
-    if model_spec["type"] == "custom":
-        model = load_model_custom(py_path=os.path.join(model_dir, model_spec["args"]["file"]),
-                                  object_name=model_spec["args"]["object"])
-
-    elif model_spec["type"] == "keras":
-        cobj = model_spec["args"].get("custom_objects", None)
-        if cobj is not None:
-            cobj = os.path.join(model_dir, cobj)
-
-        model = KerasModel(weights_file=os.path.join(model_dir, model_spec["args"]["weights"]),
-                           arch_file=os.path.join(model_dir, model_spec["args"]["arch"]),
-                           custom_objects_file=cobj)
-
-    elif model_spec["type"] == "sklearn":
-        model = SklearnModel(pkl_flie=os.path.join(model_dir, model_spec["args"]["file"]))
-
-    elif model_spec["type"] == "pytorch":
-        raise NotImplementedError
-    else:
-        raise ValueError("Unsupported model type: {0}. " +
-                         "Model type needs to be one of: ['custom', 'keras', 'sklearn', 'pytorch']".
-                         format(model_spec["type"]))
-
-    # Append yaml description to __doc__
-    try:
-        model.__doc__ = """Model instance
-
-        # Methods
-          predict_on_batch(x)
-
-        # model.yaml
-
-            {0}
-        """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
-    except AttributeError:
-        _logger.warning("Unable to set the docstring")
-
-    try:
-        model.model_spec = model_spec
-    except:
-        _logger.warning("Unable to set model_spec")
-
-    return model
-
-
-def load_model(model, source="kipoi"):
-    """Load the model
-
-    source: source from which to pull the model
-    """
     if source == "dir":
-        return dir_load_model(model)
+        # TODO - maybe add it already to the config - to prevent code copying
+        source = kipoi.remote.LocalModelSource(".")
     else:
-        return kipoi.config.get_source(source).load_extractor(model)
+        source = kipoi.config.get_source(source)
 
+    # pull the model & get the model directory
+    source_dir = source.pull_model(model)
 
-def model_info(model, source="kipoi"):
-    """Get information about the model
+    yaml_path = kipoi.remote.get_model_file(source_dir)
 
-    # Arguments
-      model: model's relative path/name in the source. 2nd column in the `kipoi.list_models()` `pd.DataFrame`.
-      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
-    """
-    if source == "dir":
-        return dir_model_info(model)
+    # Setup model description
+    md = ModelDescription.load(yaml_path)
+    # TODO - is there a way to prevent code duplication here?
+    # TODO - possible to inherit from both classes and call the corresponding inits?
+    # --------------------------------------------
+    # TODO - load it into memory?
+
+    # TODO - validate md.default_dataloader <-> model
+
+    # attach the default dataloader already to the model
+    if ":" in md.default_dataloader:
+        dl_source, dl_path = md.default_dataloader.split(":")
     else:
-        return kipoi.config.get_source(source).get_model_info(model)
+        dl_source = source_name
+        dl_path = md.default_dataloader
 
+    # allow to use relative and absolute paths for referring to the dataloader
+    default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+    default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
+                                                  dl_source)
 
-def validate_model_spec(model_spec):
-    """Validate the model specification in the yaml file
-    """
-    # check model fields
-    assert (all(field in model_spec for field in MODEL_FIELDS))
+    # Read the Model - append methods, attributes to self
+    with cd(source_dir):  # move to the model directory temporarily
+        if md.type == 'custom':
+            Mod = load_model_custom(**md.args)
+            assert issubclass(Mod, BaseModel)  # it should inherit from Model
+            mod = Mod()
+        elif md.type in AVAILABLE_MODELS:
+            # TODO - this doesn't seem to work
+            mod = AVAILABLE_MODELS[md.type](**md.args)
+        else:
+            raise ValueError("Unsupported model type: {0}. " +
+                             "Model type needs to be one of: {1}".
+                             format(md.type,
+                                    ['custom'] + list(AVAILABLE_MODELS.keys())))
 
-    # check input and target data types
-    for data_name, data_spec in six.iteritems(model_spec['inputs']):
-        if type in data_spec:
-            assert data_spec['type'] in DATA_TYPES
-    for data_name, data_spec in six.iteritems(model_spec['targets']):
-        if type in data_spec:
-            assert data_spec['type'] in DATA_TYPES
+    # populate the returned class
+    mod.type = md.type
+    mod.args = md.args
+    mod.info = md.info
+    mod.schema = md.schema
+    mod.default_dataloader = default_dataloader
+    mod.name = model
+    mod.source = source
+    mod.source_name = source_name
+    mod.source_dir = source_dir
+    mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
+    return mod
 
 
 # ------ individual implementations ----
 # each requires a special module to be installed (?)
 # - TODO - where to specify those requirements?
+#      model: model's relative path / name in the source.
+#      2nd column in the `kipoi.list_models()` `pd.DataFrame`.
 
 
-def load_model_custom(py_path, object_name):
+def load_model_custom(file, object):
     """Loads the custom Model
-
 
     # model.yml entry
 
@@ -160,17 +110,17 @@ def load_model_custom(py_path, object_name):
             object: Model
         ```
     """
-    return getattr(load_module(py_path), object_name)
+    return getattr(load_module(file), object)
 
 
-class KerasModel(Model):
+class KerasModel(BaseModel):
     """Loads the serialized Keras model
 
     # Arguments
-        weights_file: File path to the hdf5 weights or the hdf5 Keras model
-        arhc_file: Architecture json model. If None, `weights_file` is
+        weights: File path to the hdf5 weights or the hdf5 Keras model
+        arhc: Architecture json model. If None, `weights` is
     assumed to speficy the whole model
-        custom_objects_file: Python file defining the custom Keras objects
+        custom_objects: Python file defining the custom Keras objects
     in a `OBJECTS` dictionary
 
 
@@ -186,42 +136,42 @@ class KerasModel(Model):
         ```
     """
 
-    def __init__(self, weights_file, arch_file, custom_objects_file):
+    def __init__(self, weights, arch, custom_objects=None):
         # TODO - check that Keras is indeed installed + specific requirements?
 
         from keras.models import model_from_json, load_model
 
-        if custom_objects_file is not None and os.path.exists(custom_objects_file):
-            self.custom_objects = load_module(custom_objects_file).OBJECTS
+        if custom_objects is not None and os.path.exists(custom_objects):
+            self.custom_objects = load_module(custom_objects).OBJECTS
         else:
             self.custom_objects = {}
 
-        self.weights_file = weights_file
-        self.arch_file = arch_file
+        self.weights = weights
+        self.arch = arch
 
-        if arch_file is None:
+        if arch is None:
             # load the whole model
-            self.model = load_model(weights_file, custom_objects=self.custom_objects)
+            self.model = load_model(weights, custom_objects=self.custom_objects)
             _logger.info('successfully loaded the model from {}'.
-                         format(weights_file))
+                         format(weights))
         else:
             # load arch
-            with open(arch_file, "r") as arch:
+            with open(arch, "r") as arch:
                 self.model = model_from_json(arch.read(),
                                              custom_objects=self.custom_objects)
             _logger.info('successfully loaded model architecture from {}'.
-                         format(arch_file))
+                         format(arch))
 
             # load weights
-            self.model.load_weights(weights_file)
+            self.model.load_weights(weights)
             _logger.info('successfully loaded model weights from {}'.
-                         format(weights_file))
+                         format(weights))
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
 
 
-# def PyTorchModel(Model):
+# def PyTorchModel(BaseModel):
 # TODO - implement and test
 #     def __init__(self, path):
 #         import torch
@@ -231,7 +181,7 @@ class KerasModel(Model):
 #         return self.model(x)
 
 
-class SklearnModel(Model):
+class SklearnModel(BaseModel):
     """Loads the serialized scikit learn model
 
     # Arguments
@@ -243,7 +193,7 @@ class SklearnModel(Model):
         Model:
           type: sklearn
           args:
-            file: asd.pkl
+            pkl_file: asd.pkl
         ```
     """
 
@@ -255,3 +205,9 @@ class SklearnModel(Model):
 
     def predict_on_batch(self, x):
         return self.model.predict(x)
+
+
+AVAILABLE_MODELS = {"keras": KerasModel,
+                    # "pytorch": PyTorchModel,
+                    "sklearn": SklearnModel}
+#"custom": load_model_custom}

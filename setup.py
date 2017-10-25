@@ -17,7 +17,9 @@ requirements = [
     "pandas",
     "keras",
     "tqdm",
-    "deepdish"
+    "deepdish",
+    "related",
+    "enum34",
     # "pytorch"
 ]
 
