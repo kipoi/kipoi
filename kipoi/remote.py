@@ -45,7 +45,7 @@ def list_yamls_recursively(root_dir, basename):
         import fnmatch
         return [os.path.dirname(os.path.join(root, filename))[len(root_dir):]
                 for root, dirnames, filenames in os.walk(root_dir)
-                for filename in fnmatch.filter(filenames, '{0}.y?ml'.basename)]
+                for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
 
 
 def list_models_recursively(root_dir):
