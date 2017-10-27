@@ -136,10 +136,10 @@ class Dataset(BaseDataLoader):
 # --------------------------------------------
 
 
-def DataLoader_factory(dataloader, source="kipoi"):
+def get_dataloader_factory(dataloader, source="kipoi"):
     if source == "dir":
             # TODO - maybe add it already to the config - to prevent code copying
-        source = kipoi.remote.LocalModelSource(".")
+        source = kipoi.remote.LocalSource(".")
     else:
         source = kipoi.config.get_source(source)
 

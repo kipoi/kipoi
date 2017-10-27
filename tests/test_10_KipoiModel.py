@@ -3,11 +3,12 @@
 import pytest
 import kipoi
 import sys
+import config
 from kipoi.pipeline import install_model_requirements
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 # TODO - finish the unit-test
-INSTALL_REQ = True
+INSTALL_REQ = config.install_req
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -19,7 +20,7 @@ def test_load_model(example):
 
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir")
-    m = kipoi.Model(example_dir, source="dir")
+    m = kipoi.get_model(example_dir, source="dir")
 
     m.arch
     m.info

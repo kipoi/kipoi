@@ -25,13 +25,13 @@ class BaseModel(object):
     # TODO - define the .model attribute?
 
 
-def Model(model, source="kipoi"):
+def get_model(model, source="kipoi"):
     # TODO - model can be a yaml file or a directory
     source_name = source
 
     if source == "dir":
         # TODO - maybe add it already to the config - to prevent code copying
-        source = kipoi.remote.LocalModelSource(".")
+        source = kipoi.remote.LocalSource(".")
     else:
         source = kipoi.config.get_source(source)
 
@@ -58,8 +58,8 @@ def Model(model, source="kipoi"):
 
     # allow to use relative and absolute paths for referring to the dataloader
     default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-    default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
-                                                  dl_source)
+    default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
+                                                      dl_source)
 
     # Read the Model - append methods, attributes to self
     with cd(source_dir):  # move to the model directory temporarily

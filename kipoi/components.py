@@ -2,7 +2,7 @@
 """
 import related
 import enum
-from .fields import StrSequenceField, NestedMappingField
+from .external.related.fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
 

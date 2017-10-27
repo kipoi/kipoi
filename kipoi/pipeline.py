@@ -9,7 +9,7 @@ import os
 import yaml
 from .utils import pip_install_requirements, parse_json_file_str
 import kipoi  # for .config module
-from .data import numpy_collate, numpy_collate_concat
+from .data import numpy_collate_concat
 # import h5py
 # import six
 import numpy as np
@@ -40,7 +40,7 @@ _logger = logging.getLogger('kipoi')
 
 
 def install_model_requirements(model, source="kipoi"):
-    pip_install_requirements(kipoi.requirements_file(model, source))
+    pip_install_requirements(kipoi.get_requirements_file(model, source))
 
 
 class Pipeline(object):
@@ -124,7 +124,7 @@ def cli_test(command, raw_args):
     # --------------------------------------------
     if args.install_req:
         install_model_requirements(args.model, args.source)
-    mh = kipoi.Model(args.model, args.source)
+    mh = kipoi.get_model(args.model, args.source)
     # force the requirements to be installed
 
     test_dir = os.path.join(mh.source_dir, 'test_files')
@@ -139,7 +139,7 @@ def cli_test(command, raw_args):
 
     with open('test.json') as f_kwargs:
         dataloader_kwargs = yaml.load(f_kwargs)
-    match = mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
+    mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
     # if not match:
     #     # _logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")
@@ -176,7 +176,7 @@ def cli_extract_to_hdf5(command, raw_args):
     # install args
     if args.install_req:
         install_model_requirements(args.model, args.source)
-    Dataloader = kipoi.DataLoader_factory(args.model, args.source)
+    Dataloader = kipoi.get_dataloader_factory(args.model, args.source)
 
     dataloader = Dataloader(**dataloader_kwargs)
 
@@ -251,10 +251,10 @@ def cli_predict(command, raw_args):
     if args.install_req:
         install_model_requirements(args.model, args.source)
     # load model & dataloader
-    model = kipoi.Model(args.model, args.source)
+    model = kipoi.get_model(args.model, args.source)
 
     if args.dataloader is not None:
-        Dl = kipoi.DataLoader_factory(args.dataloader, args.dataloader_source)
+        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
     else:
         Dl = model.default_dataloader
 

@@ -9,29 +9,51 @@ import subprocess
 import logging
 import glob
 from collections import OrderedDict
-from .utils import read_yaml
+from .utils import read_yaml, lfs_installed, get_file_path
 import pandas as pd
-import yaml
 import kipoi
 
 _logger = logging.getLogger('kipoi')
 
 
-def cmd_exists(cmd):
-    """Check if a certain command exists
+def get_requirements_file(model, source="kipoi"):
+    """Get the requirements file path
     """
-    return subprocess.call("type " + cmd, shell=True,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+    if source == "dir":
+        source = kipoi.remote.LocalSource(".")
+    else:
+        source = kipoi.config.get_source(source)
+    return os.path.join(source.pull_model(model), 'requirements.txt')
 
 
-def lfs_installed(raise_exception=False):
-    """Check if git lfs is installed localls
-    """
-    ce = cmd_exists("git-lfs")
-    if raise_exception:
-        if not ce:
-            raise OSError("git-lfs not installed")
-    return ce
+# TODO - unify the two functions into one
+def get_dataloader_file(dataloader_dir):
+    """Get a dataloader file path from a directory"""
+    return get_file_path(dataloader_dir, "dataloader", extensions=[".yml", ".yaml"])
+
+
+def get_model_file(model_dir):
+    """Get a model file path from a directory"""
+    return get_file_path(model_dir, "model", extensions=[".yml", ".yaml"])
+
+
+def list_yamls_recursively(root_dir, basename):
+    if sys.version_info >= (3, 5):
+        return [os.path.dirname(filename)[len(root_dir):] for filename in
+                glob.iglob(root_dir + '**/{0}.y?ml'.format(basename), recursive=True)]
+    else:
+        import fnmatch
+        return [os.path.dirname(os.path.join(root, filename))[len(root_dir):]
+                for root, dirnames, filenames in os.walk(root_dir)
+                for filename in fnmatch.filter(filenames, '{0}.y?ml'.basename)]
+
+
+def list_models_recursively(root_dir):
+    return list_yamls_recursively(root_dir, "model")
+
+
+def list_dataloaders_recursively(root_dir):
+    return list_yamls_recursively(root_dir, "dataloader")
 
 
 def dir_model_info(mpath):
@@ -40,7 +62,7 @@ def dir_model_info(mpath):
     return read_yaml(get_model_file(mpath))
 
 
-def model_info(model, source="kipoi"):
+def get_model_info(model, source="kipoi"):
     """Get information about the model
 
     # Arguments
@@ -53,58 +75,8 @@ def model_info(model, source="kipoi"):
         return kipoi.config.get_source(source).get_model_info(model)
 
 
-def requirements_file(model, source="kipoi"):
-    """Get the requirements file path
-    """
-    if source == "dir":
-        source = kipoi.remote.LocalModelSource(".")
-    else:
-        source = kipoi.config.get_source(source)
-    return os.path.join(source.pull_model(model), 'requirements.txt')
-
-
-# TODO - unify the two functions into one
-def get_dataloader_file(dataloader_dir):
-    """Get a dataloader file path from a directory
-    """
-
-    # validate the dataloader.yaml path
-    if os.path.exists(os.path.join(dataloader_dir, "dataloader.yaml")):
-        yaml_path = os.path.join(dataloader_dir, "dataloader.yaml")
-    elif os.path.exists(os.path.join(dataloader_dir, "dataloader.yml")):
-        yaml_path = os.path.join(dataloader_dir, "dataloader.yml")
-    else:
-        raise ValueError("File path doesn't exists: {0}/dataloader.y(a)ml".
-                         format(dataloader_dir))
-    return yaml_path
-
-
-def get_model_file(model_dir):
-    """Get a model file path from a directory
-    """
-
-    # validate the model.yaml path
-    if os.path.exists(os.path.join(model_dir, "model.yaml")):
-        yaml_path = os.path.join(model_dir, "model.yaml")
-    elif os.path.exists(os.path.join(model_dir, "model.yml")):
-        yaml_path = os.path.join(model_dir, "model.yml")
-    else:
-        raise ValueError("File path doesn't exists: {0}/model.y(a)ml".format(model_dir))
-    return yaml_path
-
-
-def list_models_recursively(root_dir):
-    if sys.version_info >= (3, 5):
-        return [os.path.dirname(filename)[len(root_dir):] for filename in
-                glob.iglob(root_dir + '**/model.yaml', recursive=True)]
-    else:
-        import fnmatch
-        return [os.path.dirname(os.path.join(root, filename))[len(root_dir):]
-                for root, dirnames, filenames in os.walk(root_dir)
-                for filename in fnmatch.filter(filenames, 'model.yaml')]
-
-
-class ModelSource(object):
+# TODO - call it source?
+class Source(object):
 
     __metaclass__ = ABCMeta
 
@@ -113,8 +85,8 @@ class ModelSource(object):
         pass
 
     @abstractmethod
-    def list_models(self):
-        """List available models
+    def _list_models(self):
+        """List available models a strings
         """
         pass
 
@@ -125,17 +97,7 @@ class ModelSource(object):
         """
         return
 
-    # # TODO - deprecate
-    # def load_model(self, model):
-    #     m_dir = self.pull_model(model)
-    #     return dir_load_model(m_dir)
-
-    # # TODO - deprecate
-    # def load_extractor(self, model):
-    #     m_dir = self.pull_model(model)
-    #     return dir_load_extractor(m_dir)
-
-    def list_models_df(self):
+    def list_models(self):
         """List all the models as a data.frame
         """
         def dict2df_dict(d, model):
@@ -154,7 +116,7 @@ class ModelSource(object):
             ])
 
         return pd.DataFrame([dict2df_dict(self.get_model_info(model), model)
-                             for model in self.list_models()])
+                             for model in self._list_models()])
 
     @abstractmethod
     def get_model_info(self, model):
@@ -180,19 +142,19 @@ class ModelSource(object):
         return "{0}({1})".format(cls_name, kwargs)
 
 
-class GitLFSModelSource(ModelSource):
+class GitLFSSource(Source):
 
     TYPE = "git-lfs"
 
     def __init__(self, remote_url, local_path):
-        """GitLFS ModelSource
+        """GitLFS Source
         """
         lfs_installed(raise_exception=True)
         self.remote_url = remote_url
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
-    def list_models(self):
+    def _list_models(self):
         if not self._pulled:
             self.pull_source()
         return list_models_recursively(self.local_path)
@@ -267,17 +229,17 @@ class GitLFSModelSource(ModelSource):
                             ("local_path", self.local_path)])
 
 
-class GitModelSource(ModelSource):
+class GitSource(Source):
     TYPE = "git"
 
     def __init__(self, remote_url, local_path):
-        """Git ModelSource
+        """Git Source
         """
         self.remote_url = remote_url
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
-    def list_models(self):
+    def _list_models(self):
         if not self._pulled:
             self.pull_source()
         return list_models_recursively(self.local_path)
@@ -332,7 +294,7 @@ class GitModelSource(ModelSource):
                             ("local_path", self.local_path)])
 
 
-class LocalModelSource(ModelSource):
+class LocalSource(Source):
 
     TYPE = "local"
 
@@ -341,7 +303,7 @@ class LocalModelSource(ModelSource):
         """
         self.local_path = os.path.join(local_path, '')  # add trailing slash
 
-    def list_models(self):
+    def _list_models(self):
         return list_models_recursively(self.local_path)
 
     def get_model_info(self, model):
@@ -359,8 +321,9 @@ class LocalModelSource(ModelSource):
                             ("local_path", self.local_path)])
 
 
+# --------------------------------------------
 # all available models
-source_classes = [GitLFSModelSource, GitModelSource, LocalModelSource]
+source_classes = [GitLFSSource, GitSource, LocalSource]
 
 
 def load_source(config):

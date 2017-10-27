@@ -1,7 +1,7 @@
 type: keras # TODO - use a class name?
 args:
-    arch: model/model.json
-    weights: model/weights.h5
+    arch: model_files/model.json
+    weights: model_files/weights.h5
     custom_objects: model/custom_keras_objects.py
 default_dataloader: . # path to the directory
 info:

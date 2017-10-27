@@ -10,27 +10,27 @@ def test_load_models_kipoi():
 
     l = k.list_models()  # all the available models
 
-    assert "extended_coda" in l
+    assert "extended_coda" in list(l.model)
     model = "extended_coda"
     m_dir = k.pull_model(model)
 
     # load the model
-    kipoi.Model(m_dir, source="dir")
+    kipoi.get_model(m_dir, source="dir")
 
-    kipoi.Model(model, source="kipoi")
-    kipoi.DataLoader_factory(model)
+    kipoi.get_model(model, source="kipoi")
+    kipoi.get_dataloader_factory(model)
 
 
 def test_load_models_local():
     model = "examples/extended_coda"
-    kipoi.Model(model, source="dir")
-    kipoi.DataLoader_factory(model, source="dir")
+    kipoi.get_model(model, source="dir")
+    kipoi.get_dataloader_factory(model, source="dir")
 
 
 def test_list_models():
     k = kipoi.config.get_source("kipoi")
 
-    df = k.list_models_df()
+    df = k.list_models()
     assert isinstance(df, pd.DataFrame)
 
     # column names
@@ -41,9 +41,9 @@ def test_list_models():
     df_all = kipoi.list_models()
     assert ["source"] + df_model_columns == list(df_all.columns)
 
-    kipoi.model_info("extended_coda")
+    kipoi.get_model_info("extended_coda")
 
-    kipoi.model_info("extended_coda", source="kipoi")
+    kipoi.get_model_info("extended_coda", source="kipoi")
 
     # local files
-    kipoi.model_info("examples/extended_coda", source="dir")
+    kipoi.get_model_info("examples/extended_coda", source="dir")

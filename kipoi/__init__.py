@@ -15,12 +15,12 @@ from . import data_utils
 from . import data
 
 # shortcuts
-from .model import Model
-from .data import DataLoader_factory
-from .remote import model_info, requirements_file
+from .model import get_model
+from .data import get_dataloader_factory
+from .remote import get_model_info, get_requirements_file
 from .pipeline import install_model_requirements
-from .config import list_models, get_source
-from .config import model_sources as sources
+from .config import list_models, get_source, list_sources
+# from .config import model_sources as sources
 
 
 # Setup logging
