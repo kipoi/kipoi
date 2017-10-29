@@ -2,6 +2,7 @@
 """
 import related
 import enum
+from collections import OrderedDict
 from .external.related.fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
@@ -169,9 +170,13 @@ class DataLoaderArgument(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
 
 
+@related.immutable
+class Dependencies(object):
+    conda = related.ChildField(OrderedDict, default=OrderedDict(), required=False)
+
+
 # --------------------------------------------
 # Final description classes modelling the yaml files
-
 @related.immutable
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
@@ -179,6 +184,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     type = related.StringField()
     args = related.ChildField(dict)
     info = related.ChildField(Info)
+    dependencies = related.ChildField(Dependencies, required=False)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
     # TODO - add after loading validation for the arguments class?
@@ -192,6 +198,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
     info = related.ChildField(Info)
+    dependencies = related.ChildField(Dependencies, required=False)
     schema = related.ChildField(DataLoaderSchema)
 
 

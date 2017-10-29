@@ -1,0 +1,19 @@
+type: keras
+args:
+    arch: model_files/model.json
+    weights: model_files/weights.h5
+default_dataloader: . # path to the directory
+info:
+    author: Your Name
+    name: NameOfThisModel
+    version: 0.1
+    descr: Model predicting the Iris species
+schema:
+    inputs:
+        features:
+            shape: (4,)
+            descr: Features in cm: sepal length, sepal width, petal length, petal width.
+    targets:
+        plant_class:
+            shape: (3,)
+            descr: One-hot encoded array of classes: setosa, versicolor, virginica.
