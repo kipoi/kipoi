@@ -43,6 +43,8 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
         """
         original_yaml = open(path).read().strip()
         parsed_dict = related.from_yaml(original_yaml)
+        if "path" not in parsed_dict:
+            parsed_dict["path"] = path
         return cls.from_config(parsed_dict)
 
     def dump(self, path):
@@ -184,9 +186,12 @@ class ModelDescription(RelatedLoadSaveMixin):
     type = related.StringField()
     args = related.ChildField(dict)
     info = related.ChildField(Info)
-    dependencies = related.ChildField(Dependencies, required=False)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
+    dependencies = related.ChildField(Dependencies,
+                                      default=Dependencies(conda=OrderedDict()),
+                                      required=False)
+    path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
 
 
@@ -198,9 +203,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
     info = related.ChildField(Info)
-    dependencies = related.ChildField(Dependencies, required=False)
     schema = related.ChildField(DataLoaderSchema)
-
+    dependencies = related.ChildField(Dependencies, required=False)
+    path = related.StringField(required=False)
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)

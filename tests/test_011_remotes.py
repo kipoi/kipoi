@@ -12,7 +12,8 @@ def test_load_models_kipoi():
 
     assert "extended_coda" in list(l.model)
     model = "extended_coda"
-    m_dir = k.pull_model(model)
+    mpath = k.pull_model(model)
+    m_dir = os.path.dirname(mpath)
 
     # load the model
     kipoi.get_model(m_dir, source="dir")

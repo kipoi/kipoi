@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .remote import load_source, GitLFSSource
+from .remote import load_source, GitLFSSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
 # --------------------------------------------
 
@@ -26,8 +26,6 @@ _MODEL_SOURCES = {
     "kipoi": GitLFSSource(remote_url="git@github.com:kipoi/models.git",
                           local_path=os.path.join(_kipoi_dir, "models/"))
 }
-
-# TODO - use related to model the config file as a class?
 
 
 def model_sources():
@@ -46,11 +44,12 @@ def set_model_sources(_model_sources):
 
 
 def get_source(source):
-    if source not in model_sources():
+    if source in model_sources():
+        return model_sources()[source]
+    else:
         raise ValueError("source={0} needs to be in model_sources()" +
                          "available sources: {1}".
                          format(source, list(model_sources().keys())))
-    return model_sources()[source]
 
 
 def add_source(name, obj):
@@ -142,3 +141,7 @@ if not os.path.exists(_config_path):
     except IOError:
         # Except permission denied.
         pass
+
+
+# Add dir as a valid source
+add_source("dir", LocalSource("."))

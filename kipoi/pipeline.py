@@ -43,6 +43,14 @@ def install_model_requirements(model, source="kipoi"):
     pip_install_requirements(kipoi.get_requirements_file(model, source))
 
 
+def add_arg_source(parser, default="kipoi"):
+    parser.add_argument('--source', default=default,
+                        choices=list(kipoi.config.model_sources().keys()),
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        " under model_sources. " +
+                        "'dir' is an additional source referring to the local folder.")
+
+
 class Pipeline(object):
     """Provides the test_predict, predict and predict_generator to the kipoi.Model
     """
@@ -112,10 +120,7 @@ def cli_test(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="dir",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser, default="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-i", "--install_req", action='store_true',
@@ -147,6 +152,22 @@ def cli_test(command, raw_args):
     _logger.info('Successfully ran test_predict')
 
 
+def rerun_command_new_cli(command, raw_args, model, source):
+    md = kipoi.config.get_source(source).get_model_info(model)
+
+    # TODO - duplicated with model.py
+    # attach the default dataloader already to the model
+    if ":" in md.default_dataloader:
+        dl_source, dl_path = md.default_dataloader.split(":")
+    else:
+        dl_source = source
+        dl_path = md.default_dataloader
+    dl = kipoi.config.get_source(dl_source).get_dataloader_info(dl_path)
+
+    # TODO - install the both commands
+    dependencies = md.dependencies.conda + dl.dependencies.conda
+
+
 def cli_extract_to_hdf5(command, raw_args):
     """CLI interface to run the dataloader
     """
@@ -154,10 +175,7 @@ def cli_extract_to_hdf5(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the dataloader and save the output to an hdf5 file.')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser)
     parser.add_argument('--dataloader_args',
                         help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -213,10 +231,7 @@ def cli_predict(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the model prediction.')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser)
     parser.add_argument('--dataloader', default=None,
                         help="Dataloader name. If not specified, the model's default" +
                         "DataLoader will be used")
@@ -326,11 +341,7 @@ def cli_pull(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Downloads the directory associated with the model.")
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
-                        "under model_sources")
-
+    add_arg_source(parser)
     args = parser.parse_args(raw_args)
 
     kipoi.config.get_source(args.source).pull_model(args.model)
