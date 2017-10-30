@@ -97,6 +97,7 @@ class ArraySchema(RelatedConfigMixin):
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
+    # TODO - transform to tuple
     shape = related.ChildField(tuple)   # TODO - can be None - for scalars?
     descr = related.StringField()
     # MAYBE - allow a list of strings?
