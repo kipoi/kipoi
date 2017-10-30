@@ -9,7 +9,7 @@ docs/theme_dir/img/ipynb/*
 
 # emacs
 *~
-
+.venv
 
 # C extensions
 *.so

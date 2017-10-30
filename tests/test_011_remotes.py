@@ -5,6 +5,8 @@ import os
 import pandas as pd
 
 
+# TODO - add installation dependencies?
+
 def test_load_models_kipoi():
     k = kipoi.config.get_source("kipoi")
 

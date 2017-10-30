@@ -68,7 +68,7 @@ def test_preproc_example(example, tmpdir):
     with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    assert data["inputs"].keys() == ex_descr["schema"]["inputs"].keys()
+    assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

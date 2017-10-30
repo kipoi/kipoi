@@ -7,7 +7,7 @@ import argparse
 import logging
 import os
 import yaml
-from .utils import pip_install_requirements, parse_json_file_str
+from .utils import parse_json_file_str
 import kipoi  # for .config module
 from .data import numpy_collate_concat
 # import h5py
@@ -39,8 +39,23 @@ _logger = logging.getLogger('kipoi')
 # RESERVED_PREPROC_KWS = ['intervals_file']
 
 
-def install_model_requirements(model, source="kipoi"):
-    pip_install_requirements(kipoi.get_requirements_file(model, source))
+def install_model_requirements(model, source="kipoi", and_dataloaders=False):
+    md = kipoi.get_source(source).get_model_info(model)
+    md.dependencies.install()
+    if and_dataloaders:
+        if ":" in md.default_dataloader:
+            dl_source, dl_path = md.default_dataloader.split(":")
+        else:
+            dl_source = source
+            dl_path = md.default_dataloader
+
+        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+        dl = kipoi.config.get_source(dl_source).get_dataloader_info(default_dataloader_path)
+        dl.dependencies.install()
+
+
+def install_dataloader_requirements(dataloader, source="kipoi"):
+    kipoi.get_source(source).get_model_info(dataloader).dependencies.install()
 
 
 def add_arg_source(parser, default="kipoi"):
@@ -128,7 +143,7 @@ def cli_test(command, raw_args):
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     if args.install_req:
-        install_model_requirements(args.model, args.source)
+        install_model_requirements(args.model, args.source, and_dataloaders=True)
     mh = kipoi.get_model(args.model, args.source)
     # force the requirements to be installed
 
@@ -150,22 +165,6 @@ def cli_test(command, raw_args):
     #     raise Exception("Expected targets don't match model predictions")
 
     _logger.info('Successfully ran test_predict')
-
-
-def rerun_command_new_cli(command, raw_args, model, source):
-    md = kipoi.config.get_source(source).get_model_info(model)
-
-    # TODO - duplicated with model.py
-    # attach the default dataloader already to the model
-    if ":" in md.default_dataloader:
-        dl_source, dl_path = md.default_dataloader.split(":")
-    else:
-        dl_source = source
-        dl_path = md.default_dataloader
-    dl = kipoi.config.get_source(dl_source).get_dataloader_info(dl_path)
-
-    # TODO - install the both commands
-    dependencies = md.dependencies.conda + dl.dependencies.conda
 
 
 def cli_extract_to_hdf5(command, raw_args):
@@ -193,7 +192,7 @@ def cli_extract_to_hdf5(command, raw_args):
     # --------------------------------------------
     # install args
     if args.install_req:
-        install_model_requirements(args.model, args.source)
+        install_dataloader_requirements(args.model, args.source)
     Dataloader = kipoi.get_dataloader_factory(args.model, args.source)
 
     dataloader = Dataloader(**dataloader_kwargs)
@@ -264,7 +263,7 @@ def cli_predict(command, raw_args):
     # --------------------------------------------
     # install args
     if args.install_req:
-        install_model_requirements(args.model, args.source)
+        install_model_requirements(args.model, args.source, and_dataloaders=True)
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 

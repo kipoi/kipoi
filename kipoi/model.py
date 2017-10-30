@@ -88,6 +88,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.args = md.args
     mod.info = md.info
     mod.schema = md.schema
+    mod.dependencies = md.dependencies
     mod.default_dataloader = default_dataloader
     mod.name = model
     mod.source = source

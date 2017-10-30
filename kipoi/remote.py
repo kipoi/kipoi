@@ -131,8 +131,8 @@ class Source(object):
                 ("author", d.info.author),
                 ("descr", d.info.descr),
                 ("type", d.type),
-                ("inputs", list(d.schema.inputs)),
-                ("targets", list(d.schema.targets)),
+                ("inputs", list(d.output_schema.inputs)),
+                ("targets", list(d.output_schema.targets)),
                 ("tags", d.info.tags),
             ])
 
@@ -313,7 +313,7 @@ class GitSource(Source):
         return cpath
 
     def _get_component_info(self, component, which="model"):
-        return load_component_info(self._pull_component(component), which)
+        return load_component_info(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -341,7 +341,7 @@ class LocalSource(Source):
         return cpath
 
     def _get_component_info(self, component, which="model"):
-        return load_component_info(self._pull_component(component), which)
+        return load_component_info(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),

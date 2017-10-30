@@ -3,6 +3,7 @@
 import related
 import enum
 from collections import OrderedDict
+import kipoi.conda as kconda
 from .external.related.fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
@@ -174,7 +175,28 @@ class DataLoaderArgument(RelatedConfigMixin):
 
 @related.immutable
 class Dependencies(object):
-    conda = related.ChildField(OrderedDict, default=OrderedDict(), required=False)
+    conda = related.SequenceField(str, default=[], required=False)
+    pip = related.SequenceField(str, default=[], required=False)
+
+    def install_pip(self, dry_run=False):
+        print("pip dependencies to be installed:")
+        print(self.pip)
+        if dry_run:
+            return
+        else:
+            kconda.install_pip(self.pip)
+
+    def install_conda(self, dry_run=False):
+        print("Conda dependencies to be installed:")
+        print(self.conda)
+        if dry_run:
+            return
+        else:
+            kconda.install_conda(self.conda)
+
+    def install(self, dry_run=False):
+        self.install_conda(dry_run)
+        self.install_pip(dry_run)
 
 
 # --------------------------------------------
@@ -189,7 +211,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
     dependencies = related.ChildField(Dependencies,
-                                      default=Dependencies(conda=OrderedDict()),
+                                      default=Dependencies(),
                                       required=False)
     path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
@@ -203,9 +225,10 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
     info = related.ChildField(Info)
-    schema = related.ChildField(DataLoaderSchema)
-    dependencies = related.ChildField(Dependencies, required=False)
+    output_schema = related.ChildField(DataLoaderSchema)
+    dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
+
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)

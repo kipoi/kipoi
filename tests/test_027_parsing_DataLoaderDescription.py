@@ -34,7 +34,7 @@ info:
     name: rbp_eclip
     version: 0.1
     descr: RBP binding prediction
-schema:
+output_schema:
     inputs:
         seq:
             shape: (4, 101)
@@ -76,7 +76,7 @@ args:
     custom_objects: model/custom_keras_objects.py
 default_dataloader: dataloader.yaml # shall we call it just dataloader?
 # info is missing
-schema:
+output_schema:
     inputs:
         seq:
             shape: (4, 101)
@@ -144,13 +144,13 @@ def test_model_loading_on_examples(example):
     dl.info.tags
     dl.info.descr
 
-    dl.schema
-    dl.schema.inputs
-    inp_elem = six.next(six.itervalues(dl.schema.inputs))
+    dl.output_schema
+    dl.output_schema.inputs
+    inp_elem = six.next(six.itervalues(dl.output_schema.inputs))
     inp_elem.shape
     inp_elem.special_type
     inp_elem.associated_metadata
 
-    dl.schema.targets
+    dl.output_schema.targets
 
-    dl.schema.metadata
+    dl.output_schema.metadata

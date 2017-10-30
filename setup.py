@@ -18,7 +18,7 @@ requirements = [
     "keras",
     "tqdm",
     "deepdish",
-    "related",
+    "related==0.4",
     "enum34",
     # "pytorch"
 ]
@@ -47,6 +47,8 @@ setup(
     extras_require={
         "develop": ["bumpversion",
                     "wheel",
+                    "jedi",
+                    "epc",
                     "pytest",
                     "pytest-pep8",
                     "pytest-cov"],

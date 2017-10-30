@@ -2,6 +2,9 @@
 
 Reusing code from: https://github.com/conda/conda-api/blob/master/conda_api.py
 """
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import json
 import sys
@@ -53,6 +56,19 @@ def create_env_from_file(env_file):
     return _call_conda(cmd_list, use_stdout=True)
 
 
+def install_conda(conda_deps):
+    conda_deps_wo_python = [x for x in conda_deps if "python" != x[:6]]
+    if conda_deps_wo_python:
+        cmd_list = ["install", "-y"] + conda_deps_wo_python
+        return _call_conda(cmd_list, use_stdout=True)
+
+
+def install_pip(pip_deps):
+    if pip_deps:
+        cmd_list = ["install"] + list(pip_deps)
+        return _call_pip(cmd_list, use_stdout=True)
+
+
 def remove_env(env_name):
     cmd_list = ["env", "remove", "-y", "-n", env_name]
     return _call_conda(cmd_list, use_stdout=True)
@@ -71,10 +87,10 @@ def env_exists(env):
     return env in [os.path.basename(x) for x in get_envs()]
 
 
-def _call_conda(extra_args, use_stdout=False):
+def _call_command(cmd, extra_args, use_stdout=False):
     # call conda with the list of extra arguments, and return the tuple
     # stdout, stderr
-    cmd_list = ['conda']  # just use whatever conda is on the path
+    cmd_list = [cmd]  # just use whatever conda is on the path
 
     cmd_list.extend(extra_args)
 
@@ -94,6 +110,14 @@ def _call_conda(extra_args, use_stdout=False):
     except OSError:
         raise Exception("could not invoke {0}\n".format(cmd_list))
     return p.communicate()
+
+
+def _call_conda(extra_args, use_stdout=False):
+    return _call_command("conda", extra_args, use_stdout)
+
+
+def _call_pip(extra_args, use_stdout=False):
+    return _call_command("pip", extra_args, use_stdout)
 
 
 def _call_and_parse(extra_args):

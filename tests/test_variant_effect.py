@@ -21,7 +21,7 @@ def test_var_eff_pred():
     # Take the rbp model
     model_dir = "examples/rbp/"
     if INSTALL_REQ:
-        install_model_requirements(model_dir, "dir")
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
     model = kipoi.get_model(model_dir, source="dir")
     # The preprocessor
     Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
