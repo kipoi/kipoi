@@ -35,5 +35,5 @@ output_schema:
             descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
     metadata:
         example_row_number:
-            shape: (1,)
+            type: int
             descr: Just an example metadata column

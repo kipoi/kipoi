@@ -17,8 +17,8 @@ from . import data
 # shortcuts
 from .model import get_model
 from .data import get_dataloader_factory
-from .remote import get_model_info, get_requirements_file
-from .pipeline import install_model_requirements
+from .remote import get_model_info, get_dataloader_info
+from .pipeline import install_model_requirements, install_dataloader_requirements
 from .config import list_models, get_source, list_sources
 # from .config import model_sources as sources
 

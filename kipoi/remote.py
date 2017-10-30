@@ -17,17 +17,6 @@ import kipoi
 _logger = logging.getLogger('kipoi')
 
 
-# TODO - replace with baked-in requirements
-def get_requirements_file(model, source="kipoi"):
-    """Get the requirements file path
-    """
-    if source == "dir":
-        source = kipoi.remote.LocalSource(".")
-    else:
-        source = kipoi.config.get_source(source)
-    return os.path.join(os.path.dirname(source.pull_model(model)), 'requirements.txt')
-
-
 def get_component_file(component_dir, which="model"):
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"])
 
