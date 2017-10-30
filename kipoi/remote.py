@@ -9,13 +9,15 @@ import subprocess
 import logging
 import glob
 from collections import OrderedDict
-from .utils import read_yaml, lfs_installed, get_file_path
+from .utils import lfs_installed, get_file_path
+from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
 
 _logger = logging.getLogger('kipoi')
 
 
+# TODO - replace with baked-in requirements
 def get_requirements_file(model, source="kipoi"):
     """Get the requirements file path
     """
@@ -23,18 +25,11 @@ def get_requirements_file(model, source="kipoi"):
         source = kipoi.remote.LocalSource(".")
     else:
         source = kipoi.config.get_source(source)
-    return os.path.join(source.pull_model(model), 'requirements.txt')
+    return os.path.join(os.path.dirname(source.pull_model(model)), 'requirements.txt')
 
 
-# TODO - unify the two functions into one
-def get_dataloader_file(dataloader_dir):
-    """Get a dataloader file path from a directory"""
-    return get_file_path(dataloader_dir, "dataloader", extensions=[".yml", ".yaml"])
-
-
-def get_model_file(model_dir):
-    """Get a model file path from a directory"""
-    return get_file_path(model_dir, "model", extensions=[".yml", ".yaml"])
+def get_component_file(component_dir, which="model"):
+    return get_file_path(component_dir, which, extensions=[".yml", ".yaml"])
 
 
 def list_yamls_recursively(root_dir, basename):
@@ -48,18 +43,15 @@ def list_yamls_recursively(root_dir, basename):
                 for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
 
 
-def list_models_recursively(root_dir):
-    return list_yamls_recursively(root_dir, "model")
-
-
-def list_dataloaders_recursively(root_dir):
-    return list_yamls_recursively(root_dir, "dataloader")
-
-
-def dir_model_info(mpath):
+def load_component_info(component_path, which="model"):
     """Return the parsed yaml file
     """
-    return read_yaml(get_model_file(mpath))
+    if which == "model":
+        return ModelDescription.load(component_path)
+    elif which == "dataloader":
+        return DataLoaderDescription.load(component_path)
+    else:
+        raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
 def get_model_info(model, source="kipoi"):
@@ -69,13 +61,19 @@ def get_model_info(model, source="kipoi"):
       model: model's relative path/name in the source. 2nd column in the `kipoi.list_models() `pd.DataFrame`.
       source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
-    if source == "dir":
-        return dir_model_info(model)
-    else:
-        return kipoi.config.get_source(source).get_model_info(model)
+    return kipoi.config.get_source(source).get_model_info(model)
 
 
-# TODO - call it source?
+def get_dataloader_info(dataloader, source="kipoi"):
+    """Get information about the dataloder
+
+    # Arguments
+      datalaoder: dataloader's relative path/name in the source. 2nd column in the `kipoi.list_dataloader() `pd.DataFrame`.
+      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
+    """
+    return kipoi.config.get_source(source).get_dataloader_info(dataloader)
+
+
 class Source(object):
 
     __metaclass__ = ABCMeta
@@ -85,42 +83,71 @@ class Source(object):
         pass
 
     @abstractmethod
-    def _list_models(self):
+    def _list_components(self, which="model"):
         """List available models a strings
         """
         pass
 
     @abstractmethod
-    def pull_model(self, model):
+    def _pull_component(self, component, which="model"):
         """Pull/update the model locally and
         returns a local path to it
         """
         return
 
+    def pull_model(self, model):
+        return self._pull_component(model, "model")
+
+    def pull_dataloader(self, dataloader):
+        return self._pull_component(dataloader, "dataloader")
+
     def list_models(self):
         """List all the models as a data.frame
         """
         def dict2df_dict(d, model):
-            # TODO - use with ModelDescription parsing
-            inf = d["info"]
             return OrderedDict([
                 ("model", model),
-                ("name", inf["name"]),
-                ("version", inf["version"]),
-                ("author", inf["author"]),
-                ("descr", inf["descr"]),
-                ("type", d["type"]),
-                ("inputs", list(d["schema"]["inputs"])),
-                ("targets", list(d["schema"]["targets"])),
-                ("tags", d["info"].get("tags", [])),  # TODO add special tags to model.yaml
+                ("name", d.info.name),
+                ("version", d.info.version),
+                ("author", d.info.author),
+                ("descr", d.info.descr),
+                ("type", d.type),
+                ("inputs", list(d.schema.inputs)),
+                ("targets", list(d.schema.targets)),
+                ("tags", d.info.tags),
             ])
 
         return pd.DataFrame([dict2df_dict(self.get_model_info(model), model)
-                             for model in self._list_models()])
+                             for model in self._list_components("model")])
+
+    def list_dataloaders(self):
+        """List all the models as a data.frame
+        """
+        def dict2df_dict(d, dataloader):
+            return OrderedDict([
+                ("dataloader", dataloader),
+                ("name", d.info.name),
+                ("version", d.info.version),
+                ("author", d.info.author),
+                ("descr", d.info.descr),
+                ("type", d.type),
+                ("inputs", list(d.output_schema.inputs)),
+                ("targets", list(d.output_schema.targets)),
+                ("tags", d.info.tags),
+            ])
+
+        return pd.DataFrame([dict2df_dict(self.get_dataloader_info(dataloader), dataloader)
+                             for dataloader in self._list_components("dataloader")])
 
     @abstractmethod
-    def get_model_info(self, model):
+    def _get_component_info(self, component, which="model"):
         pass
+
+    def get_model_info(self, model):
+        return self._get_component_info(model, which="model")
+
+    def get_dataloader_info(self, dataloader):
+        return self._get_component_info(dataloader, which="dataloader")
 
     @abstractmethod
     def get_config(self):
@@ -154,10 +181,10 @@ class GitLFSSource(Source):
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
-    def _list_models(self):
+    def _list_components(self, which="model"):
         if not self._pulled:
             self.pull_source()
-        return list_models_recursively(self.local_path)
+        return list_yamls_recursively(self.local_path, which)
 
     def clone(self):
         """Clone the self.remote_url into self.local_path
@@ -194,34 +221,34 @@ class GitLFSSource(Source):
                         cwd=self.local_path)
         self._pulled = True
 
-    def get_model_info(self, model):
+    def _pull_component(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
 
-        mpath = os.path.join(self.local_path, model)
-        if not os.path.exists(mpath):
-            raise ValueError("Model: {0} doesn't exist in {1}".
-                             format(model, self.remote_url))
-
-        return dir_model_info(mpath)
-
-    def pull_model(self, model):
-        if not self._pulled:
-            self.pull_source()
-
-        mpath = os.path.join(self.local_path, model)
-        if not os.path.exists(mpath):
-            raise ValueError("Model: {0} doesn't exist in {1}".
-                             format(model, self.remote_url))
+        cpath = get_component_file(os.path.join(self.local_path, component), which)
+        if not os.path.exists(cpath):
+            raise ValueError("{0}: {1} doesn't exist in {2}".
+                             format(component, self.remote_url))
 
         cmd = ["git-lfs",
                "pull",
-               "-I {model}/**".format(model=model)]
+               "-I {component}/**".format(component=component)]
         _logger.info(" ".join(cmd))
         subprocess.call(cmd,
                         cwd=self.local_path)
-        _logger.info("model {0} loaded".format(model))
-        return mpath
+        _logger.info("{0} {1} loaded".format(which, component))
+        return cpath
+
+    def _get_component_info(self, component, which="model"):
+        if not self._pulled:
+            self.pull_source()
+
+        cpath = get_component_file(os.path.join(self.local_path, component), which)
+        if not os.path.exists(cpath):
+            raise ValueError("{0}: {1} doesn't exist in {2}".
+                             format(which, component, self.remote_url))
+
+        return load_component_info(cpath, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -239,10 +266,10 @@ class GitSource(Source):
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
-    def _list_models(self):
+    def _list_components(self, which="model"):
         if not self._pulled:
             self.pull_source()
-        return list_models_recursively(self.local_path)
+        return list_yamls_recursively(self.local_path, which)
 
     def clone(self):
         """Clone the self.remote_url into self.local_path
@@ -274,19 +301,19 @@ class GitSource(Source):
                         cwd=self.local_path)
         self._pulled = True
 
-    def get_model_info(self, model):
-        return dir_model_info(self.pull_model(model))
-
-    def pull_model(self, model):
+    def _pull_component(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
 
-        mpath = os.path.join(self.local_path, model)
-        if not os.path.exists(mpath):
-            raise ValueError("Model {0} doesn't exist in {1}".
-                             format(model, self.remote_url))
-        _logger.info("model {0} loaded".format(model))
-        return mpath
+        cpath = get_component_file(os.path.join(self.local_path, component), which)
+        if not os.path.exists(cpath):
+            raise ValueError("{0} {1} doesn't exist in {2}".
+                             format(which, component, self.remote_url))
+        _logger.info("{0} {1} loaded".format(which, component))
+        return cpath
+
+    def _get_component_info(self, component, which="model"):
+        return load_component_info(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -303,18 +330,18 @@ class LocalSource(Source):
         """
         self.local_path = os.path.join(local_path, '')  # add trailing slash
 
-    def _list_models(self):
-        return list_models_recursively(self.local_path)
+    def _list_components(self, which="model"):
+        return list_yamls_recursively(self.local_path, which)
 
-    def get_model_info(self, model):
-        return dir_model_info(self.pull_model(model))
+    def _pull_component(self, component, which="model"):
+        cpath = get_component_file(os.path.join(self.local_path, component), which)
+        if not os.path.exists(cpath):
+            raise ValueError("{0} {1} doesn't exist".
+                             format(which, component))
+        return cpath
 
-    def pull_model(self, model):
-        mpath = os.path.join(self.local_path, model)
-        if not os.path.exists(mpath):
-            raise ValueError("Model {0} doesn't exist".
-                             format(model))
-        return mpath
+    def _get_component_info(self, component, which="model"):
+        return load_component_info(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),

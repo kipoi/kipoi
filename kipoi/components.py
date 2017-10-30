@@ -2,6 +2,8 @@
 """
 import related
 import enum
+from collections import OrderedDict
+import kipoi.conda as kconda
 from .external.related.fields import StrSequenceField, NestedMappingField
 # TODO additionally validate the special type properties
 
@@ -42,6 +44,8 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
         """
         original_yaml = open(path).read().strip()
         parsed_dict = related.from_yaml(original_yaml)
+        if "path" not in parsed_dict:
+            parsed_dict["path"] = path
         return cls.from_config(parsed_dict)
 
     def dump(self, path):
@@ -93,6 +97,7 @@ class ArraySchema(RelatedConfigMixin):
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
+    # TODO - transform to tuple
     shape = related.ChildField(tuple)   # TODO - can be None - for scalars?
     descr = related.StringField()
     # MAYBE - allow a list of strings?
@@ -169,9 +174,34 @@ class DataLoaderArgument(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
 
 
+@related.immutable
+class Dependencies(object):
+    conda = related.SequenceField(str, default=[], required=False)
+    pip = related.SequenceField(str, default=[], required=False)
+
+    def install_pip(self, dry_run=False):
+        print("pip dependencies to be installed:")
+        print(self.pip)
+        if dry_run:
+            return
+        else:
+            kconda.install_pip(self.pip)
+
+    def install_conda(self, dry_run=False):
+        print("Conda dependencies to be installed:")
+        print(self.conda)
+        if dry_run:
+            return
+        else:
+            kconda.install_conda(self.conda)
+
+    def install(self, dry_run=False):
+        self.install_conda(dry_run)
+        self.install_pip(dry_run)
+
+
 # --------------------------------------------
 # Final description classes modelling the yaml files
-
 @related.immutable
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
@@ -181,6 +211,10 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(Info)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
+    dependencies = related.ChildField(Dependencies,
+                                      default=Dependencies(),
+                                      required=False)
+    path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
 
 
@@ -192,7 +226,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
     info = related.ChildField(Info)
-    schema = related.ChildField(DataLoaderSchema)
+    output_schema = related.ChildField(DataLoaderSchema)
+    dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
+    path = related.StringField(required=False)
 
 
 # TODO - special metadata classes should just extend the dictionary field

@@ -21,16 +21,9 @@ PREPROC_IFILE_TYPES = ['DNA_regions']
 PREPROC_IFILE_FORMATS = ['bed3']
 
 
+# TODO - what are other properties of an abstract datalaoder?
 # inspired by PyTorch
 # http://pytorch.org/docs/master/_modules/torch/utils/data/dataset.html#Dataset
-
-# TODO - OR maybe call it Dataloader???
-
-# Dataloader - better name than a pre-processor?
-# Or call it the Dataset - convention by pytorch and tensorflow
-# BatchDataloader
-
-# TODO - what are other properties of an abstract datalaoder?
 class BaseDataLoader(object):
     __metaclass__ = abc.ABCMeta
 
@@ -62,6 +55,7 @@ class Dataset(BaseDataLoader):
     ``__len__``, that provides the size of the dataset, and ``__getitem__``,
     supporting integer indexing in range from 0 to len(self) exclusive.
     """
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -135,7 +129,6 @@ class Dataset(BaseDataLoader):
 
 # --------------------------------------------
 
-
 def get_dataloader_factory(dataloader, source="kipoi"):
     if source == "dir":
             # TODO - maybe add it already to the config - to prevent code copying
@@ -144,9 +137,8 @@ def get_dataloader_factory(dataloader, source="kipoi"):
         source = kipoi.config.get_source(source)
 
     # pull the dataloader & get the dataloader directory
-    dataloader_dir = source.pull_model(dataloader)
-
-    yaml_path = kipoi.remote.get_dataloader_file(dataloader_dir)
+    yaml_path = source.pull_dataloader(dataloader)
+    dataloader_dir = os.path.dirname(yaml_path)
 
     # Setup dataloader description
     dl = DataLoaderDescription.load(yaml_path)
@@ -177,8 +169,8 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     CustomDataLoader.defined_as = dl.defined_as
     CustomDataLoader.args = dl.args
     CustomDataLoader.info = dl.info
-    CustomDataLoader.schema = dl.schema
-
+    CustomDataLoader.output_schema = dl.output_schema
+    CustomDataLoader.dependencies = dl.dependencies
     # keep it hidden?
     CustomDataLoader._yaml_path = yaml_path
     CustomDataLoader.source = source

@@ -1,7 +1,7 @@
 type: keras
 args:
-    weights: weights.h5
-    arch: model.json
+    weights: model_files/weights.h5
+    arch: model_files/model.json
 # default_dataloader: dataloader.yaml # shall we call it just dataloader?
 # dataloader.yaml is used by default
 info:
@@ -9,6 +9,10 @@ info:
     name: extended CODA
     version: 0.1
     descr: Single bp resolution ChIP-seq denoising
+dependencies:
+    pip:
+      - tensorflow==1.0.0
+      - keras==1.2.2
 schema:
     inputs:
         H3K27ac_subsampled:

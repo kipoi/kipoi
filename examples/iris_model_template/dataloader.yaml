@@ -1,0 +1,39 @@
+type: Dataset
+defined_as: dataloader.py::MyDataset
+args:
+    features_file:
+        descr: >
+          Csv file of the Iris Plants Database from
+          http://archive.ics.uci.edu/ml/datasets/Iris features.
+        type: str
+    targets_file:
+        descr: >
+          Csv file of the Iris Plants Database targets.
+          Not required for making the prediction.
+        type: str
+        optional: True
+info:
+    author: Your Name
+    name: NameOfThisModel
+    version: 0.1
+    descr: Model predicting the Iris species
+dependencies:
+    conda: # directly install via conda
+      - python=2.7
+      - sklearn
+      # - conda-forge::spacy  # use a special channel via <channel>::<package>
+      - pip:
+          - tqdm  # pip packages
+output_schema:
+    inputs:
+        features:
+            shape: (4,)
+            descr: "Scaled features: sepal length, sepal width, petal length, petal width."
+    targets:
+        plant_class:
+            shape: (3, )
+            descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
+    metadata:
+        example_row_number:
+            shape: (1,)
+            descr: Just an example metadata column

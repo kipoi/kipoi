@@ -42,7 +42,7 @@ def test_dataloader_model(example):
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
     if INSTALL_REQ:
-        install_model_requirements(example_dir, "dir")
+        install_model_requirements(example_dir, "dir", and_dataloaders=True)
 
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
 
