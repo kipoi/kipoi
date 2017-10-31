@@ -33,23 +33,33 @@ def to_sequence_field_w_str(cls):
 # has description field
 
 # keyword = "description"
-def to_leaf_mapping_field(cls, keyword):
+def to_leaf_mapping_field(cls, keyword, key):
     """
     Returns a callable instance that will convert a value to a Sequence.
 
     :param cls: Valid class type of the items in the Sequence.
+    :param key: Attribute name of the key value in each item of cls instance.
     :return: instance of the SequenceConverter.
     """
     # Input = dict
     # if type
     class LeafConverter(object):
 
-        def __init__(self, cls):
+        def __init__(self, cls, key):
             self.cls = cls
+            self.key = key
 
-        def __call__(self, value):
+        def __call__(self, value, cur_key=None):
+            """Cur_key: current key
+            """
             if keyword in value:
-                # It's a normal dictionary, continue recursively
+                # Stop the recursion - the leaf keyword was found
+                if cur_key is not None:
+                    if self.key in value:
+                        assert value[self.key] == cur_key
+                    else:
+                        value[self.key] = cur_key
+
                 return to_model(self.cls, value)
             else:
                 if isinstance(value, list):
@@ -58,12 +68,12 @@ def to_leaf_mapping_field(cls, keyword):
                 elif isinstance(value, dict):
                     kwargs = OrderedDict()
                     for key_value, item in value.items():
-                        kwargs[key_value] = self.__call__(item)
+                        kwargs[key_value] = self.__call__(item, cur_key=key_value)
                     return kwargs
                 else:
                     raise ValueError("Unable to parse: {0}".format(value))
 
-    return LeafConverter(cls)
+    return LeafConverter(cls, key)
 
 
 def to_eval_str(value):
