@@ -5,7 +5,7 @@ import kipoi
 import sys
 from kipoi.pipeline import install_dataloader_requirements
 import config
-EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
 # TODO - finish the unit-test
 
 INSTALL_REQ = config.install_req

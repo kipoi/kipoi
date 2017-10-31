@@ -11,9 +11,8 @@ info:
 schema:
     inputs:
         features:
-            shape: (4,)
-            descr: "Features in cm: sepal length, sepal width, petal length, petal width."
+          shape: (4,)
+          descr: "Features in cm: sepal length, sepal width, petal length, petal width."
     targets:
-        plant_class:
-            shape: (3,)
-            descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        shape: (3,)
+        descr: "One-hot encoded array of classes: setosa, versicolor, virginica."

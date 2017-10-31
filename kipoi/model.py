@@ -215,10 +215,13 @@ class SklearnModel(BaseModel):
         self.model = joblib.load(self.pkl_file)
 
     def predict_on_batch(self, x):
+        # assert isinstance(x, dict)
+        # assert len(x) == 1
+        # x = x.popitem()[1]
         return self.model.predict(x)
 
 
 AVAILABLE_MODELS = {"keras": KerasModel,
                     # "pytorch": PyTorchModel,
                     "sklearn": SklearnModel}
-#"custom": load_model_custom}
+# "custom": load_model_custom}

@@ -26,13 +26,12 @@ dependencies:
           - tqdm  # pip packages
 output_schema:
     inputs:
-        features:
-            shape: (4,)
-            descr: "Scaled features: sepal length, sepal width, petal length, petal width."
+      features:
+        shape: (4,)
+        descr: "Scaled features: sepal length, sepal width, petal length, petal width."
     targets:
-        plant_class:
-            shape: (3, )
-            descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
+      shape: (3, )
+      descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
     metadata:
         example_row_number:
             type: int

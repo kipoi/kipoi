@@ -15,7 +15,7 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
