@@ -64,4 +64,4 @@ from kipoi.pipeline import install_model_requirements
 import warnings
 warnings.filterwarnings('ignore')
 model_dir = "examples/rbp/"
-model = kipoi.Model(model_dir, source="dir")
+model = kipoi.get_model(model_dir, source="dir")

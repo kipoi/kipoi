@@ -172,8 +172,8 @@ class SpecFuncSeqinput(object):
 
 @related.immutable
 class SpecFuncStruct(RelatedConfigMixin):
-    type = related.StringField() #enum
-    #args = related.ChildField(SpecFuncSeqinput) # contains
+    type = related.ChildField(SpecFuncType) #enum
+    args = related.ChildField(dict) # contains
 
 
 @related.immutable

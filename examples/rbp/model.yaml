@@ -31,3 +31,7 @@ schema:
             descr: Predicted binding strength
 special_functionality:
     - type: var_effect_prediction
+      args:
+          seq_input:
+            - seq
+            - seq2
