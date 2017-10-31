@@ -64,3 +64,17 @@ def test_parse_bad_info(info_str):
 
     with raises(Exception):
         CLS.from_config(bim)
+
+
+def test_correct_shape():
+    correct_shapes = [(100, ),
+                      (None, 100),
+                      (None, ),
+                      (100, ),
+                      (100, ),
+                      (100, )]
+
+    for i, info_str in enumerate(GOOD_EXAMPLES):
+        correct_shape = correct_shapes[i]
+        info = CLS.from_config(from_yaml(info_str))
+        assert info.shape == correct_shape

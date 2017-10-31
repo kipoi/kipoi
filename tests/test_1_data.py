@@ -8,11 +8,11 @@ import yaml
 import kipoi
 import kipoi.utils
 from kipoi.pipeline import install_model_requirements
-
+import config
 
 # TODO - check if you are on travis or not regarding the --install-req flag
-INSTALL_REQ = True
-#INSTALL_REQ = False
+# INSTALL_REQ = True
+INSTALL_REQ = config.install_req
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -42,16 +42,16 @@ def test_dataloader_model(example):
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
     if INSTALL_REQ:
-        install_model_requirements(example_dir, "dir")
+        install_model_requirements(example_dir, "dir", and_dataloaders=True)
 
-    Dl = kipoi.DataLoader_factory(example_dir, source="dir")
+    Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
 
     test_kwargs = get_test_kwargs(example_dir)
 
     # get dataloader
 
     # get model
-    model = kipoi.Model(example_dir, source="dir")
+    model = kipoi.get_model(example_dir, source="dir")
 
     with kipoi.utils.cd(example_dir + "/test_files"):
         # initialize the dataloader

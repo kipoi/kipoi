@@ -10,7 +10,7 @@ import abc
 import six
 
 from .components import ModelDescription
-from kipoi.pipeline import Pipeline
+from .pipeline import Pipeline
 
 _logger = logging.getLogger('kipoi')
 
@@ -25,20 +25,24 @@ class BaseModel(object):
     # TODO - define the .model attribute?
 
 
-def Model(model, source="kipoi"):
+def get_model(model, source="kipoi", with_dataloader=True):
+    """Load the `model` from `source`, as well as the
+    default dataloder to model.default_dataloder.
+
+    Args:
+      model, str:  model name
+      source, str:  source name
+      with_dataloader, bool: if True, the default dataloader is
+        loaded to model.default_dataloadera and the pipeline at model.pipeline enabled.
+    """
     # TODO - model can be a yaml file or a directory
     source_name = source
 
-    if source == "dir":
-        # TODO - maybe add it already to the config - to prevent code copying
-        source = kipoi.remote.LocalModelSource(".")
-    else:
-        source = kipoi.config.get_source(source)
+    source = kipoi.config.get_source(source)
 
     # pull the model & get the model directory
-    source_dir = source.pull_model(model)
-
-    yaml_path = kipoi.remote.get_model_file(source_dir)
+    yaml_path = source.pull_model(model)
+    source_dir = os.path.dirname(yaml_path)
 
     # Setup model description
     md = ModelDescription.load(yaml_path)
@@ -56,10 +60,13 @@ def Model(model, source="kipoi"):
         dl_source = source_name
         dl_path = md.default_dataloader
 
-    # allow to use relative and absolute paths for referring to the dataloader
-    default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-    default_dataloader = kipoi.DataLoader_factory(default_dataloader_path,
-                                                  dl_source)
+    if with_dataloader:
+        # allow to use relative and absolute paths for referring to the dataloader
+        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+        default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
+                                                          dl_source)
+    else:
+        default_dataloader = None
 
     # Read the Model - append methods, attributes to self
     with cd(source_dir):  # move to the model directory temporarily
@@ -81,13 +88,17 @@ def Model(model, source="kipoi"):
     mod.args = md.args
     mod.info = md.info
     mod.schema = md.schema
+    mod.dependencies = md.dependencies
     mod.default_dataloader = default_dataloader
     mod.name = model
     mod.source = source
     mod.source_name = source_name
     mod.source_dir = source_dir
-    mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
     mod.special_functionality = md.special_functionality
+    if with_dataloader:
+        mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
+    else:
+        mod.pipeline = None
     return mod
 
 

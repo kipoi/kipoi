@@ -7,9 +7,9 @@ import argparse
 import logging
 import os
 import yaml
-from .utils import pip_install_requirements, parse_json_file_str
+from .utils import parse_json_file_str
 import kipoi  # for .config module
-from .data import numpy_collate, numpy_collate_concat
+from .data import numpy_collate_concat
 # import h5py
 # import six
 import numpy as np
@@ -39,8 +39,31 @@ _logger = logging.getLogger('kipoi')
 # RESERVED_PREPROC_KWS = ['intervals_file']
 
 
-def install_model_requirements(model, source="kipoi"):
-    pip_install_requirements(kipoi.requirements_file(model, source))
+def install_model_requirements(model, source="kipoi", and_dataloaders=False):
+    md = kipoi.get_source(source).get_model_info(model)
+    md.dependencies.install()
+    if and_dataloaders:
+        if ":" in md.default_dataloader:
+            dl_source, dl_path = md.default_dataloader.split(":")
+        else:
+            dl_source = source
+            dl_path = md.default_dataloader
+
+        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+        dl = kipoi.config.get_source(dl_source).get_dataloader_info(default_dataloader_path)
+        dl.dependencies.install()
+
+
+def install_dataloader_requirements(dataloader, source="kipoi"):
+    kipoi.get_source(source).get_model_info(dataloader).dependencies.install()
+
+
+def add_arg_source(parser, default="kipoi"):
+    parser.add_argument('--source', default=default,
+                        choices=list(kipoi.config.model_sources().keys()),
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        " under model_sources. " +
+                        "'dir' is an additional source referring to the local folder.")
 
 
 class Pipeline(object):
@@ -112,10 +135,7 @@ def cli_test(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="dir",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser, default="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-i", "--install_req", action='store_true',
@@ -123,8 +143,8 @@ def cli_test(command, raw_args):
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     if args.install_req:
-        install_model_requirements(args.model, args.source)
-    mh = kipoi.Model(args.model, args.source)
+        install_model_requirements(args.model, args.source, and_dataloaders=True)
+    mh = kipoi.get_model(args.model, args.source)
     # force the requirements to be installed
 
     test_dir = os.path.join(mh.source_dir, 'test_files')
@@ -139,7 +159,7 @@ def cli_test(command, raw_args):
 
     with open('test.json') as f_kwargs:
         dataloader_kwargs = yaml.load(f_kwargs)
-    match = mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
+    mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
     # if not match:
     #     # _logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")
@@ -154,10 +174,7 @@ def cli_extract_to_hdf5(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the dataloader and save the output to an hdf5 file.')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser)
     parser.add_argument('--dataloader_args',
                         help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
                         "as a file path to a json file")
@@ -175,8 +192,8 @@ def cli_extract_to_hdf5(command, raw_args):
     # --------------------------------------------
     # install args
     if args.install_req:
-        install_model_requirements(args.model, args.source)
-    Dataloader = kipoi.DataLoader_factory(args.model, args.source)
+        install_dataloader_requirements(args.model, args.source)
+    Dataloader = kipoi.get_dataloader_factory(args.model, args.source)
 
     dataloader = Dataloader(**dataloader_kwargs)
 
@@ -213,10 +230,7 @@ def cli_predict(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the model prediction.')
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources")
+    add_arg_source(parser)
     parser.add_argument('--dataloader', default=None,
                         help="Dataloader name. If not specified, the model's default" +
                         "DataLoader will be used")
@@ -249,12 +263,12 @@ def cli_predict(command, raw_args):
     # --------------------------------------------
     # install args
     if args.install_req:
-        install_model_requirements(args.model, args.source)
+        install_model_requirements(args.model, args.source, and_dataloaders=True)
     # load model & dataloader
-    model = kipoi.Model(args.model, args.source)
+    model = kipoi.get_model(args.model, args.source)
 
     if args.dataloader is not None:
-        Dl = kipoi.DataLoader_factory(args.dataloader, args.dataloader_source)
+        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
     else:
         Dl = model.default_dataloader
 
@@ -326,11 +340,7 @@ def cli_pull(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Downloads the directory associated with the model.")
     parser.add_argument('model', help='Model name.')
-    parser.add_argument('--source', default="kipoi",
-                        choices=list(kipoi.config.model_sources().keys()) + ["dir"],
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml ' +
-                        "under model_sources")
-
+    add_arg_source(parser)
     args = parser.parse_args(raw_args)
 
     kipoi.config.get_source(args.source).pull_model(args.model)

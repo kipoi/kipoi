@@ -3,11 +3,12 @@
 import pytest
 import kipoi
 import sys
-from kipoi.pipeline import install_model_requirements
+from kipoi.pipeline import install_dataloader_requirements
+import config
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 # TODO - finish the unit-test
 
-INSTALL_REQ = True
+INSTALL_REQ = config.install_req
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -18,14 +19,14 @@ def test_load_model(example):
         pytest.skip("rbp example not supported on python 2 ")
 
     if INSTALL_REQ:
-        install_model_requirements(example_dir, "dir")
-    Dl = kipoi.DataLoader_factory(example_dir, source="dir")
+        install_dataloader_requirements(example_dir, "dir")
+    Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
 
     Dl.type
     Dl.defined_as
     Dl.args
     Dl.info
-    Dl.schema
+    Dl.output_schema
     Dl.source
     Dl.__len__
     Dl.__getitem__

@@ -1,7 +1,0 @@
-# remove for now
-# git+git://github.com/kundajelab/genomelake.git#egg=genomelake
-concise>=0.6.3
-tensorflow>=1.0.0
-keras>=2.0.4
-pybedtools
-pysam

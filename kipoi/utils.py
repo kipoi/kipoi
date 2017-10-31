@@ -166,3 +166,39 @@ def getargs(x):
 def read_yaml(path):
     with open(path) as f:
         return yaml.load(f)
+
+
+def cmd_exists(cmd):
+    """Check if a certain command exists
+    """
+    return subprocess.call("type " + cmd, shell=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+
+
+def lfs_installed(raise_exception=False):
+    """Check if git lfs is installed localls
+    """
+    ce = cmd_exists("git-lfs")
+    if raise_exception:
+        if not ce:
+            raise OSError("git-lfs not installed")
+    return ce
+
+
+def get_file_path(file_dir, basename, extensions=[".yml", ".yaml"]):
+    """Get the file path allowing for multiple file extensions
+    """
+    for ext in extensions:
+        path = os.path.join(file_dir, basename + ext)
+        if os.path.exists(path):
+            return path
+    raise ValueError("File path doesn't exists: {0}/{1}{2}".
+                     format(file_dir, basename, set(extensions)))
+
+
+def du(path):
+    """disk usage in human readable format (e.g. '2,1GB')"""
+    try:
+        return subprocess.check_output(['du', '-sh', path]).split()[0].decode('utf-8')
+    except:
+        return "NA"

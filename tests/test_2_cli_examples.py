@@ -7,10 +7,13 @@ import os
 import deepdish
 import yaml
 import pandas as pd
+import config
 
 # TODO - check if you are on travis or not regarding the --install_req flag
-INSTALL_FLAG = "--install_req"
-# INSTALL_FLAG = ""
+if config.install_req:
+    INSTALL_FLAG = "--install_req"
+else:
+    INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -65,7 +68,7 @@ def test_preproc_example(example, tmpdir):
     with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    assert data["inputs"].keys() == ex_descr["schema"]["inputs"].keys()
+    assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

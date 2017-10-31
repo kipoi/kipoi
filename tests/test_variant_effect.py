@@ -4,13 +4,15 @@ import numpy as np
 import pytest
 import sys
 from kipoi.pipeline import install_model_requirements
+import config
 import warnings
 warnings.filterwarnings('ignore')
 
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
 # Only viable model at the moment is rbp, so not offering to test anything else
-INSTALL_REQ = True
+# INSTALL_REQ = True
+INSTALL_REQ = config.install_req
 
 
 def test_var_eff_pred():
@@ -19,10 +21,10 @@ def test_var_eff_pred():
     # Take the rbp model
     model_dir = "examples/rbp/"
     if INSTALL_REQ:
-        install_model_requirements(model_dir, "dir")
-    model = kipoi.Model(model_dir, source="dir")
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
+    model = kipoi.get_model(model_dir, source="dir")
     # The preprocessor
-    Dataloader = kipoi.DataLoader_factory(model_dir, source="dir")
+    Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
 
     # Hacky: take the example arguments
     import yaml
