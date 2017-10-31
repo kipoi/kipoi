@@ -22,8 +22,8 @@ dependencies:
       - python=2.7
       - sklearn
       # - conda-forge::spacy  # use a special channel via <channel>::<package>
-      - pip:
-          - tqdm  # pip packages
+    pip:
+       - tqdm  # pip packages
 output_schema:
     inputs:
       features:

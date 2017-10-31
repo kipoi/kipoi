@@ -8,6 +8,11 @@ info:
     name: NameOfThisModel
     version: 0.1
     descr: Model predicting the Iris species
+dependencies:
+    conda:
+      - h5py
+    pip:
+      - keras>=2.0.4
 schema:
     inputs:
         features:
