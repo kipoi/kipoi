@@ -24,3 +24,5 @@ schema:
         binding_site:
             shape: (1, )
             descr: Predicted binding strength
+special_functionality:
+    - type: var_effect_prediction

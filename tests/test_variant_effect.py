@@ -52,3 +52,14 @@ def test_var_eff_pred():
                            dataloader_function=Dataloader, batch_size=32,
                            model_out_annotation=model_out_annotation,
                            evaluation_function_kwargs={"diff_type": "diff"})
+
+import kipoi
+from kipoi.variant_effects import predict_variants
+import numpy as np
+import pytest
+import sys
+from kipoi.pipeline import install_model_requirements
+import warnings
+warnings.filterwarnings('ignore')
+model_dir = "examples/rbp/"
+model = kipoi.Model(model_dir, source="dir")

@@ -158,6 +158,19 @@ class DataLoaderSchema(RelatedConfigMixin):
     #          - SpecialType (say ArrayRanges, BatchArrayRanges, which will
     #                         effectively be a dicitonary of scalars)
 
+@enum.unique
+class SpecFuncType(enum.Enum):
+    VAR_EFFECT_PREDICTION = "var_effect_prediction"
+
+@related.immutable
+class SpecFuncSeqinput(object):
+    seq_input = related.SequenceField(str)
+
+@related.immutable
+class SpecFuncStruct(RelatedConfigMixin):
+    type = related.StringField() #enum
+    #args = related.ChildField(SpecFuncSeqinput) # contains
+
 
 @related.immutable
 class DataLoaderArgument(RelatedConfigMixin):
@@ -181,6 +194,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(Info)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
+    special_functionality = related.SequenceField(SpecFuncStruct, default=[], required=False)
     # TODO - add after loading validation for the arguments class?
 
 

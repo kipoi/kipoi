@@ -87,6 +87,7 @@ def Model(model, source="kipoi"):
     mod.source_name = source_name
     mod.source_dir = source_dir
     mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
+    mod.special_functionality = md.special_functionality
     return mod
 
 
