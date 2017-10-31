@@ -3,102 +3,107 @@ from __future__ import print_function
 
 import os
 import logging
-import yaml
-import inspect
 import abc
-import six
 
 import kipoi  # for .config module
-from .utils import load_module
-from torch.utils.data import DataLoader
-
-import numpy as np
-import sys
-import collections
-# string_classes
-if sys.version_info[0] == 2:
-    string_classes = basestring
-else:
-    string_classes = (str, bytes)
-
-
-def getargs(x):
-    """Get function arguments
-    """
-    if sys.version_info[0] == 2:
-        if inspect.isfunction(x):
-            return set(inspect.getargspec(x).args[1:])
-        else:
-            return set(inspect.getargspec(x.__init__).args[1:])
-    else:
-        return set(inspect.signature(x).parameters.keys())
+from kipoi.components import DataLoaderDescription
+from .utils import load_module, cd, getargs
+from .external.torch.data import DataLoader
+from kipoi.data_utils import numpy_collate, numpy_collate_concat
+from tqdm import tqdm
+# TODO - put to remote
 
 
 _logger = logging.getLogger('kipoi')
 
-# PREPROC_FIELDS = ['function_name', 'type', 'arguments']
-PREPROC_FIELDS = ['type', 'defined_as', 'arguments']
-PREPROC_TYPES = ['Dataset']  # ['generator', 'return', 'Dataset'] - TODO support also other extractor types
+#
 PREPROC_IFILE_TYPES = ['DNA_regions']
 PREPROC_IFILE_FORMATS = ['bed3']
 
 
-def _numpy_collate(stack_fn=np.stack):
-    def numpy_collate_fn(batch):
-        "Puts each data field into a tensor with outer dimension batch size"
-        if type(batch[0]).__module__ == 'numpy':
-            elem = batch[0]
-            if type(elem).__name__ == 'ndarray':
-                return stack_fn(batch, 0)
-            if elem.shape == ():  # scalars
-                return np.array(batch)
-        elif isinstance(batch[0], int):
-            return np.asarray(batch)
-        elif isinstance(batch[0], float):
-            return np.asarray(batch)
-        elif isinstance(batch[0], string_classes):
-            # Also convert to a numpy array
-            return np.asarray(batch)
-            # return batch
-        elif isinstance(batch[0], collections.Mapping):
-            return {key: numpy_collate_fn([d[key] for d in batch]) for key in batch[0]}
-        elif isinstance(batch[0], collections.Sequence):
-            transposed = zip(*batch)
-            return [numpy_collate_fn(samples) for samples in transposed]
-
-        raise TypeError(("batch must contain tensors, numbers, dicts or lists; found {}"
-                         .format(type(batch[0]))))
-    return numpy_collate_fn
-
-
-numpy_collate = _numpy_collate(np.stack)
-numpy_collate_concat = _numpy_collate(np.concatenate)
-
-
+# TODO - what are other properties of an abstract datalaoder?
 # inspired by PyTorch
 # http://pytorch.org/docs/master/_modules/torch/utils/data/dataset.html#Dataset
+class BaseDataLoader(object):
+    __metaclass__ = abc.ABCMeta
 
-# TODO - OR maybe call it Dataloader???
+    # TODO - define proper abstract classess
+    @abc.abstractmethod
+    def __len__(self):
+        raise NotImplementedError
 
-# Dataloader - better name than a pre-processor?
-# Or call it the Dataset - convention by pytorch and tensorflow
-# BatchDataloader
+    @abc.abstractmethod
+    def __getitem__(self, idx):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def batch_iter(self, batch_size=32):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def load_all(self):
+        raise NotImplementedError
+
+# --------------------------------------------
+# Different implementations
 
 
-class Dataset(object):
+class Dataset(BaseDataLoader):
     """An abstract class representing a Dataset.
 
     All other datasets should subclass it. All subclasses should override
     ``__len__``, that provides the size of the dataset, and ``__getitem__``,
     supporting integer indexing in range from 0 to len(self) exclusive.
     """
+
     __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def __getitem__(self, index):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def __len__(self):
         raise NotImplementedError
+
+    def batch_iter(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False):
+        """Return a batch-iterator
+
+        Arguments:
+            dataset (Dataset): dataset from which to load the data.
+            batch_size (int, optional): how many samples per batch to load
+                (default: 1).
+            shuffle (bool, optional): set to ``True`` to have the data reshuffled
+                at every epoch (default: False).
+            num_workers (int, optional): how many subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process
+                (default: 0)
+            drop_last (bool, optional): set to ``True`` to drop the last incomplete batch,
+                if the dataset size is not divisible by the batch size. If False and
+                the size of dataset is not divisible by the batch size, then the last batch
+                will be smaller. (default: False)
+
+        Returns:
+            iterator
+        """
+        dl = DataLoader(self, batch_size=batch_size,
+                        collate_fn=numpy_collate,
+                        shuffle=shuffle,
+                        num_workers=num_workers,
+                        drop_last=drop_last)
+        return iter(dl)
+
+    def load_all(self, batch_size=32, num_workers=0):
+        """Load the whole dataset into memory
+        Arguments:
+            batch_size (int, optional): how many samples per batch to load
+                (default: 1).
+            num_workers (int, optional): how many subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process
+                (default: 0)
+        """
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size,
+                                                                     num_workers=num_workers))])
 
 
 # TODO - implement some of the synthactic shugar - i.e. get_avail_arguments etc...?
@@ -122,96 +127,57 @@ class Dataset(object):
 #   However, model's forward pass might take longer than reading a samples
 #   from disk using multiple-workers
 
-# TODO - how to name it?
-# Extractor, Dataset, Preprocessor, Dataloader?
+# --------------------------------------------
 
-# main functionality - factory class
-def dir_load_extractor(preproc_dir):
-    """Load the extractor from disk
-
-    1. Parse the yaml file
-    2. Import the extractor
-    3. Validate the pre-processor <-> yaml
-      - check if the arguments match
-    4. Append yaml description to __doc__
-    5. Return the pre-processor
-    """
-
-    # Parse the model.yaml
-    with open(os.path.join(preproc_dir, 'extractor.yaml')) as ifh:
-        unparsed_yaml = ifh.read()
-    description_yaml = yaml.load(unparsed_yaml)
-    preproc_spec = description_yaml['extractor']
-    validate_extractor_spec(preproc_spec)
-
-    extractor = getattr(load_module(os.path.join(preproc_dir, 'extractor.py')),
-                        preproc_spec['defined_as'])
-
-    # check that the extractor arguments match yml arguments
-    assert getargs(extractor) == set(preproc_spec["arguments"].keys())
-
-    # TODO - save these arguments as attributes?
-    extractor.definition = preproc_spec
-
-    _logger.info('successfully imported {} from extractor.py'.
-                 format(preproc_spec['defined_as']))
-
-    try:
-        extractor.__doc__ = """Model instance
-
-        # Methods
-            - .__getitem__(idx) - Get items via subsetting obj.[idx]
-            - .__len__() - Get the length - len(obj)
-
-        # extractor.yaml
-
-            {0}
-        """.format((' ' * 8).join(unparsed_yaml.splitlines(True)))
-    except AttributeError:
-        _logger.warning("Unable to set the docstring. " +
-                        "Defined extractor is not ineriting from the abstract class Dataset in python2")
-
-    return extractor
-
-
-def load_extractor(extractor, source="kipoi"):
-    """Load the extractor
-
-    source: source from which to pull the model
-    """
+def get_dataloader_factory(dataloader, source="kipoi"):
     if source == "dir":
-        return dir_load_extractor(extractor)
+            # TODO - maybe add it already to the config - to prevent code copying
+        source = kipoi.remote.LocalSource(".")
     else:
-        return kipoi.config.get_source(source).load_extractor(extractor)
+        source = kipoi.config.get_source(source)
+
+    # pull the dataloader & get the dataloader directory
+    yaml_path = source.pull_dataloader(dataloader)
+    dataloader_dir = os.path.dirname(yaml_path)
+
+    # Setup dataloader description
+    dl = DataLoaderDescription.load(yaml_path)
+    # --------------------------------------------
+    # input the
+    file_path, obj_name = tuple(dl.defined_as.split("::"))
+    CustomDataLoader = getattr(load_module(os.path.join(dataloader_dir, file_path)),
+                               obj_name)
+
+    # check that dl.type is correct
+    if dl.type not in AVAILABLE_DATALOADERS:
+        raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".
+                         format(dl.type, list(AVAILABLE_DATALOADERS.keys())))
+    # check that CustomDataLoader indeed interits from the right DataLoader
+    if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[dl.type]):
+        raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
+                         format(AVAILABLE_DATALOADERS[dl.type].__name__))
+    # check that the extractor arguments match yml arguments
+    if not getargs(CustomDataLoader) == set(dl.args.keys()):
+        raise ValueError("DataLoader arguments: \n{0}\n don't match " +
+                         "the specification in the dataloader.yaml file:\n{1}".
+                         format(set(getargs(CustomDataLoader)), set(dl.args.keys())))
+
+    # Inherit the attributes from dl
+    # TODO - make this more automatic / DRY
+    # write a method to load those things?
+    CustomDataLoader.type = dl.type
+    CustomDataLoader.defined_as = dl.defined_as
+    CustomDataLoader.args = dl.args
+    CustomDataLoader.info = dl.info
+    CustomDataLoader.output_schema = dl.output_schema
+    CustomDataLoader.dependencies = dl.dependencies
+    # keep it hidden?
+    CustomDataLoader._yaml_path = yaml_path
+    CustomDataLoader.source = source
+    # TODO - rename?
+    CustomDataLoader.source_dir = dataloader_dir
+    return CustomDataLoader
 
 
-def validate_extractor_spec(preproc_spec):
-    """Validate the extractor.yaml file
-    """
-    # check extractor fields
-    assert (all(field in preproc_spec for field in PREPROC_FIELDS))
-
-    # check preproc type
-    assert preproc_spec['type'] in PREPROC_TYPES
-
-
-def validate_extractor(ex):
-    """Check that the extractor indeed returns promised features
-    """
-    sample = ex[0]
-
-    # all inputs need to be numpy arrays
-    for k, v in six.iteritems(sample["inputs"]):
-        if type(v) != np.ndarray:
-            raise ValueError("extractor needs to preduce numpy arrays in output['inputs']")
-
-    assert set(sample["inputs"].keys()) == \
-        set(ex.definition["output"]["inputs"].keys())
-
-    # TODO - check also the shape of features...
-    # for feat in sample["output"]["inputs"].keys():
-    #     arr = sample["output"]["inputs"][feat]
-
-    #     arr.shape
-
-    # TODO - check if the ranges are indeed provided
+# TODO - implement other stuff
+AVAILABLE_DATALOADERS = {"Dataset": Dataset}

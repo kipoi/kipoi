@@ -11,13 +11,16 @@ from . import utils
 from . import variant_effects
 from . import remote
 from . import model
+from . import data_utils
+from . import data
 
 # shortcuts
-from .model import load_model, model_info
-from .data import load_extractor
-from .pipeline import install_model_requirements
-from .config import list_models, get_source
-from .config import model_sources as sources
+from .model import get_model
+from .data import get_dataloader_factory
+from .remote import get_model_info, get_dataloader_info
+from .pipeline import install_model_requirements, install_dataloader_requirements
+from .config import list_models, get_source, list_sources
+# from .config import model_sources as sources
 
 
 # Setup logging

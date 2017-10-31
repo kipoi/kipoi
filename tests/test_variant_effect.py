@@ -1,9 +1,10 @@
 import kipoi
-from kipoi.data import numpy_collate
 from kipoi.variant_effects import predict_variants
 import numpy as np
 import pytest
 import sys
+from kipoi.pipeline import install_model_requirements
+import config
 import warnings
 from kipoi.pipeline import install_model_requirements
 warnings.filterwarnings('ignore')
@@ -11,6 +12,8 @@ warnings.filterwarnings('ignore')
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
 # Only viable model at the moment is rbp, so not offering to test anything else
+# INSTALL_REQ = True
+INSTALL_REQ = config.install_req
 
 # TODO - check if you are on travis or not regarding the --install-req flag
 INSTALL_REQ = True
@@ -23,11 +26,10 @@ def test_var_eff_pred():
     # Take the rbp model
     model_dir = "examples/rbp/"
     if INSTALL_REQ:
-        install_model_requirements(model_dir)
-
-    model = kipoi.load_model(model_dir, source="dir")
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
+    model = kipoi.get_model(model_dir, source="dir")
     # The preprocessor
-    Extractor = kipoi.load_extractor(model_dir, source="dir")
+    Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
 
     # Hacky: take the example arguments
     import yaml
@@ -43,12 +45,22 @@ def test_var_eff_pred():
             exec_files_path_here[k] = exec_files_path[k]
 
     # Derive a list model output labels
-    model_out_annotation = np.array(list(model.model_spec['targets'].keys()))
+    model_out_annotation = np.array(list(model.schema.targets.keys()))
 
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
+    """
     res = predict_variants(model, vcf_path, seq_length=101, exec_files_path=exec_files_path_here,
                            extractor_function=Extractor, batch_size=32,
                            numpy_collate=numpy_collate,
+    """
+    from concise.effects.ism import ism
+    # TODO - model.model is a workaround. we would define the required
+    # functionality at the abstract class level
+    # (and then support different model types not just Keras)
+    # - probably requires changing the Concise code as well...
+    res = predict_variants(model.model, vcf_path, seq_length=101,
+                           evaluation_function=ism, exec_files_path=exec_files_path_here,
+                           dataloader_function=Dataloader, batch_size=32,
                            model_out_annotation=model_out_annotation,
                            evaluation_function_kwargs={"diff_type": "diff"})

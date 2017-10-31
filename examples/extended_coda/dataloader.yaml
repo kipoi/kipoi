@@ -1,0 +1,49 @@
+type: Dataset
+defined_as: dataloader.py::CodaDataset
+args:
+    intervals_file:
+        descr: "tsv file with `chrom start end`"
+        type: str
+    input_data_sources:
+        descr: "{data_name: <path to genomelake directory>}"
+        type: dict
+    target_data_sources:
+        descr: "optional; {data_name: <path to genomelake directory>}"
+        type: dict
+        optional: True
+info: 
+    author: Johnny Israeli
+    name: extended CODA
+    version: 0.1
+    descr: DataLoader for single bp resolution ChIP-seq denoising
+# TODO - enable later
+# dependencies:
+#     pip:
+#         - git+git://github.com/kundajelab/genomelake.git#egg=genomelake
+output_schema:
+    inputs:
+        H3K27AC_subsampled:
+            shape: (None, )  # TODO - update shape
+            special_type: bigwig
+            associated_metadata: ranges
+            descr: Input
+    # doesn't have to be defined
+    targets:
+        H3K27ac:
+            shape: (None, )
+            special_type: bigwig
+            descr: Measured track
+    metadata:
+        ranges:
+            chr:
+                type: str
+                descr: Chromosome
+            start:
+                type: int
+                descr: Start position
+            end:
+                type: int
+                descr: End position
+            id:
+                type: str
+                descr: Id of the sequence

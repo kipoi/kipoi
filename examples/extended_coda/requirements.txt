@@ -1,4 +1,0 @@
-# not now - moved to .travis.yml
-# git+git://github.com/kundajelab/genomelake.git#egg=genomelake
-tensorflow==1.0.0
-keras==1.2.2

@@ -10,8 +10,8 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .remote import load_source, GitLFSModelSource
-from .utils import yaml_ordered_dump, yaml_ordered_load
+from .remote import load_source, GitLFSSource, LocalSource
+from .utils import yaml_ordered_dump, yaml_ordered_load, du
 # --------------------------------------------
 
 
@@ -23,8 +23,8 @@ _kipoi_dir = os.path.join(_kipoi_base_dir, '.kipoi')
 
 # default model_sources
 _MODEL_SOURCES = {
-    "kipoi": GitLFSModelSource(remote_url="git@github.com:kipoi/models.git",
-                               local_path=os.path.join(_kipoi_dir, "models/"))
+    "kipoi": GitLFSSource(remote_url="git@github.com:kipoi/models.git",
+                          local_path=os.path.join(_kipoi_dir, "models/"))
 }
 
 
@@ -44,11 +44,12 @@ def set_model_sources(_model_sources):
 
 
 def get_source(source):
-    if source not in model_sources():
+    if source in model_sources():
+        return model_sources()[source]
+    else:
         raise ValueError("source={0} needs to be in model_sources()" +
                          "available sources: {1}".
                          format(source, list(model_sources().keys())))
-    return model_sources()[source]
 
 
 def add_source(name, obj):
@@ -56,7 +57,7 @@ def add_source(name, obj):
 
     # Arguments
       name: source name
-      obj: source object. Can be a dictionary or a ModelSource instance (say `kipoi.remote.LocalModelSource("mydir/")`).
+      obj: source object. Can be a dictionary or a Source instance (say `kipoi.remote.LocalSource("mydir/")`).
 
     """
     if isinstance(obj, dict):
@@ -67,15 +68,35 @@ def add_source(name, obj):
     set_model_sources(c_dict)
 
 
-def list_models():
+def list_sources():
+    """Returns a pandas.DataFrame of possible sources
+    """
+    def src2dict(k, s):
+        lm = s.list_models()
+        return OrderedDict([("source", k),
+                            ("type", s.TYPE),
+                            ("location", s.local_path),
+                            ("local_size", du(s.local_path)),
+                            ("n_models", len(lm)),
+                            ("n_dataloaders", len(lm)),  # TODO - update
+                            # last_updated=TODO - implement?
+                            ])
+    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources())])
+
+
+# TODO - move this to remore?
+def list_models(sources=model_sources()):
     """List models as a `pandas.DataFrame`
+
+    Args:
+      sources: list of model sources to use
     """
     def get_df(source_name, source):
-        df = source.list_models_df()
+        df = source.list_models()
         df.insert(0, "source", source_name)
         return df
 
-    return pd.concat([get_df(name, source) for name, source in six.iteritems(model_sources())])
+    return pd.concat([get_df(name, source) for name, source in six.iteritems(sources)])
 
 
 # Attempt to read Kipoi config file.
@@ -89,7 +110,7 @@ if os.path.exists(_config_path):
     if _model_sources is None:
         _model_sources = model_sources()
     else:
-        # dict  -> ModelSource class
+        # dict  -> Source class
         if "dir" in _model_sources:
             raise ValueError("'dir' is a protected key name in model_sources" +
                              " and hence can't be used")
@@ -120,3 +141,7 @@ if not os.path.exists(_config_path):
     except IOError:
         # Except permission denied.
         pass
+
+
+# Add dir as a valid source
+add_source("dir", LocalSource("."))

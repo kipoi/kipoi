@@ -1,15 +1,26 @@
-author: Johnny Israeli
-name: extended CODA
-version: 0.1
-description: Single bp resolution ChIP-seq denoising
-model:
-    type: keras
-    args:
-        weights: weights.h5
-        arch: model.json
+type: keras
+args:
+    weights: model_files/weights.h5
+    arch: model_files/model.json
+# default_dataloader: dataloader.yaml # shall we call it just dataloader?
+# dataloader.yaml is used by default
+info:
+    author: Johnny Israeli
+    name: extended CODA
+    version: 0.1
+    descr: Single bp resolution ChIP-seq denoising
+dependencies:
+    pip:
+      - tensorflow==1.0.0
+      - keras==1.2.2
+schema:
     inputs:
         H3K27ac_subsampled:
-            type: bigwig
+            shape: (None, )  # TODO - update shape
+            special_type: bigwig
+            descr: Track representing ...
     targets:
         H3K27ac:
-            type: bigwig
+            shape: (None, )  # TODO - update shape
+            special_type: bigwig
+            descr: Predicted track...
