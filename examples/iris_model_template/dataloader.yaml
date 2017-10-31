@@ -20,7 +20,7 @@ info:
 dependencies:
     conda: # directly install via conda
       - python=2.7
-      - sklearn
+      - scikit-learn
       # - conda-forge::spacy  # use a special channel via <channel>::<package>
     pip:
        - tqdm  # pip packages
