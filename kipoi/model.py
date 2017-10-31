@@ -129,7 +129,7 @@ class GradientMixin():
         raise NotImplementedError
 
 
-class KerasModel(Model, GradientMixin):
+class KerasModel(BaseModel, GradientMixin):
     """Loads the serialized Keras model
 
     # Arguments

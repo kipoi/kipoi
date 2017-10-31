@@ -10,7 +10,6 @@ import itertools
 import os
 
 import warnings
-from torch.utils.data import DataLoader
 from kipoi.components import ArraySpecialType, MetadataType
 import six
 
@@ -247,7 +246,7 @@ def predict_variants(model_handle,
     #    raise Exception("Preprocessor does not generate DNA sequences.")
     #
     # Check whether the extractor is compatible with variant effect prediction
-    check_extractor_compatibility(extractor_function)
+    check_extractor_compatibility(dataloader_function)
     #
     regions = _vcf_to_regions(vcf_fpath, seq_length)
     temp_bed3_file = tempfile.mktemp()  # file path of the temp file
