@@ -191,7 +191,7 @@ class KerasModel(BaseModel, GradientMixin):
     def __generate_direct_saliency_functions__(self, layer, filter_slices = None,
                                                filter_func = None, filter_func_kwargs = None):
         import copy
-        from keras import backend as kB
+        from keras import backend as K
         # Generate the gradient functions according to the layer / filter definition
         if layer not in self.gradient_functions:
             self.gradient_functions[layer]= {}
@@ -212,13 +212,13 @@ class KerasModel(BaseModel, GradientMixin):
             else:
                 raise Exception("Either filter_slices or filter_func have to be set!")
             # TODO: does Theano really require "sel_filter.sum()" instead of "sel_filter" here?
-            saliency = kB.gradients(sel_filter, inp)
-            if self.model.uses_learning_phase and not isinstance(kB.learning_phase(), int):
-                inp.append(kB.learning_phase())
-            self.gradient_functions[layer][filter_id] = kB.function(inp, saliency)
+            saliency = K.gradients(sel_filter, inp)
+            if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+                inp.append(K.learning_phase())
+            self.gradient_functions[layer][filter_id] = K.function(inp, saliency)
         return self.gradient_functions[layer][filter_id]
 
-    def input_grad(self, x, layer, filter_slices = None, filter_func = None, filter_func_kwargs = None):
+    def _input_grad(self, x, layer, filter_slices = None, filter_func = None, filter_func_kwargs = None):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
     
         # Arguments
@@ -240,6 +240,9 @@ class KerasModel(BaseModel, GradientMixin):
         if len(outputs) == 1:
             return outputs[0]
         return outputs
+
+    def pred_grad(self, x, output_slice):
+        return self._input_grad(x, -1, output_slice)
 
 
 # def PyTorchModel(BaseModel):

@@ -202,3 +202,6 @@ def du(path):
         return subprocess.check_output(['du', '-sh', path]).split()[0].decode('utf-8')
     except:
         return "NA"
+
+class Slice_conv:
+    def __getitem__(self, key): return key

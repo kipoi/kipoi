@@ -9,6 +9,7 @@ from contextlib import contextmanager
 import kipoi
 from kipoi.data import numpy_collate
 from kipoi.pipeline import install_model_requirements
+from kipoi.utils import Slice_conv
 import tensorflow as tf
 
 
@@ -45,9 +46,6 @@ def get_extractor_cfg(model_dir):
 def get_test_kwargs(model_dir):
     return read_json_yaml(os.path.join(model_dir, 'test_files/test.json'))
 
-class Slice_conv:
-    def __getitem__(self, key): return key
-
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -58,38 +56,41 @@ def test_extractor_model(example):
         pytest.skip("rbp example not supported on python 2 ")
     #
     example_dir = "examples/{0}".format(example)
-    cfg = get_extractor_cfg(example_dir)
+    # install the dependencies
+    # - TODO maybe put it implicitly in load_dataloader?
+    if INSTALL_REQ:
+        install_model_requirements(example_dir, "dir", and_dataloaders=True)
     #
-    kipoi.data.validate_extractor_spec(cfg["extractor"])
+    Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
+    #
     test_kwargs = get_test_kwargs(example_dir)
     #
     # install the dependencies
     # - TODO maybe put it implicitly in load_extractor?
     if INSTALL_REQ:
-        install_model_requirements(example_dir)
+        install_model_requirements(example_dir, source="dir")
     # get extractor
-    Extractor = kipoi.load_extractor(example_dir, source="dir")
+    #Extractor = kipoi.load_extractor(example_dir, source="dir")
     #
     # get model
-    model = kipoi.load_model(example_dir, source="dir")
+    model = kipoi.get_model(example_dir, source="dir")
     #
     with cd(example_dir + "/test_files"):
-        # initialize the extractor
-        extractor = Extractor(**test_kwargs)
+        # initialize the dataloader
+        dataloader = Dl(**test_kwargs)
         # get first sample
-        extractor[0]
-        len(extractor)
-        kipoi.data.validate_extractor(extractor)
+        dataloader[0]
+        len(dataloader)
         #
         # sample a batch of data
-        dl = DataLoader(extractor, collate_fn=numpy_collate)
-        it = iter(dl)
+        it = dataloader.batch_iter()
         batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])
-        if example == "rbp":
-            model.input_grad(batch["inputs"], -1, Slice_conv()[:, 0])
-        elif example == "extended_coda":
-            model.input_grad(batch["inputs"], -1, filter_func=tf.reduce_max, filter_func_kwargs={"axis": 1})
+        model.pred_grad(batch["inputs"], Slice_conv()[:, 0])
+        #if example == "rbp":
+        #    model._input_grad(batch["inputs"], -1, Slice_conv()[:, 0])
+        #elif example == "extended_coda":
+        #    model._input_grad(batch["inputs"], -1, filter_func=tf.reduce_max, filter_func_kwargs={"axis": 1})
 
 
