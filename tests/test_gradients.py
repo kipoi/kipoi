@@ -1,16 +1,14 @@
 import warnings
 warnings.filterwarnings('ignore')
-from torch.utils.data import DataLoader
 import pytest
 import sys
 import os
 import yaml
 from contextlib import contextmanager
 import kipoi
-from kipoi.data import numpy_collate
 from kipoi.pipeline import install_model_requirements
 from kipoi.utils import Slice_conv
-import tensorflow as tf
+
 
 
 
