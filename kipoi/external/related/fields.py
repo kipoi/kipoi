@@ -2,6 +2,7 @@ from attr import attrib, NOTHING
 from related import _init_fields, types
 from collections import OrderedDict
 from .converters import to_sequence_field_w_str, to_leaf_mapping_field, to_eval_str
+from . import dispatchers  # to load the dispatcher
 
 
 def StrSequenceField(cls, default=NOTHING, required=True, repr=False):
