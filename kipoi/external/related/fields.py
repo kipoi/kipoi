@@ -1,7 +1,7 @@
 from attr import attrib, NOTHING
 from related import _init_fields, types
 from collections import OrderedDict
-from .converters import to_sequence_field_w_str, to_leaf_mapping_field
+from .converters import to_sequence_field_w_str, to_leaf_mapping_field, to_eval_str
 
 
 def StrSequenceField(cls, default=NOTHING, required=True, repr=False):
@@ -44,10 +44,10 @@ def NestedMappingField(cls, keyword, default=NOTHING, required=True, repr=False)
                   repr=repr)
 
 
-def TupleIntField(cls, default=NOTHING, required=True, repr=False):
+def TupleIntField(default=NOTHING, required=True, repr=False):
     """
-    Create new sequence field on a model. If only string is present,
-    convert it to a list of length 1.
+    Create new tuple field on a model. Convert it first to a string
+    and then to a tuple
 
     :param cls: class (or name) of the model to be related in Sequence.
     :param default: any TypedSequence or list
@@ -55,9 +55,8 @@ def TupleIntField(cls, default=NOTHING, required=True, repr=False):
     :param bool repr: include this field should appear in object's repr.
     :param bool cmp: include this field in generated comparison.
     """
-    default = _init_fields.init_default(required, default, ())
-    # check that it's not sequence
-    converter = to_sequence_field_w_str(cls)
-    validator = _init_fields.init_validator(required, types.TypedSequence)
+    default = _init_fields.init_default(required, default, tuple)
+    converter = to_eval_str
+    validator = _init_fields.init_validator(required, tuple)
     return attrib(default=default, convert=converter, validator=validator,
                   repr=repr)

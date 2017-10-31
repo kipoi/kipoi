@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from related.functions import to_model
 from related.types import TypedSequence
+from six import string_types
 
 
 def to_sequence_field_w_str(cls):
@@ -63,3 +64,16 @@ def to_leaf_mapping_field(cls, keyword):
                     raise ValueError("Unable to parse: {0}".format(value))
 
     return LeafConverter(cls)
+
+
+def to_eval_str(value):
+    """
+    Returns an eval(str(value)) if the value is not None.
+
+    :param value: None or a value that can be converted to a str.
+    :return: None or str(value)
+    """
+    if isinstance(value, string_types):
+        value = eval(str(value))
+
+    return value

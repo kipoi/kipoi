@@ -4,7 +4,7 @@ import related
 import enum
 from collections import OrderedDict
 import kipoi.conda as kconda
-from .external.related.fields import StrSequenceField, NestedMappingField
+from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField
 # TODO additionally validate the special type properties
 
 
@@ -97,8 +97,7 @@ class ArraySchema(RelatedConfigMixin):
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
-    # TODO - transform to tuple
-    shape = related.ChildField(tuple)   # TODO - can be None - for scalars?
+    shape = TupleIntField()
     descr = related.StringField()
     # MAYBE - allow a list of strings?
     #         - could be useful when a single array can have multiple 'attributes'
