@@ -15,15 +15,15 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example):
     """kipoi test ...
     """
-    if example == "rbp" and sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
+    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+        pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
 
@@ -40,8 +40,8 @@ def test_test_example(example):
 def test_preproc_example(example, tmpdir):
     """kipoi preproc ...
     """
-    if example == "rbp" and sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
+    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+        pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
 
@@ -87,7 +87,7 @@ def test_predict_example(example, tmpdir):
 #     raise NotImplementedError
 # NotImplementedError
 # _________________________
-    if example == "rbp" and sys.version_info[0] == 2:
+    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)

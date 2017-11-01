@@ -63,6 +63,17 @@ def get_dataloader_info(dataloader, source="kipoi"):
     return kipoi.config.get_source(source).get_dataloader_info(dataloader)
 
 
+def to_namelist(nested_dict):
+    """no-recursion
+    """
+    if isinstance(nested_dict, list):
+        return [x.name for x in nested_dict]
+    elif isinstance(nested_dict, dict):
+        return list(nested_dict)
+    else:
+        return nested_dict.name
+
+
 class Source(object):
 
     __metaclass__ = ABCMeta
@@ -101,8 +112,8 @@ class Source(object):
                 ("author", d.info.author),
                 ("descr", d.info.descr),
                 ("type", d.type),
-                ("inputs", list(d.schema.inputs)),
-                ("targets", list(d.schema.targets)),
+                ("inputs", to_namelist(d.schema.inputs)),
+                ("targets", to_namelist(d.schema.targets)),
                 ("tags", d.info.tags),
             ])
 
@@ -120,8 +131,8 @@ class Source(object):
                 ("author", d.info.author),
                 ("descr", d.info.descr),
                 ("type", d.type),
-                ("inputs", list(d.output_schema.inputs)),
-                ("targets", list(d.output_schema.targets)),
+                ("inputs", to_namelist(d.output_schema.inputs)),
+                ("targets", to_namelist(d.output_schema.targets)),
                 ("tags", d.info.tags),
             ])
 

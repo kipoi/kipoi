@@ -26,9 +26,8 @@ schema:
             shape: (None, 1, 10)
             descr: Distance to poly-a site transformed with B-splines
     targets:
-        binding_site:
-            shape: (1, )
-            descr: Predicted binding strength
+        shape: (1, )
+        descr: Predicted binding strength
 special_functionality:
     - type: var_effect_prediction
       args:

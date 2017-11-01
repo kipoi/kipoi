@@ -14,7 +14,7 @@ import config
 # INSTALL_REQ = True
 INSTALL_REQ = config.install_req
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
 
 
 def read_json_yaml(filepath):
@@ -34,8 +34,8 @@ def get_test_kwargs(model_dir):
 def test_dataloader_model(example):
     """Test dataloader
     """
-    if example == "rbp" and sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
+    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+        pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
 

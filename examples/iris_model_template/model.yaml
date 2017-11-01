@@ -8,12 +8,16 @@ info:
     name: NameOfThisModel
     version: 0.1
     descr: Model predicting the Iris species
+dependencies:
+    conda:
+      - h5py
+    pip:
+      - keras>=2.0.4
 schema:
     inputs:
         features:
-            shape: (4,)
-            descr: "Features in cm: sepal length, sepal width, petal length, petal width."
+          shape: (4,)
+          descr: "Features in cm: sepal length, sepal width, petal length, petal width."
     targets:
-        plant_class:
-            shape: (3,)
-            descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        shape: (3,)
+        descr: "One-hot encoded array of classes: setosa, versicolor, virginica."

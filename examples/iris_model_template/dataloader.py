@@ -5,9 +5,13 @@ from kipoi.data import Dataset
 import pandas as pd
 import numpy as np
 import os
-
+import inspect
 # TODO - remove after defining test.json in dataloader.yaml
-cwd = os.path.dirname(os.path.realpath("__file__"))
+#cwd = os.path.dirname(os.path.realpath("__file__"))
+
+# https://stackoverflow.com/questions/3718657/how-to-properly-determine-current-script-directory-in-python
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+this_path = os.path.dirname(os.path.abspath(filename))
 
 
 def read_pickle(f):
@@ -21,8 +25,8 @@ class MyDataset(Dataset):
         self.features_file = features_file
         self.targets_file = targets_file
 
-        self.y_transformer = read_pickle(cwd + "/dataloader_files/y_transformer.pkl")
-        self.x_transformer = read_pickle(cwd + "/dataloader_files/x_transformer.pkl")
+        self.y_transformer = read_pickle(this_path + "/dataloader_files/y_transformer.pkl")
+        self.x_transformer = read_pickle(this_path + "/dataloader_files/x_transformer.pkl")
 
         self.features = pd.read_csv(features_file)
         if targets_file is not None:
@@ -42,9 +46,7 @@ class MyDataset(Dataset):
             "inputs": {
                 "features": x_features
             },
-            "targets": {
-                "plant_class": y_class
-            },
+            "targets": y_class,
             "metadata": {
                 "example_row_number": idx
             }

@@ -117,9 +117,9 @@ class ArraySchema(RelatedConfigMixin):
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
-    inputs = related.MappingField(ArraySchema, "name")
-    # TODO - can be a dictionary, list or a single array
-    targets = related.MappingField(ArraySchema, "name")
+    # can be a dictionary, list or a single array
+    inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
+    targets = NestedMappingField(ArraySchema, keyword="shape", key="name")
 
 
 # --------------------------------------------
@@ -141,18 +141,16 @@ class MetadataStruct(RelatedConfigMixin):
 
     descr = related.StringField()
     type = related.ChildField(MetadataType, required=False)
+    name = related.StringField(required=False)
 
 
 @related.immutable
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
     """
-    inputs = related.MappingField(ArraySchema, "name")
-    # TODO - can be a dictionary, list or a single array
-    targets = related.MappingField(ArraySchema, "name", required=False)
-    # TODO - define a special metadata field
-    #       - nested data structure
-    metadata = NestedMappingField(MetadataStruct, keyword="descr",
+    inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
+    targets = NestedMappingField(ArraySchema, keyword="shape", key="name", required=False)
+    metadata = NestedMappingField(MetadataStruct, keyword="descr", key="name",
                                   required=False)
     #      - we would need to allow classes that contain also dictionaries
     #        -> leaf can be an

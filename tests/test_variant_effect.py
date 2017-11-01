@@ -40,7 +40,13 @@ def test_var_eff_pred():
             exec_files_path_here[k] = exec_files_path[k]
 
     # Derive a list model output labels
-    model_out_annotation = np.array(list(model.schema.targets.keys()))
+    if isinstance(model.schema.targets, dict):
+        model_out_annotation = np.array(list(model.schema.targets.keys()))
+    elif isinstance(model.schema.targets, list):
+        model_out_annotation = np.array([x.name for x in model.schema.targets])
+    else:
+        # TODO - all targets need to have the keys defined
+        model_out_annotation = np.array([model.schema.targets.name])
 
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
