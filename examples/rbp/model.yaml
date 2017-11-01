@@ -28,7 +28,7 @@ schema:
     targets:
         shape: (1, )
         descr: Predicted binding strength
-special_functionality:
+post_processing:
     - type: var_effect_prediction
       args:
           seq_input:

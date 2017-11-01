@@ -1,11 +1,13 @@
 import kipoi
-from kipoi.variant_effects import predict_variants
+from kipoi.post_processing.variant_effects import predict_variants
 import numpy as np
 import pytest
 import sys
 from kipoi.pipeline import install_model_requirements
-import config
 import warnings
+
+import config
+
 warnings.filterwarnings('ignore')
 
 # TODO: We still need a way to get the model output annotation from somewhere...
@@ -60,14 +62,3 @@ def test_var_eff_pred():
                            dataloader_function=Dataloader, batch_size=32,
                            model_out_annotation=model_out_annotation,
                            evaluation_function_kwargs={"diff_type": "diff"})
-
-import kipoi
-from kipoi.variant_effects import predict_variants
-import numpy as np
-import pytest
-import sys
-from kipoi.pipeline import install_model_requirements
-import warnings
-warnings.filterwarnings('ignore')
-model_dir = "examples/rbp/"
-model = kipoi.get_model(model_dir, source="dir")

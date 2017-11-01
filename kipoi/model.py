@@ -94,7 +94,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.source = source
     mod.source_name = source_name
     mod.source_dir = source_dir
-    mod.special_functionality = md.special_functionality
+    mod.post_processing = md.post_processing
     if with_dataloader:
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
     else:
