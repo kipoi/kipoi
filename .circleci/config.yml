@@ -6,7 +6,7 @@ version: 2
 jobs:
   # TODO - have two different jobs, each for different python versions...
   # TODO - pack the additional stuff into a docker container
-  build:
+  test-py36:
     docker:
       - image: continuumio/miniconda3:4.3.14 # circleci/python:3.6.1
         
@@ -71,7 +71,8 @@ jobs:
           path: test-reports
           destination: test-reports
           
-  build-py2:
+  # python2 build
+  - test-py2:
     docker:
       - image: continuumio/miniconda:4.3.14 # circleci/python:3.6.1
         
@@ -136,3 +137,9 @@ jobs:
           path: test-reports
           destination: test-reports
           
+workflows:
+  version: 2
+  test_py27_py36:
+    jobs:
+      - test-py36
+      - test-py27
