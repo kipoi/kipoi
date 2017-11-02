@@ -72,7 +72,7 @@ jobs:
           destination: test-reports
           
   # python2 build
-  - test-py2:
+  - test-py27:
     docker:
       - image: continuumio/miniconda:4.3.14 # circleci/python:3.6.1
         
