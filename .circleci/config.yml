@@ -7,11 +7,7 @@ jobs:
   # TODO - have two different jobs, each for different python versions...
   build:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      # TODO - update it 
-      - image: circleci/python:3.6.1
-
+      - image: continuumio/miniconda3 # circleci/python:3.6.1
 
     working_directory: ~/repo
 
@@ -28,21 +24,23 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python3 -m venv venv
-            . venv/bin/activate
             pip install -r requirements.txt
 
       - save_cache:
           paths:
-            - ./venv
+            - /opt/conda
           key: v1-dependencies-{{ checksum "requirements.txt" }}
         
+      - run:
+          name: install the kipoi package
+          command: |
+            pip install '.[develop]'
+            
       # run tests!
       - run:
           name: run tests
           command: |
-            . venv/bin/activate
-            python manage.py test
+            py.test tests/
 
       - store_artifacts:
           path: test-reports
