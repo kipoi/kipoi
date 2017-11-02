@@ -8,7 +8,7 @@ __version__ = '0.0.1'
 from . import config
 from . import pipeline
 from . import utils
-from kipoi.post_processing import variant_effects
+from kipoi.postprocessing import variant_effects
 from . import remote
 from . import model
 from . import data_utils

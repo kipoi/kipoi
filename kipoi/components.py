@@ -221,7 +221,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(Info)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    post_processing = related.SequenceField(PostProcStruct, default=[], required=False)
+    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)

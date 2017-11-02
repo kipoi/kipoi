@@ -1,5 +1,5 @@
 import kipoi
-from kipoi.post_processing.variant_effects import predict_variants
+from kipoi.postprocessing.variant_effects import predict_variants
 import numpy as np
 import pytest
 import sys
