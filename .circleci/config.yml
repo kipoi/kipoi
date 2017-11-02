@@ -19,9 +19,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
+          - py35-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - py35-dependencies-
 
       - run:
           name: install build-essential
@@ -54,7 +54,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/conda
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: py35-dependencies-{{ checksum "requirements.txt" }}
         
       - run:
           name: install the kipoi package
@@ -85,9 +85,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
+          - py27-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - py27-dependencies-
 
       - run:
           name: install build-essential
@@ -120,7 +120,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/conda
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: py27-dependencies-{{ checksum "requirements.txt" }}
         
       - run:
           name: install the kipoi package
