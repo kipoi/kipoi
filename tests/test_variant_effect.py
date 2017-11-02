@@ -1,11 +1,13 @@
 import kipoi
-from kipoi.variant_effects import predict_variants
+from kipoi.postprocessing.variant_effects import predict_variants
 import numpy as np
 import pytest
 import sys
 from kipoi.pipeline import install_model_requirements
-import config
 import warnings
+
+import config
+
 warnings.filterwarnings('ignore')
 
 # TODO: We still need a way to get the model output annotation from somewhere...

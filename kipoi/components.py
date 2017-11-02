@@ -160,6 +160,19 @@ class DataLoaderSchema(RelatedConfigMixin):
     #          - SpecialType (say ArrayRanges, BatchArrayRanges, which will
     #                         effectively be a dicitonary of scalars)
 
+@enum.unique
+class PostProcType(enum.Enum):
+    VAR_EFFECT_PREDICTION = "var_effect_prediction"
+
+@related.immutable
+class PostProcSeqinput(object):
+    seq_input = related.SequenceField(str)
+
+@related.immutable
+class PostProcStruct(RelatedConfigMixin):
+    type = related.ChildField(PostProcType) #enum
+    args = related.ChildField(dict) # contains
+
 
 @related.immutable
 class DataLoaderArgument(RelatedConfigMixin):
@@ -208,6 +221,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(Info)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
+    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
