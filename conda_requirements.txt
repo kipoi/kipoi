@@ -1,0 +1,7 @@
+# conda requirements for circle CI
+numpy
+pandas
+pytest
+h5py
+bcolz
+scipy

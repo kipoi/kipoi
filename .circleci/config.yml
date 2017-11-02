@@ -22,7 +22,12 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: install dependencies
+          name: install conda dependencies
+          command: |
+            conda install --yes --file conda_requirements.txt
+            
+      - run:
+          name: install pip dependencies
           command: |
             pip install -r requirements.txt
 

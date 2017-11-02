@@ -1,9 +1,3 @@
-# requirements for circle CI
-numpy
-pandas
-pytest
-h5py
-scipy
+# pip requirements for circle CI
 cython
 tensorflow
-
