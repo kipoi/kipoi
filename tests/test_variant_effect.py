@@ -1,13 +1,13 @@
-import sys
-import warnings
 
+import kipoi
+from kipoi.postprocessing.variant_effects import predict_variants
 import numpy as np
 import pytest
+import sys
+from kipoi.pipeline import install_model_requirements
+import warnings
 
 import config
-import kipoi
-from kipoi.pipeline import install_model_requirements
-from kipoi.post_processing.variant_effects import predict_variants
 
 warnings.filterwarnings('ignore')
 

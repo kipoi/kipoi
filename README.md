@@ -1,6 +1,7 @@
 # Model-zoo
 
-![Build Status](https://api.travis-ci.com/kipoi/kipoi.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master)
+![Build Status](https://circleci.com/gh/kipoi/kipoi/tree/master.svg?style=shield)
+<!-- ![Build Status](https://api.travis-ci.com/kipoi/kipoi.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master) -->
 
 ## Install
 

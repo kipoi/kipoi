@@ -232,6 +232,7 @@ def check_extractor_compatibility(extractor):
 def predict_variants(model_handle,
                      vcf_fpath,
                      seq_length,
+                     evaluation_function,
                      exec_files_path,
                      dataloader_function,
                      batch_size,

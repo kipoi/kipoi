@@ -1,0 +1,145 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  # TODO - have two different jobs, each for different python versions...
+  # TODO - pack the additional stuff into a docker container
+  test-py36:
+    docker:
+      - image: continuumio/miniconda3:4.3.14 # circleci/python:3.6.1
+        
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout  # TODO - do they also support just cloning it?
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - py35-dependencies-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - py35-dependencies-
+
+      - run:
+          name: install build-essential
+          command: |
+            apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
+
+      - run:
+          name: install git-lfs
+          command: |
+            echo "deb http://http.debian.net/debian wheezy-backports main" > /etc/apt/sources.list.d/wheezy-backports-main.list
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+            apt-get install -y git-lfs
+            git lfs install
+            
+      - run:
+          name: install conda dependencies
+          command: |
+            conda install --yes --file conda_requirements.txt
+            
+      - run:
+          name: install pip dependencies
+          command: |
+            pip install -r requirements.txt
+
+      - run:
+          name: install genomelake
+          command: |
+            pip install git+ssh://git@github.com/avsecz/genomelake.git
+
+      - save_cache:
+          paths:
+            - /opt/conda
+          key: py35-dependencies-{{ checksum "requirements.txt" }}
+        
+      - run:
+          name: install the kipoi package
+          command: |
+            pip install '.[develop]'
+            
+      # run tests!
+      - run:
+          name: run tests
+          command: |
+            py.test tests/
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+          
+  # python2 build
+  test-py27:
+    docker:
+      - image: continuumio/miniconda:4.3.14 # circleci/python:3.6.1
+        
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout  # TODO - do they also support just cloning it?
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - py27-dependencies-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - py27-dependencies-
+
+      - run:
+          name: install build-essential
+          command: |
+            apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
+
+      - run:
+          name: install git-lfs
+          command: |
+            echo "deb http://http.debian.net/debian wheezy-backports main" > /etc/apt/sources.list.d/wheezy-backports-main.list
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+            apt-get install -y git-lfs
+            git lfs install
+            
+      - run:
+          name: install conda dependencies
+          command: |
+            conda install --yes --file conda_requirements.txt
+            
+      - run:
+          name: install pip dependencies
+          command: |
+            pip install -r requirements.txt
+
+      - run:
+          name: install genomelake
+          command: |
+            pip install git+ssh://git@github.com/avsecz/genomelake.git
+
+      - save_cache:
+          paths:
+            - /opt/conda
+          key: py27-dependencies-{{ checksum "requirements.txt" }}
+        
+      - run:
+          name: install the kipoi package
+          command: |
+            pip install '.[develop]'
+            
+      # run tests!
+      - run:
+          name: run tests
+          command: |
+            py.test tests/
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+          
+workflows:
+  version: 2
+  test_py27_py36:
+    jobs:
+      - test-py36
+      - test-py27
