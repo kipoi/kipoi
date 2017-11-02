@@ -6,4 +6,4 @@ h5py
 scipy
 cython
 tensorflow
-git+ssh://git@github.com/avsecz/genomelake.git
+

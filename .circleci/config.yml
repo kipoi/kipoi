@@ -26,6 +26,11 @@ jobs:
           command: |
             pip install -r requirements.txt
 
+      - run:
+          name: install genomelake
+          command: |
+            pip install git+ssh://git@github.com/avsecz/genomelake.git
+
       - save_cache:
           paths:
             - /opt/conda
