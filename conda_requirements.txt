@@ -5,3 +5,6 @@ pytest
 h5py
 bcolz
 scipy
+cython
+# pybedtools
+# pyBigWig

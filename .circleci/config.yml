@@ -22,6 +22,11 @@ jobs:
           - v1-dependencies-
 
       - run:
+          name: install gcc
+          command: |
+            apt-get update && apt-get install -y gcc
+
+      - run:
           name: install conda dependencies
           command: |
             conda install --yes --file conda_requirements.txt
