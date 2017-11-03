@@ -227,7 +227,7 @@ def get_seq_fields(model):
             seq_dict = pp_obj.args
             break
     if seq_dict is None:
-        raise Exception("Model does not support any postprocessing")
+        raise Exception("Model does not support var_effect_prediction")
     # TODO: Is there a non-hardcoding way of selecting the seuqence labels?
     return seq_dict['seq_input']
 
