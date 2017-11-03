@@ -330,7 +330,9 @@ class SampleGenerator(SampleIterator):
         return self
 
     def __next__(self):
-        return self.gen.__next__()
+        return next(self.gen)
+
+    next = __next__  # python 2 compatibility
 
 
 class BatchGenerator(BatchIterator):
@@ -355,10 +357,11 @@ class BatchGenerator(BatchIterator):
         return self
 
     def __next__(self):
-        return self.gen.__next__()
+        return next(self.gen)
 
-
+    next = __next__  # python 2 compatibility
 # --------------------------------------------
+
 
 def get_dataloader_factory(dataloader, source="kipoi"):
 
