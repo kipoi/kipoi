@@ -40,7 +40,7 @@ _logger = logging.getLogger('kipoi')
 
 
 def install_model_requirements(model, source="kipoi", and_dataloaders=False):
-    md = kipoi.get_source(source).get_model_info(model)
+    md = kipoi.get_source(source).get_model_descr(model)
     md.dependencies.install()
     if and_dataloaders:
         if ":" in md.default_dataloader:
@@ -50,12 +50,12 @@ def install_model_requirements(model, source="kipoi", and_dataloaders=False):
             dl_path = md.default_dataloader
 
         default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-        dl = kipoi.config.get_source(dl_source).get_dataloader_info(default_dataloader_path)
+        dl = kipoi.config.get_source(dl_source).get_dataloader_descr(default_dataloader_path)
         dl.dependencies.install()
 
 
 def install_dataloader_requirements(dataloader, source="kipoi"):
-    kipoi.get_source(source).get_model_info(dataloader).dependencies.install()
+    kipoi.get_source(source).get_model_descr(dataloader).dependencies.install()
 
 
 def add_arg_source(parser, default="kipoi"):
