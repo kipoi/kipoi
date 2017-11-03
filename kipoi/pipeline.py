@@ -120,7 +120,6 @@ class Pipeline(object):
         """
         _logger.info('Initialized data generator. Running batches...')
 
-        # TODO - implement batch_iter
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
 
         for i, batch in enumerate(it):

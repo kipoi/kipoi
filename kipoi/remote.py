@@ -32,6 +32,7 @@ def list_yamls_recursively(root_dir, basename):
                 for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
 
 
+# TODO - info -> descr
 def load_component_info(component_path, which="model"):
     """Return the parsed yaml file
     """
