@@ -131,8 +131,6 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
     #
     # DataLoaders that implement fwd and rc sequence output at once are not treated in any special way.
     #
-
-
     # Generate the object for model prediction: Copy object if it will have to be modified
     input_set = {}
     for s_dir, allele in itertools.product(["fwd", "rc"], ["ref", "alt"]):
@@ -145,6 +143,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
                 input_set[k][seq_key] = model_input['inputs'][seq_key]
 
     # Start from the sequence inputs mentioned in the model.yaml
+    # TODO: Check with Ziga whether this will work for all model input types (dict, list, single input...)
     for seq_key in relv_seq_keys:
         ranges_slots = dataloader.output_schema.inputs[seq_key].associated_metadata
         # check the ranges slots
@@ -208,7 +207,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
 
 
 def modify_bases(seq_obj, lines, pos, base, is_rc):
-    # Check whether this code does what it should...
+    # Assumes a fixed order of ACGT and requires one-hot encoding
     alphabet = np.array(['A', "C", "G", "T"])
     base_sel = np.where(alphabet[None, :] == base[:, None])
     base_sel_idx = base_sel[1][np.argsort(base_sel[0])]
@@ -244,14 +243,21 @@ def get_dl_bed_fields(dataloader):
     return seq_dict['bed_input']
 
 
-
+# TODO: Can we infer the seq_length from:
+# TODO: Model target key definition is missing, so no nice annotation will be generated...
+"""
+schema:
+    inputs:
+        seq:
+            shape: (4, 101)
+"""
 def predict_variants(model,
                      vcf_fpath,
                      seq_length,
                      exec_files_path,
                      dataloader_function,
                      batch_size,
-                     model_out_annotation,
+                     model_out_annotation = None,
                      evaluation_function = ism,
                      debug=False,
                      evaluation_function_kwargs=None):
@@ -269,6 +275,16 @@ def predict_variants(model,
     exec_files_bed_keys = get_dl_bed_fields(dataloader_function)
     for k in exec_files_bed_keys:
         exec_files_path[k] = temp_bed3_file
+    #
+    # Get model output annotation:
+    if model_out_annotation is None:
+        if isinstance(model.schema.targets, dict):
+            model_out_annotation = np.array(list(model.schema.targets.keys()))
+        elif isinstance(model.schema.targets, list):
+            model_out_annotation = np.array([x.name for x in model.schema.targets])
+        else:
+            # TODO - all targets need to have the keys defined
+            model_out_annotation = np.array([model.schema.targets.name])
     #
     res = []
     #
