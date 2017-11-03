@@ -31,11 +31,10 @@ def bad_data():
 
 def test_datset_lens_good(data):
     assert get_dataset_lens(data) == 3 * [3]
-    pass
 
 
 def test_datset_lens_bad(bad_data):
-    assert get_dataset_lens(bad_data) == [3, 1, 3, 4]
+    assert sorted(get_dataset_lens(bad_data)) == [1, 3, 3, 4]
 
     with pytest.raises(Exception):
         get_dataset_lens(bad_data, require_numpy=True)
@@ -49,6 +48,7 @@ def test_get_item(data):
 
 
 def test_preloaded_dataset(data):
+
     def data_fn():
         return data
 

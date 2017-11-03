@@ -67,7 +67,7 @@ class PreloadedDataset(BaseDataLoader):
     def from_data_fn(cls, data_fn):
         """setup the class variable
         """
-        cls.data_fn = data_fn
+        cls.data_fn = staticmethod(data_fn)
         return cls
 
     @classmethod
@@ -315,7 +315,7 @@ class SampleGenerator(SampleIterator):
     def from_generator_fn(cls, generator_fn):
         """setup the class variable
         """
-        cls.generator_fn = generator_fn
+        cls.generator_fn = staticmethod(generator_fn)
         return cls
 
     @classmethod
@@ -340,7 +340,7 @@ class BatchGenerator(BatchIterator):
 
     @classmethod
     def from_generator_fn(cls, generator_fn):
-        cls.generator_fn = generator_fn
+        cls.generator_fn = staticmethod(generator_fn)
         return cls
 
     @classmethod

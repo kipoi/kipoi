@@ -44,9 +44,9 @@ def test_list_models():
     df_all = kipoi.list_models()
     assert ["source"] + df_model_columns == list(df_all.columns)
 
-    kipoi.get_model_info("extended_coda")
+    kipoi.get_model_descr("extended_coda")
 
-    kipoi.get_model_info("extended_coda", source="kipoi")
+    kipoi.get_model_descr("extended_coda", source="kipoi")
 
     # local files
-    kipoi.get_model_info("examples/extended_coda", source="dir")
+    kipoi.get_model_descr("examples/extended_coda", source="dir")
