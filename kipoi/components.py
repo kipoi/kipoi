@@ -240,6 +240,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
+    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
 
 
 # TODO - special metadata classes should just extend the dictionary field

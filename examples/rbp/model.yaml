@@ -33,4 +33,3 @@ postprocessing:
       args:
           seq_input:
             - seq
-            - seq2

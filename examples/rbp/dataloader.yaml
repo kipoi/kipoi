@@ -46,4 +46,9 @@ output_schema:
             type: Ranges  # StrandedRanges?
             descr: Ranges describing inputs.seq
             # TODO - define a class for it
+postprocessing:
+    - type: var_effect_prediction
+      args:
+          bed_input:
+            - intervals_file
 # d: is an alias for description
