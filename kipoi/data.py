@@ -11,6 +11,7 @@ from .utils import load_module, cd, getargs
 from .external.torch.data import DataLoader
 from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_item, get_dataset_lens
 from tqdm import tqdm
+import types
 
 
 _logger = logging.getLogger('kipoi')
@@ -38,9 +39,13 @@ class BaseDataLoader(object):
         """
         return (x["inputs"] for x in self.batch_iter(**kwargs))
 
-    @abc.abstractmethod
-    def load_all(self):
-        raise NotImplementedError
+    def load_all(self, **kwargs):
+        """Loads and returns the whole dataset
+
+        Arguments:
+            **kwargs: passed to batch_iter()
+        """
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(**kwargs))])
 
 # --------------------------------------------
 # Different implementations
@@ -64,7 +69,7 @@ class PreloadedDataset(BaseDataLoader):
     data_fn = None
 
     @classmethod
-    def from_data_fn(cls, data_fn):
+    def from_fn(cls, data_fn):
         """setup the class variable
         """
         cls.data_fn = staticmethod(data_fn)
@@ -75,12 +80,12 @@ class PreloadedDataset(BaseDataLoader):
         return cls.from_data_fn(lambda: data)()
 
     @classmethod
-    def get_data_fn(cls):
+    def _get_data_fn(cls):
         assert cls.data_fn is not None
         return cls.data_fn
 
     def __init__(self, *args, **kwargs):
-        self.data = self.get_data_fn()(*args, **kwargs)
+        self.data = self._get_data_fn()(*args, **kwargs)
         lens = get_dataset_lens(self.data, require_numpy=True)
         # check that all dimensions are the same
         assert len(set(lens)) == 1
@@ -121,12 +126,9 @@ class PreloadedDataset(BaseDataLoader):
 
     def load_all(self, **kwargs):
         """Load the whole dataset into memory
+
         Arguments:
-            batch_size (int, optional): how many samples per batch to load
-                (default: 1).
-            num_workers (int, optional): how many subprocesses to use for data
-                loading. 0 means that the data will be loaded in the main process
-                (default: 0)
+            **kwargs: ignored
         """
         return self.data
 
@@ -240,15 +242,6 @@ class BatchDataset(BaseDataLoader):
                         drop_last=False)
         return iter(dl)
 
-    def load_all(self, num_workers=0, **kwargs):
-        """Load the whole dataset into memory
-        Arguments:
-            num_workers (int, optional): how many subprocesses to use for data
-                loading. 0 means that the data will be loaded in the main process
-                (default: 0)
-        """
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(num_workers=num_workers))])
-
 
 class SampleIterator(BaseDataLoader):
     __metaclass__ = abc.ABCMeta
@@ -279,10 +272,6 @@ class SampleIterator(BaseDataLoader):
         if len(l) > 0:
             yield numpy_collate(l)
 
-    def load_all(self, batch_size=32, num_workers=0, **kwargs):
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size,
-                                                                     num_workers=num_workers))])
-
 
 class BatchIterator(BaseDataLoader):
     @abc.abstractmethod
@@ -300,11 +289,6 @@ class BatchIterator(BaseDataLoader):
         # TODO - implement num_workers
         return iter(self)
 
-    def load_all(self, num_workers=0, **kwargs):
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(num_workers=num_workers))])
-
-
-# Transform a generator into a class
 
 class SampleGenerator(SampleIterator):
     """Transform a generator of samples into SampleIterator
@@ -312,19 +296,19 @@ class SampleGenerator(SampleIterator):
     generator_fn = None
 
     @classmethod
-    def from_generator_fn(cls, generator_fn):
+    def from_fn(cls, generator_fn):
         """setup the class variable
         """
         cls.generator_fn = staticmethod(generator_fn)
         return cls
 
     @classmethod
-    def get_generator_fn(cls):
+    def _get_generator_fn(cls):
         assert cls.generator_fn is not None
         return cls.generator_fn
 
     def __init__(self, *args, **kwargs):
-        self.gen = self.get_generator_fn()(*args, **kwargs)
+        self.gen = self._get_generator_fn()(*args, **kwargs)
 
     def __iter__(self):
         return self
@@ -341,17 +325,17 @@ class BatchGenerator(BatchIterator):
     generator_fn = None
 
     @classmethod
-    def from_generator_fn(cls, generator_fn):
+    def from_fn(cls, generator_fn):
         cls.generator_fn = staticmethod(generator_fn)
         return cls
 
     @classmethod
-    def get_generator_fn(cls):
+    def _get_generator_fn(cls):
         assert cls.generator_fn is not None
         return cls.generator_fn
 
     def __init__(self, *args, **kwargs):
-        self.gen = self.get_generator_fn()(*args, **kwargs)
+        self.gen = self._get_generator_fn()(*args, **kwargs)
 
     def __iter__(self):
         return self
@@ -382,15 +366,20 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     if dl.type not in AVAILABLE_DATALOADERS:
         raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".
                          format(dl.type, list(AVAILABLE_DATALOADERS.keys())))
-    # check that CustomDataLoader indeed interits from the right DataLoader
-    if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[dl.type]):
-        raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
-                         format(AVAILABLE_DATALOADERS[dl.type].__name__))
-    # check that the extractor arguments match yml arguments
+    # check that the extractor arguments match yaml arguments
     if not getargs(CustomDataLoader) == set(dl.args.keys()):
-        raise ValueError("DataLoader arguments: \n{0}\n don't match " +
-                         "the specification in the dataloader.yaml file:\n{1}".
-                         format(set(getargs(CustomDataLoader)), set(dl.args.keys())))
+        raise ValueError("DataLoader arguments: \n{0}\n don't match ".format(set(getargs(CustomDataLoader))) +
+                         "the specification in the dataloader.yaml file:\n{0}".
+                         format(set(dl.args.keys())))
+    # check that CustomDataLoader indeed interits from the right DataLoader
+    if dl.type in DATALOADERS_AS_FUNCTIONS:
+        # transform the functions into objects
+        assert isinstance(CustomDataLoader, types.FunctionType)
+        CustomDataLoader = AVAILABLE_DATALOADERS[dl.type].from_fn(CustomDataLoader)
+    else:
+        if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[dl.type]):
+            raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
+                             format(AVAILABLE_DATALOADERS[dl.type].__name__))
 
     # Inherit the attributes from dl
     # TODO - make this more automatic / DRY
@@ -416,3 +405,5 @@ AVAILABLE_DATALOADERS = {"PreloadedDataset": PreloadedDataset,
                          "SampleGenerator": SampleGenerator,
                          "BatchIterator": BatchIterator,
                          "BatchGenerator": BatchGenerator}
+
+DATALOADERS_AS_FUNCTIONS = ["PreloadedDataset, ""SampleGenerator", "BatchGenerator"]

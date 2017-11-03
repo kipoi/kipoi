@@ -52,7 +52,7 @@ def test_preloaded_dataset(data):
     def data_fn():
         return data
 
-    d = PreloadedDataset.from_data_fn(data_fn)()
+    d = PreloadedDataset.from_fn(data_fn)()
 
     assert d.load_all() == data
     assert len(d) == 3

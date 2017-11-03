@@ -197,7 +197,7 @@ def cli_extract_to_hdf5(command, raw_args):
     dataloader = Dataloader(**dataloader_kwargs)
 
     _logger.info("Loading all the points into memory")
-    obj = dataloader.load_all(args.batch_size, num_workers=args.num_workers)
+    obj = dataloader.load_all(batch_size=args.batch_size, num_workers=args.num_workers)
 
     _logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
     deepdish.io.save(args.output, obj)

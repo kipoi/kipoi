@@ -28,5 +28,6 @@ def test_load_model(example):
     Dl.info
     Dl.output_schema
     Dl.source
-    Dl.__len__
-    Dl.__getitem__
+    # datalaoder
+    Dl.batch_iter
+    Dl.load_all

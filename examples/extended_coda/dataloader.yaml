@@ -1,5 +1,5 @@
-type: Dataset
-defined_as: dataloader.py::CodaDataset
+type: BatchGenerator
+defined_as: dataloader.py::extractor
 args:
     intervals_file:
         descr: "tsv file with `chrom start end`"
@@ -10,6 +10,9 @@ args:
     target_data_sources:
         descr: "optional; {data_name: <path to genomelake directory>}"
         type: dict
+        optional: True
+    batch_size:
+        descr: "batch size. Default = 128"
         optional: True
 info: 
     author: Johnny Israeli

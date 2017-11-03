@@ -34,10 +34,12 @@ def compare_arrays(a, b):
 
 
 def test_PreloadedDataset(data):
+    # PreloadedDataset example:
     def data_fn():
         return data
+    # ------------------------
 
-    d = PreloadedDataset.from_data_fn(data_fn)()
+    d = PreloadedDataset.from_fn(data_fn)()
 
     compare_arrays(d.load_all(), data)
     it = d.batch_iter(3)
@@ -45,6 +47,7 @@ def test_PreloadedDataset(data):
 
 
 def test_Dataset(data):
+    # Dataset example:
     class MyDataset(Dataset):
         def __init__(self, data):
             self.data = data
@@ -54,6 +57,7 @@ def test_Dataset(data):
 
         def __getitem__(self, idx):
             return get_dataset_item(self.data, idx)
+    # ------------------------
 
     d = MyDataset(data)
 
@@ -63,7 +67,7 @@ def test_Dataset(data):
 
 
 def test_BatchDataset(data):
-
+    # BatchDataset example:
     class MyBatchDataset(BatchDataset):
         def __init__(self, data, batch_size=3):
             self.data = data
@@ -76,6 +80,7 @@ def test_BatchDataset(data):
             start = idx * self.batch_size
             end = min((idx + 1) * self.batch_size, self.data["targets"].shape[0])
             return get_dataset_item(self.data, np.arange(start, end))
+    # ------------------------
     d = MyBatchDataset(data)
 
     compare_arrays(d.load_all(), data)
@@ -84,6 +89,7 @@ def test_BatchDataset(data):
 
 
 def test_SampleIterator(data):
+    # SampleIterator example:
     class MySampleIterator(SampleIterator):
         def __init__(self, data):
             self.data = data
@@ -99,6 +105,7 @@ def test_SampleIterator(data):
             self.idx += 1
             return ret
         next = __next__
+    # ------------------------
 
     d = MySampleIterator(data)
 
@@ -109,6 +116,7 @@ def test_SampleIterator(data):
 
 
 def test_BatchIterator(data):
+    # BatchIterator example:
     class MyBatchIterator(BatchIterator):
         def __init__(self, data, batch_size):
             self.data = data
@@ -127,6 +135,7 @@ def test_BatchIterator(data):
             self.idx += 1
             return get_dataset_item(self.data, np.arange(start, end))
         next = __next__
+    # ------------------------
 
     d = MyBatchIterator(data, 3)
 
@@ -137,30 +146,34 @@ def test_BatchIterator(data):
 
 
 def test_SampleGenerator(data):
+    # SampleGenerator example:
     def generator_fn(data):
         for idx in range(data["targets"].shape[0]):
             yield get_dataset_item(data, idx)
+    # ------------------------
 
-    d = SampleGenerator.from_generator_fn(generator_fn)(data)
+    d = SampleGenerator.from_fn(generator_fn)(data)
 
     compare_arrays(d.load_all(), data)
-    d = SampleGenerator.from_generator_fn(generator_fn)(data)
+    d = SampleGenerator.from_fn(generator_fn)(data)
 
     it = d.batch_iter(batch_size=3)
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
 
 def test_BatchGenerator(data):
+    # BatchGenerator example:
     def generator_fn(data, batch_size):
         for idx in range(int(np.ceil(data["targets"].shape[0] / batch_size))):
             start = idx * batch_size
             end = min((idx + 1) * batch_size, data["targets"].shape[0])
             yield get_dataset_item(data, np.arange(start, end))
+    # ------------------------
 
-    d = BatchGenerator.from_generator_fn(generator_fn)(data, 3)
+    d = BatchGenerator.from_fn(generator_fn)(data, 3)
 
     compare_arrays(d.load_all(), data)
-    d = BatchGenerator.from_generator_fn(generator_fn)(data, 3)
+    d = BatchGenerator.from_fn(generator_fn)(data, 3)
 
     it = d.batch_iter()
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
