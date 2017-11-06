@@ -264,17 +264,18 @@ def get_dl_bed_fields(dataloader):
     return seq_dict['bed_input']
 
 
-# TODO: Can we infer the seq_length from:
-# TODO: Model target key definition is missing, so no nice annotation will be generated...
-"""
-schema:
-    inputs:
-        seq:
-            shape: (4, 101)
-"""
+def get_seq_length(dataloader, seq_field):
+    orig_shape = dataloader.output_schema.inputs[seq_field].shape
+    shape = [s for s in orig_shape if s is not None]
+    shape = [s for s in shape if s != 4]
+    if len(shape) != 1:
+        raise Exception("DNA sequence output shape not well defined! %s"%str(orig_shape))
+    return shape[0]
+
+
+
 def predict_variants(model,
                      vcf_fpath,
-                     seq_length,
                      exec_files_path,
                      dataloader_function,
                      batch_size,
@@ -289,6 +290,11 @@ def predict_variants(model,
     #    raise Exception("Preprocessor does not generate DNA sequences.")
     #
     seq_fields = get_seq_fields(model)
+    seq_lengths = set([get_seq_length(dataloader_function, seq_field) for seq_field in seq_fields])
+    if len(seq_lengths) > 1:
+        raise Exception("DNA sequence output shapes must agree for fields: %s"%str(seq_fields))
+    else:
+        seq_length = list(seq_lengths)[0]
     regions = _vcf_to_regions(vcf_fpath, seq_length)
     temp_bed3_file = tempfile.mktemp()  # file path of the temp file
     _bed3(regions, temp_bed3_file)
@@ -300,12 +306,19 @@ def predict_variants(model,
     # Get model output annotation:
     if model_out_annotation is None:
         if isinstance(model.schema.targets, dict):
-            model_out_annotation = np.array(list(model.schema.targets.keys()))
+            raise Exception("Variant effect prediction with dict(array) model output not implemented!")
+            #model_out_annotation = np.array(list(model.schema.targets.keys()))
         elif isinstance(model.schema.targets, list):
-            model_out_annotation = np.array([x.name for x in model.schema.targets])
+            raise Exception("Variant effect prediction with list(array) model output not implemented!")
+            #model_out_annotation = np.array([x.name for x in model.schema.targets])
         else:
             # TODO - all targets need to have the keys defined
-            model_out_annotation = np.array([model.schema.targets.name])
+            if model.schema.targets.column_labels is not None:
+                model_out_annotation = np.array(model.schema.targets.column_labels)
+
+
+    if model_out_annotation is None:
+        model_out_annotation = np.array([str(i) for i in range(model.schema.targets.shape[0])])
     #
     res = []
     #
@@ -332,3 +345,15 @@ def predict_variants(model,
     except:
         pass
     return res
+
+
+def annotate_vcf(predictions, ranges):
+    # Use the ranges object to match predictions with the vcf
+    # Add original index to the ranges object
+    # Sort predictions according to the vcf
+    # Annotate vcf object
+    vcf_reader = vcf.Reader(open('/homes/rkreuzhu/example_vcf.vcf', 'r'))
+    vcf_writer = vcf.Writer(open('/homes/rkreuzhu/example_vcf_out.vcf', 'w'), vcf_reader)
+    for record in vcf_reader:
+        record.INFO["KPVarEff"] = [0.01,0.4]
+        vcf_writer.write_record(record)

@@ -28,6 +28,8 @@ schema:
     targets:
         shape: (1, )
         descr: Predicted binding strength
+        column_labels:
+            - rbp_prob
 postprocessing:
     - type: var_effect_prediction
       args:

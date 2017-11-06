@@ -49,6 +49,6 @@ def test_var_eff_pred():
 
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
-    res = predict_variants(model, vcf_path, seq_length=101, exec_files_path=exec_files_path_here,
+    res = predict_variants(model, vcf_path, exec_files_path=exec_files_path_here,
                            dataloader_function=Dataloader, batch_size=32,
                            evaluation_function_kwargs={"diff_type": "diff"})
