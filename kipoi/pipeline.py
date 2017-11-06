@@ -17,8 +17,6 @@ import pandas as pd
 from tqdm import tqdm
 import deepdish
 from collections import OrderedDict
-# HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
-import genomelake
 
 # TODO - write out the hdf5 file in batches:
 #        - need a recursive function for creating groups ...
