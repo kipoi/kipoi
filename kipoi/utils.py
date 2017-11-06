@@ -156,8 +156,9 @@ def getargs(x):
     """
     if sys.version_info[0] == 2:
         if inspect.isfunction(x):
-            return set(inspect.getargspec(x).args[1:])
+            return set(inspect.getargspec(x).args)
         else:
+            # skip the self parameter
             return set(inspect.getargspec(x.__init__).args[1:])
     else:
         return set(inspect.signature(x).parameters.keys())

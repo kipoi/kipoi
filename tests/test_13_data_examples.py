@@ -56,9 +56,6 @@ def test_dataloader_model(example):
     with kipoi.utils.cd(example_dir + "/test_files"):
         # initialize the dataloader
         dataloader = Dl(**test_kwargs)
-        # get first sample
-        dataloader[0]
-        len(dataloader)
 
         # sample a batch of data
         it = dataloader.batch_iter()

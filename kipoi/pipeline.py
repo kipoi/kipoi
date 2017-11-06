@@ -40,7 +40,7 @@ _logger = logging.getLogger('kipoi')
 
 
 def install_model_requirements(model, source="kipoi", and_dataloaders=False):
-    md = kipoi.get_source(source).get_model_info(model)
+    md = kipoi.get_source(source).get_model_descr(model)
     md.dependencies.install()
     if and_dataloaders:
         if ":" in md.default_dataloader:
@@ -50,12 +50,12 @@ def install_model_requirements(model, source="kipoi", and_dataloaders=False):
             dl_path = md.default_dataloader
 
         default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-        dl = kipoi.config.get_source(dl_source).get_dataloader_info(default_dataloader_path)
+        dl = kipoi.config.get_source(dl_source).get_dataloader_descr(default_dataloader_path)
         dl.dependencies.install()
 
 
 def install_dataloader_requirements(dataloader, source="kipoi"):
-    kipoi.get_source(source).get_model_info(dataloader).dependencies.install()
+    kipoi.get_source(source).get_model_descr(dataloader).dependencies.install()
 
 
 def add_arg_source(parser, default="kipoi"):
@@ -120,7 +120,6 @@ class Pipeline(object):
         """
         _logger.info('Initialized data generator. Running batches...')
 
-        # TODO - implement batch_iter
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
 
         for i, batch in enumerate(it):
@@ -198,7 +197,7 @@ def cli_extract_to_hdf5(command, raw_args):
     dataloader = Dataloader(**dataloader_kwargs)
 
     _logger.info("Loading all the points into memory")
-    obj = dataloader.load_all(args.batch_size, num_workers=args.num_workers)
+    obj = dataloader.load_all(batch_size=args.batch_size, num_workers=args.num_workers)
 
     _logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
     deepdish.io.save(args.output, obj)
