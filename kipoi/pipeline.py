@@ -70,7 +70,11 @@ class Pipeline(object):
         self.model = model
         self.dataloader_cls = dataloader_cls
 
-        # TODO - validate if model and datalaoder_cls are compatible
+        # validate if model and datalaoder_cls are compatible
+        if not self.model.schema.compatible_with_schema(self.dataloader_cls.output_schema):
+            logger.warn("dataloader.output_schema is not compatible with model.schema")
+        else:
+            logger.info("dataloader.output_schema is compatible with model.schema")
 
     def test_predict(self, dataloader_kwargs, batch_size=32, test_equal=False):
         logger.info('Initialized data generator. Running batches...')
@@ -82,7 +86,7 @@ class Pipeline(object):
 
         # test that all predictions go through
         for i, batch in enumerate(tqdm(it)):
-            if i == 0 and not self.dataloader_cls.output_schema.compatible_with(batch):
+            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
                 logger.warn("First batch of data is not compatible with the dataloader schema.")
             self.model.predict_on_batch(batch['inputs'])
 
@@ -121,7 +125,7 @@ class Pipeline(object):
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
 
         for i, batch in enumerate(it):
-            if i == 0 and not self.dataloader_cls.output_schema.compatible_with(batch):
+            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
                 logger.warn("First batch of data is not compatible with the dataloader schema.")
             yield self.model.predict_on_batch(batch['inputs'])
 
@@ -280,7 +284,7 @@ def cli_predict(command, raw_args):
 
     obj_list = []
     for i, batch in enumerate(tqdm(it)):
-        if i == 0 and not Dl.output_schema.compatible_with(batch):
+        if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
         pred_batch = model.predict_on_batch(batch['inputs'])
 

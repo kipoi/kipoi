@@ -15,12 +15,12 @@ dependencies:
       - keras==1.2.2
 schema:
     inputs:
-        H3K27ac_subsampled:
-            shape: (None, )  # TODO - update shape
+        H3K27AC_subsampled:
+            shape: (None, 1)  # TODO - update shape
             special_type: bigwig
             descr: Track representing ...
     targets:
         H3K27ac:
-            shape: (None, )  # TODO - update shape
+            shape: (None, 1)  # TODO - update shape
             special_type: bigwig
             descr: Predicted track...

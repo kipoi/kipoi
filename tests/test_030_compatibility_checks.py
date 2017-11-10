@@ -2,9 +2,10 @@
 """
 import pytest
 import numpy as np
-from kipoi.components import ArraySchema, MetadataStruct, DataLoaderSchema
+from kipoi.components import ArraySchema, MetadataStruct, DataLoaderSchema, ModelSchema
 from kipoi.metadata import GenomicRanges
 from related import from_yaml
+
 
 # numpy arrays
 
@@ -31,13 +32,13 @@ BAD_ARR_SCHEMA_PAIRS = [
 @pytest.mark.parametrize("pair", GOOD_ARR_SCHEMA_PAIRS)
 def test_good_array_schemas(pair):
     descr, batch = pair
-    assert descr.compatible_with(batch)
+    assert descr.compatible_with_batch(batch)
 
 
 @pytest.mark.parametrize("pair", BAD_ARR_SCHEMA_PAIRS)
 def test_bad_array_schemas(pair):
     descr, batch = pair
-    assert not descr.compatible_with(batch)
+    assert not descr.compatible_with_batch(batch)
 
 
 # --------------------------------------------
@@ -82,13 +83,13 @@ BAD_MDATASTRUCT_PAIRS = [
 @pytest.mark.parametrize("pair", GOOD_MDATASTRUCT_PAIRS)
 def test_good_mdata_schemas(pair):
     descr, batch = pair
-    assert descr.compatible_with(batch)
+    assert descr.compatible_with_batch(batch)
 
 
 @pytest.mark.parametrize("pair", BAD_MDATASTRUCT_PAIRS)
 def test_bad_mdata_schemas(pair):
     descr, batch = pair
-    assert not descr.compatible_with(batch)
+    assert not descr.compatible_with_batch(batch)
 
 
 # --------------------------------------------
@@ -186,11 +187,119 @@ BAD_DLSCHEMA_PAIRS = [
 def test_good_dloader_schema_pairs(pair):
     unparsed_descr, batch = pair
     descr = DataLoaderSchema.from_config(from_yaml(unparsed_descr))
-    assert descr.compatible_with(batch)
+    assert descr.compatible_with_batch(batch)
 
 
 @pytest.mark.parametrize("pair", BAD_DLSCHEMA_PAIRS)
 def test_bad_dloader_schema_pairs(pair):
     unparsed_descr, batch = pair
     descr = DataLoaderSchema.from_config(from_yaml(unparsed_descr))
-    assert not descr.compatible_with(batch)
+    assert not descr.compatible_with_batch(batch)
+
+
+# --------------------------------------------
+# Test compatible_with_schema
+
+GOOD_DLSCHEMA_MODEL_PAIRS = [
+    ("""
+inputs:
+    seq:
+        shape: (2, None)
+        descr: .
+    something_else:
+        shape: (22, 10)
+        descr: .
+targets:
+    shape: (1, )
+    descr: "."
+metadata:
+    ranges:
+        type: GenomicRanges
+        descr: "."
+    dist_polya_st:
+        - descr: "."
+        - descr: "."
+        - descr: "."
+""", """
+inputs:
+    seq:
+        shape: (2, 10)
+        descr: .
+targets:
+    shape: (1, )
+    descr: "."
+""")
+]
+
+
+BAD_DLSCHEMA_MODEL_PAIRS = [
+    ("""
+inputs:
+    seq:
+        shape: (2, 10)
+        descr: .
+targets:
+    shape: (1, )
+    descr: "."
+metadata:
+    ranges:
+        type: GenomicRanges
+        descr: "."
+    dist_polya_st:
+        - descr: "."
+        - descr: "."
+        - descr: "."
+""", """
+inputs:
+    seq:
+        shape: (2, 10)
+        descr: .
+targets:
+    shape: (1, None)
+    descr: "."
+"""),
+    ("""
+inputs:
+    seq:
+        shape: (2, 10)
+        descr: .
+targets:
+    shape: (1, )
+    descr: "."
+metadata:
+    ranges:
+        type: GenomicRanges
+        descr: "."
+    dist_polya_st:
+        - descr: "."
+        - descr: "."
+        - descr: "."
+""", """
+inputs:
+    seq:
+        shape: (2, 10)
+        descr: .
+    missing_seq:
+        shape: (2, 10)
+        descr: .
+targets:
+    shape: (1, )
+    descr: "."
+""")
+]
+
+
+@pytest.mark.parametrize("pair", GOOD_DLSCHEMA_MODEL_PAIRS)
+def test_good_model_dloader_pairs(pair):
+    unparsed_dl, unparsed_model = pair
+    dl_descr = DataLoaderSchema.from_config(from_yaml(unparsed_dl))
+    model_descr = ModelSchema.from_config(from_yaml(unparsed_model))
+    assert model_descr.compatible_with_schema(dl_descr)
+
+
+@pytest.mark.parametrize("pair", BAD_DLSCHEMA_MODEL_PAIRS)
+def test_bad_model_dloader_pairs(pair):
+    unparsed_dl, unparsed_model = pair
+    dl_descr = DataLoaderSchema.from_config(from_yaml(unparsed_dl))
+    model_descr = ModelSchema.from_config(from_yaml(unparsed_model))
+    assert not model_descr.compatible_with_schema(dl_descr)

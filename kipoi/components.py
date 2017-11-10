@@ -113,7 +113,7 @@ class ArraySchema(RelatedConfigMixin):
     # OR
     # - associated_array in MetadataField?
 
-    def compatible_with(self, batch, verbose=True):
+    def compatible_with_batch(self, batch, verbose=True):
         """Checks compatibility with a particular batch of data
 
         Args:
@@ -134,12 +134,27 @@ class ArraySchema(RelatedConfigMixin):
         if not batch.ndim >= 1:
             print_msg("The array is a scalar (expecting at least the batch dimension)")
             return False
-        bshape = batch.shape[1:]
+
+        return self.compatible_with_schema(ArraySchema(shape=batch.shape[1:],
+                                                       descr=""))
+
+    def compatible_with_schema(self, schema, verbose=True):
+        """Checks the compatibility with another schema
+        """
+        def print_msg(msg):
+            if verbose:
+                print("ArraySchema missmatch")
+                print(msg)
+
+        if not isinstance(schema, ArraySchema):
+            print_msg("Expecting ArraySchema. Got type(schema) = {0}".format(type(schema)))
+            return False
 
         def print_msg_template():
             print_msg("Array shapes don't match for : {0}".format(self))
             print_msg("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
 
+        bshape = schema.shape
         if not len(bshape) == len(self.shape):
             print_msg_template()
             return False
@@ -163,6 +178,62 @@ class ModelSchema(RelatedConfigMixin):
     inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
     targets = NestedMappingField(ArraySchema, keyword="shape", key="name")
 
+    def compatible_with_schema(self, dataloader_schema, verbose=True):
+        """Check the compatibility: model.schema <-> dataloader.output_schema
+
+        Checks preformed:
+        - nested structure is the same (i.e. dictionary names, list length etc)
+        - array shapes are compatible
+        - returned obj classess are compatible
+
+        # Arguments
+            dataloader_schema: a dataloader_schema of data returned by one iteraton of dataloader's dataloader_schema_iter
+                nested dictionary
+            verbose: verbose error logging if things don't match
+
+        # Returns
+           bool: True only if everyhing is ok
+        """
+        def print_msg(msg):
+            if verbose:
+                print(msg)
+
+        # Inputs check
+        def compatible_nestedmapping(dschema, descr, cls, verbose=True):
+            """Recursive function of checks
+
+            shapes match, dschema-dim matches
+            """
+            if isinstance(descr, cls):
+                return descr.compatible_with_schema(dschema, verbose=verbose)
+            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
+                if not set(descr.keys()).issubset(set(dschema.keys())):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("dataloader fields: {0}".format(dschema.keys()))
+                    print_msg("model fields: {0}".format(descr.keys()))
+                    return False
+                return all([compatible_nestedmapping(dschema[key], descr[key], cls, verbose) for key in descr])
+            elif isinstance(dschema, collections.Sequence) and isinstance(descr, collections.Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
+
+            print_msg("Invalid types:")
+            print_msg("type(dschema): {0}".format(type(dschema)))
+            print_msg("type(descr): {0}".format(type(descr)))
+            return False
+
+        if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, ArraySchema, verbose):
+            return False
+
+        if not compatible_nestedmapping(dataloader_schema.targets, self.targets, ArraySchema, verbose):
+            return False
+
+        return True
+
 
 # --------------------------------------------
 # DataLoader specific components
@@ -185,7 +256,7 @@ class MetadataStruct(RelatedConfigMixin):
     type = related.ChildField(MetadataType, required=False)
     name = related.StringField(required=False)
 
-    def compatible_with(self, batch, verbose=True):
+    def compatible_with_batch(self, batch, verbose=True):
         """Checks compatibility with a particular numpy array
 
         Args:
@@ -258,7 +329,7 @@ class DataLoaderSchema(RelatedConfigMixin):
     metadata = NestedMappingField(MetadataStruct, keyword="descr", key="name",
                                   required=False)
 
-    def compatible_with(self, batch, verbose=True):
+    def compatible_with_batch(self, batch, verbose=True):
         """Validate if the batch of data complies with the schema
 
         Checks preformed:
@@ -298,7 +369,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 
             # Special case for the metadat
             if isinstance(descr, cls):
-                return descr.compatible_with(batch, verbose=verbose)
+                return descr.compatible_with_batch(batch, verbose=verbose)
             elif isinstance(batch, collections.Mapping) and isinstance(descr, collections.Mapping):
                 if not set(batch.keys()) == set(descr.keys()):
                     print_msg("The dictionary keys don't match:")
