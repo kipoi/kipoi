@@ -24,13 +24,16 @@ from .config import list_models, get_source, list_sources
 
 
 # Setup logging
-import logging
+# import logging
 
-log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-_logger = logging.getLogger('kipoi')
+# Set default logging handler to avoid "No handler found" warnings.
+# log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
 
-_handler = logging.StreamHandler()
-_handler.setLevel(logging.INFO)
-_handler.setFormatter(log_formatter)
-_logger.setLevel(logging.INFO)
-_logger.addHandler(_handler)
+# try:  # Python 2.7+
+#     from logging import NullHandler
+# except ImportError:
+#     class NullHandler(logging.Handler):
+#         def emit(self, record):
+#             pass
+
+# logging.getLogger(__name__).addHandler(NullHandler())

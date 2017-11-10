@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from kipoi.components import ArraySchema, MetadataStruct, DataLoaderSchema
-from kipoi.metadata import Ranges
+from kipoi.metadata import GenomicRanges
 from related import from_yaml
 
 # numpy arrays
@@ -47,16 +47,16 @@ GOOD_MDATASTRUCT_PAIRS = [
     (MetadataStruct(type="int", descr=""), np.arange(10).astype(int)),
     (MetadataStruct(type="float", descr=""), np.arange(10).astype(float)),
     (MetadataStruct(type="array", descr=""), np.arange(10).reshape((2, 5))),
-    (MetadataStruct(type="Ranges", descr=""), Ranges(chr="chr1",
-                                                     start=10,
-                                                     end=20,
-                                                     id="1",
-                                                     strand="+")),
-    (MetadataStruct(type="Ranges", descr=""), dict(chr="chr1",
-                                                   start=10,
-                                                   end=20,
-                                                   id="1",
-                                                   strand="+")),
+    (MetadataStruct(type="GenomicRanges", descr=""), GenomicRanges(chr="chr1",
+                                                                   start=10,
+                                                                   end=20,
+                                                                   id="1",
+                                                                   strand="+")),
+    (MetadataStruct(type="GenomicRanges", descr=""), dict(chr="chr1",
+                                                          start=10,
+                                                          end=20,
+                                                          id="1",
+                                                          strand="+")),
 ]
 
 BAD_MDATASTRUCT_PAIRS = [
@@ -70,12 +70,12 @@ BAD_MDATASTRUCT_PAIRS = [
     (MetadataStruct(type="array", descr=""), [1, 2]),
 
     # ranges: not a ranges or a dict
-    (MetadataStruct(type="Ranges", descr=""), np.arange(10)),
+    (MetadataStruct(type="GenomicRanges", descr=""), np.arange(10)),
     # missing chr field
-    (MetadataStruct(type="Ranges", descr=""), dict(start=10,
-                                                   end=20,
-                                                   id="1",
-                                                   strand="+")),
+    (MetadataStruct(type="GenomicRanges", descr=""), dict(start=10,
+                                                          end=20,
+                                                          id="1",
+                                                          strand="+")),
 ]
 
 
@@ -93,7 +93,6 @@ def test_bad_mdata_schemas(pair):
 
 # --------------------------------------------
 # Test the complete descriptions
-# TODO
 GOOD_DLSCHEMA_PAIRS = [
     ("""
 inputs:
@@ -106,7 +105,7 @@ targets:
     descr: "."
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         descr: "."
     dist_polya_st:
         - descr: "."
@@ -116,7 +115,7 @@ metadata:
         "inputs": {"seq": np.arange(20).reshape((1, 2, 10))},
         "targets": np.arange(1).reshape((1, 1)),
         "metadata": {
-            "ranges": Ranges(chr="chr1", start=10, end=20, id="1", strand="+"),
+            "ranges": GenomicRanges(chr="chr1", start=10, end=20, id="1", strand="+"),
             "dist_polya_st": [
                 np.arange(1),
                 np.arange(2),
@@ -132,7 +131,7 @@ BAD_DLSCHEMA_PAIRS = [
         "inputs": {"seq": np.arange(20).reshape((1, 2, 10))},
         "targets": np.arange(1).reshape((1, 1)),
         "metadata": {
-            "ranges": Ranges(chr="chr1", start=10, end=20, id="1", strand="+"),
+            "ranges": GenomicRanges(chr="chr1", start=10, end=20, id="1", strand="+"),
             "dist_polya_st": [
                 np.arange(1),
                 np.arange(2),
@@ -145,7 +144,7 @@ BAD_DLSCHEMA_PAIRS = [
         "inputs": {"seq": np.arange(20).reshape((1, 2, 10)), "asd": np.arange(1)},
         "targets": np.arange(1).reshape((1, 1)),
         "metadata": {
-            "ranges": Ranges(chr="chr1", start=10, end=20, id="1", strand="+"),
+            "ranges": GenomicRanges(chr="chr1", start=10, end=20, id="1", strand="+"),
             "dist_polya_st": [
                 np.arange(1),
                 np.arange(2),
@@ -172,7 +171,7 @@ BAD_DLSCHEMA_PAIRS = [
         "targets": np.arange(1).reshape((1, 1)),
         "metadata": {
             # ranges miss-specified
-            "ranges": Ranges(chr="chr1", start=10, end=20, id="1", strand="+"),
+            "ranges": GenomicRanges(chr="chr1", start=10, end=20, id="1", strand="+"),
             "dist_polya_st": [
                 np.arange(1),
                 np.arange(2),

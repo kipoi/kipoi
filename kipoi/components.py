@@ -4,16 +4,16 @@ import related
 import numpy as np
 import enum
 import collections
-from collections import OrderedDict
 import kipoi.conda as kconda
-from kipoi.metadata import Ranges
+from kipoi.metadata import GenomicRanges
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField
-from kipoi.data_utils import string_classes
 # TODO additionally validate the special type properties
-
-
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 # Abstract classes & Mixins for models defined using related
+
 
 class RelatedConfigMixin(object):
     """Provides from_config and get_config to @related.immutable decorated classes
@@ -170,7 +170,7 @@ class ModelSchema(RelatedConfigMixin):
 @enum.unique
 class MetadataType(enum.Enum):
     # TODO - make capital
-    RANGES = "Ranges"
+    GENOMIC_RANGES = "GenomicRanges"
     STR = "str"
     INT = "int"
     FLOAT = "float"
@@ -200,16 +200,16 @@ class MetadataStruct(RelatedConfigMixin):
                 print(msg)
 
         # custom classess
-        if self.type == MetadataType.RANGES:
-            if not isinstance(batch, Ranges):
-                # TODO - do we strictly require the Ranges class?
+        if self.type == MetadataType.GENOMIC_RANGES:
+            if not isinstance(batch, GenomicRanges):
+                # TODO - do we strictly require the GenomicRanges class?
                 #          - relates to metadata.py TODO about numpy_collate
-                #        for now we should just be able to convert to the Ranges class
+                #        for now we should just be able to convert to the GenomicRanges class
                 #        without any errors
                 try:
-                    Ranges.from_dict(batch)
+                    GenomicRanges.from_dict(batch)
                 except Exception as e:
-                    print_msg("expecting a Ranges object or a Ranges-like dict")
+                    print_msg("expecting a GenomicRanges object or a GenomicRanges-like dict")
                     print_msg("convertion error: {0}".format(e))
                     return False
                 else:
@@ -300,7 +300,7 @@ class DataLoaderSchema(RelatedConfigMixin):
             if isinstance(descr, cls):
                 return descr.compatible_with(batch, verbose=verbose)
             elif isinstance(batch, collections.Mapping) and isinstance(descr, collections.Mapping):
-                if not batch.keys() == descr.keys():
+                if not set(batch.keys()) == set(descr.keys()):
                     print_msg("The dictionary keys don't match:")
                     print_msg("batch: {0}".format(batch.keys()))
                     print_msg("descr: {0}".format(descr.keys()))
@@ -327,7 +327,8 @@ class DataLoaderSchema(RelatedConfigMixin):
         if not compatible_nestedmapping(batch["inputs"], self.inputs, ArraySchema, verbose):
             return False
 
-        if "targets" in batch:
+        if "targets" in batch and not \
+                (len(batch["targets"]) == 0):  # unspecified
             if self.targets is None:
                 # targets need to be specified if we want to use them
                 print_msg('self.targets is None')

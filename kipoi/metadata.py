@@ -1,11 +1,10 @@
 """Module defining different metadat classess
 """
-from collections.abc import Mapping
+from collections import Mapping
 from kipoi.data_utils import numpy_collate, numpy_collate_concat
 
 
-# TODO - numpy-collate should work with this as well
-class Ranges(Mapping):
+class GenomicRanges(Mapping):
     def __init__(self, chr, start, end, id, strand="*"):
         """
 

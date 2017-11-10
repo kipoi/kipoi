@@ -4,14 +4,15 @@ from __future__ import print_function
 import os
 import sys
 import subprocess
-import logging
 import numpy as np
 import yaml
 import six
 from collections import OrderedDict
 from contextlib import contextmanager
 import inspect
-_logger = logging.getLogger('kipoi')
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def load_module(path, module_name=None):
@@ -56,10 +57,10 @@ def load_module(path, module_name=None):
 
 def pip_install_requirements(requirements_fname):
     if os.path.exists(requirements_fname):  # install dependencies
-        _logger.info('Running pip install -r {}...'.format(requirements_fname))
+        logger.info('Running pip install -r {}...'.format(requirements_fname))
         subprocess.call(['pip', 'install', '-r', requirements_fname])
     else:
-        _logger.info('requirements.txt not found under {}'.format(requirements_fname))
+        logger.info('requirements.txt not found under {}'.format(requirements_fname))
 
 
 def compare_numpy_dict(a, b, exact=True):
@@ -104,12 +105,12 @@ def parse_json_file_str(extractor_args):
     as a file path to a .json file
     """
     if extractor_args.startswith("{") or extractor_args.endswith("}"):
-        _logger.debug("Parsing the extractor_args as a json string")
+        logger.debug("Parsing the extractor_args as a json string")
         return yaml.load(extractor_args)
     else:
         if not os.path.exists(extractor_args):
             raise ValueError("File path: {0} doesn't exist".format(extractor_args))
-        _logger.debug("Parsing the extractor_args as a json file path")
+        logger.debug("Parsing the extractor_args as a json file path")
         with open(extractor_args, "r") as f:
             return yaml.load(f.read())
 

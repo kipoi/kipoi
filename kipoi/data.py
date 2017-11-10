@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-import logging
 import abc
 
 import kipoi  # for .config module
@@ -13,8 +12,9 @@ from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_it
 from tqdm import tqdm
 import types
 
-
-_logger = logging.getLogger('kipoi')
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 #
 PREPROC_IFILE_TYPES = ['DNA_regions']
@@ -380,7 +380,8 @@ def get_dataloader_factory(dataloader, source="kipoi"):
         if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[dl.type]):
             raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
                              format(AVAILABLE_DATALOADERS[dl.type].__name__))
-
+    logger.info('successfully loaded the dataloader from {}'.
+                format(os.path.normpath(os.path.join(dataloader_dir, dl.defined_as))))
     # Inherit the attributes from dl
     # TODO - make this more automatic / DRY
     # write a method to load those things?

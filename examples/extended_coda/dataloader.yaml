@@ -26,14 +26,14 @@ info:
 output_schema:
     inputs:
         H3K27AC_subsampled:
-            shape: (None, )  # TODO - update shape
+            shape: (None, 1)  # TODO - update shape
             special_type: bigwig
             associated_metadata: ranges
             descr: Input
     # doesn't have to be defined
     targets:
         H3K27ac:
-            shape: (None, )
+            shape: (None, 1)
             special_type: bigwig
             descr: Measured track
     metadata:

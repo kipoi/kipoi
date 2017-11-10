@@ -20,6 +20,7 @@ requirements = [
     "deepdish",
     "related==0.4",
     "enum34",
+    "colorlog",
     # "pytorch"
 ]
 
@@ -59,5 +60,6 @@ setup(
     keywords=["model zoo", "deep learning",
               "computational biology", "bioinformatics", "genomics"],
     test_suite='tests',
+    package_data={'kipoi': ['logging.conf']},
     tests_require=test_requirements
 )

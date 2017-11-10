@@ -30,7 +30,7 @@ dependencies:
 output_schema:
     inputs:
         seq:
-            shape: (4, 101)
+            shape: (101, 4)
             special_type: DNASeq
             descr: One-hot encoded RNA sequence
             associated_metadata: ranges
@@ -41,9 +41,7 @@ output_schema:
         shape: (1, )
         descr: Measured binding strength
     metadata:
-        # TODO - update the ranges 
         ranges:
-            type: Ranges  # StrandedRanges?
+            type: GenomicRanges
             descr: Ranges describing inputs.seq
-            # TODO - define a class for it
 # d: is an alias for description

@@ -17,13 +17,13 @@ dependencies:
 schema:
     inputs:
         seq:
-            shape: (4, 101)
+            shape: (101, 4)
             special_type: DNASeq
             descr: One-hot encoded RNA sequence
             # associated_metadata: ranges # --> has to be defined in dataloader.yaml.
             #                                   This field is ignored in model.yaml.
         dist_polya_st:
-            shape: (None, 1, 10)
+            shape: (1, 10)
             descr: Distance to poly-a site transformed with B-splines
     targets:
         shape: (1, )
