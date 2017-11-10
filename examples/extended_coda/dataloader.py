@@ -63,7 +63,7 @@ def extractor(intervals_file, input_data_sources, target_data_sources=None, batc
             ids.append(interval.name)
 
         out['metadata']['ranges'] = {}
-        out['metadata']['ranges']['chrom'] = np.array(chrom)
+        out['metadata']['ranges']['chr'] = np.array(chrom)
         out['metadata']['ranges']['start'] = np.array(start)
         out['metadata']['ranges']['end'] = np.array(end)
         out['metadata']['ranges']['id'] = np.array(ids)

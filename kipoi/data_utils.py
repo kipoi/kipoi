@@ -39,7 +39,6 @@ def _numpy_collate(stack_fn=np.stack):
 numpy_collate = _numpy_collate(np.stack)
 numpy_collate_concat = _numpy_collate(np.concatenate)
 
-
 # --------------------------------------------
 # Tools for working with a nested dataset
 

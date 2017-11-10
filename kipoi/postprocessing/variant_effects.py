@@ -51,9 +51,9 @@ def _generate_seq_sets(model_input, annotated_regions, dataloader):
         if dataloader.output_schema.inputs[k].special_type == ArraySpecialType.DNASeq:
             dna_slots.append(k)
 
-    # check for metadata with type MetadataType.RANGES
+    # check for metadata with type MetadataType.GENOMIC_RANGES
     for k, v in six.iteritems(dataloader.output_schema.metadata):
-        if v.type == MetadataType.RANGES:
+        if v.type == MetadataType.GENOMIC_RANGES:
             ranges_slots.append(k)
     #
     if len(ranges_slots) == 0:

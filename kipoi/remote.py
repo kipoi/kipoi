@@ -13,8 +13,8 @@ from .utils import lfs_installed, get_file_path
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
-
-_logger = logging.getLogger('kipoi')
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def get_component_file(component_dir, which="model"):
@@ -193,9 +193,9 @@ class GitLFSSource(Source):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
-        _logger.info("Cloning {remote} into {local}".
-                     format(remote=self.remote_url,
-                            local=self.local_path))
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=self.remote_url,
+                           local=self.local_path))
 
         subprocess.call(["git-lfs",
                          "clone",
@@ -210,8 +210,8 @@ class GitLFSSource(Source):
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
-        _logger.info("Update {0}".
-                     format(self.local_path))
+        logger.info("Update {0}".
+                    format(self.local_path))
         subprocess.call(["git",
                          "pull"],
                         cwd=self.local_path)
@@ -233,10 +233,10 @@ class GitLFSSource(Source):
         cmd = ["git-lfs",
                "pull",
                "-I {component}/**".format(component=component)]
-        _logger.info(" ".join(cmd))
+        logger.info(" ".join(cmd))
         subprocess.call(cmd,
                         cwd=self.local_path)
-        _logger.info("{0} {1} loaded".format(which, component))
+        logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
     def _get_component_descr(self, component, which="model"):
@@ -278,9 +278,9 @@ class GitSource(Source):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
-        _logger.info("Cloning {remote} into {local}".
-                     format(remote=self.remote_url,
-                            local=self.local_path))
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=self.remote_url,
+                           local=self.local_path))
 
         subprocess.call(["git",
                          "clone",
@@ -294,8 +294,8 @@ class GitSource(Source):
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
-        _logger.info("Update {0}".
-                     format(self.local_path))
+        logger.info("Update {0}".
+                    format(self.local_path))
         subprocess.call(["git",
                          "pull"],
                         cwd=self.local_path)
@@ -309,7 +309,7 @@ class GitSource(Source):
         if not os.path.exists(cpath):
             raise ValueError("{0} {1} doesn't exist in {2}".
                              format(which, component, self.remote_url))
-        _logger.info("{0} {1} loaded".format(which, component))
+        logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
     def _get_component_descr(self, component, which="model"):

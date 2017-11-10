@@ -11,8 +11,17 @@ from kipoi import pipeline
 
 import argparse
 import sys
+import pkg_resources
 import logging
-_logger = logging.getLogger('kipoi')
+import logging.config
+logging.config.fileConfig(pkg_resources.resource_filename(__name__, "logging.conf"))
+logger = logging.getLogger(__name__)
+# TODO - set the logging level
+# _handler = logging.StreamHandler()
+# _handler.setLevel(logging.INFO)
+# _handler.setFormatter(log_formatter)
+# _logger.setLevel(logging.INFO)
+# _logger.addHandler(_handler)
 
 
 def not_implemented(command, arg_list):

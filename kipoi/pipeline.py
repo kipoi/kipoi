@@ -4,7 +4,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
-import logging
 import os
 import yaml
 from .utils import parse_json_file_str
@@ -17,17 +16,14 @@ import pandas as pd
 from tqdm import tqdm
 import deepdish
 from collections import OrderedDict
-# HACK prevent this issue: https://github.com/kundajelab/genomelake/issues/4
-import genomelake
-
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 # TODO - write out the hdf5 file in batches:
 #        - need a recursive function for creating groups ...
 #           - infer the right data-type + shape
 
 # TODO - handle environment creation
-
-_logger = logging.getLogger('kipoi')
-
 
 # TODO - remove these as they are duplicates...
 # PREPROC_FIELDS = ['function_name', 'type', 'arguments']
@@ -74,18 +70,24 @@ class Pipeline(object):
         self.model = model
         self.dataloader_cls = dataloader_cls
 
-        # TODO - validate if model and datalaoder_cls are compatible
+        # validate if model and datalaoder_cls are compatible
+        if not self.model.schema.compatible_with_schema(self.dataloader_cls.output_schema):
+            logger.warn("dataloader.output_schema is not compatible with model.schema")
+        else:
+            logger.info("dataloader.output_schema is compatible with model.schema")
 
     def test_predict(self, dataloader_kwargs, batch_size=32, test_equal=False):
-        _logger.info('Initialized data generator. Running batches...')
+        logger.info('Initialized data generator. Running batches...')
 
         dl = self.dataloader_cls(**dataloader_kwargs)
-        _logger.info('Returned data schema correct')
+        logger.info('Returned data schema correct')
 
         it = dl.batch_iter(batch_size=batch_size)
 
         # test that all predictions go through
         for i, batch in enumerate(tqdm(it)):
+            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+                logger.warn("First batch of data is not compatible with the dataloader schema.")
             self.model.predict_on_batch(batch['inputs'])
 
         # ?TODO? - check that the predicted values match the targets
@@ -93,11 +95,11 @@ class Pipeline(object):
         #     if test_equal:
         #         match.append(compare_numpy_dict(y_pred, batch['targets'], exact=False))
         # if not all(match):
-        #     _logger.warning("For {0}/{1} batch samples: target != model(inputs)")
+        #     logger.warning("For {0}/{1} batch samples: target != model(inputs)")
         # else:
-        #     _logger.info("All target values match model predictions")
+        #     logger.info("All target values match model predictions")
 
-        _logger.info('test_predict done!')
+        logger.info('test_predict done!')
 
     def predict(self, dataloader_kwargs, batch_size=32):
         """
@@ -118,11 +120,13 @@ class Pipeline(object):
         # Yields
             model batch prediction
         """
-        _logger.info('Initialized data generator. Running batches...')
+        logger.info('Initialized data generator. Running batches...')
 
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
 
         for i, batch in enumerate(it):
+            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+                logger.warn("First batch of data is not compatible with the dataloader schema.")
             yield self.model.predict_on_batch(batch['inputs'])
 
 
@@ -149,7 +153,7 @@ def cli_test(command, raw_args):
     test_dir = os.path.join(mh.source_dir, 'test_files')
 
     if os.path.exists(test_dir):
-        _logger.info(
+        logger.info(
             'Found test files in {}. Initiating test...'.format(test_dir))
         # cd to test directory
         os.chdir(test_dir)
@@ -160,10 +164,10 @@ def cli_test(command, raw_args):
         dataloader_kwargs = yaml.load(f_kwargs)
     mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
     # if not match:
-    #     # _logger.error("Expected targets don't match model predictions")
+    #     # logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")
 
-    _logger.info('Successfully ran test_predict')
+    logger.info('Successfully ran test_predict')
 
 
 def cli_extract_to_hdf5(command, raw_args):
@@ -196,12 +200,13 @@ def cli_extract_to_hdf5(command, raw_args):
 
     dataloader = Dataloader(**dataloader_kwargs)
 
-    _logger.info("Loading all the points into memory")
+    logger.info("Loading all the points into memory")
+    # TODO - check that the first batch was indeed correct
     obj = dataloader.load_all(batch_size=args.batch_size, num_workers=args.num_workers)
 
-    _logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
+    logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
     deepdish.io.save(args.output, obj)
-    _logger.info("Done!")
+    logger.info("Done!")
 
     # TODO - hack - read the whole dataset into memory at first...
 
@@ -279,6 +284,8 @@ def cli_predict(command, raw_args):
 
     obj_list = []
     for i, batch in enumerate(tqdm(it)):
+        if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
+            logger.warn("First batch of data is not compatible with the dataloader schema.")
         pred_batch = model.predict_on_batch(batch['inputs'])
 
         # tabular files
@@ -303,7 +310,7 @@ def cli_predict(command, raw_args):
     if args.file_format == "hdf5":
         deepdish.io.save(args.output, numpy_collate_concat(obj_list))
 
-    _logger.info('Successfully predictde samples')
+    logger.info('Successfully predictde samples')
 
 
 def io_batch2df(batch, pred_batch):

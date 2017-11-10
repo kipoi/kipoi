@@ -26,14 +26,14 @@ targets:
 GOOD_EXAMPLES = ["""
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         descr: One-hot encoded RNA sequence
     dist_polya_st:
         descr: Array of something
 """, """
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         descr: One-hot encoded RNA sequence
     dist_polya_st:
         - descr: Array of something
@@ -42,7 +42,7 @@ metadata:
 """, """
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         descr: One-hot encoded RNA sequence
     dist_polya_st:
         nested_structure:
@@ -53,14 +53,14 @@ metadata:
               subnested3:
                   descr: array
             - descr: this is another array here
-              type: Ranges
+              type: GenomicRanges
 """]
 
 
 BAD_EXAMPLES = ["""
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         # descr missing
     dist_polya_st:
         descr: Array of something
@@ -76,7 +76,7 @@ metadata:
 """, """
 metadata:
     ranges:
-        type: Ranges
+        type: GenomicRanges
         descr: One-hot encoded RNA sequence
     dist_polya_st:
         nested_structure:

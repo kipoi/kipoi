@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-import logging
 import yaml
 import kipoi  # for .config module
 from .utils import load_module, cd
@@ -11,8 +10,9 @@ import six
 
 from .components import ModelDescription
 from .pipeline import Pipeline
-
-_logger = logging.getLogger('kipoi')
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class BaseModel(object):
@@ -164,20 +164,20 @@ class KerasModel(BaseModel):
         if arch is None:
             # load the whole model
             self.model = load_model(weights, custom_objects=self.custom_objects)
-            _logger.info('successfully loaded the model from {}'.
-                         format(weights))
+            logger.info('successfully loaded the model from {}'.
+                        format(weights))
         else:
             # load arch
             with open(arch, "r") as arch:
                 self.model = model_from_json(arch.read(),
                                              custom_objects=self.custom_objects)
-            _logger.info('successfully loaded model architecture from {}'.
-                         format(arch))
+            logger.info('successfully loaded model architecture from {}'.
+                        format(arch))
 
             # load weights
             self.model.load_weights(weights)
-            _logger.info('successfully loaded model weights from {}'.
-                         format(weights))
+            logger.info('successfully loaded model weights from {}'.
+                        format(weights))
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)

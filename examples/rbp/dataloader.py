@@ -145,7 +145,7 @@ class SeqDistDataset(Dataset):
                                                                                warn=False), axis=0)
 
         if self.target_dataset is not None:
-            out["targets"] = self.target_dataset[idx]
+            out["targets"] = np.array([self.target_dataset[idx]])
 
         # get metadata
         out['metadata'] = {}
