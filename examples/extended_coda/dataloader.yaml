@@ -3,9 +3,11 @@ defined_as: dataloader.py::extractor
 args:
     intervals_file:
         descr: "tsv file with `chrom start end`"
+        example: "example_files/intervals.tsv"
         type: str
     input_data_sources:
         descr: "{data_name: <path to genomelake directory>}"
+        example: {"H3K27AC_subsampled": "example_files/H3K27AC_subsampled.bw"}
         type: dict
     target_data_sources:
         descr: "optional; {data_name: <path to genomelake directory>}"
@@ -13,6 +15,7 @@ args:
         optional: True
     batch_size:
         descr: "batch size. Default = 128"
+        example: 4
         optional: True
 info: 
     author: Johnny Israeli

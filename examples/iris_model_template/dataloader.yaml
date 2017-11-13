@@ -6,11 +6,13 @@ args:
           Csv file of the Iris Plants Database from
           http://archive.ics.uci.edu/ml/datasets/Iris features.
         type: str
+        example: example_files/features.csv
     targets_file:
         descr: >
           Csv file of the Iris Plants Database targets.
           Not required for making the prediction.
         type: str
+        example: example_files/targets.csv
         optional: True
 info:
     author: Your Name

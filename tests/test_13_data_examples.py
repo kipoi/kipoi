@@ -26,10 +26,6 @@ def get_dataloader_cfg(model_dir):
     return read_json_yaml(os.path.join(model_dir, 'dataloader.yaml'))
 
 
-def get_test_kwargs(model_dir):
-    return read_json_yaml(os.path.join(model_dir, 'test_files/test.json'))
-
-
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_dataloader_model(example):
     """Test dataloader
@@ -40,20 +36,19 @@ def test_dataloader_model(example):
     example_dir = "examples/{0}".format(example)
 
     # install the dependencies
-    # - TODO maybe put it implicitly in load_dataloader?
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir", and_dataloaders=True)
 
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
 
-    test_kwargs = get_test_kwargs(example_dir)
+    test_kwargs = Dl.example_kwargs
 
     # get dataloader
 
     # get model
     model = kipoi.get_model(example_dir, source="dir")
 
-    with kipoi.utils.cd(example_dir + "/test_files"):
+    with kipoi.utils.cd(example_dir):
         # initialize the dataloader
         dataloader = Dl(**test_kwargs)
 

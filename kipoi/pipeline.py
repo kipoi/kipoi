@@ -6,7 +6,7 @@ from __future__ import print_function
 import argparse
 import os
 import yaml
-from .utils import parse_json_file_str
+from .utils import parse_json_file_str, cd
 import kipoi  # for .config module
 from .data import numpy_collate_concat
 # import h5py
@@ -76,10 +76,10 @@ class Pipeline(object):
         else:
             logger.info("dataloader.output_schema is compatible with model.schema")
 
-    def test_predict(self, dataloader_kwargs, batch_size=32, test_equal=False):
+    def predict_example(self, batch_size=32, test_equal=False):
         logger.info('Initialized data generator. Running batches...')
 
-        dl = self.dataloader_cls(**dataloader_kwargs)
+        dl = self.dataloader_cls.init_example()
         logger.info('Returned data schema correct')
 
         it = dl.batch_iter(batch_size=batch_size)
@@ -99,7 +99,7 @@ class Pipeline(object):
         # else:
         #     logger.info("All target values match model predictions")
 
-        logger.info('test_predict done!')
+        logger.info('predict_example done!')
 
     def predict(self, dataloader_kwargs, batch_size=32):
         """
@@ -150,19 +150,9 @@ def cli_test(command, raw_args):
     mh = kipoi.get_model(args.model, args.source)
     # force the requirements to be installed
 
-    test_dir = os.path.join(mh.source_dir, 'test_files')
-
-    if os.path.exists(test_dir):
-        logger.info(
-            'Found test files in {}. Initiating test...'.format(test_dir))
-        # cd to test directory
-        os.chdir(test_dir)
-    else:
-        raise ValueError("The test directory: {0} doesn't exist".format(test_dir))
-
-    with open('test.json') as f_kwargs:
-        dataloader_kwargs = yaml.load(f_kwargs)
-    mh.pipeline.test_predict(dataloader_kwargs, batch_size=args.batch_size)
+    # Load the test files from model source
+    with cd(mh.source_dir):
+        mh.pipeline.predict_example(batch_size=args.batch_size)
     # if not match:
     #     # logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")

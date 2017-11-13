@@ -5,7 +5,7 @@ import os
 import abc
 
 import kipoi  # for .config module
-from kipoi.components import DataLoaderDescription
+from kipoi.components import DataLoaderDescription, example_kwargs
 from .utils import load_module, cd, getargs
 from .external.torch.data import DataLoader
 from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_item, get_dataset_lens
@@ -396,6 +396,14 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     CustomDataLoader.source = source
     # TODO - rename?
     CustomDataLoader.source_dir = dataloader_dir
+
+    # Add init_example method
+    CustomDataLoader.example_kwargs = example_kwargs(CustomDataLoader.args)
+
+    def init_example(cls):
+        return cls(**cls.example_kwargs)
+    CustomDataLoader.init_example = classmethod(init_example)
+
     return CustomDataLoader
 
 

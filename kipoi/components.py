@@ -6,7 +6,8 @@ import enum
 import collections
 import kipoi.conda as kconda
 from kipoi.metadata import GenomicRanges
-from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField
+from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+import six
 # TODO additionally validate the special type properties
 import logging
 logger = logging.getLogger(__name__)
@@ -442,6 +443,7 @@ class PostProcStruct(RelatedConfigMixin):
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     descr = related.StringField()
+    example = AnyField(required=False)
     name = related.StringField(required=False)
     type = related.StringField(default='str', required=False)
     optional = related.BooleanField(default=False, required=False)
@@ -505,6 +507,11 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
 
+
+def example_kwargs(dl_args):
+    """Return the example kwargs
+    """
+    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)
