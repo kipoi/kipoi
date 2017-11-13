@@ -30,7 +30,7 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 
 | Dataloader type   	| Length known? 	| Significant benefit from loading data in batches? 	| Fits into memory and loads quickly? 	|
 |-------------------	|---------------	|---------------------------------------------------	|-------------------------------------	|
-|  PreloadedDataset 	| yes           	| yes                                               	| yes                                 	|
+| PreloadedDataset  	| yes           	| yes                                               	| yes                                 	|
 | Dataset           	| yes           	| no                                                	| no                                  	|
 | BatchDataset      	| yes           	| yes                                               	| no                                  	|
 | SampleIterator    	| no            	| no                                                	| no                                  	|
@@ -41,4 +41,5 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 
 ## Examples
 
-See [tests/test_12_dataloader_classes.py](../tests/test_12_dataloader_classes.py).
+See [tests/test_12_dataloader_classes.py](../tests/test_12_dataloader_classes.py) for implementation examples of each
+dataloader type.

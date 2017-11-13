@@ -8,6 +8,8 @@ command-line interface (CLI) and a python SDK to query (and use) the Kipoi model
 public models sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
 model sources.
 
+![img](docs/img/kipoi-workflow.png)
+
 ## Installation
 
 After cloning the repository `git clone https://github.com/kipoi/model-zoo.git`, run:
@@ -111,20 +113,14 @@ See [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb).
 
 ## Documentation
 
-### Getting started
-
-If you wish to get started, please read the following ipynb's:
+To get started, please read the following ipynb's:
 
 - [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb)
 - [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
 
-### Documentation
+This will provide pointers to the rest of the documentation in [docs/](docs/):
 
-Explore the markdown files in [docs/](docs/):
-- Command-line interface [docs/cli.md](docs/cli.md)
-- Python interface [docs/py-interface.md](docs/py-interface.md)
-- Model sources configuration [docs/model_sources.md](docs/model_sources.md)
-  - setup your own model zoo
-- Contributing models [docs/contributing_models.md](docs/contributing_models.md)
-- **Examples**
-  - Python interface [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+- [docs/cli.md](docs/cli.md) - command-line interface
+- [docs/writing_dataloaders.md](docs/writing_dataloaders.md)- describes all supported dataloader types
+- [docs/writing_models.md](docs/writing_models.md) - describes all supported model types
+- [docs/model_sources.md](docs/model_sources.md) - describes how to setup your own model zoo
