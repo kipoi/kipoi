@@ -19,7 +19,7 @@ from .model import get_model
 from .data import get_dataloader_factory
 from .remote import get_model_descr, get_dataloader_descr
 from .pipeline import install_model_requirements, install_dataloader_requirements
-from .config import list_models, get_source, list_sources
+from .config import get_source, list_sources, list_models, list_dataloaders
 # from .config import model_sources as sources
 
 
