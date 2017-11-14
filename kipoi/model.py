@@ -45,7 +45,8 @@ def get_model(model, source="kipoi", with_dataloader=True):
     source_dir = os.path.dirname(yaml_path)
 
     # Setup model description
-    md = ModelDescription.load(yaml_path)
+    with cd(source_dir):
+        md = ModelDescription.load(os.path.basename(yaml_path))
     # TODO - is there a way to prevent code duplication here?
     # TODO - possible to inherit from both classes and call the corresponding inits?
     # --------------------------------------------

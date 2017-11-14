@@ -6,8 +6,9 @@ import pytest
 import sys
 from kipoi.pipeline import install_model_requirements
 import warnings
-
+import filecmp
 import config
+import os
 
 warnings.filterwarnings('ignore')
 
@@ -49,6 +50,12 @@ def test_var_eff_pred():
 
     # Run the actual predictions
     vcf_path = model_dir + "test_files/variants.vcf"
+    out_vcf_fpath = model_dir + "test_files/variants_generated.vcf"
+    ref_out_vcf_fpath = model_dir + "test_files/variants_ref_out.vcf"
     res = predict_variants(model, vcf_path, exec_files_path=exec_files_path_here,
-                           dataloader_function=Dataloader, batch_size=32,
-                           evaluation_function_kwargs={"diff_type": "diff"})
+                           dataloader=Dataloader, batch_size=32,
+                           evaluation_function_kwargs={"diff_type": "diff"},
+                           out_vcf_fpath=out_vcf_fpath)
+
+    assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
