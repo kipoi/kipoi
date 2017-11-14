@@ -42,7 +42,7 @@ def get_extractor_cfg(model_dir):
 
 
 def get_test_kwargs(model_dir):
-    return read_json_yaml(os.path.join(model_dir, 'test_files/test.json'))
+    return read_json_yaml(os.path.join(model_dir, 'example_files/test.json'))
 
 
 
@@ -73,12 +73,9 @@ def test_extractor_model(example):
     # get model
     model = kipoi.get_model(example_dir, source="dir")
     #
-    with cd(example_dir + "/test_files"):
+    with cd(example_dir + "/example_files"):
         # initialize the dataloader
         dataloader = Dl(**test_kwargs)
-        # get first sample
-        dataloader[0]
-        len(dataloader)
         #
         # sample a batch of data
         it = dataloader.batch_iter()
