@@ -13,8 +13,8 @@ from .utils import lfs_installed, get_file_path
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
-
-_logger = logging.getLogger('kipoi')
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def get_component_file(component_dir, which="model"):
@@ -32,7 +32,7 @@ def list_yamls_recursively(root_dir, basename):
                 for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
 
 
-def load_component_info(component_path, which="model"):
+def load_component_descr(component_path, which="model"):
     """Return the parsed yaml file
     """
     if which == "model":
@@ -43,24 +43,24 @@ def load_component_info(component_path, which="model"):
         raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
-def get_model_info(model, source="kipoi"):
-    """Get information about the model
+def get_model_descr(model, source="kipoi"):
+    """Get model description
 
     # Arguments
       model: model's relative path/name in the source. 2nd column in the `kipoi.list_models() `pd.DataFrame`.
       source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
-    return kipoi.config.get_source(source).get_model_info(model)
+    return kipoi.config.get_source(source).get_model_descr(model)
 
 
-def get_dataloader_info(dataloader, source="kipoi"):
-    """Get information about the dataloder
+def get_dataloader_descr(dataloader, source="kipoi"):
+    """Get dataloder description
 
     # Arguments
       datalaoder: dataloader's relative path/name in the source. 2nd column in the `kipoi.list_dataloader() `pd.DataFrame`.
       source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
-    return kipoi.config.get_source(source).get_dataloader_info(dataloader)
+    return kipoi.config.get_source(source).get_dataloader_descr(dataloader)
 
 
 def to_namelist(nested_dict):
@@ -117,7 +117,7 @@ class Source(object):
                 ("tags", d.info.tags),
             ])
 
-        return pd.DataFrame([dict2df_dict(self.get_model_info(model), model)
+        return pd.DataFrame([dict2df_dict(self.get_model_descr(model), model)
                              for model in self._list_components("model")])
 
     def list_dataloaders(self):
@@ -136,18 +136,18 @@ class Source(object):
                 ("tags", d.info.tags),
             ])
 
-        return pd.DataFrame([dict2df_dict(self.get_dataloader_info(dataloader), dataloader)
+        return pd.DataFrame([dict2df_dict(self.get_dataloader_descr(dataloader), dataloader)
                              for dataloader in self._list_components("dataloader")])
 
     @abstractmethod
-    def _get_component_info(self, component, which="model"):
+    def _get_component_descr(self, component, which="model"):
         pass
 
-    def get_model_info(self, model):
-        return self._get_component_info(model, which="model")
+    def get_model_descr(self, model):
+        return self._get_component_descr(model, which="model")
 
-    def get_dataloader_info(self, dataloader):
-        return self._get_component_info(dataloader, which="dataloader")
+    def get_dataloader_descr(self, dataloader):
+        return self._get_component_descr(dataloader, which="dataloader")
 
     @abstractmethod
     def get_config(self):
@@ -193,9 +193,9 @@ class GitLFSSource(Source):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
-        _logger.info("Cloning {remote} into {local}".
-                     format(remote=self.remote_url,
-                            local=self.local_path))
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=self.remote_url,
+                           local=self.local_path))
 
         subprocess.call(["git-lfs",
                          "clone",
@@ -210,8 +210,8 @@ class GitLFSSource(Source):
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
-        _logger.info("Update {0}".
-                     format(self.local_path))
+        logger.info("Update {0}".
+                    format(self.local_path))
         subprocess.call(["git",
                          "pull"],
                         cwd=self.local_path)
@@ -233,13 +233,13 @@ class GitLFSSource(Source):
         cmd = ["git-lfs",
                "pull",
                "-I {component}/**".format(component=component)]
-        _logger.info(" ".join(cmd))
+        logger.info(" ".join(cmd))
         subprocess.call(cmd,
                         cwd=self.local_path)
-        _logger.info("{0} {1} loaded".format(which, component))
+        logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
-    def _get_component_info(self, component, which="model"):
+    def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
 
@@ -248,7 +248,7 @@ class GitLFSSource(Source):
             raise ValueError("{0}: {1} doesn't exist in {2}".
                              format(which, component, self.remote_url))
 
-        return load_component_info(cpath, which)
+        return load_component_descr(cpath, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -278,9 +278,9 @@ class GitSource(Source):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
 
-        _logger.info("Cloning {remote} into {local}".
-                     format(remote=self.remote_url,
-                            local=self.local_path))
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=self.remote_url,
+                           local=self.local_path))
 
         subprocess.call(["git",
                          "clone",
@@ -294,8 +294,8 @@ class GitSource(Source):
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
-        _logger.info("Update {0}".
-                     format(self.local_path))
+        logger.info("Update {0}".
+                    format(self.local_path))
         subprocess.call(["git",
                          "pull"],
                         cwd=self.local_path)
@@ -309,11 +309,11 @@ class GitSource(Source):
         if not os.path.exists(cpath):
             raise ValueError("{0} {1} doesn't exist in {2}".
                              format(which, component, self.remote_url))
-        _logger.info("{0} {1} loaded".format(which, component))
+        logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
-    def _get_component_info(self, component, which="model"):
-        return load_component_info(self._pull_component(component, which), which)
+    def _get_component_descr(self, component, which="model"):
+        return load_component_descr(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -340,8 +340,8 @@ class LocalSource(Source):
                              format(which, component))
         return cpath
 
-    def _get_component_info(self, component, which="model"):
-        return load_component_info(self._pull_component(component, which), which)
+    def _get_component_descr(self, component, which="model"):
+        return load_component_descr(self._pull_component(component, which), which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),

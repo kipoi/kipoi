@@ -1,15 +1,21 @@
-type: Dataset
-defined_as: dataloader.py::CodaDataset
+type: BatchGenerator
+defined_as: dataloader.py::extractor
 args:
     intervals_file:
         descr: "tsv file with `chrom start end`"
+        example: "example_files/intervals.tsv"
         type: str
     input_data_sources:
         descr: "{data_name: <path to genomelake directory>}"
+        example: {"H3K27AC_subsampled": "example_files/H3K27AC_subsampled.bw"}
         type: dict
     target_data_sources:
         descr: "optional; {data_name: <path to genomelake directory>}"
         type: dict
+        optional: True
+    batch_size:
+        descr: "batch size. Default = 128"
+        example: 4
         optional: True
 info: 
     author: Johnny Israeli
@@ -23,14 +29,14 @@ info:
 output_schema:
     inputs:
         H3K27AC_subsampled:
-            shape: (None, )  # TODO - update shape
+            shape: (None, 1)  # TODO - update shape
             special_type: bigwig
             associated_metadata: ranges
             descr: Input
     # doesn't have to be defined
     targets:
         H3K27ac:
-            shape: (None, )
+            shape: (None, 1)
             special_type: bigwig
             descr: Measured track
     metadata:

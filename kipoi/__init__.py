@@ -17,20 +17,23 @@ from . import data
 # shortcuts
 from .model import get_model
 from .data import get_dataloader_factory
-from .remote import get_model_info, get_dataloader_info
+from .remote import get_model_descr, get_dataloader_descr
 from .pipeline import install_model_requirements, install_dataloader_requirements
-from .config import list_models, get_source, list_sources
+from .config import get_source, list_sources, list_models, list_dataloaders
 # from .config import model_sources as sources
 
 
 # Setup logging
-import logging
+# import logging
 
-log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-_logger = logging.getLogger('kipoi')
+# Set default logging handler to avoid "No handler found" warnings.
+# log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
 
-_handler = logging.StreamHandler()
-_handler.setLevel(logging.INFO)
-_handler.setFormatter(log_formatter)
-_logger.setLevel(logging.INFO)
-_logger.addHandler(_handler)
+# try:  # Python 2.7+
+#     from logging import NullHandler
+# except ImportError:
+#     class NullHandler(logging.Handler):
+#         def emit(self, record):
+#             pass
+
+# logging.getLogger(__name__).addHandler(NullHandler())

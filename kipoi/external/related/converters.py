@@ -87,3 +87,9 @@ def to_eval_str(value):
         value = eval(str(value))
 
     return value
+
+
+def identity(x):
+    """Simple identity
+    """
+    return x

@@ -6,16 +6,20 @@ args:
     intervals_file:
         descr: tsv file with `chrom start end id score strand`
         type: str
+        example: example_files/intervals.tsv
     fasta_file:
         descr: Reference genome sequence
-        # TODO - flag this as a file...
+        example: example_files/hg38_chr22.fa
     gtf_file:
         descr: file path; Genome annotation GTF file pickled using pandas.
+        example: example_files/gencode_v25_chr22.gtf.pkl.gz
     preproc_transformer:
         descr: path to the serialized tranformer used for pre-processing.
+        example: dataloader_files/encodeSplines.pkl
     target_file:
         descr: path to the targets (txt) file
         optional: True # use the same semantics as for the CLI interface?
+        example: example_files/targets.tsv
 info:
     author: Ziga Avsec
     name: rbp_eclip
@@ -30,7 +34,7 @@ dependencies:
 output_schema:
     inputs:
         seq:
-            shape: (4, 101)
+            shape: (101, 4)
             special_type: DNASeq
             descr: One-hot encoded RNA sequence
             associated_metadata: ranges
@@ -41,11 +45,9 @@ output_schema:
         shape: (1, )
         descr: Measured binding strength
     metadata:
-        # TODO - update the ranges 
         ranges:
-            type: Ranges  # StrandedRanges?
+            type: GenomicRanges
             descr: Ranges describing inputs.seq
-            # TODO - define a class for it
 postprocessing:
     - type: var_effect_prediction
       args:

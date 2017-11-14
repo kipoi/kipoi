@@ -3,53 +3,69 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pybedtools
-import six
+
 from genomelake.extractors import ArrayExtractor
 
-from kipoi.data import Dataset
+
+def batch_iter(iterable, batch_size):
+    """
+    iterates in batches.
+    """
+    it = iter(iterable)
+    try:
+        while True:
+            values = []
+            for n in range(batch_size):
+                values += (next(it),)
+            yield values
+    except StopIteration:
+        # yield remaining values
+        yield values
 
 
-class CodaDataset(Dataset):
+def extractor(intervals_file, input_data_sources, target_data_sources=None, batch_size=128):
+    """BatchGenerator
 
-    def __init__(self, intervals_file, input_data_sources, target_data_sources=None):
-        """
-        Args:
-            intervals_file: tsv file
-                Assumes bed-like `chrom start end id` format.
-            input_data_sources: dict
-                mapping from input name to genomelake directory
-            target_data_sources: dict, optional
-                mapping from input name to genomelake directory
-            batch_size: int
-        """
-        self.bt = pybedtools.BedTool(intervals_file)
-        self.input_data_extractors = {key: ArrayExtractor(data_source)
-                                      for key, data_source in six.iteritems(input_data_sources)}
-
-        self.target_data_sources = target_data_sources
-        if self.target_data_sources is not None:
-            self.target_data_extractors = {key: ArrayExtractor(data_source)
-                                           for key, data_source in six.iteritems(target_data_sources)}
-
-    def __len__(self):
-        return len(self.bt)
-
-    def __getitem__(self, idx):
-        interval = self.bt[idx]
-
+    Args:
+        intervals_file: tsv file
+            Assumes bed-like `chrom start end id` format.
+        input_data_sources: dict
+            mapping from input name to genomelake directory
+        target_data_sources: dict, optional
+            mapping from input name to genomelake directory
+        batch_size: int
+    """
+    bt = pybedtools.BedTool(intervals_file)
+    input_data_extractors = {key: ArrayExtractor(data_source)
+                             for key, data_source in input_data_sources.items()}
+    if target_data_sources is not None:
+        target_data_extractors = {key: ArrayExtractor(data_source)
+                                  for key, data_source in target_data_sources.items()}
+    intervals_generator = batch_iter(bt, batch_size)
+    for intervals_batch in intervals_generator:
         out = {}
-        out['inputs'] = {key: np.squeeze(extractor([interval])[..., None], 0)  # adds channel axis for conv1d
-                         for key, extractor in six.iteritems(self.input_data_extractors)}
-
-        if self.target_data_sources is not None:
-            out['targets'] = {key: np.squeeze(extractor(interval)[..., None], 0)  # adds channel axis for conv1d
-                              for key, extractor in six.iteritems(self.target_data_extractors)}
+        # get data
+        out['inputs'] = {key: extractor(intervals_batch)[..., None]  # adds channel axis for conv1d
+                         for key, extractor in input_data_extractors.items()}
+        if target_data_sources is not None:
+            out['targets'] = {key: extractor(intervals_batch)[..., None]  # adds channel axis for conv1d
+                              for key, extractor in target_data_extractors.items()}
         # get metadata
         out['metadata'] = {}
-        out['metadata']['ranges'] = {}
-        out['metadata']['ranges']['chr'] = interval.chrom
-        out['metadata']['ranges']['start'] = interval.start
-        out['metadata']['ranges']['end'] = interval.stop
-        out['metadata']['ranges']['id'] = interval.name
+        chrom = []
+        start = []
+        end = []
+        ids = []
+        for interval in intervals_batch:
+            chrom.append(interval.chrom)
+            start.append(interval.start)
+            end.append(interval.stop)
+            ids.append(interval.name)
 
-        return out
+        out['metadata']['ranges'] = {}
+        out['metadata']['ranges']['chr'] = np.array(chrom)
+        out['metadata']['ranges']['start'] = np.array(start)
+        out['metadata']['ranges']['end'] = np.array(end)
+        out['metadata']['ranges']['id'] = np.array(ids)
+
+        yield out

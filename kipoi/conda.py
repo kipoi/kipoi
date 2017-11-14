@@ -13,7 +13,8 @@ from subprocess import Popen, PIPE, STDOUT
 from collections import OrderedDict
 from kipoi.utils import yaml_ordered_dump
 import logging
-
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 class CondaError(Exception):
     "General Conda error"
@@ -30,8 +31,8 @@ def create_env(env_name, conda_deps):
     """
     # check if the environment already exists
     if env_exists(env_name):
-        logging.info("Conda environment: {0} already exists. Skipping the installation.".
-                     format(env_name))
+        logger.info("Conda environment: {0} already exists. Skipping the installation.".
+                    format(env_name))
         return None
 
     # write the env to file

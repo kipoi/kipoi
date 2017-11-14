@@ -37,11 +37,11 @@ def test_var_eff_pred():
 
     # Hacky: take the example arguments
     import yaml
-    with open(model_dir + "test_files/test.json", "r") as f:
+    with open(model_dir + "example_files/test.json", "r") as f:
         exec_files_path = yaml.load(f)
 
     for k in exec_files_path:
-        exec_files_path[k] = model_dir + "test_files/" + exec_files_path[k]
+        exec_files_path[k] = model_dir + "example_files/" + exec_files_path[k]
 
     exec_files_path_here = {}
     for k in exec_files_path:

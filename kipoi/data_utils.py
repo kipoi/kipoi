@@ -38,3 +38,38 @@ def _numpy_collate(stack_fn=np.stack):
 
 numpy_collate = _numpy_collate(np.stack)
 numpy_collate_concat = _numpy_collate(np.concatenate)
+
+# --------------------------------------------
+# Tools for working with a nested dataset
+
+
+def get_dataset_lens(data, require_numpy=False):
+    if type(data).__module__ == 'numpy':
+        if require_numpy and not data.shape:
+            raise ValueError("all numpy arrays need to have at least one axis")
+        return [1] if not data.shape else [data.shape[0]]
+    elif isinstance(data, int) and not require_numpy:
+        return [1]
+    elif isinstance(data, float) and not require_numpy:
+        return [1]
+    elif isinstance(data, string_classes) and not require_numpy:
+        # Also convert to a numpy array
+        return [1]
+        # return data
+    elif isinstance(data, collections.Mapping) and not type(data).__module__ == 'numpy':
+        return sum([get_dataset_lens(data[key], require_numpy) for key in data], [])
+    elif isinstance(data, collections.Sequence) and not type(data).__module__ == 'numpy':
+        return sum([get_dataset_lens(sample, require_numpy) for sample in data], [])
+    else:
+        raise ValueError("Leafs of the nested structure need to be numpy arrays")
+
+
+def get_dataset_item(data, idx):
+    if type(data).__module__ == 'numpy':
+        return data[idx]
+    elif isinstance(data, collections.Mapping):
+        return {key: get_dataset_item(data[key], idx) for key in data}
+    elif isinstance(data, collections.Sequence):
+        return [get_dataset_item(sample, idx) for sample in data]
+    else:
+        raise ValueError("Leafs of the nested structure need to be numpy arrays")
