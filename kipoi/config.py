@@ -84,7 +84,6 @@ def list_sources():
     return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources())])
 
 
-# TODO - move this to remore?
 def list_models(sources=model_sources()):
     """List models as a `pandas.DataFrame`
 
@@ -96,7 +95,32 @@ def list_models(sources=model_sources()):
         df.insert(0, "source", source_name)
         return df
 
-    return pd.concat([get_df(name, source) for name, source in six.iteritems(sources)])
+    pd_list = []
+    for name, source in six.iteritems(sources):
+        if source != "dir":
+            pd_list.append(get_df(name, source))
+
+    return pd.concat(pd_list)[pd_list[0].columns]
+
+
+def list_dataloaders(sources=model_sources()):
+    """List datalaoders as a `pandas.DataFrame`
+
+    Args:
+      sources: list of model sources to use
+    """
+    def get_df(source_name, source):
+        df = source.list_dataloaders()
+        df.insert(0, "source", source_name)
+        return df
+
+    pd_list = []
+    for name, source in six.iteritems(sources):
+        if source != "dir":
+            pd_list.append(get_df(name, source))
+
+    return pd.concat(pd_list)[pd_list[0].columns]
+
 
 
 # Attempt to read Kipoi config file.

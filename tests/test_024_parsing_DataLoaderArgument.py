@@ -13,22 +13,31 @@ CLS = DataLoaderArgument
 inp_targ = """
 """
 
+info_str = """
+descr: some description
+type: str
+"""
+
 GOOD_EXAMPLES = ["""
 descr: some description
+example: {"a": 3}
 type: str
 """, """
 descr: some description
 """, """
 descr: some description
+example: 10
 optional: True
 name: specified name
 """, """
 descr: some description
+example: 10.4
 tags:
   - tag1
   - tag2
 """, """
 descr: some description
+example: astring
 # only one tag
 tags: tag1
 """]

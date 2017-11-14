@@ -1,17 +1,24 @@
-# Model-zoo
+# Kipoi
 
 ![Build Status](https://circleci.com/gh/kipoi/kipoi/tree/master.svg?style=shield)
 <!-- ![Build Status](https://api.travis-ci.com/kipoi/kipoi.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master) -->
 
-## Install
+Kipoi defines a common 'model-zoo' API for predictive models. This repository implements a 
+command-line interface (CLI) and a python SDK to query (and use) the Kipoi models. The Kipoi models can be hosted in 
+public models sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
+model sources.
+
+![img](docs/img/kipoi-workflow.png)
+
+## Installation
 
 After cloning the repository `git clone https://github.com/kipoi/model-zoo.git`, run:
 
 ```
-pip install -U .
+pip install .
 ```
 
-If you wish to develop, run instead:
+If you wish to develop `kipoi`, run instead:
 
 ```
 pip install -e '.[develop]'
@@ -19,8 +26,63 @@ pip install -e '.[develop]'
 
 This will install some additional packages like `pytest`.
 
-## Usage
+## Quick start
 
+### Using Kipoi models from python
+
+```python
+import kipoi
+
+# list all the available models
+kipoi.list_models()  
+
+# Model ----------------------
+# Load the model from github.com/kipoi/models/rbp
+model = kipoi.get_model("rbp", source="kipoi") # source="kipoi" is the default
+
+# Load the model from a local directory
+model = kipoi.get_model("~/mymodels/rbp", source="dir")  
+# Note: Custom model sources are defined in ~/.kipoi/config.yaml
+
+# See the information about the author:
+model.info
+
+# Access the default dataloader
+model.default_dataloader
+
+# Access the Keras model
+model.model
+
+# Predict on batch - implemented by all the models regardless of the framework
+# (i.e. works with sklearn, Keras, tensorflow, ...)
+model.predict_on_batch(x)
+
+# Get predictions for the raw files
+# Kipoi runs: raw files -[dataloader]-> numpy arrays -[model]-> predictions 
+model.pipeline.predict({"dataloader_arg1": "inputs.csv"})
+
+# Dataloader -------------------
+Dl = kipoi.get_dataloader_factory("rbp") # returns a class that needs to be instantiated
+dl = Dl(dataloader_arg1="inputs.csv")  # Create/instantiate an object
+
+# batch_iter - common to all dataloaders
+# Returns an iterator generating batches of model-ready numpy.arrays
+it = dl.batch_iter(batch_size=32)
+out = next(it)  # {"inputs": np.array, (optional) "targets": np.arrays.., "metadata": np.arrays...}
+
+# load the whole dataset into memory
+dl.load_all()
+
+# re-train the Keras model
+dl = Dl(dataloader_arg1="inputs.csv", targets_file="mytargets.csv")
+it_train = dl.batch_train_iter(batch_size=32)  
+# batch_train_iter is a convenience wrapper of batch_iter yielding (inputs, targets) tuples
+model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
+```
+
+For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+
+### Using Kipoi models from the command-line
 
 ```
 $ kipoi
@@ -36,64 +98,29 @@ usage: kipoi <command> [-h] ...
     test             Runs a set of unit-tests for the model
 ```
 
-## Running the examples
+Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/cli.md](docs/cli.md) for more information.
 
-Try out running the examples in `examples/`
-
-```
-kipoi test examples/extended_coda
-```
-
-## Configure `model_zoo`
+### Configure Kipoi in `.kipoi/config.yaml`
 
 Setup your preference in: `.kipoi/config.yaml`
 
 You can add your own model sources. See [docs/model_sources.md](docs/model_sources.md) for more information.
 
-## Python SDK
+### Contributing models
 
-Provides functionality to:
-- Load the model
-- Predict
-- Run the pre-processor
-- List all available models
+See [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb).
+
 
 ## Documentation
 
-Explore the markdown files in [docs/](docs/):
-- Command-line interface [docs/cli.md](docs/cli.md)
-- Python interface [docs/py-interface.md](docs/py-interface.md)
-- Model sources configuration [docs/model_sources.md](docs/model_sources.md)
-  - setup your own model zoo
-- Contributing models [docs/contributing_models.md](docs/contributing_models.md)
-- **Examples**
-  - Python interface [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+To get started, please read the following ipynb's:
 
+- [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb)
+- [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
 
----------------------------------------------------------------
+This will provide pointers to the rest of the documentation in [docs/](docs/):
 
-## Issues
-
-What are we missing?
-- virtual-env setup
-- preprocessors from other languages?
-  - maybe put it on hold for now?
-  
-How to start a pre-processor in a separate environment?
-- Enforce using conda?
-- Use a separate process?
-- this could allow running preprocessor from multiple versions in parallel
-
-How to check for malicious software?
-  - running preprocessors
-    - make the preprocessor code well available
-
-## Link collection
-
-- [Kipoi Google drive](https://drive.google.com/drive/folders/0B9fJIVHGqt20b05GMzBZUVQzRVU)
-
-
-### Useful links
-
-- https://github.com/deepchem/deepchem
-- https://developer.apple.com/documentation/coreml
+- [docs/cli.md](docs/cli.md) - command-line interface
+- [docs/writing_dataloaders.md](docs/writing_dataloaders.md)- describes all supported dataloader types
+- [docs/writing_models.md](docs/writing_models.md) - describes all supported model types
+- [docs/model_sources.md](docs/model_sources.md) - describes how to setup your own model zoo

@@ -30,11 +30,11 @@ def test_var_eff_pred():
 
     # Hacky: take the example arguments
     import yaml
-    with open(model_dir + "test_files/test.json", "r") as f:
+    with open(model_dir + "example_files/test.json", "r") as f:
         exec_files_path = yaml.load(f)
 
     for k in exec_files_path:
-        exec_files_path[k] = model_dir + "test_files/" + exec_files_path[k]
+        exec_files_path[k] = model_dir + "example_files/" + exec_files_path[k]
 
     exec_files_path_here = {}
     for k in exec_files_path:
@@ -51,7 +51,7 @@ def test_var_eff_pred():
         model_out_annotation = np.array([model.schema.targets.name])
 
     # Run the actual predictions
-    vcf_path = model_dir + "test_files/variants.vcf"
+    vcf_path = model_dir + "example_files/variants.vcf"
     from concise.effects.ism import ism
     # TODO - model.model is a workaround. we would define the required
     # functionality at the abstract class level

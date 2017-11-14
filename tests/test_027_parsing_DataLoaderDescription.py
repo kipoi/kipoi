@@ -3,7 +3,7 @@
 import pytest
 import six
 from pytest import raises
-from kipoi.components import DataLoaderDescription
+from kipoi.components import DataLoaderDescription, example_kwargs
 from related import from_yaml
 
 # Class to test
@@ -19,13 +19,17 @@ defined_as: dataloader.py::SeqDistDataset
 args:
     intervals_file:
         descr: tsv file with `chrom start end id score strand`
+        example: intervals.tsv
         type: str
     fasta_file:
         descr: Reference genome sequence
+        example: genome.fa
     gtf_file:
         descr: file path; Genome annotation GTF file pickled using pandas.
+        example: gtf.gtf
     preproc_transformer:
         descr: path to the serialized tranformer used for pre-processing.
+        example: path.transformer
     target_file:
         descr: path to the targets (txt) file
         optional: True # use the same semantics as for the CLI interface?
@@ -98,6 +102,7 @@ def test_parse_correct_info(info_str):
     # loading works
     info = CLS.from_config(from_yaml(info_str))
 
+    assert isinstance(example_kwargs(info.args), dict)
     # cfg works
     cfg = info.get_config()
     info2 = CLS.from_config(cfg)
