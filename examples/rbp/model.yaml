@@ -31,7 +31,7 @@ schema:
         column_labels:
             - rbp_prb
 postprocessing:
-    - type: var_effect_prediction
+    - type: variant_effects
       args:
           seq_input:
             - seq

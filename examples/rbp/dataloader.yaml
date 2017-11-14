@@ -49,7 +49,7 @@ output_schema:
             type: GenomicRanges
             descr: Ranges describing inputs.seq
 postprocessing:
-    - type: var_effect_prediction
+    - type: variant_effects
       args:
           bed_input:
             - intervals_file

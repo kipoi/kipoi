@@ -280,16 +280,17 @@ def get_seq_length(dataloader, seq_field):
 
 
 
-def predict_variants(model,
-                     vcf_fpath,
-                     exec_files_path,
-                     dataloader,
-                     batch_size,
-                     model_out_annotation = None,
-                     evaluation_function = ism,
-                     debug=False,
-                     evaluation_function_kwargs=None,
-                     out_vcf_fpath = None):
+def predict_snvs(model,
+                 vcf_fpath,
+                 dataloader,
+                 batch_size,
+                 dataloader_arguments = None,
+                 model_out_annotation = None,
+                 evaluation_function = ism,
+                 debug=False,
+                 evaluation_function_kwargs=None,
+                 out_vcf_fpath = None,
+                 use_dataloader_example_data = False):
     # if 'intervals_file' not in model_handle.preproc.get_avail_arguments():
     #    raise Exception("Preprocessor does not support DNA regions as input.")
     # seq_pp_outputs = model_handle.preproc.get_output_label_by_type("dna")
@@ -305,10 +306,18 @@ def predict_variants(model,
     regions = _vcf_to_regions(vcf_fpath, seq_length)
     temp_bed3_file = tempfile.mktemp()  # file path of the temp file
     _bed3(regions, temp_bed3_file)
+    # Assemble the paths for executing the dataloader
+    if dataloader_arguments is None:
+        dataloader_arguments = {}
+    # Copy the missing arguments from the example arguments.
+    if use_dataloader_example_data:
+        for k in dataloader.example_kwargs:
+            if k not in dataloader_arguments:
+                dataloader_arguments[k] = dataloader.example_kwargs[k]
     # Where do I have to put my bed file in the command?
     exec_files_bed_keys = get_dl_bed_fields(dataloader)
     for k in exec_files_bed_keys:
-        exec_files_path[k] = temp_bed3_file
+        dataloader_arguments[k] = temp_bed3_file
     #
     # Get model output annotation:
     if model_out_annotation is None:
@@ -329,9 +338,9 @@ def predict_variants(model,
     #
     res = []
     #
-    dataloader(**exec_files_path)
+    dataloader(**dataloader_arguments)
     #
-    it = dataloader(**exec_files_path).batch_iter(batch_size=batch_size)
+    it = dataloader(**dataloader_arguments).batch_iter(batch_size=batch_size)
     # test that all predictions go through
     for i, batch in enumerate(tqdm(it)):
         eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, regions)

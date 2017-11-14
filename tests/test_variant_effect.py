@@ -1,6 +1,6 @@
 
 import kipoi
-from kipoi.postprocessing.variant_effects import predict_variants
+from kipoi.postprocessing.variant_effects import predict_snvs
 import numpy as np
 import pytest
 import sys
@@ -9,6 +9,7 @@ import warnings
 import filecmp
 import config
 import os
+from kipoi.utils import cd
 
 warnings.filterwarnings('ignore')
 
@@ -35,27 +36,20 @@ def test_var_eff_pred():
     # The preprocessor
     Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
 
-    # Hacky: take the example arguments
-    import yaml
-    with open(model_dir + "example_files/test.json", "r") as f:
-        exec_files_path = yaml.load(f)
-
-    for k in exec_files_path:
-        exec_files_path[k] = model_dir + "example_files/" + exec_files_path[k]
-
-    exec_files_path_here = {}
-    for k in exec_files_path:
-        if k != "target_file":
-            exec_files_path_here[k] = exec_files_path[k]
+    dataloader_arguments = {
+        "fasta_file": "example_files/hg38_chr22.fa",
+        "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+        "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+    }
 
     # Run the actual predictions
-    vcf_path = model_dir + "test_files/variants.vcf"
-    out_vcf_fpath = model_dir + "test_files/variants_generated.vcf"
-    ref_out_vcf_fpath = model_dir + "test_files/variants_ref_out.vcf"
-    res = predict_variants(model, vcf_path, exec_files_path=exec_files_path_here,
+    vcf_path = "example_files/variants.vcf"
+    out_vcf_fpath = "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    with cd(model.source_dir):
+        res = predict_snvs(model, vcf_path, dataloader_arguments=dataloader_arguments,
                            dataloader=Dataloader, batch_size=32,
                            evaluation_function_kwargs={"diff_type": "diff"},
                            out_vcf_fpath=out_vcf_fpath)
-
-    assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-    os.unlink(out_vcf_fpath)
+        assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)

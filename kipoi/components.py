@@ -460,7 +460,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 
 @enum.unique
 class PostProcType(enum.Enum):
-    VAR_EFFECT_PREDICTION = "var_effect_prediction"
+    VAR_EFFECT_PREDICTION = "variant_effects"
 
 
 @related.immutable
