@@ -104,6 +104,7 @@ def parse_json_file_str(extractor_args):
     """Parse a string either as a json string or
     as a file path to a .json file
     """
+    extractor_args = extractor_args.strip("'").strip('"')
     if extractor_args.startswith("{") or extractor_args.endswith("}"):
         logger.debug("Parsing the extractor_args as a json string")
         return yaml.load(extractor_args)

@@ -47,7 +47,7 @@ def test_var_eff_pred():
     out_vcf_fpath = "example_files/variants_generated.vcf"
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
     with cd(model.source_dir):
-        res = predict_snvs(model, vcf_path, dataloader_arguments=dataloader_arguments,
+        res = predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
                            dataloader=Dataloader, batch_size=32,
                            evaluation_function_kwargs={"diff_type": "diff"},
                            out_vcf_fpath=out_vcf_fpath)
