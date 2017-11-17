@@ -164,9 +164,9 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
         if isinstance(dataloader.output_schema.inputs, dict):
             ranges_slots = dataloader.output_schema.inputs[seq_key].associated_metadata
         elif isinstance(dataloader.output_schema.inputs, list):
-            ranges_slots = [x.metadata for x in dataloader.output_schema.inputs if x.name == seq_key][0]
+            ranges_slots = [x.associated_metadata for x in dataloader.output_schema.inputs if x.name == seq_key][0]
         else:
-            ranges_slots = dataloader.output_schema.inputs.metadata
+            ranges_slots = dataloader.output_schema.inputs.associated_metadata
         # check the ranges slots
         if len(ranges_slots) != 1:
             raise ValueError("Exactly one metadata ranges field must defined for a sequence that has to be used for effect precition.")
@@ -271,13 +271,17 @@ def _get_dl_bed_fields(dataloader):
 
 
 def _get_seq_length(dataloader, seq_field):
-    orig_shape = dataloader.output_schema.inputs[seq_field].shape
+    if isinstance(dataloader.output_schema.inputs, dict):
+        orig_shape = dataloader.output_schema.inputs[seq_field].shape
+    elif isinstance(dataloader.output_schema.inputs, list):
+        orig_shape = [x.shape for x in dataloader.output_schema.inputs if x.name == seq_field][0]
+    else:
+        orig_shape = dataloader.output_schema.inputs.shape
     shape = [s for s in orig_shape if s is not None]
     shape = [s for s in shape if s != 4]
     if len(shape) != 1:
         raise Exception("DNA sequence output shape not well defined! %s"%str(orig_shape))
     return shape[0]
-
 
 
 def predict_snvs(model,
