@@ -110,6 +110,14 @@ You can add your own model sources. See [docs/model_sources.md](docs/model_sourc
 
 See [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb).
 
+## Postprocessing
+
+### SNV effect prediction
+
+Functionality to predict the effect of SNVs is available in the API as well as in the command line interface. The input
+is a VCF which can then be and returned in the process. For more details on the requirements for the models and
+ dataloaders please check the documentation mentioned below.
+
 
 ## Documentation
 
@@ -117,6 +125,7 @@ To get started, please read the following ipynb's:
 
 - [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb)
 - [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+- [nbs/variant_effect_prediction.ipynb](nbs/variant_effect_prediction.ipynb)
 
 This will provide pointers to the rest of the documentation in [docs/](docs/):
 
