@@ -391,6 +391,7 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     CustomDataLoader.info = dl.info
     CustomDataLoader.output_schema = dl.output_schema
     CustomDataLoader.dependencies = dl.dependencies
+    CustomDataLoader.postprocessing = dl.postprocessing
     # keep it hidden?
     CustomDataLoader._yaml_path = yaml_path
     CustomDataLoader.source = source

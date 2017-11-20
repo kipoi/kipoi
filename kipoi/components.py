@@ -102,6 +102,7 @@ class ArraySchema(RelatedConfigMixin):
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
+    verbose = True
     shape = TupleIntField()
     descr = related.StringField()
     # MAYBE - allow a list of strings?
@@ -109,10 +110,43 @@ class ArraySchema(RelatedConfigMixin):
     name = related.StringField(required=False)
     special_type = related.ChildField(ArraySpecialType, required=False)
     associated_metadata = StrSequenceField(str, default=[], required=False)
+    column_labels = StrSequenceField(str, default=[], required=False) # either a list or a path to a file --> need to check whether it's a list
     # TODO shall we have
     # - associated_metadata in ArraySchema
     # OR
     # - associated_array in MetadataField?
+
+    # assert that there are no Nones in the shape, assume that channels is the only 4 or it is the last
+    # update the model schema shape on calling batch_iter method
+    # overwrite the batch_iter method of the returned dataloader --> decorator needed
+
+    def print_msg(self, msg):
+        if self.verbose:
+            print("ArraySchema mismatch")
+            print(msg)
+
+    def _validate_list_column_labels(self):
+        dim_ok = len(self.shape) >= 1
+        if dim_ok and (self.shape[0] is not None):
+            dim_ok &= len(self.column_labels) == self.shape[0]
+        if not dim_ok:
+            self.print_msg("Column annotation does not match array dimension with shape %s and %d labels (%s ...)"
+                           % (str(self.shape), len(self.column_labels), str(self.column_labels)[:30]))
+
+    def __attrs_post_init__(self):
+        if len(self.column_labels)> 1:
+            # check that length is ok with columns
+            self._validate_list_column_labels()
+        elif len(self.column_labels)==1:
+            label = self.column_labels.list[0]
+            import os
+            # check if path exists raise exception only test time, but only a warning in prediction time
+            if os.path.exists(label):
+                with open(label, "r") as ifh:
+                    object.__setattr__(self, "column_labels", [l.rstrip() for l in ifh])
+            self._validate_list_column_labels()
+        else:
+            object.__setattr__(self, "column_labels", None)
 
     def compatible_with_batch(self, batch, verbose=True):
         """Checks compatibility with a particular batch of data
@@ -166,6 +200,7 @@ class ArraySchema(RelatedConfigMixin):
                     print_msg_template()
                     return False
         return True
+
 
 
 # --------------------------------------------
@@ -425,7 +460,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 
 @enum.unique
 class PostProcType(enum.Enum):
-    VAR_EFFECT_PREDICTION = "var_effect_prediction"
+    VAR_EFFECT_PREDICTION = "variant_effects"
 
 
 @related.immutable
@@ -506,6 +541,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
+    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
 
 
 def example_kwargs(dl_args):

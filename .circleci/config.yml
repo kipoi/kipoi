@@ -39,7 +39,8 @@ jobs:
       - run:
           name: install conda dependencies
           command: |
-            conda install --yes --file conda_requirements.txt
+            conda install --yes --no-update-deps --file conda_requirements.txt
+            conda install -c bioconda pyvcf
             
       - run:
           name: install pip dependencies
@@ -105,7 +106,7 @@ jobs:
       - run:
           name: install conda dependencies
           command: |
-            conda install --yes --file conda_requirements.txt
+            conda install --yes --no-update-deps --file conda_requirements.txt
             
       - run:
           name: install pip dependencies

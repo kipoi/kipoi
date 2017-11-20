@@ -45,7 +45,8 @@ def get_model(model, source="kipoi", with_dataloader=True):
     source_dir = os.path.dirname(yaml_path)
 
     # Setup model description
-    md = ModelDescription.load(yaml_path)
+    with cd(source_dir):
+        md = ModelDescription.load(os.path.basename(yaml_path))
     # TODO - is there a way to prevent code duplication here?
     # TODO - possible to inherit from both classes and call the corresponding inits?
     # --------------------------------------------
@@ -125,7 +126,12 @@ def load_model_custom(file, object):
     return getattr(load_module(file), object)
 
 
-class KerasModel(BaseModel):
+class GradientMixin():
+    def input_grad(self, x, layer, filter_ind):
+        raise NotImplementedError
+
+
+class KerasModel(BaseModel, GradientMixin):
     """Loads the serialized Keras model
 
     # Arguments
@@ -161,6 +167,8 @@ class KerasModel(BaseModel):
         self.weights = weights
         self.arch = arch
 
+
+        self.gradient_functions = {}
         if arch is None:
             # load the whole model
             self.model = load_model(weights, custom_objects=self.custom_objects)
@@ -181,6 +189,62 @@ class KerasModel(BaseModel):
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
+
+    def __generate_direct_saliency_functions__(self, layer, filter_slices = None,
+                                               filter_func = None, filter_func_kwargs = None):
+        import copy
+        from keras import backend as K
+        # Generate the gradient functions according to the layer / filter definition
+        if layer not in self.gradient_functions:
+            self.gradient_functions[layer]= {}
+        filter_id = str(filter_slices)
+        if filter_func is not None:
+            filter_id = str(filter_func) + ":" + str(filter_func_kwargs)
+        if filter_id not in self.gradient_functions[layer]:
+            # Copy input so that the model definition is not altered
+            inp = copy.copy(self.model.inputs)
+            # Get selected layer outputs
+            filters = self.model.layers[layer].output
+            if filter_slices is not None:
+                sel_filter = filters[filter_slices]
+            elif filter_func is not None:
+                if filter_func_kwargs is None:
+                    filter_func_kwargs = {}
+                sel_filter = filter_func(filters, **filter_func_kwargs)
+            else:
+                raise Exception("Either filter_slices or filter_func have to be set!")
+            # TODO: does Theano really require "sel_filter.sum()" instead of "sel_filter" here?
+            saliency = K.gradients(sel_filter, inp)
+            if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+                inp.append(K.learning_phase())
+            self.gradient_functions[layer][filter_id] = K.function(inp, saliency)
+        return self.gradient_functions[layer][filter_id]
+
+    def _input_grad(self, x, layer, filter_slices = None, filter_func = None, filter_func_kwargs = None):
+        """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
+    
+        # Arguments
+            x: Input samples, as a Numpy array.
+    
+        # Returns
+            Numpy array(s) of predictions.
+        """
+        from keras.engine.training import _standardize_input_data
+        from keras import backend as K
+        x = _standardize_input_data(x, self.model._feed_input_names,
+                                    self.model._feed_input_shapes)
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+            ins = x + [0.]
+        else:
+            ins = x
+        gf = self.__generate_direct_saliency_functions__(layer, filter_slices, filter_func, filter_func_kwargs)
+        outputs = gf(ins)
+        if len(outputs) == 1:
+            return outputs[0]
+        return outputs
+
+    def pred_grad(self, x, output_slice):
+        return self._input_grad(x, -1, output_slice)
 
 
 # def PyTorchModel(BaseModel):

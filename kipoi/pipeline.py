@@ -17,6 +17,8 @@ from tqdm import tqdm
 import deepdish
 from collections import OrderedDict
 import logging
+import h5py
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 # TODO - write out the hdf5 file in batches:
@@ -301,6 +303,85 @@ def cli_predict(command, raw_args):
         deepdish.io.save(args.output, numpy_collate_concat(obj_list))
 
     logger.info('Successfully predictde samples')
+
+def cli_score_variants(command, raw_args):
+    """CLI interface to predict
+    """
+    assert command == "score_variants"
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description='Predict effect of SNVs using ISM.')
+    parser.add_argument('model', help='Model name.')
+    add_arg_source(parser)
+    parser.add_argument('--dataloader', default=None,
+                        help="Dataloader name. If not specified, the model's default" +
+                        "DataLoader will be used")
+    parser.add_argument('--dataloader_source', default="kipoi",
+                        help="Dataloader source. If not specified, the model's default" +
+                        "DataLoader will be used")
+    parser.add_argument('--dataloader_args',
+                        help="Dataloader arguments either as a json string:" +
+                        "'{\"arg1\": 1} or as a file path to a json file")
+    parser.add_argument('-v', '--vcf_path',
+                        help='Input VCF.')
+    parser.add_argument('-a', '--out_vcf_fpath',
+                        help='Output annotated VCF file path.', default = None)
+    parser.add_argument('-f', '--file_format', default="tsv",
+                        choices=["tsv", "hdf5"],
+                        help='File format.')
+    parser.add_argument('--batch_size', type=int, default=32,
+                        help='Batch size to use in prediction')
+    parser.add_argument("-n", "--num_workers", type=int, default=0,
+                        help="Number of parallel workers for loading the dataset")
+    parser.add_argument("-i", "--install_req", action='store_true',
+                        help="Install required packages from requirements.txt")
+    parser.add_argument('-o', '--output', required=True,
+                        help="Output hdf5 file")
+    args = parser.parse_args(raw_args)
+
+    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
+
+    vcf_path = args.vcf_path
+    out_vcf_fpath = args.out_vcf_fpath
+    dataloader_arguments = dataloader_kwargs
+
+    # --------------------------------------------
+    # install args
+    if args.install_req:
+        install_model_requirements(args.model, args.source, and_dataloaders=True)
+    # load model & dataloader
+    model = kipoi.get_model(args.model, args.source)
+
+    if args.dataloader is not None:
+        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
+    else:
+        Dl = model.default_dataloader
+
+    with cd(model.source_dir):
+        res = kipoi.variant_effects.predict_snvs(model, vcf_path,
+                           dataloader=Dl, batch_size=32,
+                           dataloader_args=dataloader_arguments,
+                           evaluation_function_kwargs={"diff_type": "diff"},
+                           out_vcf_fpath=out_vcf_fpath)
+
+    # tabular files
+    if args.file_format in ["tsv"]:
+        for i, k in enumerate(res):
+            # Remove an old file if it is still there...
+            if i == 0:
+                try:
+                    os.unlink(args.output)
+                except:
+                    pass
+            with open(args.output, "w") as ofh:
+                ofh.write("KPVEP_%s\n" % k.upper())
+            res[k].to_csv(args.output, sep="\t", mode="a")
+
+    if args.file_format == "hdf5":
+        deepdish.io.save(args.output, res)
+
+    logger.info('Successfully predicted samples')
+
+
 
 
 def io_batch2df(batch, pred_batch):
