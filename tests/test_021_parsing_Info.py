@@ -2,33 +2,35 @@
 """
 
 import pytest
-from kipoi.components import Info
+from kipoi.components import Info, Author
 from related import from_yaml
 
 CLS = Info
 
 GOOD_EXAMPLES = ["""
-author: Ziga Avsec
-name: rbp_eclip
-version: 0.1
-descr: RBP binding prediction
+authors:
+    - name: Ziga Avsec
+doc: RBP binding prediction
 """, """
-author: Ziga Avsec
+authors:
+    - name: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-descr: RBP binding prediction
+doc: RBP binding prediction
 tags: ['var_interpretation']
 """]
 
 
 BAD_EXAMPLES = ["""
-author: Ziga Avsec
+authors:
+    - name: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-descr: RBP binding prediction
+doc: RBP binding prediction
 extra_field: asd
 """, """
-author: Ziga Avsec
+authors:
+    - name: Ziga Avsec
 name: rbp_eclip
 version: 0.1
 """]

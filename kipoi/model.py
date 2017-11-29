@@ -154,7 +154,7 @@ class KerasModel(BaseModel, GradientMixin):
         ```
     """
 
-    def __init__(self, weights, arch, custom_objects=None):
+    def __init__(self, weights, arch=None, custom_objects=None):
         # TODO - check that Keras is indeed installed + specific requirements?
 
         from keras.models import model_from_json, load_model
@@ -166,7 +166,6 @@ class KerasModel(BaseModel, GradientMixin):
 
         self.weights = weights
         self.arch = arch
-
 
         self.gradient_functions = {}
         if arch is None:
@@ -190,13 +189,13 @@ class KerasModel(BaseModel, GradientMixin):
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
 
-    def __generate_direct_saliency_functions__(self, layer, filter_slices = None,
-                                               filter_func = None, filter_func_kwargs = None):
+    def __generate_direct_saliency_functions__(self, layer, filter_slices=None,
+                                               filter_func=None, filter_func_kwargs=None):
         import copy
         from keras import backend as K
         # Generate the gradient functions according to the layer / filter definition
         if layer not in self.gradient_functions:
-            self.gradient_functions[layer]= {}
+            self.gradient_functions[layer] = {}
         filter_id = str(filter_slices)
         if filter_func is not None:
             filter_id = str(filter_func) + ":" + str(filter_func_kwargs)
@@ -220,12 +219,12 @@ class KerasModel(BaseModel, GradientMixin):
             self.gradient_functions[layer][filter_id] = K.function(inp, saliency)
         return self.gradient_functions[layer][filter_id]
 
-    def _input_grad(self, x, layer, filter_slices = None, filter_func = None, filter_func_kwargs = None):
+    def _input_grad(self, x, layer, filter_slices=None, filter_func=None, filter_func_kwargs=None):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
-    
+
         # Arguments
             x: Input samples, as a Numpy array.
-    
+
         # Returns
             Numpy array(s) of predictions.
         """

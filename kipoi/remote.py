@@ -107,10 +107,10 @@ class Source(object):
         def dict2df_dict(d, model):
             return OrderedDict([
                 ("model", model),
-                ("name", d.info.name),
+                # ("name", d.info.name),
                 ("version", d.info.version),
-                ("author", d.info.author),
-                ("descr", d.info.descr),
+                ("authors", str(d.info.authors)),
+                ("doc", d.info.doc),
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
@@ -126,10 +126,10 @@ class Source(object):
         def dict2df_dict(d, dataloader):
             return OrderedDict([
                 ("dataloader", dataloader),
-                ("name", d.info.name),
+                # ("name", d.info.name),
                 ("version", d.info.version),
-                ("author", d.info.author),
-                ("descr", d.info.descr),
+                ("authors", str(d.info.authors)),
+                ("doc", d.info.doc),
                 ("type", d.type),
                 ("inputs", to_namelist(d.output_schema.inputs)),
                 ("targets", to_namelist(d.output_schema.targets)),

@@ -4,10 +4,10 @@ args:
     weights: model_files/weights.h5
 default_dataloader: . # path to the directory
 info:
-    author: Your Name
-    name: NameOfThisModel
-    version: 0.1
-    descr: Model predicting the Iris species
+    authors:
+        - name: Your Name
+          github: your_github_username
+    doc: Model predicting the Iris species
 dependencies:
     conda:
       - h5py
@@ -17,7 +17,7 @@ schema:
     inputs:
         features:
           shape: (4,)
-          descr: "Features in cm: sepal length, sepal width, petal length, petal width."
+          doc: "Features in cm: sepal length, sepal width, petal length, petal width."
     targets:
         shape: (3,)
-        descr: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."

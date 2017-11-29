@@ -14,29 +14,29 @@ inp_targ = """
 """
 
 info_str = """
-descr: some description
+doc: some description
 type: str
 """
 
 GOOD_EXAMPLES = ["""
-descr: some description
+doc: some description
 example: {"a": 3}
 type: str
 """, """
-descr: some description
+doc: some description
 """, """
-descr: some description
+doc: some description
 example: 10
 optional: True
 name: specified name
 """, """
-descr: some description
+doc: some description
 example: 10.4
 tags:
   - tag1
   - tag2
 """, """
-descr: some description
+doc: some description
 example: astring
 # only one tag
 tags: tag1
@@ -47,10 +47,10 @@ BAD_EXAMPLES = ["""
 # missing description
 type: str
 """, """
-descr: some description
+doc: some description
 optional: maybe # not bool
 """, """
-descr: some description
+doc: some description
 # not a list
 tags:
   asd: dsa

@@ -5,10 +5,12 @@ args:
 # default_dataloader: dataloader.yaml # shall we call it just dataloader?
 # dataloader.yaml is used by default
 info:
-    author: Johnny Israeli
+    authors:
+        - name: Johnny Israeli
+          github: jisraeli
     name: extended CODA
     version: 0.1
-    descr: Single bp resolution ChIP-seq denoising
+    doc: Single bp resolution ChIP-seq denoising
 dependencies:
     pip:
       - tensorflow==1.0.0
@@ -18,9 +20,9 @@ schema:
         H3K27AC_subsampled:
             shape: (None, 1)  # TODO - update shape
             special_type: bigwig
-            descr: Track representing ...
+            doc: Track representing ...
     targets:
         H3K27ac:
             shape: (None, 1)  # TODO - update shape
             special_type: bigwig
-            descr: Predicted track...
+            doc: Predicted track...
