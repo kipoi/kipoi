@@ -67,20 +67,28 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
 # Common components (model and dataloader)
 
 @related.immutable
+class Author(RelatedConfigMixin):
+    name = related.StringField()
+    github = related.StringField(required=False)
+    email = related.StringField(required=False)
+
+
+@related.immutable
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
 
     info:
-      author: Ziga Avsec
+      authors:
+        - name: Ziga Avsec
+      doc: RBP binding prediction
       name: rbp_eclip
       version: 0.1
-      descr: RBP binding prediction
     """
-    author = related.StringField()
-    name = related.StringField()
-    version = related.StringField()
-    descr = related.StringField()
+    authors = related.SequenceField(Author, repr=True)
+    doc = related.StringField()
+    name = related.StringField(required=False)  # TODO - deprecate
+    version = related.StringField(default="0.1", required=False)
     tags = StrSequenceField(str, default=[], required=False)
 
 
@@ -98,19 +106,19 @@ class ArraySchema(RelatedConfigMixin):
 
     Args:
       shape: Tuple of shape (same as in Keras for the input)
-      descr: Description of the array
+      doc: Description of the array
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
     verbose = True
     shape = TupleIntField()
-    descr = related.StringField()
+    doc = related.StringField()
     # MAYBE - allow a list of strings?
     #         - could be useful when a single array can have multiple 'attributes'
     name = related.StringField(required=False)
     special_type = related.ChildField(ArraySpecialType, required=False)
     associated_metadata = StrSequenceField(str, default=[], required=False)
-    column_labels = StrSequenceField(str, default=[], required=False) # either a list or a path to a file --> need to check whether it's a list
+    column_labels = StrSequenceField(str, default=[], required=False)  # either a list or a path to a file --> need to check whether it's a list
     # TODO shall we have
     # - associated_metadata in ArraySchema
     # OR
@@ -134,10 +142,10 @@ class ArraySchema(RelatedConfigMixin):
                            % (str(self.shape), len(self.column_labels), str(self.column_labels)[:30]))
 
     def __attrs_post_init__(self):
-        if len(self.column_labels)> 1:
+        if len(self.column_labels) > 1:
             # check that length is ok with columns
             self._validate_list_column_labels()
-        elif len(self.column_labels)==1:
+        elif len(self.column_labels) == 1:
             label = self.column_labels.list[0]
             import os
             # check if path exists raise exception only test time, but only a warning in prediction time
@@ -171,7 +179,7 @@ class ArraySchema(RelatedConfigMixin):
             return False
 
         return self.compatible_with_schema(ArraySchema(shape=batch.shape[1:],
-                                                       descr=""))
+                                                       doc=""))
 
     def compatible_with_schema(self, schema, verbose=True):
         """Checks the compatibility with another schema
@@ -200,7 +208,6 @@ class ArraySchema(RelatedConfigMixin):
                     print_msg_template()
                     return False
         return True
-
 
 
 # --------------------------------------------
@@ -288,7 +295,7 @@ class MetadataType(enum.Enum):
 @related.immutable
 class MetadataStruct(RelatedConfigMixin):
 
-    descr = related.StringField()
+    doc = related.StringField()
     type = related.ChildField(MetadataType, required=False)
     name = related.StringField(required=False)
 
@@ -362,7 +369,7 @@ class DataLoaderSchema(RelatedConfigMixin):
     """
     inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
     targets = NestedMappingField(ArraySchema, keyword="shape", key="name", required=False)
-    metadata = NestedMappingField(MetadataStruct, keyword="descr", key="name",
+    metadata = NestedMappingField(MetadataStruct, keyword="doc", key="name",
                                   required=False)
 
     def compatible_with_batch(self, batch, verbose=True):
@@ -477,7 +484,7 @@ class PostProcStruct(RelatedConfigMixin):
 @related.immutable
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
-    descr = related.StringField()
+    doc = related.StringField()
     example = AnyField(required=False)
     name = related.StringField(required=False)
     type = related.StringField(default='str', required=False)

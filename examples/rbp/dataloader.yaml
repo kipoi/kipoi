@@ -4,27 +4,27 @@ args:
   # TODO - should we use some special file-names?
     # if any of the arguments is numeric, the type specification is mandatory
     intervals_file:
-        descr: tsv file with `chrom start end id score strand`
+        doc: tsv file with `chrom start end id score strand`
         type: str
         example: example_files/intervals.tsv
     fasta_file:
-        descr: Reference genome sequence
+        doc: Reference genome sequence
         example: example_files/hg38_chr22.fa
     gtf_file:
-        descr: file path; Genome annotation GTF file pickled using pandas.
+        doc: file path; Genome annotation GTF file pickled using pandas.
         example: example_files/gencode_v25_chr22.gtf.pkl.gz
     preproc_transformer:
-        descr: path to the serialized tranformer used for pre-processing.
+        doc: path to the serialized tranformer used for pre-processing.
         example: dataloader_files/encodeSplines.pkl
     target_file:
-        descr: path to the targets (txt) file
+        doc: path to the targets (txt) file
         optional: True # use the same semantics as for the CLI interface?
         example: example_files/targets.tsv
 info:
-    author: Ziga Avsec
-    name: rbp_eclip
-    version: 0.1
-    descr: RBP binding prediction
+    authors:
+        - name: Ziga Avsec
+          github: avsecz
+    doc: RBP binding prediction
 dependencies:
     pip:
         # - git+git://github.com/kundajelab/genomelake.git#egg=genomelake
@@ -36,21 +36,20 @@ output_schema:
         seq:
             shape: (101, 4)
             special_type: DNASeq
-            descr: One-hot encoded RNA sequence
+            doc: One-hot encoded RNA sequence
             associated_metadata: ranges
         dist_polya_st:
             shape: (1, 10)
-            descr: Distance to poly-a site transformed with B-splines
+            doc: Distance to poly-a site transformed with B-splines
     targets:
         shape: (1, )
-        descr: Measured binding strength
+        doc: Measured binding strength
     metadata:
         ranges:
             type: GenomicRanges
-            descr: Ranges describing inputs.seq
+            doc: Ranges describing inputs.seq
 postprocessing:
     - type: variant_effects
       args:
           bed_input:
             - intervals_file
-# d: is an alias for description

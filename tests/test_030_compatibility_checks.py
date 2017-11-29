@@ -10,22 +10,22 @@ from related import from_yaml
 # numpy arrays
 
 GOOD_ARR_SCHEMA_PAIRS = [
-    (ArraySchema(shape=(10,), descr=""), np.arange(20).reshape((2, 10))),
-    (ArraySchema(shape=(None,), descr=""), np.arange(20).reshape((2, 10))),
-    (ArraySchema(shape=(1, None), descr=""), np.arange(20).reshape((2, 1, 10))),
-    (ArraySchema(shape=(None, None,), descr=""), np.arange(20).reshape((2, 1, 10))),
-    (ArraySchema(shape=(1, 10,), descr=""), np.arange(20).reshape((2, 1, 10))),
-    (ArraySchema(shape=(None, 10), descr=""), np.arange(20).reshape((2, 1, 10))),
-    (ArraySchema(shape=(), descr=""), np.arange(2)),
+    (ArraySchema(shape=(10,), doc=""), np.arange(20).reshape((2, 10))),
+    (ArraySchema(shape=(None,), doc=""), np.arange(20).reshape((2, 10))),
+    (ArraySchema(shape=(1, None), doc=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(None, None,), doc=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(1, 10,), doc=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(None, 10), doc=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(), doc=""), np.arange(2)),
 ]
 
 BAD_ARR_SCHEMA_PAIRS = [
     # dim missmatch
-    (ArraySchema(shape=(11,), descr=""), np.arange(20).reshape((2, 10))),
-    (ArraySchema(shape=(2, None), descr=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(11,), doc=""), np.arange(20).reshape((2, 10))),
+    (ArraySchema(shape=(2, None), doc=""), np.arange(20).reshape((2, 1, 10))),
     # len missmatch
-    (ArraySchema(shape=(1, 10, 12), descr=""), np.arange(20).reshape((2, 1, 10))),
-    (ArraySchema(shape=(1, 10, None), descr=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(1, 10, 12), doc=""), np.arange(20).reshape((2, 1, 10))),
+    (ArraySchema(shape=(1, 10, None), doc=""), np.arange(20).reshape((2, 1, 10))),
 ]
 
 
@@ -44,39 +44,39 @@ def test_bad_array_schemas(pair):
 # --------------------------------------------
 # metadata structs
 GOOD_MDATASTRUCT_PAIRS = [
-    (MetadataStruct(type="str", descr=""), np.arange(10).astype(str)),
-    (MetadataStruct(type="int", descr=""), np.arange(10).astype(int)),
-    (MetadataStruct(type="float", descr=""), np.arange(10).astype(float)),
-    (MetadataStruct(type="array", descr=""), np.arange(10).reshape((2, 5))),
-    (MetadataStruct(type="GenomicRanges", descr=""), GenomicRanges(chr="chr1",
-                                                                   start=10,
-                                                                   end=20,
-                                                                   id="1",
-                                                                   strand="+")),
-    (MetadataStruct(type="GenomicRanges", descr=""), dict(chr="chr1",
-                                                          start=10,
-                                                          end=20,
-                                                          id="1",
-                                                          strand="+")),
+    (MetadataStruct(type="str", doc=""), np.arange(10).astype(str)),
+    (MetadataStruct(type="int", doc=""), np.arange(10).astype(int)),
+    (MetadataStruct(type="float", doc=""), np.arange(10).astype(float)),
+    (MetadataStruct(type="array", doc=""), np.arange(10).reshape((2, 5))),
+    (MetadataStruct(type="GenomicRanges", doc=""), GenomicRanges(chr="chr1",
+                                                                 start=10,
+                                                                 end=20,
+                                                                 id="1",
+                                                                 strand="+")),
+    (MetadataStruct(type="GenomicRanges", doc=""), dict(chr="chr1",
+                                                        start=10,
+                                                        end=20,
+                                                        id="1",
+                                                        strand="+")),
 ]
 
 BAD_MDATASTRUCT_PAIRS = [
     # larger array
-    (MetadataStruct(type="str", descr=""), np.arange(10).reshape((2, 5)).astype(str)),
-    (MetadataStruct(type="int", descr=""), np.arange(10).reshape((2, 5)).astype(int)),
-    (MetadataStruct(type="float", descr=""), np.arange(10).reshape((2, 5)).astype(float)),
+    (MetadataStruct(type="str", doc=""), np.arange(10).reshape((2, 5)).astype(str)),
+    (MetadataStruct(type="int", doc=""), np.arange(10).reshape((2, 5)).astype(int)),
+    (MetadataStruct(type="float", doc=""), np.arange(10).reshape((2, 5)).astype(float)),
     # not an array
-    (MetadataStruct(type="array", descr=""), 1),
-    (MetadataStruct(type="array", descr=""), "3"),
-    (MetadataStruct(type="array", descr=""), [1, 2]),
+    (MetadataStruct(type="array", doc=""), 1),
+    (MetadataStruct(type="array", doc=""), "3"),
+    (MetadataStruct(type="array", doc=""), [1, 2]),
 
     # ranges: not a ranges or a dict
-    (MetadataStruct(type="GenomicRanges", descr=""), np.arange(10)),
+    (MetadataStruct(type="GenomicRanges", doc=""), np.arange(10)),
     # missing chr field
-    (MetadataStruct(type="GenomicRanges", descr=""), dict(start=10,
-                                                          end=20,
-                                                          id="1",
-                                                          strand="+")),
+    (MetadataStruct(type="GenomicRanges", doc=""), dict(start=10,
+                                                        end=20,
+                                                        id="1",
+                                                        strand="+")),
 ]
 
 
@@ -99,19 +99,19 @@ GOOD_DLSCHEMA_PAIRS = [
 inputs:
     seq:
         shape: (2, 10)
-        descr: One-hot encoded DNA sequence
+        doc: One-hot encoded DNA sequence
         special_type: bigwig
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 metadata:
     ranges:
         type: GenomicRanges
-        descr: "."
+        doc: "."
     dist_polya_st:
-        - descr: "."
-        - descr: "."
-        - descr: "."
+        - doc: "."
+        - doc: "."
+        - doc: "."
     """, {
         "inputs": {"seq": np.arange(20).reshape((1, 2, 10))},
         "targets": np.arange(1).reshape((1, 1)),
@@ -205,29 +205,29 @@ GOOD_DLSCHEMA_MODEL_PAIRS = [
 inputs:
     seq:
         shape: (2, None)
-        descr: .
+        doc: .
     something_else:
         shape: (22, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 metadata:
     ranges:
         type: GenomicRanges
-        descr: "."
+        doc: "."
     dist_polya_st:
-        - descr: "."
-        - descr: "."
-        - descr: "."
+        - doc: "."
+        - doc: "."
+        - doc: "."
 """, """
 inputs:
     seq:
         shape: (2, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 """)
 ]
 
@@ -237,54 +237,54 @@ BAD_DLSCHEMA_MODEL_PAIRS = [
 inputs:
     seq:
         shape: (2, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 metadata:
     ranges:
         type: GenomicRanges
-        descr: "."
+        doc: "."
     dist_polya_st:
-        - descr: "."
-        - descr: "."
-        - descr: "."
+        - doc: "."
+        - doc: "."
+        - doc: "."
 """, """
 inputs:
     seq:
         shape: (2, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, None)
-    descr: "."
+    doc: "."
 """),
     ("""
 inputs:
     seq:
         shape: (2, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 metadata:
     ranges:
         type: GenomicRanges
-        descr: "."
+        doc: "."
     dist_polya_st:
-        - descr: "."
-        - descr: "."
-        - descr: "."
+        - doc: "."
+        - doc: "."
+        - doc: "."
 """, """
 inputs:
     seq:
         shape: (2, 10)
-        descr: .
+        doc: .
     missing_seq:
         shape: (2, 10)
-        descr: .
+        doc: .
 targets:
     shape: (1, )
-    descr: "."
+    doc: "."
 """)
 ]
 

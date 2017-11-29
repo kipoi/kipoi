@@ -25,6 +25,9 @@ class GenomicRanges(Mapping):
     def __len__(self):
         return len(self._storage)
 
+    def __repr__(self):
+        return "GenomicRanges(chr={chr!r}, start={start!r}, end={end!r}, id={id!r}, strand={strand!r})".format(**self._storage)
+
     @classmethod
     def from_interval(cls, interval):
         """Create the ranges object from the interval

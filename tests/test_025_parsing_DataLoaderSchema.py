@@ -14,12 +14,12 @@ inp_targ = """
 inputs:
     seq:
         shape: (4, 100)
-        descr: One-hot encoded DNA sequence
+        doc: One-hot encoded DNA sequence
         special_type: bigwig
 targets:
     binding_site:
         shape: (1, )
-        descr: Binding strength
+        doc: Binding strength
         special_type: bigwig
 """
 
@@ -27,32 +27,32 @@ GOOD_EXAMPLES = ["""
 metadata:
     ranges:
         type: GenomicRanges
-        descr: One-hot encoded RNA sequence
+        doc: One-hot encoded RNA sequence
     dist_polya_st:
-        descr: Array of something
+        doc: Array of something
 """, """
 metadata:
     ranges:
         type: GenomicRanges
-        descr: One-hot encoded RNA sequence
+        doc: One-hot encoded RNA sequence
     dist_polya_st:
-        - descr: Array of something
-        - descr: Array of something else
-        - descr: Array 3
+        - doc: Array of something
+        - doc: Array of something else
+        - doc: Array 3
 """, """
 metadata:
     ranges:
         type: GenomicRanges
-        descr: One-hot encoded RNA sequence
+        doc: One-hot encoded RNA sequence
     dist_polya_st:
         nested_structure:
-            descr: array
+            doc: array
         nested_structure:
             - subnested1:
-                  descr: array
+                  doc: array
               subnested3:
-                  descr: array
-            - descr: this is another array here
+                  doc: array
+            - doc: this is another array here
               type: GenomicRanges
 """]
 
@@ -61,31 +61,31 @@ BAD_EXAMPLES = ["""
 metadata:
     ranges:
         type: GenomicRanges
-        # descr missing
+        # doc missing
     dist_polya_st:
-        descr: Array of something
+        doc: Array of something
 """, """
 metadata:
     ranges:
         type: asd # unsupported special_type
-        descr: One-hot encoded RNA sequence
+        doc: One-hot encoded RNA sequence
     dist_polya_st:
-        - descr: Array of something
-        - descr: Array of something else
-        - descr: Array 3
+        - doc: Array of something
+        - doc: Array of something else
+        - doc: Array 3
 """, """
 metadata:
     ranges:
         type: GenomicRanges
-        descr: One-hot encoded RNA sequence
+        doc: One-hot encoded RNA sequence
     dist_polya_st:
         nested_structure:
-            descr: array
+            doc: array
         nested_structure:
             - subnested1:
-                  descr: array
+                  doc: array
               subnested3:
-                  descr: array
+                  doc: array
             - this # element with no real leaf
 """]
 

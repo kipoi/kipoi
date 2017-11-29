@@ -18,57 +18,58 @@ type: Dataset
 defined_as: dataloader.py::SeqDistDataset
 args:
     intervals_file:
-        descr: tsv file with `chrom start end id score strand`
+        doc: tsv file with `chrom start end id score strand`
         example: intervals.tsv
         type: str
     fasta_file:
-        descr: Reference genome sequence
+        doc: Reference genome sequence
         example: genome.fa
     gtf_file:
-        descr: file path; Genome annotation GTF file pickled using pandas.
+        doc: file path; Genome annotation GTF file pickled using pandas.
         example: gtf.gtf
     preproc_transformer:
-        descr: path to the serialized tranformer used for pre-processing.
+        doc: path to the serialized tranformer used for pre-processing.
         example: path.transformer
     target_file:
-        descr: path to the targets (txt) file
+        doc: path to the targets (txt) file
         optional: True # use the same semantics as for the CLI interface?
 info:
-    author: Ziga Avsec
+    authors:
+        - name: Ziga Avsec
     name: rbp_eclip
     version: 0.1
-    descr: RBP binding prediction
+    doc: RBP binding prediction
 output_schema:
     inputs:
         seq:
             shape: (4, 101)
             special_type: DNASeq
-            descr: One-hot encoded RNA sequence
+            doc: One-hot encoded RNA sequence
             associated_metadata: ranges
         dist_polya_st:
             shape: (1, 10)
-            descr: Distance to poly-a site transformed with B-splines
+            doc: Distance to poly-a site transformed with B-splines
     targets:
         binding_site:
             shape: (1, )
-            descr: Measured binding strength
+            doc: Measured binding strength
     metadata:
         ranges:
             chr:
                 type: str
-                descr: Chromosome
+                doc: Chromosome
             start:
                 type: int
-                descr: Start position
+                doc: Start position
             end:
                 type: int
-                descr: End position
+                doc: End position
             id:
                 type: str
-                descr: Id of the sequence
+                doc: Id of the sequence
             strand:
                 type: str
-                descr: Sequence strand
+                doc: Sequence strand
 """]
 
 
@@ -85,14 +86,14 @@ output_schema:
         seq:
             shape: (4, 101)
             special_type: DNASeq
-            descr: One-hot encoded RNA sequence
+            doc: One-hot encoded RNA sequence
         dist_polya_st:
             shape: (None, 1, 10)
-            descr: Distance to poly-a site transformed with B-splines
+            doc: Distance to poly-a site transformed with B-splines
     targets:
         binding_site:
             shape: (1, )
-            descr: Predicted binding strength
+            doc: Predicted binding strength
 """]
 
 
@@ -138,16 +139,16 @@ def test_model_loading_on_examples(example):
     dl.defined_as
     dl.args
     arg_elem = six.next(six.itervalues(dl.args))
-    arg_elem.descr
+    arg_elem.doc
     arg_elem.type
     arg_elem.optional
 
     dl.info
-    dl.info.author
+    dl.info.authors
     dl.info.name
     dl.info.version
     dl.info.tags
-    dl.info.descr
+    dl.info.doc
 
     dl.output_schema
     dl.output_schema.inputs

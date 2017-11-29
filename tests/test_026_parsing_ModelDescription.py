@@ -21,23 +21,24 @@ args:
     custom_objects: model/custom_keras_objects.py
 default_dataloader: dataloader.yaml # shall we call it just dataloader?
 info:
-    author: Ziga Avsec
+    authors:
+        - name: Ziga Avsec
     name: rbp_eclip
     version: 0.1
-    descr: RBP binding prediction
+    doc: RBP binding prediction
 schema:
     inputs:
         seq:
             shape: (4, 101)
             special_type: DNASeq
-            descr: One-hot encoded RNA sequence
+            doc: One-hot encoded RNA sequence
         dist_polya_st:
             shape: (None, 1, 10)
-            descr: Distance to poly-a site transformed with B-splines
+            doc: Distance to poly-a site transformed with B-splines
     targets:
         binding_site:
             shape: (1, )
-            descr: Predicted binding strength
+            doc: Predicted binding strength
 """]
 
 
@@ -54,14 +55,14 @@ schema:
         seq:
             shape: (4, 101)
             special_type: DNASeq
-            descr: One-hot encoded RNA sequence
+            doc: One-hot encoded RNA sequence
         dist_polya_st:
             shape: (None, 1, 10)
-            descr: Distance to poly-a site transformed with B-splines
+            doc: Distance to poly-a site transformed with B-splines
     targets:
         binding_site:
             shape: (1, )
-            descr: Predicted binding strength
+            doc: Predicted binding strength
 """]
 
 
@@ -110,11 +111,11 @@ def test_model_loading_on_examples(example):
     md.default_dataloader
 
     md.info
-    md.info.author
+    md.info.authors
     md.info.name
     md.info.version
     md.info.tags
-    md.info.descr
+    md.info.doc
 
     md.schema
     md.schema.inputs

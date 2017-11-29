@@ -9,40 +9,40 @@ CLS = ArraySchema
 
 GOOD_EXAMPLES = ["""
 shape: (100, )
-descr: some input
+doc: some input
 """, """
 shape: (None, 100)
-descr: some input
+doc: some input
 """, """
 shape: (None, )
-descr: some input
+doc: some input
 """, """
 shape: (100, )
-descr: some input
+doc: some input
 special_type: DNASeq
 """, """
 shape: (100, )
-descr: some input
+doc: some input
 associated_metadata:  # as a list
   - ranges
 """, """
 shape: (100, )
-descr: some input
+doc: some input
 associated_metadata: ranges  # as a single element
 """]
 
 BAD_EXAMPLES = ["""
 shape: (100, )
-# descr missing
+# doc missing
 """, """
 # shape missing
-descr: some input
+doc: some input
 """, """
 shape: 100  # not a tuple
-descr: some input
+doc: some input
 """, """
 shape: (100, )
-descr: some input
+doc: some input
 special_type: something # type not supported
 """]
 
