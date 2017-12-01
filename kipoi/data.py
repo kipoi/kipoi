@@ -359,8 +359,8 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     # --------------------------------------------
     # input the
     file_path, obj_name = tuple(dl.defined_as.split("::"))
-    CustomDataLoader = getattr(load_module(os.path.join(dataloader_dir, file_path)),
-                               obj_name)
+    with cd(dataloader_dir):  # move to the dataloader directory temporarily
+        CustomDataLoader = getattr(load_module(file_path), obj_name)
 
     # check that dl.type is correct
     if dl.type not in AVAILABLE_DATALOADERS:
@@ -416,4 +416,4 @@ AVAILABLE_DATALOADERS = {"PreloadedDataset": PreloadedDataset,
                          "BatchIterator": BatchIterator,
                          "BatchGenerator": BatchGenerator}
 
-DATALOADERS_AS_FUNCTIONS = ["PreloadedDataset, ""SampleGenerator", "BatchGenerator"]
+DATALOADERS_AS_FUNCTIONS = ["PreloadedDataset", "SampleGenerator", "BatchGenerator"]

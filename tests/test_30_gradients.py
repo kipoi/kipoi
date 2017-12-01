@@ -8,16 +8,12 @@ from contextlib import contextmanager
 import kipoi
 from kipoi.pipeline import install_model_requirements
 from kipoi.utils import Slice_conv
-
-
-
+import config
 
 # TODO: Test on Theano model
 
+INSTALL_REQ = config.install_req
 
-# TODO - check if you are on travis or not regarding the --install-req flag
-INSTALL_REQ = True
-# INSTALL_REQ = False
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda"]
 
@@ -45,7 +41,6 @@ def get_test_kwargs(model_dir):
     return read_json_yaml(os.path.join(model_dir, 'example_files/test.json'))
 
 
-
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_extractor_model(example):
     """Test extractor
@@ -67,8 +62,6 @@ def test_extractor_model(example):
     # - TODO maybe put it implicitly in load_extractor?
     if INSTALL_REQ:
         install_model_requirements(example_dir, source="dir")
-    # get extractor
-    #Extractor = kipoi.load_extractor(example_dir, source="dir")
     #
     # get model
     model = kipoi.get_model(example_dir, source="dir")
@@ -83,9 +76,7 @@ def test_extractor_model(example):
         # predict with a model
         model.predict_on_batch(batch["inputs"])
         model.pred_grad(batch["inputs"], Slice_conv()[:, 0])
-        #if example == "rbp":
+        # if example == "rbp":
         #    model._input_grad(batch["inputs"], -1, Slice_conv()[:, 0])
-        #elif example == "extended_coda":
+        # elif example == "extended_coda":
         #    model._input_grad(batch["inputs"], -1, filter_func=tf.reduce_max, filter_func_kwargs={"axis": 1})
-
-

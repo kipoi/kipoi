@@ -131,7 +131,7 @@ def test_predict_example(example, tmpdir):
 def test_predict_variants_example(example, tmpdir):
     """kipoi predict ...
     """
-    if example  not in {"rbp"} or sys.version_info[0] == 2:
+    if example not in {"rbp"} or sys.version_info[0] == 2:
         pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
     example_dir = "examples/{0}".format(example)
@@ -188,8 +188,8 @@ def test_pull_kipoi():
     """Test that pull indeed pulls the right model
     """
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "pull",
-            "rbp"]
+            "MaxEntScan"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp/model.yaml'))
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp/model_files/weights.h5'))
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/MaxEntScan/model.yaml'))
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/MaxEntScan/model_files/weights.h5'))
