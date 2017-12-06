@@ -272,7 +272,11 @@ class ModelSchema(RelatedConfigMixin):
         if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, ArraySchema, verbose):
             return False
 
-        if not compatible_nestedmapping(dataloader_schema.targets, self.targets, ArraySchema, verbose):
+        if (isinstance(dataloader_schema.targets, ArraySchema) or
+            len(dataloader_schema.targets) > 0) and not compatible_nestedmapping(dataloader_schema.targets,
+                                                                                 self.targets,
+                                                                                 ArraySchema,
+                                                                                 verbose):
             return False
 
         return True
