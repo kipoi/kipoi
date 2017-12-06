@@ -188,8 +188,8 @@ def test_pull_kipoi():
     """Test that pull indeed pulls the right model
     """
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "pull",
-            "MaxEntScan"]
+            "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/MaxEntScan/model.yaml'))
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/MaxEntScan/model_files/weights.h5'))
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model.yaml'))
+    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
