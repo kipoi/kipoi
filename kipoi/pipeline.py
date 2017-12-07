@@ -156,8 +156,8 @@ def cli_test(command, raw_args):
     # force the requirements to be installed
 
     # Load the test files from model source
-    with cd(mh.source_dir):
-        mh.pipeline.predict_example(batch_size=args.batch_size)
+    # with cd(mh.source_dir):
+    mh.pipeline.predict_example(batch_size=args.batch_size)
     # if not match:
     #     # logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")
