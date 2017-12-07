@@ -22,8 +22,11 @@ def load_module(path, module_name=None):
     if module_name is None:
         module_name = os.path.basename(path)[:-3]  # omit .py
 
+    logger.debug("loading module: {0} as {1}".format(path, module_name))
     if sys.version_info[0] == 2:
         import imp
+        # add the directory to system's path - allows loading submodules
+        sys.path.append(os.path.join(os.path.dirname(module_name)))
         module = imp.load_source(module_name, path)
     elif sys.version_info[0] == 3:
         # TODO: implement dynamic loading of preprocessor module for python3
