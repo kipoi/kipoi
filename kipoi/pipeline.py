@@ -81,18 +81,20 @@ class Pipeline(object):
     def predict_example(self, batch_size=32, test_equal=False):
         logger.info('Initialized data generator. Running batches...')
 
-        dl = self.dataloader_cls.init_example()
-        logger.info('Returned data schema correct')
+        with cd(self.dataloader_cls.source_dir):
+            dl = self.dataloader_cls.init_example()
+            logger.info('Returned data schema correct')
 
-        it = dl.batch_iter(batch_size=batch_size)
+            it = dl.batch_iter(batch_size=batch_size)
 
-        # test that all predictions go through
-        for i, batch in enumerate(tqdm(it)):
-            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
-                logger.warn("First batch of data is not compatible with the dataloader schema.")
-            self.model.predict_on_batch(batch['inputs'])
+            # test that all predictions go through
+            pred_list = []
+            for i, batch in enumerate(tqdm(it)):
+                if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+                    logger.warn("First batch of data is not compatible with the dataloader schema.")
+                pred_list.append(self.model.predict_on_batch(batch['inputs']))
 
-        # ?TODO? - check that the predicted values match the targets
+        # TODO - check that the predicted values match the model targets
 
         #     if test_equal:
         #         match.append(compare_numpy_dict(y_pred, batch['targets'], exact=False))
@@ -102,6 +104,7 @@ class Pipeline(object):
         #     logger.info("All target values match model predictions")
 
         logger.info('predict_example done!')
+        return numpy_collate_concat(pred_list)
 
     def predict(self, dataloader_kwargs, batch_size=32):
         """
@@ -304,6 +307,7 @@ def cli_predict(command, raw_args):
 
     logger.info('Successfully predictde samples')
 
+
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
@@ -324,7 +328,7 @@ def cli_score_variants(command, raw_args):
     parser.add_argument('-v', '--vcf_path',
                         help='Input VCF.')
     parser.add_argument('-a', '--out_vcf_fpath',
-                        help='Output annotated VCF file path.', default = None)
+                        help='Output annotated VCF file path.', default=None)
     parser.add_argument('-f', '--file_format', default="tsv",
                         choices=["tsv", "hdf5"],
                         help='File format.')
@@ -358,10 +362,10 @@ def cli_score_variants(command, raw_args):
 
     with cd(model.source_dir):
         res = kipoi.variant_effects.predict_snvs(model, vcf_path,
-                           dataloader=Dl, batch_size=32,
-                           dataloader_args=dataloader_arguments,
-                           evaluation_function_kwargs={"diff_type": "diff"},
-                           out_vcf_fpath=out_vcf_fpath)
+                                                 dataloader=Dl, batch_size=32,
+                                                 dataloader_args=dataloader_arguments,
+                                                 evaluation_function_kwargs={"diff_type": "diff"},
+                                                 out_vcf_fpath=out_vcf_fpath)
 
     # tabular files
     if args.file_format in ["tsv"]:
@@ -380,8 +384,6 @@ def cli_score_variants(command, raw_args):
         deepdish.io.save(args.output, res)
 
     logger.info('Successfully predicted samples')
-
-
 
 
 def io_batch2df(batch, pred_batch):
