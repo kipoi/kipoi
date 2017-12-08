@@ -4,15 +4,18 @@ import related
 import numpy as np
 import enum
 import collections
+from collections import OrderedDict
 import kipoi.conda as kconda
+from kipoi.utils import unique_list, yaml_ordered_dump
 from kipoi.metadata import GenomicRanges
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 import six
-# TODO additionally validate the special type properties
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 # --------------------------------------------
+# TODO additionally validate the special type properties - ???
+
 # Abstract classes & Mixins for models defined using related
 
 
@@ -498,8 +501,10 @@ class DataLoaderArgument(RelatedConfigMixin):
 
 @related.immutable
 class Dependencies(object):
-    conda = related.SequenceField(str, default=[], required=False)
-    pip = related.SequenceField(str, default=[], required=False)
+    conda = related.SequenceField(str, default=[], required=False, repr=True)
+    pip = related.SequenceField(str, default=[], required=False, repr=True)
+    # not really required
+    conda_channels = related.SequenceField(str, default=[], required=False, repr=True)
 
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
@@ -520,6 +525,46 @@ class Dependencies(object):
     def install(self, dry_run=False):
         self.install_conda(dry_run)
         self.install_pip(dry_run)
+
+    def merge(self, dependencies):
+        """Merge one dependencies with another one
+
+        Use case: merging the dependencies of model and dataloader
+
+        Args:
+          dependencies: Dependencies instance
+
+        Returns:
+          new Dependencies instance
+        """
+        return Dependencies(
+            conda=unique_list(list(self.conda) + list(dependencies.conda)),
+            pip=kconda.normalize_pip(list(self.pip) + list(dependencies.pip)),
+            conda_channels=unique_list(list(self.conda_channels) + list(dependencies.conda_channels))
+        )
+
+    def to_env_dict(self, env_name):
+        channels, packages = list(zip(*map(kconda.parse_conda_package, self.conda)))
+        env_dict = OrderedDict(
+            name=env_name,
+            channels=unique_list(list(self.conda_channels) + list(channels)),
+            dependencies=list(packages) + [OrderedDict(pip=kconda.normalize_pip(self.pip))]
+        )
+        return env_dict
+
+    def to_env_file(self, env_name, path):
+        """Dump the dependencies to a file
+        """
+        with open(path, 'w') as f:
+            f.write(yaml_ordered_dump(self.to_env_dict(env_name),
+                                      indent=4,
+                                      default_flow_style=False))
+
+    # @classmethod
+    # def from_file(cls, path):
+    #     """TODO instantiate Dependencies from a yaml file
+    #     """
+    #     pass
 
 
 # --------------------------------------------

@@ -11,10 +11,12 @@ import sys
 import subprocess
 from subprocess import Popen, PIPE, STDOUT
 from collections import OrderedDict
-from kipoi.utils import yaml_ordered_dump
+from kipoi.utils import yaml_ordered_dump, unique_list
+import six
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
 
 class CondaError(Exception):
     "General Conda error"
@@ -60,6 +62,8 @@ def create_env_from_file(env_file):
 def install_conda(conda_deps):
     conda_deps_wo_python = [x for x in conda_deps if "python" != x[:6]]
     if conda_deps_wo_python:
+        # TODO - parse the conda channel notation
+        # conda_deps_wo_python = [x for x in conda_deps_wo_python]
         cmd_list = ["install", "-y"] + conda_deps_wo_python
         return _call_conda(cmd_list, use_stdout=True)
 
@@ -127,3 +131,60 @@ def _call_and_parse(extra_args):
         raise Exception('conda %r:\nSTDERR:\n%s\nEND' % (extra_args,
                                                          stderr.decode()))
     return json.loads(stdout.decode())
+
+
+def parse_conda_package(dep):
+    """Parse conda package into channel and environment
+
+    Args:
+      dep: string in the form '<channel>::<package>' or '<package>'
+
+    Returns:
+      tuple: ('<channel>', '<package>') or ('defaults', '<package>')
+    """
+    if "::" in dep:
+        try:
+            channel, package = dep.split("::")
+        except ValueError:
+            raise ValueError("The conda dependency: {0} couldn't be properly parsed. ".format(dep) +
+                             "Use the following synthax: <channel>::<package> or <package>")
+        return (channel, package)
+    else:
+        return ("defaults", dep)
+
+
+def normalize_pip(pip_list):
+    """Normalize a list of pip dependencies
+
+    Args:
+      pip_list: list of pip dependencies
+
+    Returns:
+      normalized pip
+    """
+    def version_split(s, delimiters={"=", ">", "<"}):
+        """Split the string by the version:
+        mypacakge<=2.4,==2.4 -> (mypacakge, <=2.4,==2.4)
+
+        In [40]: version_split("asdsda>=2.4,==2")
+        Out[40]: ('asdsda', ['>=2.4', '==2'])
+
+        In [41]: version_split("asdsda>=2.4")
+        Out[41]: ('asdsda', ['>=2.4'])
+
+        In [42]: version_split("asdsda")
+        Out[42]: ('asdsda', [])
+        """
+        for i, c in enumerate(s):
+            if c in delimiters:
+                return (s[:i], s[i:].split(","))
+        return (s, [])
+
+    d_list = OrderedDict()
+    for d in pip_list:
+        package, versions = version_split(d)
+        if package in d_list:
+            d_list[package] = unique_list(d_list[package] + versions)
+        else:
+            d_list[package] = versions
+    return [package + ",".join(versions) for package, versions in six.iteritems(d_list)]

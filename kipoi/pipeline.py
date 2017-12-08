@@ -234,8 +234,7 @@ def cli_predict(command, raw_args):
                         help="Dataloader name. If not specified, the model's default" +
                         "DataLoader will be used")
     parser.add_argument('--dataloader_source', default="kipoi",
-                        help="Dataloader source. If not specified, the model's default" +
-                        "DataLoader will be used")
+                        help="Dataloader source")
     parser.add_argument('--dataloader_args',
                         help="Dataloader arguments either as a json string:" +
                         "'{\"arg1\": 1} or as a file path to a json file")
@@ -320,8 +319,7 @@ def cli_score_variants(command, raw_args):
                         help="Dataloader name. If not specified, the model's default" +
                         "DataLoader will be used")
     parser.add_argument('--dataloader_source', default="kipoi",
-                        help="Dataloader source. If not specified, the model's default" +
-                        "DataLoader will be used")
+                        help="Dataloader source")
     parser.add_argument('--dataloader_args',
                         help="Dataloader arguments either as a json string:" +
                         "'{\"arg1\": 1} or as a file path to a json file")
@@ -417,9 +415,11 @@ def cli_pull(command, raw_args):
     """
     assert command == "pull"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
-                                     description="Downloads the directory associated with the model.")
+                                     description="Downloads the directory" +
+                                     " associated with the model.")
     parser.add_argument('model', help='Model name.')
     add_arg_source(parser)
+    # TODO add the conda functionality
     args = parser.parse_args(raw_args)
 
     kipoi.config.get_source(args.source).pull_model(args.model)

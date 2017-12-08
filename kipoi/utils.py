@@ -17,6 +17,10 @@ logger.addHandler(logging.NullHandler())
 
 def load_module(path, module_name=None):
     """Load python module from file
+
+    Args:
+       path: python file path
+       module_name: import as `module_name` name. If none, use `path[:3]`
     """
     assert path.endswith(".py")
     if module_name is None:
@@ -209,5 +213,14 @@ def du(path):
     except:
         return "NA"
 
+
 class Slice_conv:
-    def __getitem__(self, key): return key
+
+    def __getitem__(self, key):
+        return key
+
+
+def unique_list(seq):
+    """Modified version of Dave Kirby solution"""
+    seen = set()
+    return [x for x in seq if x not in seen and not seen.add(x)]
