@@ -12,6 +12,101 @@ import os
 import warnings
 from kipoi.components import PostProcType
 
+
+
+class Reshape_dna(object):
+    def __init__(self, in_shape):
+        in_shape = np.array(in_shape)
+        none_pos = np.in1d(in_shape, None)
+        if np.any(none_pos) and (np.where(none_pos)[0][0] != 0):
+            raise Exception("Unexpected 'None' shape in other dimension than the first!")
+        else:
+            in_shape = in_shape[~none_pos]
+        #
+        self.in_shape = in_shape
+        dummy_dimensions = in_shape == 1
+        #
+        # Imitate np.squeeze() in self.to_standard()
+        in_shape = in_shape[in_shape != 1]
+        #
+        if in_shape.shape[0] != 2:
+            raise Exception("Invalid DNA shape definition definition!")
+        #
+        one_hot_dim = in_shape == 4
+        if one_hot_dim.sum() != 1:
+            raise Exception("Could not find 1-hot encoded dimension!")
+        #
+        seq_len_dim = (in_shape != 1) & (~one_hot_dim)
+        if seq_len_dim.sum() != 1:
+            raise Exception("Could not find sequence length dimension!")
+        #
+        dummy_dimensions = np.where(dummy_dimensions)[0]
+        one_hot_dim = np.where(one_hot_dim)[0][0]
+        seq_len_dim = np.where(seq_len_dim)[0][0]
+        #
+        self.dummy_dimensions = dummy_dimensions
+        self.one_hot_dim = one_hot_dim
+        self.seq_len_dim = seq_len_dim
+        self.seq_len = in_shape[seq_len_dim]
+        self.reshape_needed = True
+        if (len(dummy_dimensions) == 0) and (one_hot_dim == 1) and (seq_len_dim == 0):
+            self.reshape_needed = False
+    #
+    def get_seq_len(self):
+        return self.seq_len
+    #
+    def to_standard(self, in_array):
+        """
+        :param in_array: has to have the sequence samples in the 0th dimension 
+        :return: 
+        """
+        #
+        #  is there an actual sequence sample axis?
+        additional_axis = len(in_array.shape) - len(self.in_shape)
+        if (additional_axis != 1) or (in_array.shape[1:] != tuple(self.in_shape)):
+            raise Exception("Expecting the 0th dimension to be the sequence samples or general array mismatch!")
+        #
+        if not self.reshape_needed:
+            return in_array
+        squeezed = in_array
+        #
+        # Iterative removal of dummy dimensions has to start from highest dimension
+        for d in sorted(self.dummy_dimensions)[::-1]:
+            squeezed = np.squeeze(squeezed, axis = d+additional_axis)
+        #check that the shape is now as expected:
+        one_hot_dim_here = additional_axis + self.one_hot_dim
+        seq_len_dim_here = additional_axis + self.seq_len_dim
+        if squeezed.shape[one_hot_dim_here] != 4:
+            raise Exception("Input array does not follow the input definition!")
+        #
+        if squeezed.shape[seq_len_dim_here] != self.seq_len:
+            raise Exception("Input array sequence length does not follow the input definition!")
+        #
+        if self.one_hot_dim != 1:
+            assert (self.seq_len_dim == 1) # Anything else would be weird...
+            squeezed = squeezed.swapaxes(one_hot_dim_here,seq_len_dim_here)
+        return squeezed
+    #
+    def from_standard(self, in_array):
+        if not self.reshape_needed:
+            return in_array
+        #
+        assumed_additional_axis = 1
+        #
+        if in_array.shape[1:] != (self.seq_len, 4):
+            raise Exception("Input array doesn't agree with standard format (n_samples, seq_len, 4)!")
+        #
+        one_hot_dim_here = assumed_additional_axis + self.one_hot_dim
+        seq_len_dim_here = assumed_additional_axis + self.seq_len_dim
+        if self.one_hot_dim != 1:
+            in_array = in_array.swapaxes(one_hot_dim_here, seq_len_dim_here)
+        #
+        if len(self.dummy_dimensions) != 0:
+            for d in self.dummy_dimensions:
+                in_array = np.expand_dims(in_array,d+assumed_additional_axis)
+        return in_array
+
+
 def _get_seq_len(input_data):
     if isinstance(input_data, (list, tuple)):
         return input_data[0].shape
@@ -106,7 +201,7 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols=range(len(colnames)))
     vcf.columns = colnames
     # Subset the VCF to SNVs:
-    vcf = vcf.loc[(vcf["ref"].str.len() == 1) &(vcf["ref"].str.len() == 1),:]
+    vcf = vcf.loc[(vcf["ref"].str.len() == 1) &(vcf["alt"].str.len() == 1),:]
     vcf["chrom"] = "chr" + vcf["chrom"].str.lstrip("chr")
     seq_length_half = int(seq_length / 2)
     l_offset = seq_length_half
@@ -127,8 +222,10 @@ def _bed3(regions, fpath):
     regions_0based[["chrom", "start", "end"]].to_csv(fpath, sep="\t", header=False, index=False)
 
 
-def _process_sequence_set(input_set, preproc_conv, allele, s_dir):
+def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo= None):
     # make sure the sequence objects have the correct length (acording to the ranges specifications)
+    if array_trafo is not None:
+        input_set = array_trafo.to_standard(input_set)
     assert input_set.shape[1] == \
            (preproc_conv["end"] - preproc_conv["start"] + 1).values[0]
     # Modify bases according to allele
@@ -142,10 +239,12 @@ def _process_sequence_set(input_set, preproc_conv, allele, s_dir):
     # generate reverse complement if needed
     if s_dir == "rc":
         input_set = input_set[:, ::-1, ::-1]
+    if array_trafo is not None:
+        input_set = array_trafo.from_standard(input_set)
     return input_set
 
 
-def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions):
+def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions, array_trafo= None):
     # annotated_regions comes from the vcf file
     # This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
     # return a dictionary of which the keys are compliant with evaluation_function arguments
@@ -195,7 +294,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
         if "strand" in ranges_input_obj:
             preproc_out_ranges["strand"] = ranges_input_obj["strand"]
         else:
-            preproc_out_ranges["strand"] = ["*"] * len(ranges_input_obj["chrom"])
+            preproc_out_ranges["strand"] = ["*"] * len(ranges_input_obj["chr"])
         #
         preproc_out_ranges = pd.DataFrame(preproc_out_ranges)
         #
@@ -213,17 +312,17 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
             if isinstance(dataloader.output_schema.inputs, dict):
                 if seq_key not in input_set[k]:
                     raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
-                input_set[k][seq_key] = _process_sequence_set(input_set[k][seq_key], preproc_conv, allele, s_dir)
+                input_set[k][seq_key] = _process_sequence_set(input_set[k][seq_key], preproc_conv, allele, s_dir, array_trafo)
             elif isinstance(dataloader.output_schema.inputs, list):
                 modified_set = []
                 for seq_el, input_schema_el in zip(input_set[k], dataloader.output_schema.inputs):
                     if input_schema_el.name == seq_key:
-                        modified_set.append(_process_sequence_set(seq_el, preproc_conv, allele, s_dir))
+                        modified_set.append(_process_sequence_set(seq_el, preproc_conv, allele, s_dir, array_trafo))
                     else:
                         modified_set.append(seq_el)
                 input_set[k] = modified_set
             else:
-                input_set[k] = _process_sequence_set(input_set[k], preproc_conv, allele, s_dir)
+                input_set[k] = _process_sequence_set(input_set[k], preproc_conv, allele, s_dir, array_trafo)
     #
     # Reformat so that effect prediction function will get its required inputs
     pred_set = {"ref": input_set["fwd_ref"], "ref_rc": input_set["rc_ref"], "alt": input_set["fwd_alt"], "alt_rc": input_set["rc_alt"]}
@@ -238,9 +337,12 @@ def _modify_bases(seq_obj, lines, pos, base, is_rc):
     alphabet = np.array(['A', "C", "G", "T"])
     base_sel = np.where(alphabet[None, :] == base[:, None])
     base_sel_idx = base_sel[1][np.argsort(base_sel[0])]
+    pos = copy.deepcopy(pos)
     if is_rc.sum() != 0:
-        pos[is_rc] = seq_obj.shape[1] - pos[is_rc] - 1
-        base_sel_idx[is_rc] = alphabet.shape[0] - base_sel_idx[is_rc] - 1
+        # is_rc is given relative to the input data, so it as to be transferred back into the variant definition order.
+        is_rc_corr = is_rc[lines]
+        pos[is_rc_corr] = seq_obj.shape[1] - pos[is_rc_corr] - 1
+        base_sel_idx[is_rc_corr] = alphabet.shape[0] - base_sel_idx[is_rc_corr] - 1
     # Reset the base which was there from the preprocessor
     seq_obj[lines, pos, :] = 0
     # Set the allele
@@ -282,6 +384,15 @@ def _get_seq_length(dataloader, seq_field):
     if len(shape) != 1:
         raise Exception("DNA sequence output shape not well defined! %s"%str(orig_shape))
     return shape[0]
+
+def _get_seq_shape(dataloader, seq_field):
+    if isinstance(dataloader.output_schema.inputs, dict):
+        orig_shape = dataloader.output_schema.inputs[seq_field].shape
+    elif isinstance(dataloader.output_schema.inputs, list):
+        orig_shape = [x.shape for x in dataloader.output_schema.inputs if x.name == seq_field][0]
+    else:
+        orig_shape = dataloader.output_schema.inputs.shape
+    return orig_shape
 
 
 def predict_snvs(model,
@@ -325,12 +436,15 @@ def predict_snvs(model,
 
 
     seq_fields = _get_seq_fields(model)
-    seq_lengths = set([_get_seq_length(dataloader, seq_field) for seq_field in seq_fields])
+    seq_shapes = set([_get_seq_shape(dataloader, seq_field) for seq_field in seq_fields])
 
-    if len(seq_lengths) > 1:
+    if len(seq_shapes) > 1:
         raise Exception("DNA sequence output shapes must agree for fields: %s"%str(seq_fields))
-    else:
-        seq_length = list(seq_lengths)[0]
+
+    seq_shape = list(seq_shapes)[0]
+
+    dna_seq_trafo = Reshape_dna(seq_shape)
+    seq_length = dna_seq_trafo.get_seq_len()
 
     regions = _vcf_to_regions(vcf_fpath, seq_length)
     temp_bed3_file = tempfile.mktemp()  # file path of the temp file
@@ -375,7 +489,7 @@ def predict_snvs(model,
 
     # test that all predictions go through
     for i, batch in enumerate(tqdm(it)):
-        eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, regions)
+        eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, regions, array_trafo = dna_seq_trafo)
         if evaluation_function_kwargs is not None:
             assert isinstance(evaluation_function_kwargs, dict)
             for k in evaluation_function_kwargs:
