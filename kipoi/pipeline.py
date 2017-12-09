@@ -8,6 +8,7 @@ import os
 import yaml
 from .utils import parse_json_file_str, cd
 import kipoi  # for .config module
+from kipoi.cli_parser import add_model, add_dataloader, add_dataloader_main
 from .data import numpy_collate_concat
 # import h5py
 # import six
@@ -54,14 +55,6 @@ def install_model_requirements(model, source="kipoi", and_dataloaders=False):
 
 def install_dataloader_requirements(dataloader, source="kipoi"):
     kipoi.get_source(source).get_model_descr(dataloader).dependencies.install()
-
-
-def add_arg_source(parser, default="kipoi"):
-    parser.add_argument('--source', default=default,
-                        choices=list(kipoi.config.model_sources().keys()),
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
-                        " under model_sources. " +
-                        "'dir' is an additional source referring to the local folder.")
 
 
 class Pipeline(object):
@@ -142,8 +135,7 @@ def cli_test(command, raw_args):
     # setup the arg-parsing
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions')
-    parser.add_argument('model', help='Model name.')
-    add_arg_source(parser, default="dir")
+    add_model(parser, source="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-i", "--install_req", action='store_true',
@@ -171,11 +163,7 @@ def cli_extract_to_hdf5(command, raw_args):
     assert command == "preproc"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the dataloader and save the output to an hdf5 file.')
-    parser.add_argument('model', help='Model name.')
-    add_arg_source(parser)
-    parser.add_argument('--dataloader_args',
-                        help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
-                        "as a file path to a json file")
+    add_dataloader_main(parser, with_args=True)
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in data loading')
     parser.add_argument("-i", "--install_req", action='store_true',
@@ -228,16 +216,8 @@ def cli_predict(command, raw_args):
     assert command == "predict"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Run the model prediction.')
-    parser.add_argument('model', help='Model name.')
-    add_arg_source(parser)
-    parser.add_argument('--dataloader', default=None,
-                        help="Dataloader name. If not specified, the model's default" +
-                        "DataLoader will be used")
-    parser.add_argument('--dataloader_source', default="kipoi",
-                        help="Dataloader source")
-    parser.add_argument('--dataloader_args',
-                        help="Dataloader arguments either as a json string:" +
-                        "'{\"arg1\": 1} or as a file path to a json file")
+    add_model(parser)
+    add_dataloader(parser, with_args=True)
     parser.add_argument('-f', '--file_format', default="tsv",
                         choices=["tsv", "bed", "hdf5"],
                         help='File format.')
@@ -313,16 +293,8 @@ def cli_score_variants(command, raw_args):
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
-    parser.add_argument('model', help='Model name.')
-    add_arg_source(parser)
-    parser.add_argument('--dataloader', default=None,
-                        help="Dataloader name. If not specified, the model's default" +
-                        "DataLoader will be used")
-    parser.add_argument('--dataloader_source', default="kipoi",
-                        help="Dataloader source")
-    parser.add_argument('--dataloader_args',
-                        help="Dataloader arguments either as a json string:" +
-                        "'{\"arg1\": 1} or as a file path to a json file")
+    add_model(parser)
+    add_dataloader(parser, with_args=True)
     parser.add_argument('-v', '--vcf_path',
                         help='Input VCF.')
     parser.add_argument('-a', '--out_vcf_fpath',
@@ -418,7 +390,7 @@ def cli_pull(command, raw_args):
                                      description="Downloads the directory" +
                                      " associated with the model.")
     parser.add_argument('model', help='Model name.')
-    add_arg_source(parser)
+    add_source(parser)
     # TODO add the conda functionality
     args = parser.parse_args(raw_args)
 
