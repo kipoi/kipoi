@@ -557,7 +557,7 @@ class Dependencies(object):
         """
         with open(path, 'w') as f:
             f.write(yaml_ordered_dump(self.to_env_dict(env_name),
-                                      indent=4,
+                                      indent=2,
                                       default_flow_style=False))
 
     # @classmethod

@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# TODO - optionally don't pull the recent files?
+
 def get_component_file(component_dir, which="model"):
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"])
 

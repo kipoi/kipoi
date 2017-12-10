@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from kipoi import pipeline
+from kipoi import pipeline, cli_env
 
 import argparse
 import sys
@@ -34,6 +34,7 @@ command_functions = {
     'score_variants': pipeline.cli_score_variants,
     'test': pipeline.cli_test,
     'pull': pipeline.cli_pull,
+    'env': cli_env.main
 }
 commands_str = ', '.join(command_functions.keys())
 
