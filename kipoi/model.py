@@ -127,6 +127,7 @@ def load_model_custom(file, object):
 
 
 class GradientMixin():
+
     def input_grad(self, x, layer, filter_ind):
         raise NotImplementedError
 

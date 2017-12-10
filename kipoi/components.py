@@ -520,7 +520,8 @@ class Dependencies(object):
         if dry_run:
             return
         else:
-            kconda.install_conda(self.conda)
+            channels, packages = self._get_channels_packages()
+            kconda.install_conda(packages, channels)
 
     def install(self, dry_run=False):
         self.install_conda(dry_run)
@@ -543,12 +544,20 @@ class Dependencies(object):
             conda_channels=unique_list(list(self.conda_channels) + list(dependencies.conda_channels))
         )
 
-    def to_env_dict(self, env_name):
+    def _get_channels_packages(self):
+        """Get conda channels and packages separated from each other (by '::')
+        """
         channels, packages = list(zip(*map(kconda.parse_conda_package, self.conda)))
+        channels = unique_list(list(self.conda_channels) + list(channels))
+        packages = unique_list(list(packages))
+        return channels, packages
+
+    def to_env_dict(self, env_name):
+        channels, packages = self._get_channels_packages()
         env_dict = OrderedDict(
             name=env_name,
-            channels=unique_list(list(self.conda_channels) + list(channels)),
-            dependencies=list(packages) + [OrderedDict(pip=kconda.normalize_pip(self.pip))]
+            channels=channels,
+            dependencies=packages + [OrderedDict(pip=kconda.normalize_pip(self.pip))]
         )
         return env_dict
 

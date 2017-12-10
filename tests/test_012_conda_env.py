@@ -1,6 +1,5 @@
 """Test conda env installation
 """
-
 from collections import OrderedDict
 import pytest
 import kipoi
@@ -48,7 +47,6 @@ def test_Dependencies_merge():
     assert dep_merged.conda_channels == []
 
 
-# TODO - pytest run in a special conda environment for other CLI tests
 def test_create_env():
     dependencies = ["python=3.6", "numpy",
                     OrderedDict(pip=["tqdm"])
@@ -73,6 +71,8 @@ def test_create_env_wrong_dependencies():
 
 
 def test_install():
+    # TODO - write a conda installation test with a certain channel
+    # TODO - add a conda channels for installing
     conda_deps = ["python=3.6", "jedi"]
     pip_deps = ["tqdm"]
 

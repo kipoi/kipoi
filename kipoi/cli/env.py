@@ -1,25 +1,76 @@
 """Command line interface for kipoi env
 """
-import kipoi
-import sys
+from __future__ import absolute_import
+from __future__ import print_function
+
 import os
 import argparse
+import subprocess
+import kipoi
+from kipoi.cli.parser_utils import add_model, add_dataloader
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-from kipoi.cli_parser import add_source, add_model, add_dataloader
 
 
 def replace_slash(s, replace_with="|"):
     return s.replace("/", replace_with)
 
 
-def env_parser():
-    pass
+def conda_env_name(model_name, dataloader_name):
+    """Create a conda env name
+    """
+    model_name = os.path.normpath(model_name)
+    dataloader_name = os.path.normpath(dataloader_name)
+
+    if dataloader_name == model_name:
+        return "kipoi-{0}".format(replace_slash(model_name))
+    else:
+        return "kipoi-{0}-{1}".format(replace_slash(model_name),
+                                      replace_slash(dataloader_name))
 
 
-def export(cmd, raw_args):
+def export_env(env_file, model, source, dataloader=None, dataloader_source="kipoi", env=None):
+    """Write a conda environment file. Helper function for the cli_export and cli_create.
+
+    Args:
+      env_file: Output environment file path
+      model: model name
+      source: model source name
+      dataloader: dataloader name
+      dataloader_source: source for the dataloader
+      env: env name for the environment. If None, it will be automatically inferred.
+
+    Returns:
+      env name.
+    """
+    logger.info("Loading model: {0} description".format(model))
+    model_descr = kipoi.get_model_descr(model, source)
+
+    # handle the dataloader=None case
+    if dataloader is None:
+        dataloader = os.path.normpath(os.path.join(model,
+                                                   model_descr.default_dataloader))
+        dataloader_source = source
+        logger.info("Inferred dataloader name: {0} from".format(dataloader) +
+                    " the model.")
+
+    # specify the default environment
+    if env is None:
+        env = conda_env_name(model, dataloader)
+
+    logger.info("Environment name: {0}".format(env))
+    logger.info("Output env file: {0}".format(env_file))
+
+    dataloader_descr = kipoi.get_dataloader_descr(dataloader, dataloader_source)
+
+    deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
+    deps.to_env_file(env, env_file)
+    logger.info("Done writing the environment file!")
+    return env
+
+
+def cli_export(cmd, raw_args):
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Export the environment.yaml file for a specific model.'
@@ -31,37 +82,20 @@ def export(cmd, raw_args):
     parser.add_argument('-e', '--env', default=None,
                         help="Environment name")
     args = parser.parse_args(raw_args)
-    logger.info("Loading model: {0} description".format(args.model))
-    model_descr = kipoi.get_model_descr(args.model, args.source)
+    env = export_env(args.output,
+                     args.model,
+                     args.source,
+                     args.dataloader,
+                     args.dataloader_source,
+                     args.env)
 
-    # handle the dataloader=None case
-    if args.dataloader is None:
-        args.dataloader = os.path.normpath(os.path.join(args.model,
-                                                        model_descr.default_dataloader))
-        args.dataloader_source = args.source
-        logger.info("Inferred dataloader name: {0} from".format(args.dataloader) +
-                    " the model.")
-
-    # specify the default environment
-    if args.env is None:
-        args.env = "kipoi-{0}-{1}".format(args.model, args.dataloader)
-    # normalize the path
-    args.env = replace_slash(args.env)
-
-    logger.info("Environment name: {0}".format(args.env))
-    logger.info("Output fule: {0}".format(args.output))
-
-    dataloader_descr = kipoi.get_dataloader_descr(args.dataloader, args.dataloader_source)
-
-    deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
-    deps.to_env_file(args.env, args.output)
-    logger.info("Done!")
+    print("Activate the environment with:")
+    print("source activate {0}".format(env))
 
 
-def create(cmd, raw_args):
+def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
-    # TODO - duplicated with export()
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -71,45 +105,40 @@ def create(cmd, raw_args):
     parser.add_argument('-e', '--env', default=None,
                         help="Special environment name. default: kipoi-<model>-<dataloader>")
     args = parser.parse_args(raw_args)
-    logger.info("Loading model: {0} description".format(args.model))
-    model_descr = kipoi.get_model_descr(args.model, args.source)
 
-    # handle the dataloader=None case
-    if args.dataloader is None:
-        args.dataloader = os.path.normpath(os.path.join(args.model,
-                                                        model_descr.default_dataloader))
-        args.dataloader_source = args.source
-        logger.info("Inferred dataloader name: {0} from".format(args.dataloader) +
-                    " the model.")
-
-    # specify the default environment
-    if args.env is None:
-        args.env = "kipoi-{0}-{1}".format(args.model, args.dataloader)
-    # normalize the path
-    args.env = replace_slash(args.env)
-    logger.info("Environment name: {0}".format(args.env))
-
-    dataloader_descr = kipoi.get_dataloader_descr(args.dataloader, args.dataloader_source)
-
-    deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
+    # create the tmp dir
     tmp_file = "/tmp/kipoi/envfiles/{0}.yml".format(args.env)
     os.makedirs(os.path.dirname(tmp_file), exist_ok=True)
+
+    # write the env file
     logger.info("Writing environment file: {0}".format(tmp_file))
-    deps.to_env_file(args.env, tmp_file)
+    export_env(tmp_file,
+               args.model,
+               args.source,
+               args.dataloader,
+               args.dataloader_source,
+               args.env)
+
+    # setup the conda env from file
     logger.info("Creating conda env from file")
     kipoi.conda.create_env_from_file(tmp_file)
     logger.info("Done!")
 
 
-def ls(cmd, raw_args):
+def cli_list(cmd, raw_args):
     """List all kipoi-induced conda environments
     """
-    dtm = kipoi.list_models()
-    for m in list(dtm.source.str.cat(dtm.model, sep=":")):
-        print(m)
+    print("# Kipoi environments:")
+    subprocess.call("conda env list | grep ^kipoi | cut -f 1 -d ' '", shell=True)
 
 
-def activate(cmd, raw_args):
+def cli_activate_test(cmd, raw_args):
+    """side function for debugging the activate() fn
+    """
+    subprocess.call("/bin/bash -i source activate py27", shell=True)
+
+
+def cli_activate(cmd, raw_args):
     """Activate a conda environment for a particular model
     """
     # TODO - fix this function
@@ -140,25 +169,26 @@ def activate(cmd, raw_args):
     args.env = replace_slash(args.env)
     logger.info("Environment name: {0}".format(args.env))
     # TODO - source activate
-    import subprocess
-    # TODO - get the environmetn variable
-    p = subprocess.Popen("which python", shell=True, executable='/bin/zsh')
-    stdout, stderr = p.communicate()
-    print(stdout)
-    # TODO - get current shell
-    p = subprocess.Popen(["/bin/bash", "-i", "-c", "source", "activate", args.env],
-                         shell=True,
-                         stdout=subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    subprocess.call("source activate " + args.env, shell=True)
+    # # TODO - get the environmetn variable
+
+    # p = subprocess.Popen("which python", shell=True, executable='/bin/zsh')
+    # stdout, stderr = p.communicate()
+    # print(stdout)
+    # # TODO - get current shell
+    # p = subprocess.Popen(["/bin/bash", "-i", "-c", "source", "activate", args.env],
+    #                      shell=True,
+    #                      stdout=subprocess.PIPE)
+    # stdout, stderr = p.communicate()
 
     # kipoi.conda._call_command("source", ["activate", args.env])
 
 
 command_functions = {
-    'export': export,
-    'create': create,
-    'ls': ls,
-    'activate': activate,
+    'export': cli_export,
+    'create': cli_create,
+    'list': cli_list,
+    'activate': cli_activate_test,
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -166,17 +196,16 @@ parser = argparse.ArgumentParser(
     description='Kipoi model-zoo command line tool',
     usage='''kipoi env <command> [-h] ...
 
-    Available sub-commands:
-
+    # Available sub-commands:
     export       Export the environment.yaml file for a specific model
     create       Create a conda environment for a model
-    ls           List all kipoi-induced conda environments
+    list         List all kipoi-induced conda environments
     activate     Activate a conda environment for a particular model
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
 
-def main(command, raw_args):
+def cli_main(command, raw_args):
     args = parser.parse_args(raw_args[0:1])
     if args.command not in command_functions:
         parser.print_help()

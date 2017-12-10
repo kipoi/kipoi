@@ -59,12 +59,21 @@ def create_env_from_file(env_file):
     return _call_conda(cmd_list, use_stdout=True)
 
 
-def install_conda(conda_deps):
+def install_conda(conda_deps, channels=["defaults"]):
+    """Install conda packages
+
+    Args:
+      conda_deps: list of conda packages to be installed
+      channels: list of conda channels to use
+    """
     conda_deps_wo_python = [x for x in conda_deps if "python" != x[:6]]
     if conda_deps_wo_python:
-        # TODO - parse the conda channel notation
-        # conda_deps_wo_python = [x for x in conda_deps_wo_python]
-        cmd_list = ["install", "-y"] + conda_deps_wo_python
+        cmd_list = ["install", "-y"]
+        if channels:
+            cmd_list += ["-c", ",".join(channels), "--override-channels"]
+            # `--override-channels` is here in order to increase reproducibility
+            # on different computers with different ~/.condarc file
+        cmd_list += conda_deps_wo_python
         return _call_conda(cmd_list, use_stdout=True)
 
 

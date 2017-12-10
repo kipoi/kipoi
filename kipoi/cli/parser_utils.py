@@ -1,8 +1,12 @@
-"""CLI parser convenience methods
+"""Utility functions for CLI parsing
 """
-import kipoi
-import argparse
+from __future__ import absolute_import
+from __future__ import print_function
 
+import kipoi
+
+
+# parsers
 
 def add_source(parser, default="kipoi"):
     parser.add_argument('--source', default=default,
