@@ -78,8 +78,8 @@ def cli_preproc(command, raw_args):
     # --------------------------------------------
     # install args
     if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model, args.source)
-    Dataloader = kipoi.get_dataloader_factory(args.model, args.source)
+        kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
+    Dataloader = kipoi.get_dataloader_factory(args.dataloader, args.source)
 
     dataloader = Dataloader(**dataloader_kwargs)
 

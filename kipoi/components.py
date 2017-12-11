@@ -547,6 +547,8 @@ class Dependencies(object):
     def _get_channels_packages(self):
         """Get conda channels and packages separated from each other (by '::')
         """
+        if len(self.conda) == 0:
+            return self.conda_channels, self.conda
         channels, packages = list(zip(*map(kconda.parse_conda_package, self.conda)))
         channels = unique_list(list(self.conda_channels) + list(channels))
         packages = unique_list(list(packages))
