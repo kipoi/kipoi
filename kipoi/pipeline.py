@@ -356,6 +356,20 @@ def cli_score_variants(command, raw_args):
     else:
         Dl = model.default_dataloader
 
+    if not os.path.exists(vcf_path):
+        raise Exception("VCF file does not exist: %s"%vcf_path)
+
+    vcf_path = os.path.abspath(vcf_path)
+    out_vcf_fpath = os.path.abspath(out_vcf_fpath)
+
+    # if it could be a path, check if it exists and in that case get the abspath
+    for k in dataloader_arguments:
+        if type(dataloader_arguments[k]) == str:
+            if os.path.exists(dataloader_arguments[k]):
+                dataloader_arguments[k] = os.path.abspath(dataloader_arguments[k])
+
+
+
     with cd(model.source_dir):
         res = kipoi.variant_effects.predict_snvs(model, vcf_path,
                            dataloader=Dl, batch_size=32,

@@ -202,7 +202,7 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     vcf.columns = colnames
     # Subset the VCF to SNVs:
     vcf = vcf.loc[(vcf["ref"].str.len() == 1) &(vcf["alt"].str.len() == 1),:]
-    vcf["chrom"] = "chr" + vcf["chrom"].str.lstrip("chr")
+    vcf["chrom"] = "chr" + vcf["chrom"].astype(str).str.lstrip("chr")
     seq_length_half = int(seq_length / 2)
     l_offset = seq_length_half
     r_offset = seq_length_half - 1 + seq_length % 2
@@ -554,7 +554,7 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
     # Write VCF records to the output file
     for record in vcf_reader:
         # Assemble line id as before for bed file generation
-        line_id = record.CHROM + id_delim + str(record.POS) + id_delim + str(record.REF) + id_delim + str(record.ALT[0])
+        line_id = "chr" + str(record.CHROM).lstrip("chr") + id_delim + str(record.POS) + id_delim + str(record.REF) + id_delim + str(record.ALT[0])
         for k in predictions:
             # In case there is a pediction for this line, annotate the vcf...
             if line_id in predictions[k].index:
