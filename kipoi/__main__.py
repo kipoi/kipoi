@@ -39,6 +39,7 @@ parser = argparse.ArgumentParser(
     usage='''kipoi <command> [-h] ...
 
     # Kipoi model-zoo command line tool. Available sub-commands:
+    ls               List all the available models
     predict          Run the model prediction.
     pull             Downloads the directory associated with the model
     preproc          Returns an hdf5 array.

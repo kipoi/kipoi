@@ -457,4 +457,4 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":"):
                 record.INFO[info_tag] = "|".join([str(pred) for pred in preds])
         vcf_writer.write_record(record)
     vcf_writer.close()
-x
+
