@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# TODO - --output is not always required
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
@@ -26,24 +27,23 @@ def cli_score_variants(command, raw_args):
                         help='Input VCF.')
     parser.add_argument('-a', '--out_vcf_fpath',
                         help='Output annotated VCF file path.', default=None)
-    parser.add_argument('-f', '--file_format', default="tsv",
-                        choices=["tsv", "hdf5"],
-                        help='File format.')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
-    parser.add_argument('-o', '--output', required=True,
+    parser.add_argument('-f', '--file_format', default="tsv",
+                        choices=["tsv", "hdf5"],
+                        help='File format.')
+    parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
     args = parser.parse_args(raw_args)
 
-    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
-
+    # extract args for kipoi.variant_effects.predict_snvs
     vcf_path = args.vcf_path
     out_vcf_fpath = args.out_vcf_fpath
-    dataloader_arguments = dataloader_kwargs
+    dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
     # --------------------------------------------
     # install args
@@ -57,16 +57,15 @@ def cli_score_variants(command, raw_args):
     else:
         Dl = model.default_dataloader
 
-    with cd(model.source_dir):
-        res = kipoi.variant_effects.predict_snvs(
-            model,
-            vcf_path,
-            dataloader=Dl,
-            batch_size=args.batch_size,
-            dataloader_args=dataloader_arguments,
-            evaluation_function_kwargs={"diff_type": "diff"},
-            out_vcf_fpath=out_vcf_fpath
-        )
+    res = kipoi.variant_effects.predict_snvs(
+        model,
+        vcf_path,
+        dataloader=Dl,
+        batch_size=args.batch_size,
+        dataloader_args=dataloader_arguments,
+        evaluation_function_kwargs={"diff_type": "diff"},
+        out_vcf_fpath=out_vcf_fpath
+    )
 
     # tabular files
     if args.file_format in ["tsv"]:
@@ -86,6 +85,9 @@ def cli_score_variants(command, raw_args):
 
     logger.info('Successfully predicted samples')
 
+
+# --------------------------------------------
+# CLI commands
 
 command_functions = {
     'score_variants': cli_score_variants,

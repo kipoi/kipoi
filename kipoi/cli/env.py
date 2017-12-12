@@ -30,15 +30,20 @@ def conda_env_name(model_name, dataloader_name):
                                       replace_slash(dataloader_name))
 
 
-def export_env(env_file, model, source, dataloader=None, dataloader_source="kipoi", env=None):
+def export_env(model, source, dataloader=None, dataloader_source="kipoi",
+               env_file=None,
+               env_dir=".",
+               env=None):
     """Write a conda environment file. Helper function for the cli_export and cli_create.
 
     Args:
-      env_file: Output environment file path
       model: model name
       source: model source name
       dataloader: dataloader name
       dataloader_source: source for the dataloader
+      env_file: Output environment file path (directory or yaml file)
+      env_dir: Becomes relevant when env_file is None. Then the env_file is inferred
+        from env and env_dir
       env: env name for the environment. If None, it will be automatically inferred.
 
     Returns:
@@ -59,6 +64,9 @@ def export_env(env_file, model, source, dataloader=None, dataloader_source="kipo
     if env is None:
         env = conda_env_name(model, dataloader)
 
+    if env_file is None:
+        env_file = os.path.join(env_dir, "{env}.yaml".format(env=env))
+
     logger.info("Environment name: {0}".format(env))
     logger.info("Output env file: {0}".format(env_file))
 
@@ -67,7 +75,7 @@ def export_env(env_file, model, source, dataloader=None, dataloader_source="kipo
     deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
-    return env
+    return env, env_file
 
 
 def cli_export(cmd, raw_args):
@@ -82,15 +90,16 @@ def cli_export(cmd, raw_args):
     parser.add_argument('-e', '--env', default=None,
                         help="Environment name")
     args = parser.parse_args(raw_args)
-    env = export_env(args.output,
-                     args.model,
-                     args.source,
-                     args.dataloader,
-                     args.dataloader_source,
-                     args.env)
+    env, env_file = export_env(args.model,
+                               args.source,
+                               args.dataloader,
+                               args.dataloader_source,
+                               env_file=args.output,
+                               env=args.env)
 
-    print("Activate the environment with:")
-    print("source activate {0}".format(env))
+    print("Create the environment with:")
+    print("conda env create --file {0}".format(env_file))
+    # print("source activate {0}".format(env))
 
 
 def cli_create(cmd, raw_args):
@@ -107,21 +116,22 @@ def cli_create(cmd, raw_args):
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
-    tmp_file = "/tmp/kipoi/envfiles/{0}.yml".format(args.env)
-    os.makedirs(os.path.dirname(tmp_file), exist_ok=True)
+    tmpdir = "/tmp/kipoi/envfiles"
+    os.makedirs(os.path.dirname(tmpdir), exist_ok=True)
 
     # write the env file
-    logger.info("Writing environment file: {0}".format(tmp_file))
-    export_env(tmp_file,
-               args.model,
-               args.source,
-               args.dataloader,
-               args.dataloader_source,
-               args.env)
+    logger.info("Writing environment file: {0}".format(tmpdir))
+    env, env_file = export_env(args.model,
+                               args.source,
+                               args.dataloader,
+                               args.dataloader_source,
+                               env_file=None,
+                               env_dir=tmpdir,
+                               env=args.env)
 
     # setup the conda env from file
-    logger.info("Creating conda env from file")
-    kipoi.conda.create_env_from_file(tmp_file)
+    logger.info("Creating conda env from file: {0}".format(env_file))
+    kipoi.conda.create_env_from_file(env_file)
     logger.info("Done!")
 
 
