@@ -145,7 +145,7 @@ def test_predict_variants_example(example, tmpdir):
         vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
         args = ["python", os.path.abspath("./kipoi/__main__.py"), "score_variants",
-                "../",  # directory
+                "./",  # directory
                 "--source=dir",
                 "--batch_size=4",
                 "--dataloader_args='{fasta_file: example_files/hg38_chr22.fa,preproc_transformer: "
@@ -158,7 +158,7 @@ def test_predict_variants_example(example, tmpdir):
         if INSTALL_FLAG:
             args.append(INSTALL_FLAG)
         returncode = subprocess.call(args=args,
-                                     cwd=os.path.realpath(example_dir + "/example_files"))
+                                     cwd=os.path.realpath(example_dir))
         assert returncode == 0
 
         assert os.path.exists(tmpfile)
