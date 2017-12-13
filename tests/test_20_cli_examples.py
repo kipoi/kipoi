@@ -145,7 +145,7 @@ def test_predict_variants_example(example, tmpdir):
         vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
         args = ["python", os.path.abspath("./kipoi/__main__.py"), "score_variants",
-                "../",  # directory
+                "./",  # directory
                 "--source=dir",
                 "--batch_size=4",
                 "--dataloader_args='{fasta_file: example_files/hg38_chr22.fa,preproc_transformer: "
