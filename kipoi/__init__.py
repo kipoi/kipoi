@@ -8,7 +8,7 @@ __version__ = '0.0.1'
 from . import config
 from . import pipeline
 from . import utils
-from kipoi.postprocessing import variant_effects
+from .postprocessing import variant_effects
 from . import remote
 from . import model
 from . import data_utils
@@ -20,6 +20,7 @@ from .data import get_dataloader_factory
 from .remote import get_model_descr, get_dataloader_descr
 from .pipeline import install_model_requirements, install_dataloader_requirements
 from .config import get_source, list_sources, list_models, list_dataloaders
+from . import cli
 # from .config import model_sources as sources
 
 

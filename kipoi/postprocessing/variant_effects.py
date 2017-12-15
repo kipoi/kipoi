@@ -13,7 +13,6 @@ import warnings
 from kipoi.components import PostProcType
 
 
-
 class Reshape_dna(object):
     def __init__(self, in_shape):
         in_shape = np.array(in_shape)
@@ -51,14 +50,14 @@ class Reshape_dna(object):
         self.reshape_needed = True
         if (len(dummy_dimensions) == 0) and (one_hot_dim == 1) and (seq_len_dim == 0):
             self.reshape_needed = False
-    #
+
     def get_seq_len(self):
         return self.seq_len
-    #
+
     def to_standard(self, in_array):
         """
-        :param in_array: has to have the sequence samples in the 0th dimension 
-        :return: 
+        :param in_array: has to have the sequence samples in the 0th dimension
+        :return:
         """
         #
         #  is there an actual sequence sample axis?
@@ -73,7 +72,7 @@ class Reshape_dna(object):
         # Iterative removal of dummy dimensions has to start from highest dimension
         for d in sorted(self.dummy_dimensions)[::-1]:
             squeezed = np.squeeze(squeezed, axis = d+additional_axis)
-        #check that the shape is now as expected:
+        # check that the shape is now as expected:
         one_hot_dim_here = additional_axis + self.one_hot_dim
         seq_len_dim_here = additional_axis + self.seq_len_dim
         if squeezed.shape[one_hot_dim_here] != 4:
@@ -84,9 +83,9 @@ class Reshape_dna(object):
         #
         if self.one_hot_dim != 1:
             assert (self.seq_len_dim == 1) # Anything else would be weird...
-            squeezed = squeezed.swapaxes(one_hot_dim_here,seq_len_dim_here)
+            squeezed = squeezed.swapaxes(one_hot_dim_here, seq_len_dim_here)
         return squeezed
-    #
+
     def from_standard(self, in_array):
         if not self.reshape_needed:
             return in_array
@@ -118,8 +117,12 @@ def _get_seq_len(input_data):
     else:
         raise ValueError("Input can only be of type: list, dict or np.ndarray")
 
+
 def ism(model, ref, ref_rc, alt, alt_rc, mutation_positions, out_annotation_all_outputs,
-        output_filter_mask=None, out_annotation=None, diff_type="log_odds", rc_handling="maximum", **kwargs):
+        output_filter_mask=None,
+        out_annotation=None,
+        diff_type="log_odds",
+        rc_handling="maximum", **kwargs):
     """In-silico mutagenesis
 
     Using ISM in with diff_type 'log_odds' and rc_handling 'maximum' will produce predictions as used
@@ -207,11 +210,11 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     l_offset = seq_length_half
     r_offset = seq_length_half - 1 + seq_length % 2
     ids = vcf["chrom"] + id_delim + vcf["pos"].astype(str) + id_delim + vcf["ref"] + id_delim +\
-          vcf["alt"].apply( lambda x: x.split(",")[0])
+        vcf["alt"].apply(lambda x: x.split(",")[0])
     regions = pd.DataFrame({"line_id": ids, "chrom": vcf["chrom"].astype(np.str),
                             "start": vcf["pos"] - l_offset, "end": vcf["pos"] + r_offset})
     regions["ref"] = vcf["ref"]
-    regions["alt"] = vcf["alt"].apply( lambda x: x.split(",")[0])
+    regions["alt"] = vcf["alt"].apply(lambda x: x.split(",")[0])
     regions["varpos"] = vcf["pos"]
     return regions
 
@@ -227,7 +230,7 @@ def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo= N
     if array_trafo is not None:
         input_set = array_trafo.to_standard(input_set)
     assert input_set.shape[1] == \
-           (preproc_conv["end"] - preproc_conv["start"] + 1).values[0]
+        (preproc_conv["end"] - preproc_conv["start"] + 1).values[0]
     # Modify bases according to allele
     _modify_bases(input_set, preproc_conv["pp_line"].values,
                   preproc_conv["varpos_rel"].values,
@@ -279,7 +282,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
         annotated_regions_cp = copy.deepcopy(annotated_regions)
         #
         annotated_regions_cp["region"] = annotated_regions_cp["chrom"] + ":" + annotated_regions_cp["start"].astype(str) + "-" + \
-                                         annotated_regions_cp["end"].astype(str)
+            annotated_regions_cp["end"].astype(str)
         annotated_regions_cp["varpos_rel"] = annotated_regions_cp["varpos"] - annotated_regions_cp["start"]
         #
         # Object that holds annotation of the sequences
@@ -331,7 +334,6 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions
     return pred_set
 
 
-
 def _modify_bases(seq_obj, lines, pos, base, is_rc):
     # Assumes a fixed order of ACGT and requires one-hot encoding
     alphabet = np.array(['A', "C", "G", "T"])
@@ -360,6 +362,7 @@ def _get_seq_fields(model):
     # TODO: Is there a non-hardcoding way of selecting the seuqence labels?
     return seq_dict['seq_input']
 
+
 def _get_dl_bed_fields(dataloader):
     seq_dict = None
     for pp_obj in dataloader.postprocessing:
@@ -382,7 +385,7 @@ def _get_seq_length(dataloader, seq_field):
     shape = [s for s in orig_shape if s is not None]
     shape = [s for s in shape if s != 4]
     if len(shape) != 1:
-        raise Exception("DNA sequence output shape not well defined! %s"%str(orig_shape))
+        raise Exception("DNA sequence output shape not well defined! %s" % str(orig_shape))
     return shape[0]
 
 def _get_seq_shape(dataloader, seq_field):
@@ -395,17 +398,21 @@ def _get_seq_shape(dataloader, seq_field):
     return orig_shape
 
 
+# TODO - how to deal with a pre-specified bed file?
+
+
+# MAIN function
 def predict_snvs(model,
                  vcf_fpath,
                  dataloader,
                  batch_size,
-                 dataloader_args = None,
-                 model_out_annotation = None,
-                 evaluation_function = ism,
+                 dataloader_args=None,
+                 model_out_annotation=None,
+                 evaluation_function=ism,
                  debug=False,
                  evaluation_function_kwargs=None,
-                 out_vcf_fpath = None,
-                 use_dataloader_example_data = False):
+                 out_vcf_fpath=None,
+                 use_dataloader_example_data=False):
     """Predict the effect of SNVs
 
         Prediction of effects of SNV based on a VCF. If desired the VCF can be stored with the predicted values as
@@ -413,27 +420,27 @@ def predict_snvs(model,
         kipoi/nbs/variant_effect_prediction.ipynb.
 
         # Arguments
-            model: A kipoi model handle generated by e.g.: kipoi.get_model() 
+            model: A kipoi model handle generated by e.g.: kipoi.get_model()
             vcf_fpath: Path of the VCF defining the positions that shall be assessed. Only SNVs will be tested.
             dataloader: Dataloader factory generated by e.g.: kipoi.get_dataloader_factory()
-            batch_size: Prediction batch size used for calling the data loader. each batch will be generated in 4
-            mutated states yielding a system RAM consumption of >= 4x batch size. 
-            dataloader_arguments: argmuments passed on to the dataloader for sequence generation, arguments mentioned
-            in dataloader.yaml > postprocessing > variant_effects > bed_input will be overwritten by the methods here.
+            batch_size: Prediction batch size used for calling the data loader. Each batch will be generated in 4
+                mutated states yielding a system RAM consumption of >= 4x batch size.
+            dataloader_arguments: arguments passed on to the dataloader for sequence generation, arguments
+                mentioned in dataloader.yaml > postprocessing > variant_effects > bed_input will be overwritten
+                by the methods here.
             model_out_annotation: Columns of the model output can be passed here, otherwise they will be attepted to be
-            loaded from model.yaml > schema > targets > column_labels  
+                loaded from model.yaml > schema > targets > column_labels
             evaluation_function: effect evaluation function. Default is ism
             evaluation_function_kwargs: kwargs passed on to the evaluation function.
             out_vcf_fpath: Path for the annotated VCF, which is created from `vcf_fpath` one predicted effect is
-            produced for every output (target) column.
+                produced for every output (target) column.
             use_dataloader_example_data: Fill out the missing dataloader arguments with the example values given in the
-            dataloader.yaml.
-                 
+                dataloader.yaml.
+
         # Returns
             Dictionary which contains a pandas DataFrame containing the calculated values
                 for each model output (target) column VCF SNV line
         """
-
 
     seq_fields = _get_seq_fields(model)
     seq_shapes = set([_get_seq_shape(dataloader, seq_field) for seq_field in seq_fields])
@@ -469,22 +476,21 @@ def predict_snvs(model,
     if model_out_annotation is None:
         if isinstance(model.schema.targets, dict):
             raise Exception("Variant effect prediction with dict(array) model output not implemented!")
-            #model_out_annotation = np.array(list(model.schema.targets.keys()))
+            # model_out_annotation = np.array(list(model.schema.targets.keys()))
         elif isinstance(model.schema.targets, list):
             raise Exception("Variant effect prediction with list(array) model output not implemented!")
-            #model_out_annotation = np.array([x.name for x in model.schema.targets])
+            # model_out_annotation = np.array([x.name for x in model.schema.targets])
         else:
             # TODO - all targets need to have the keys defined
             if model.schema.targets.column_labels is not None:
                 model_out_annotation = np.array(model.schema.targets.column_labels)
-
 
     if model_out_annotation is None:
         model_out_annotation = np.array([str(i) for i in range(model.schema.targets.shape[0])])
 
     res = []
 
-    dataloader(**dataloader_args)
+    # dataloader(**dataloader_args)
     it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size)
 
     # test that all predictions go through
@@ -524,32 +530,32 @@ def predict_snvs(model,
     return res_concatenated
 
 
-def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
+def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":"):
     # Use the ranges object to match predictions with the vcf
     # Add original index to the ranges object
     # Sort predictions according to the vcf
     # Annotate vcf object
     def _generate_info_field(id, num, info_type, desc, source, version):
-        return  vcf.parser._Info(id, num,
-                                 info_type, desc,
-                                 source, version)
+        return vcf.parser._Info(id, num,
+                                info_type, desc,
+                                source, version)
     import vcf
     vcf_reader = vcf.Reader(open(in_vcf_fpath, 'r'))
     column_labels = None
     # Generate the info tag for the VEP
     for k in predictions:
-        info_tag = "KPVEP_%s"%k.upper()
+        info_tag = "KPVEP_%s" % k.upper()
         col_labels_here = predictions[k].columns.tolist()
         # Make sure that the column are consistent across different prediciton methods
         if column_labels is None:
             column_labels = col_labels_here
         else:
             if not np.all(np.array(column_labels) == np.array(col_labels_here)):
-                raise Exception("Prediction columns are not identical for methods %s and %s"%(predictions.keys()[0], k))
+                raise Exception("Prediction columns are not identical for methods %s and %s" % (predictions.keys()[0], k))
         # Add the tag to the vcf file
         vcf_reader.infos[info_tag] = _generate_info_field(info_tag, None, 'String',
-                    "%s SNV effect prediction. Prediction from model outputs: %s"%(k.upper(), "|".join(column_labels)),
-                    None, None)
+                                                          "%s SNV effect prediction. Prediction from model outputs: %s" % (k.upper(), "|".join(column_labels)),
+                                                          None, None)
     vcf_writer = vcf.Writer(open(out_vcf_fpath, 'w'), vcf_reader)
     # Write VCF records to the output file
     for record in vcf_reader:
@@ -559,7 +565,8 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
             # In case there is a pediction for this line, annotate the vcf...
             if line_id in predictions[k].index:
                 info_tag = "KPVEP_%s" % k.upper()
-                preds = predictions[k].loc[line_id,:].tolist()
+                preds = predictions[k].loc[line_id, :].tolist()
                 record.INFO[info_tag] = "|".join([str(pred) for pred in preds])
         vcf_writer.write_record(record)
     vcf_writer.close()
+
