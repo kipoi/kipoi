@@ -8,6 +8,7 @@ import tempfile
 from tqdm import tqdm
 import itertools
 import os
+import re
 
 import warnings
 from kipoi.components import PostProcType
@@ -515,7 +516,11 @@ def predict_snvs(model,
 
     # actually annotate the VCF:
     if out_vcf_fpath is not None:
-        _annotate_vcf(vcf_fpath, out_vcf_fpath, res_concatenated)
+        if (model.info.name is None) or (model.info.name == ""):
+            model_name = model.info.doc[:15] + ":" + model.info.version
+        else:
+            model_name = model.info.name + ":" + str(model.info.version)
+        _annotate_vcf(vcf_fpath, out_vcf_fpath, res_concatenated, model_name = model_name)
 
     try:
         os.unlink(temp_bed3_file)
@@ -524,7 +529,19 @@ def predict_snvs(model,
     return res_concatenated
 
 
-def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
+def prep_str(s):
+    #https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
+    # Remove all non-word characters (everything except numbers and letters)
+    #s = re.sub(r"[^\w\s]", '', s)
+    s = re.sub(r"[^\w\.\:\s]+", '', s)
+    #
+    # Replace all runs of whitespace with a single underscore
+    s = re.sub(r"\s+", '_', s)
+    #
+    return s
+
+
+def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":", model_name = None):
     # Use the ranges object to match predictions with the vcf
     # Add original index to the ranges object
     # Sort predictions according to the vcf
@@ -537,8 +554,11 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
     vcf_reader = vcf.Reader(open(in_vcf_fpath, 'r'))
     column_labels = None
     # Generate the info tag for the VEP
+    info_tag_prefix = "KPVEP"
+    if (model_name is not None) or(model_name != ""):
+        info_tag_prefix += "_%s"% prep_str(model_name)
     for k in predictions:
-        info_tag = "KPVEP_%s"%k.upper()
+        info_tag = info_tag_prefix+"_%s"%k.upper()
         col_labels_here = predictions[k].columns.tolist()
         # Make sure that the column are consistent across different prediciton methods
         if column_labels is None:
@@ -558,7 +578,7 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":"):
         for k in predictions:
             # In case there is a pediction for this line, annotate the vcf...
             if line_id in predictions[k].index:
-                info_tag = "KPVEP_%s" % k.upper()
+                info_tag = info_tag_prefix+"_%s"%k.upper()
                 preds = predictions[k].loc[line_id,:].tolist()
                 record.INFO[info_tag] = "|".join([str(pred) for pred in preds])
         vcf_writer.write_record(record)
