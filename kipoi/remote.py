@@ -9,7 +9,7 @@ import subprocess
 import logging
 import glob
 from collections import OrderedDict
-from .utils import lfs_installed, get_file_path
+from .utils import lfs_installed, get_file_path, cd
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# TODO - optionally don't pull the recent files?
+
 def get_component_file(component_dir, which="model"):
+    # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"])
 
 
@@ -35,12 +38,13 @@ def list_yamls_recursively(root_dir, basename):
 def load_component_descr(component_path, which="model"):
     """Return the parsed yaml file
     """
-    if which == "model":
-        return ModelDescription.load(component_path)
-    elif which == "dataloader":
-        return DataLoaderDescription.load(component_path)
-    else:
-        raise ValueError("which needs to be from {'model', 'dataloader'}")
+    with cd(os.path.dirname(component_path)):
+        if which == "model":
+            return ModelDescription.load(os.path.basename(component_path))
+        elif which == "dataloader":
+            return DataLoaderDescription.load(os.path.basename(component_path))
+        else:
+            raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
 def get_model_descr(model, source="kipoi"):

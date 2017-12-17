@@ -144,7 +144,9 @@ def test_predict_variants_example(example, tmpdir):
         tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
         vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
-        args = ["python", os.path.abspath("./kipoi/__main__.py"), "score_variants",
+        args = ["python", os.path.abspath("./kipoi/__main__.py"),
+                "postproc",
+                "score_variants",
                 "./",  # directory
                 "--source=dir",
                 "--batch_size=4",

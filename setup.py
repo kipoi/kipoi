@@ -21,12 +21,9 @@ requirements = [
     "related==0.4",
     "enum34",
     "colorlog",
+    "pyvcf",
     # "pytorch"
 ]
-
-# TODO - don't explicitly require pytorch
-#        - how can we get the DatasetLoader functionality?
-
 
 test_requirements = [
     "pytest",

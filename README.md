@@ -88,14 +88,16 @@ For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
 $ kipoi
 usage: kipoi <command> [-h] ...
 
-    Kipoi model-zoo command line tool. Available sub-commands:
-
-    # Using the models
+    # Kipoi model-zoo command line tool. Available sub-commands:
+    ls               List all the available models
     predict          Run the model prediction.
-    score_variants   Run prediction on a list of regions
     pull             Downloads the directory associated with the model
     preproc          Returns an hdf5 array.
     test             Runs a set of unit-tests for the model
+
+    # Further sub-commands:
+    postproc         Tools for model postprocessing like variant effect prediction
+    env              Tools to work with kipoi conda environments
 ```
 
 Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/cli.md](docs/cli.md) for more information.
