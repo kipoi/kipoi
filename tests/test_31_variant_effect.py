@@ -14,6 +14,10 @@ from kipoi.utils import cd
 import pandas as pd
 import tempfile
 from kipoi.metadata import GenomicRanges
+import kipoi
+from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds
+import numpy as np
+from scipy.special import logit
 
 warnings.filterwarnings('ignore')
 
@@ -225,19 +229,73 @@ def test_var_eff_pred():
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
     with cd(model.source_dir):
         res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
+                           evaluation_function=kipoi.postprocessing.variant_effects.ism,
                            dataloader=Dataloader, batch_size=32,
                            evaluation_function_kwargs={"diff_type": "diff"},
                            out_vcf_fpath=out_vcf_fpath)
         assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         os.unlink(out_vcf_fpath)
+    #
+    with cd(model.source_dir):
+        res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
+                              evaluation_function=analyse_model_preds,
+                              dataloader=Dataloader, batch_size=32,
+                              evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
+                              out_vcf_fpath=out_vcf_fpath)
+        assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)
+
+
+
+
+def test_Rc_merging():
+    # test the variant effect calculation routines
+    # test the different functions:
+    arr_a = np.array([[1,2],[3,4]])
+    arr_b = np.array([[2,1],[5,3]])
+    for k in ["min", "max", "mean", "median", lambda x,y: x-y]:
+        ro = Rc_merging_pred_analysis(k)
+        if k == "min":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.min([arr_a, arr_b], axis=0))
+        elif k == "max":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.max([arr_a, arr_b], axis=0))
+        elif k == "mean":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.mean([arr_a, arr_b], axis=0))
+        elif k == "median":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.median([arr_a, arr_b], axis=0))
+        else:
+            assert np.all(ro.rc_merging(arr_a, arr_b) == arr_a - arr_b)
+    assert np.all(
+        Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=False) == np.array([[-2, 2], [-5, 4]]))
+    x = Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=True)
+    assert np.all(arr_a== np.array([[-2, 2], [-5, 4]]))
+
+
+def test_enhanced_analysis_effects():
+    probs_r = np.array([0.1,0.2,0.3])
+    probs_a = np.array([0.2,0.29,0.9])
+    counts = np.array([10,23,-2])
+    preds_prob = {"ref":probs_a, "ref_rc":probs_r, "alt":probs_a, "alt_rc":probs_a}
+    preds_arb = {"ref":probs_a, "ref_rc":probs_r, "alt":counts, "alt_rc":counts}
+    assert np.all((Logit()(**preds_prob) == logit(probs_a) - logit(probs_r)))
+    assert np.all((Diff()(**preds_prob) == probs_a - probs_r))
+    assert np.all(DeepSEA_effect()(**preds_prob) == np.abs(logit(probs_a) - logit(probs_r)) * np.abs(probs_a - probs_r))
+    # now with values that contain values outside [0,1].
+    with pytest.warns(UserWarning):
+        x =(Logit()(**preds_arb))
+    #
+    with pytest.warns(UserWarning):
+        x =(DeepSEA_effect()(**preds_arb))
+    #
+    assert np.all((Diff()(**preds_arb) == counts - probs_r))
+
 
 
 
 """
 # Take the rbp model
 model_dir = "examples/rbp/"
-if INSTALL_REQ:
-    install_model_requirements(model_dir, "dir", and_dataloaders=True)
+install_model_requirements(model_dir, "dir", and_dataloaders=True)
 
 model = kipoi.get_model(model_dir, source="dir")
 # The preprocessor
@@ -253,12 +311,14 @@ dataloader_arguments = {
 vcf_path = "example_files/variants.vcf"
 out_vcf_fpath = "example_files/variants_generated.vcf"
 ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+
+
 with cd(model.source_dir):
     res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds,
                        dataloader=Dataloader, batch_size=32,
-                       evaluation_function_kwargs={"diff_type": "diff"},
+                       evaluation_function_kwargs={'diff_types':{'ism':Diff("absmax")}},
                        out_vcf_fpath=out_vcf_fpath)
     assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
     os.unlink(out_vcf_fpath)
-
 """

@@ -311,6 +311,11 @@ def cli_predict(command, raw_args):
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
+    scoring_options = {
+        "logit": kipoi.variant_effects.Logit,
+        "diff": kipoi.variant_effects.Diff,
+        "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
+    }
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
@@ -340,6 +345,7 @@ def cli_score_variants(command, raw_args):
                         help="Install required packages from requirements.txt")
     parser.add_argument('-o', '--output', required=True,
                         help="Output hdf5 file")
+    parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs = "+")
     args = parser.parse_args(raw_args)
 
     dataloader_kwargs = parse_json_file_str(args.dataloader_args)
@@ -372,17 +378,23 @@ def cli_score_variants(command, raw_args):
             if os.path.exists(dataloader_arguments[k]):
                 dataloader_arguments[k] = os.path.abspath(dataloader_arguments[k])
 
-
-
+    if len(args.scoring) > 1:
+        dts = {}
+        for k in args.scoring:
+            dts[k] = scoring_options[k]("absmax")
+    else:
+        dts = {'ism': scoring_options[args.scoring[0]]("absmax")}
     with cd(model.source_dir):
         res = kipoi.variant_effects.predict_snvs(model, vcf_path,
                                                  dataloader=Dl, batch_size=32,
                                                  dataloader_args=dataloader_arguments,
-                                                 evaluation_function_kwargs={"diff_type": "diff"},
+                                                 evaluation_function_kwargs={'diff_types': dts},
                                                  out_vcf_fpath=out_vcf_fpath)
 
     # tabular files
     if args.file_format in ["tsv"]:
+        with open(args.output, "w") as ofh:
+            pass
         for i, k in enumerate(res):
             # Remove an old file if it is still there...
             if i == 0:
@@ -390,7 +402,7 @@ def cli_score_variants(command, raw_args):
                     os.unlink(args.output)
                 except:
                     pass
-            with open(args.output, "w") as ofh:
+            with open(args.output, "a") as ofh:
                 ofh.write("KPVEP_%s\n" % k.upper())
             res[k].to_csv(args.output, sep="\t", mode="a")
 

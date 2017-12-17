@@ -119,6 +119,92 @@ def _get_seq_len(input_data):
     else:
         raise ValueError("Input can only be of type: list, dict or np.ndarray")
 
+
+class Pred_analysis(object):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        raise NotImplementedError("Analysis routine has to be implemented")
+
+class Rc_merging_pred_analysis(Pred_analysis):
+    allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
+    #
+    def __init__(self, rc_merging="max"):
+        if isinstance(rc_merging, str):
+            if rc_merging == "absmax":
+                self.rc_merging = self.absmax
+            elif rc_merging in self.allowed_str_opts:
+                self.rc_merging = lambda x, y: getattr(np, rc_merging)([x, y], axis=0)
+        elif callable(rc_merging):
+            self.rc_merging = rc_merging
+        else:
+            raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
+    #
+    @staticmethod
+    def absmax(x, y, inplace=True):
+        if not inplace:
+            x = copy.deepcopy(x)
+        replace_filt = np.abs(x) < np.abs(y)
+        x[replace_filt] = y[replace_filt]
+        return x
+
+class Logit(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+        if np.any([(preds[k].min() < 0 or preds[k].max() > 1) for k in preds]):
+            warnings.warn("Using log_odds on model outputs that are not bound [0,1]")
+        diffs = np.log(preds["alt"] / (1 - preds["alt"])) - np.log(preds["ref"] / (1 - preds["ref"]))
+        diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
+        return self.rc_merging(diffs, diffs_rc)
+
+class Diff(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+        diffs = preds["alt"] - preds["ref"]
+        diffs_rc = preds["alt_rc"] - preds["ref_rc"]
+        return self.rc_merging(diffs, diffs_rc)
+
+class DeepSEA_effect(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+        if np.any([(preds[k].min() < 0 or preds[k].max() > 1) for k in preds]):
+            warnings.warn("Using log_odds on model outputs that are not bound [0,1]")
+        logit_diffs = np.log(preds["alt"] / (1 - preds["alt"])) - np.log(preds["ref"] / (1 - preds["ref"]))
+        logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
+        diffs = preds["alt"] - preds["ref"]
+        diffs_rc = preds["alt_rc"] - preds["ref_rc"]
+        return self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
+
+
+
+def analyse_model_preds(model, ref, ref_rc, alt, alt_rc, mutation_positions, out_annotation_all_outputs, diff_types,
+        output_filter_mask=None, out_annotation=None, **kwargs):
+    seqs = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+    if not isinstance(diff_types, dict):
+        raise Exception("diff_types has to be a dictionary of callables. Keys will be used to annotate output.")
+    assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
+    assert _get_seq_len(ref)[0] == mutation_positions.shape[0]
+    assert len(mutation_positions.shape) == 1
+
+    # determine which outputs should be selected
+    if output_filter_mask is None:
+        if out_annotation is None:
+            output_filter_mask = np.arange(out_annotation_all_outputs.shape[0])
+        else:
+            output_filter_mask = np.where(np.in1d(out_annotation_all_outputs, out_annotation))[0]
+
+    # make sure the labels are assigned correctly
+    out_annotation = out_annotation_all_outputs[output_filter_mask]
+
+    preds = {}
+    for k in seqs:
+        preds[k] = np.array(model.predict_on_batch(seqs[k])[..., output_filter_mask])
+
+    outputs = {}
+    for k in diff_types:
+        outputs[k] = pd.DataFrame(diff_types[k](**preds), columns=out_annotation)
+
+    return outputs
+
+
 def ism(model, ref, ref_rc, alt, alt_rc, mutation_positions, out_annotation_all_outputs,
         output_filter_mask=None, out_annotation=None, diff_type="log_odds", rc_handling="maximum", **kwargs):
     """In-silico mutagenesis
@@ -402,9 +488,9 @@ def predict_snvs(model,
                  batch_size,
                  dataloader_args = None,
                  model_out_annotation = None,
-                 evaluation_function = ism,
+                 evaluation_function = analyse_model_preds,
                  debug=False,
-                 evaluation_function_kwargs=None,
+                 evaluation_function_kwargs={'diff_types':{'ism':Logit()}},
                  out_vcf_fpath = None,
                  use_dataloader_example_data = False):
     """Predict the effect of SNVs
