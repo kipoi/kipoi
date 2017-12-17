@@ -40,9 +40,9 @@ def load_component_descr(component_path, which="model"):
     """
     with cd(os.path.dirname(component_path)):
         if which == "model":
-            return ModelDescription.load(component_path)
+            return ModelDescription.load(os.path.basename(component_path))
         elif which == "dataloader":
-            return DataLoaderDescription.load(component_path)
+            return DataLoaderDescription.load(os.path.basename(component_path))
         else:
             raise ValueError("which needs to be from {'model', 'dataloader'}")
 
