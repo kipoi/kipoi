@@ -62,6 +62,7 @@ def cli_score_variants(command, raw_args):
         vcf_path,
         dataloader=Dl,
         batch_size=args.batch_size,
+        num_workers=args.num_workers,
         dataloader_args=dataloader_arguments,
         evaluation_function_kwargs={"diff_type": "diff"},
         out_vcf_fpath=out_vcf_fpath
