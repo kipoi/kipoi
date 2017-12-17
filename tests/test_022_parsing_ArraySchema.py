@@ -91,13 +91,13 @@ def test_parse_bad_info(info_str):
         CLS.from_config(bim)
 
 @pytest.mark.parametrize("info_str,info_res", GOOD_EXAMPLES_COLNAMES)
-def test_parse_bad_info(info_str,info_res):
+def test_parse_col_naming(info_str,info_res):
     bim = from_yaml(info_str)
     info2 = CLS.from_config(bim)
     assert(info2.column_labels == info_res)
 
 @pytest.mark.parametrize("info_str", BAD_EXAMPLES_COLNAMES)
-def test_parse_bad_info(info_str):
+def test_parse_col_naming_bad(info_str):
     bim = from_yaml(info_str)
     # Just prints out the warning at the moment, so no way to check with testing...
     CLS.from_config(bim)
