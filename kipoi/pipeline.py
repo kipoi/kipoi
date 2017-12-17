@@ -378,6 +378,9 @@ def cli_score_variants(command, raw_args):
             if os.path.exists(dataloader_arguments[k]):
                 dataloader_arguments[k] = os.path.abspath(dataloader_arguments[k])
 
+    if not isinstance(args.scoring, list):
+        args.scoring = [args.scoring]
+
     if len(args.scoring) > 1:
         dts = {}
         for k in args.scoring:
@@ -391,19 +394,28 @@ def cli_score_variants(command, raw_args):
                                                  evaluation_function_kwargs={'diff_types': dts},
                                                  out_vcf_fpath=out_vcf_fpath)
 
+    if (model.info.name is None) or (model.info.name == ""):
+        model_name = model.info.doc[:15] + ":" + model.info.version
+    else:
+        model_name = model.info.name + ":" + str(model.info.version)
+    info_tag_prefix = "KPVEP"
+    if (model_name is not None) or (model_name != ""):
+        info_tag_prefix += "_%s" % kipoi.variant_effects.prep_str(model_name)
+
     # tabular files
     if args.file_format in ["tsv"]:
         with open(args.output, "w") as ofh:
             pass
         for i, k in enumerate(res):
             # Remove an old file if it is still there...
+            info_tag = info_tag_prefix + "_%s" % k.upper()
             if i == 0:
                 try:
                     os.unlink(args.output)
                 except:
                     pass
             with open(args.output, "a") as ofh:
-                ofh.write("KPVEP_%s\n" % k.upper())
+                ofh.write(info_tag)
             res[k].to_csv(args.output, sep="\t", mode="a")
 
     if args.file_format == "hdf5":
