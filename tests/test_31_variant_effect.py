@@ -21,6 +21,158 @@ from scipy.special import logit
 
 warnings.filterwarnings('ignore')
 
+
+from kipoi.components import ArraySchema, ModelSchema
+from related import from_yaml
+from kipoi.postprocessing.variant_effects import Output_reshaper
+
+CLS = ArraySchema
+MS = ModelSchema
+
+RES={}
+RES["2darray_NoLab"] = np.zeros((50, 2))
+RES["2darray_Lab"] = np.zeros((50, 2))
+RES["list1D_NoLab"] = [np.zeros((50, 1)), np.zeros((50, 1))]
+RES["list1D_Lab"] = [np.zeros((50, 1)), np.zeros((50, 1))]
+RES["listMixed_NoLab"] = [np.zeros((50, 2)), np.zeros((50, 1))]
+RES["listMixed_Lab"] = [np.zeros((50, 2)), np.zeros((50, 1))]
+RES["dictMixed_NoLab"] = {"A":np.zeros((50, 2)), "B":np.zeros((50, 1))}
+RES["dictMixed_Lab"] = {"A":np.zeros((50, 2)), "B":np.zeros((50, 1))}
+
+RES_OUT_SHAPES = {}
+RES_OUT_SHAPES["2darray_NoLab"] = 2
+RES_OUT_SHAPES["2darray_Lab"] = 2
+RES_OUT_SHAPES["list1D_NoLab"] = 2
+RES_OUT_SHAPES["list1D_Lab"] = 2
+RES_OUT_SHAPES["listMixed_NoLab"] = 3
+RES_OUT_SHAPES["listMixed_Lab"] = 3
+RES_OUT_SHAPES["dictMixed_NoLab"] = 3
+RES_OUT_SHAPES["dictMixed_Lab"] = 3
+
+RES_OUT_LABELS = {'dictMixed_Lab': ['A.blablabla', 'A.blaSecond', 'B.blaThird'],
+                  'list1D_Lab': ['A.blablabla', 'B.blaSecond'], 'listMixed_NoLab':
+                      ['0.0', '0.1', '1.0'], '2darray_Lab': ['rbp_prb', 'second'],
+                  'dictMixed_NoLab': ['B.0', 'A.0', 'A.1'], 'list1D_NoLab': ['0.0', '1.0'],
+                  '2darray_NoLab': ['0', '1'], 'listMixed_Lab':
+                      ['A.blablabla', 'A.blaSecond', 'B.blaThird']}
+
+YAMLS = {}
+YAMLS["2darray_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+    shape: (2, )
+    doc: Predicted binding strength
+    name: A
+    column_labels:
+        - rbp_prb
+        - second"""
+
+YAMLS["2darray_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+    shape: (2, )
+    doc: Predicted binding strength"""
+
+YAMLS["list1D_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (1, )
+    doc: Predicted binding strength
+  - shape: (1, )
+    doc: Predicted binding strength
+    """
+YAMLS["list1D_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (1, )
+    name: A 
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+  - shape: (1, )
+    name: B
+    doc: Predicted binding strength
+    column_labels:
+      - blaSecond
+    """
+
+YAMLS["listMixed_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (2, )
+    name: A
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+      - blaSecond
+  - shape: (1, )
+    name: B
+    doc: Predicted binding strength
+    column_labels:
+      - blaThird
+    """
+
+YAMLS["listMixed_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (2, )
+    doc: Predicted binding strength
+  - shape: (1, )
+    doc: Predicted binding strength
+    """
+
+YAMLS["dictMixed_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  A:
+    shape: (2, )
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+      - blaSecond
+  B:
+    shape: (1, )
+    doc: Predicted binding strength
+    column_labels:
+      - blaThird
+    """
+
+YAMLS["dictMixed_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  B:
+    shape: (1, )
+    doc: Predicted binding strength
+  A:
+    shape: (2, )
+    doc: Predicted binding strength
+    """
+
+
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
 # Only viable model at the moment is rbp, so not offering to test anything else
@@ -227,14 +379,6 @@ def test_var_eff_pred():
     vcf_path = "example_files/variants.vcf"
     out_vcf_fpath = "example_files/variants_generated.vcf"
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
-    with cd(model.source_dir):
-        res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
-                           evaluation_function=kipoi.postprocessing.variant_effects.ism,
-                           dataloader=Dataloader, batch_size=32,
-                           evaluation_function_kwargs={"diff_type": "diff"},
-                           out_vcf_fpath=out_vcf_fpath)
-        assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
     #
     with cd(model.source_dir):
         res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
@@ -289,6 +433,25 @@ def test_enhanced_analysis_effects():
     #
     assert np.all((Diff()(**preds_arb) == counts - probs_r))
 
+
+
+def test_output_reshaper():
+    for k1 in RES:
+        for k2 in YAMLS:
+            if k1 == k2:
+                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                fl, fll = o.flatten(RES[k1])
+                assert (fl.shape[1] == RES_OUT_SHAPES[k1])
+                assert (RES_OUT_LABELS[k2] == fll.tolist())
+            elif (k1.replace("Lab", "NoLab") == k2) or (k1 == k2.replace("Lab", "NoLab")):
+                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                fl, fll = o.flatten(RES[k1])
+                assert (fl.shape[1] == RES_OUT_SHAPES[k1])
+                assert (RES_OUT_LABELS[k2] == fll.tolist())
+            else:
+                with pytest.raises(Exception):
+                    o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                    fl, fll = o.flatten(RES[k1])
 
 
 

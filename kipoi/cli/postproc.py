@@ -69,12 +69,12 @@ def cli_score_variants(command, raw_args):
     if not isinstance(args.scoring, list):
         args.scoring = [args.scoring]
 
-    if len(args.scoring) > 1:
+    if len(args.scoring) >= 1:
         dts = {}
         for k in args.scoring:
             dts[k] = scoring_options[k]("absmax")
     else:
-        dts = {'ism': scoring_options[args.scoring[0]]("absmax")}
+        raise Exception("No scoring method was chosen!")
 
 
     res = kipoi.variant_effects.predict_snvs(
