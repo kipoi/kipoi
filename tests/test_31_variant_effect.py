@@ -14,8 +14,164 @@ from kipoi.utils import cd
 import pandas as pd
 import tempfile
 from kipoi.metadata import GenomicRanges
+import kipoi
+from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds
+import numpy as np
+from scipy.special import logit
 
 warnings.filterwarnings('ignore')
+
+
+from kipoi.components import ArraySchema, ModelSchema
+from related import from_yaml
+from kipoi.postprocessing.variant_effects import Output_reshaper
+
+CLS = ArraySchema
+MS = ModelSchema
+
+RES={}
+RES["2darray_NoLab"] = np.zeros((50, 2))
+RES["2darray_Lab"] = np.zeros((50, 2))
+RES["list1D_NoLab"] = [np.zeros((50, 1)), np.zeros((50, 1))]
+RES["list1D_Lab"] = [np.zeros((50, 1)), np.zeros((50, 1))]
+RES["listMixed_NoLab"] = [np.zeros((50, 2)), np.zeros((50, 1))]
+RES["listMixed_Lab"] = [np.zeros((50, 2)), np.zeros((50, 1))]
+RES["dictMixed_NoLab"] = {"A":np.zeros((50, 2)), "B":np.zeros((50, 1))}
+RES["dictMixed_Lab"] = {"A":np.zeros((50, 2)), "B":np.zeros((50, 1))}
+
+RES_OUT_SHAPES = {}
+RES_OUT_SHAPES["2darray_NoLab"] = 2
+RES_OUT_SHAPES["2darray_Lab"] = 2
+RES_OUT_SHAPES["list1D_NoLab"] = 2
+RES_OUT_SHAPES["list1D_Lab"] = 2
+RES_OUT_SHAPES["listMixed_NoLab"] = 3
+RES_OUT_SHAPES["listMixed_Lab"] = 3
+RES_OUT_SHAPES["dictMixed_NoLab"] = 3
+RES_OUT_SHAPES["dictMixed_Lab"] = 3
+
+RES_OUT_LABELS = {'dictMixed_Lab': ['A.blablabla', 'A.blaSecond', 'B.blaThird'],
+                  'list1D_Lab': ['A.blablabla', 'B.blaSecond'], 'listMixed_NoLab':
+                      ['0.0', '0.1', '1.0'], '2darray_Lab': ['rbp_prb', 'second'],
+                  'dictMixed_NoLab': ['B.0', 'A.0', 'A.1'], 'list1D_NoLab': ['0.0', '1.0'],
+                  '2darray_NoLab': ['0', '1'], 'listMixed_Lab':
+                      ['A.blablabla', 'A.blaSecond', 'B.blaThird']}
+
+YAMLS = {}
+YAMLS["2darray_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+    shape: (2, )
+    doc: Predicted binding strength
+    name: A
+    column_labels:
+        - rbp_prb
+        - second"""
+
+YAMLS["2darray_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+    shape: (2, )
+    doc: Predicted binding strength"""
+
+YAMLS["list1D_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (1, )
+    doc: Predicted binding strength
+  - shape: (1, )
+    doc: Predicted binding strength
+    """
+YAMLS["list1D_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (1, )
+    name: A 
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+  - shape: (1, )
+    name: B
+    doc: Predicted binding strength
+    column_labels:
+      - blaSecond
+    """
+
+YAMLS["listMixed_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (2, )
+    name: A
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+      - blaSecond
+  - shape: (1, )
+    name: B
+    doc: Predicted binding strength
+    column_labels:
+      - blaThird
+    """
+
+YAMLS["listMixed_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  - shape: (2, )
+    doc: Predicted binding strength
+  - shape: (1, )
+    doc: Predicted binding strength
+    """
+
+YAMLS["dictMixed_Lab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  A:
+    shape: (2, )
+    doc: Predicted binding strength
+    column_labels:
+      - blablabla
+      - blaSecond
+  B:
+    shape: (1, )
+    doc: Predicted binding strength
+    column_labels:
+      - blaThird
+    """
+
+YAMLS["dictMixed_NoLab"] = """
+inputs:
+  A:
+    shape: (101, 4)
+    doc: abjhdbajd
+targets:
+  B:
+    shape: (1, )
+    doc: Predicted binding strength
+  A:
+    shape: (2, )
+    doc: Predicted binding strength
+    """
+
 
 # TODO: We still need a way to get the model output annotation from somewhere...
 # TODO: which other arguments should we use for variant effect predictions?
@@ -223,10 +379,109 @@ def test_var_eff_pred():
     vcf_path = "example_files/variants.vcf"
     out_vcf_fpath = "example_files/variants_generated.vcf"
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    #
     with cd(model.source_dir):
         res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
-                           dataloader=Dataloader, batch_size=32,
-                           evaluation_function_kwargs={"diff_type": "diff"},
-                           out_vcf_fpath=out_vcf_fpath)
+                              evaluation_function=analyse_model_preds,
+                              dataloader=Dataloader, batch_size=32,
+                              evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
+                              out_vcf_fpath=out_vcf_fpath)
         assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         os.unlink(out_vcf_fpath)
+
+
+
+
+def test_Rc_merging():
+    # test the variant effect calculation routines
+    # test the different functions:
+    arr_a = np.array([[1,2],[3,4]])
+    arr_b = np.array([[2,1],[5,3]])
+    for k in ["min", "max", "mean", "median", lambda x,y: x-y]:
+        ro = Rc_merging_pred_analysis(k)
+        if k == "min":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.min([arr_a, arr_b], axis=0))
+        elif k == "max":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.max([arr_a, arr_b], axis=0))
+        elif k == "mean":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.mean([arr_a, arr_b], axis=0))
+        elif k == "median":
+            assert np.all(ro.rc_merging(arr_a, arr_b) == np.median([arr_a, arr_b], axis=0))
+        else:
+            assert np.all(ro.rc_merging(arr_a, arr_b) == arr_a - arr_b)
+    assert np.all(
+        Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=False) == np.array([[-2, 2], [-5, 4]]))
+    x = Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=True)
+    assert np.all(arr_a== np.array([[-2, 2], [-5, 4]]))
+
+
+def test_enhanced_analysis_effects():
+    probs_r = np.array([0.1,0.2,0.3])
+    probs_a = np.array([0.2,0.29,0.9])
+    counts = np.array([10,23,-2])
+    preds_prob = {"ref":probs_a, "ref_rc":probs_r, "alt":probs_a, "alt_rc":probs_a}
+    preds_arb = {"ref":probs_a, "ref_rc":probs_r, "alt":counts, "alt_rc":counts}
+    assert np.all((Logit()(**preds_prob) == logit(probs_a) - logit(probs_r)))
+    assert np.all((Diff()(**preds_prob) == probs_a - probs_r))
+    assert np.all(DeepSEA_effect()(**preds_prob) == np.abs(logit(probs_a) - logit(probs_r)) * np.abs(probs_a - probs_r))
+    # now with values that contain values outside [0,1].
+    with pytest.warns(UserWarning):
+        x =(Logit()(**preds_arb))
+    #
+    with pytest.warns(UserWarning):
+        x =(DeepSEA_effect()(**preds_arb))
+    #
+    assert np.all((Diff()(**preds_arb) == counts - probs_r))
+
+
+
+def test_output_reshaper():
+    for k1 in RES:
+        for k2 in YAMLS:
+            if k1 == k2:
+                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                fl, fll = o.flatten(RES[k1])
+                assert (fl.shape[1] == RES_OUT_SHAPES[k1])
+                assert (RES_OUT_LABELS[k2] == fll.tolist())
+            elif (k1.replace("Lab", "NoLab") == k2) or (k1 == k2.replace("Lab", "NoLab")):
+                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                fl, fll = o.flatten(RES[k1])
+                assert (fl.shape[1] == RES_OUT_SHAPES[k1])
+                assert (RES_OUT_LABELS[k2] == fll.tolist())
+            else:
+                with pytest.raises(Exception):
+                    o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                    fl, fll = o.flatten(RES[k1])
+
+
+
+"""
+# Take the rbp model
+model_dir = "examples/rbp/"
+install_model_requirements(model_dir, "dir", and_dataloaders=True)
+
+model = kipoi.get_model(model_dir, source="dir")
+# The preprocessor
+Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+
+dataloader_arguments = {
+    "fasta_file": "example_files/hg38_chr22.fa",
+    "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+    "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+}
+
+# Run the actual predictions
+vcf_path = "example_files/variants.vcf"
+out_vcf_fpath = "example_files/variants_generated.vcf"
+ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+
+
+with cd(model.source_dir):
+    res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds,
+                       dataloader=Dataloader, batch_size=32,
+                       evaluation_function_kwargs={'diff_types':{'ism':Diff("absmax")}},
+                       out_vcf_fpath=out_vcf_fpath)
+    assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
+"""

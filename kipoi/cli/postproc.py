@@ -18,6 +18,11 @@ logger.addHandler(logging.NullHandler())
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
+    scoring_options = {
+        "logit": kipoi.variant_effects.Logit,
+        "diff": kipoi.variant_effects.Diff,
+        "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
+    }
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
@@ -38,6 +43,7 @@ def cli_score_variants(command, raw_args):
                         help='File format.')
     parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
+    parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs = "+")
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
@@ -57,6 +63,20 @@ def cli_score_variants(command, raw_args):
     else:
         Dl = model.default_dataloader
 
+    if not os.path.exists(vcf_path):
+        raise Exception("VCF file does not exist: %s" % vcf_path)
+
+    if not isinstance(args.scoring, list):
+        args.scoring = [args.scoring]
+
+    if len(args.scoring) >= 1:
+        dts = {}
+        for k in args.scoring:
+            dts[k] = scoring_options[k]("absmax")
+    else:
+        raise Exception("No scoring method was chosen!")
+
+
     res = kipoi.variant_effects.predict_snvs(
         model,
         vcf_path,
@@ -64,7 +84,7 @@ def cli_score_variants(command, raw_args):
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         dataloader_args=dataloader_arguments,
-        evaluation_function_kwargs={"diff_type": "diff"},
+        evaluation_function_kwargs={"diff_types": dts},
         out_vcf_fpath=out_vcf_fpath
     )
 

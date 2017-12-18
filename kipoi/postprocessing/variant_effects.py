@@ -8,6 +8,8 @@ import tempfile
 from tqdm import tqdm
 import itertools
 import os
+import re
+from collections import OrderedDict
 
 import warnings
 from kipoi.components import PostProcType
@@ -118,84 +120,177 @@ def _get_seq_len(input_data):
         raise ValueError("Input can only be of type: list, dict or np.ndarray")
 
 
-def ism(model, ref, ref_rc, alt, alt_rc, mutation_positions, out_annotation_all_outputs,
-        output_filter_mask=None,
-        out_annotation=None,
-        diff_type="log_odds",
-        rc_handling="maximum", **kwargs):
-    """In-silico mutagenesis
+class Pred_analysis(object):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        raise NotImplementedError("Analysis routine has to be implemented")
 
-    Using ISM in with diff_type 'log_odds' and rc_handling 'maximum' will produce predictions as used
-    in [DeepSEA](http://www.nature.com/nmeth/journal/v12/n10/full/nmeth.3547.html). ISM offers two ways to
-    calculate the difference between the outputs created by reference and alternative sequence and two
-    different methods to select whether to use the output generated from the forward or from the
-    reverse-complement sequences. To calculate "e-values" as mentioned in DeepSEA the same ISM prediction
-    has to be performed on a randomised set of 1 million 1000genomes, MAF-matched variants to get a
-    background of predicted effects of random SNPs.
-
-    # Arguments
-        model: Keras model
-        ref: Input sequence with the reference genotype in the mutation position
-        ref_rc: Reverse complement of the 'ref' argument
-        alt: Input sequence with the alternative genotype in the mutation position
-        alt_rc: Reverse complement of the 'alt' argument
-        mutation_positions: Position on which the mutation was placed in the forward sequences
-        out_annotation_all_outputs: Output labels of the model.
-        output_filter_mask: Mask of boolean values indicating which model outputs should be used.
-            Use this or 'out_annotation'
-        out_annotation: List of outputs labels for which of the outputs (in case of a multi-task model) the
-            predictions should be calculated.
-        diff_type: "log_odds" or "diff". When set to 'log_odds' calculate scores based on log_odds, which assumes
-            the model output is a probability. When set to 'diff' the model output for 'ref' is subtracted
-            from 'alt'. Using 'log_odds' with outputs that are not in the range [0,1] nan will be returned.
-        rc_handling: "average" or "maximum". Either average over the predictions derived from forward and
-            reverse-complement predictions ('average') or pick the prediction with the bigger absolute
-            value ('maximum').
-
-    # Returns
-        Dictionary with the key `ism` which contains a pandas DataFrame containing the calculated values
-            for each (selected) model output and input sequence
-    """
-
-    seqs = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
-    assert diff_type in ["log_odds", "diff"]
-    assert rc_handling in ["average", "maximum"]
-    assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
-    assert _get_seq_len(ref)[0] == mutation_positions.shape[0]
-    assert len(mutation_positions.shape) == 1
-
-    # determine which outputs should be selected
-    if output_filter_mask is None:
-        if out_annotation is None:
-            output_filter_mask = np.arange(out_annotation_all_outputs.shape[0])
+class Rc_merging_pred_analysis(Pred_analysis):
+    allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
+    #
+    def __init__(self, rc_merging="max"):
+        if isinstance(rc_merging, str):
+            if rc_merging == "absmax":
+                self.rc_merging = self.absmax
+            elif rc_merging in self.allowed_str_opts:
+                self.rc_merging = lambda x, y: getattr(np, rc_merging)([x, y], axis=0)
+        elif callable(rc_merging):
+            self.rc_merging = rc_merging
         else:
-            output_filter_mask = np.where(np.in1d(out_annotation_all_outputs, out_annotation))[0]
+            raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
+    #
+    @staticmethod
+    def absmax(x, y, inplace=True):
+        if not inplace:
+            x = copy.deepcopy(x)
+        replace_filt = np.abs(x) < np.abs(y)
+        x[replace_filt] = y[replace_filt]
+        return x
 
-    # make sure the labels are assigned correctly
-    out_annotation = out_annotation_all_outputs[output_filter_mask]
-
-    preds = {}
-    for k in seqs:
-        preds[k] = np.array(model.predict_on_batch(seqs[k])[..., output_filter_mask])
-
-    if diff_type == "log_odds":
+class Logit(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
         if np.any([(preds[k].min() < 0 or preds[k].max() > 1) for k in preds]):
             warnings.warn("Using log_odds on model outputs that are not bound [0,1]")
         diffs = np.log(preds["alt"] / (1 - preds["alt"])) - np.log(preds["ref"] / (1 - preds["ref"]))
         diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
-    elif diff_type == "diff":
+        return self.rc_merging(diffs, diffs_rc)
+
+class Diff(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
         diffs = preds["alt"] - preds["ref"]
         diffs_rc = preds["alt_rc"] - preds["ref_rc"]
+        return self.rc_merging(diffs, diffs_rc)
 
-    if rc_handling == "average":
-        diffs = np.mean([diffs, diffs_rc], axis=0)
-    elif rc_handling == "maximum":
-        replace_filt = np.abs(diffs) < np.abs(diffs_rc)
-        diffs[replace_filt] = diffs_rc[replace_filt]
+class DeepSEA_effect(Rc_merging_pred_analysis):
+    def __call__(self, ref, ref_rc, alt, alt_rc):
+        preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+        if np.any([(preds[k].min() < 0 or preds[k].max() > 1) for k in preds]):
+            warnings.warn("Using log_odds on model outputs that are not bound [0,1]")
+        logit_diffs = np.log(preds["alt"] / (1 - preds["alt"])) - np.log(preds["ref"] / (1 - preds["ref"]))
+        logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
+        diffs = preds["alt"] - preds["ref"]
+        diffs_rc = preds["alt_rc"] - preds["ref_rc"]
+        return self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
 
-    diffs = pd.DataFrame(diffs, columns=out_annotation)
 
-    return {"ism": diffs}
+class Output_reshaper(object):
+    def __init__(self, model_target_schema, group_delim = "."):
+        self.model_target_schema = model_target_schema
+        self.standard_dict_order =None # This one is used to always produce the same order of outputs for a dict
+        # extract output labels correctly.
+        if isinstance(model_target_schema, dict):
+            anno = {}
+            # Reproducible dict output order:
+            self.standard_dict_order = list(model_target_schema.keys())
+            if not isinstance(model_target_schema, OrderedDict):
+                self.standard_dict_order = sorted(self.standard_dict_order)
+            for k in model_target_schema:
+                group_name = str(k)
+                out_group = model_target_schema[k]
+                if out_group.name is not None:
+                    group_name = out_group.name
+                group_labels = [group_name + group_delim + label for label in self.get_column_names(out_group)]
+                anno[k] = np.array(group_labels)
+        elif isinstance(model_target_schema, list):
+            anno = []
+            for i, out_group in enumerate(model_target_schema):
+                group_name = str(i)
+                if out_group.name is not None:
+                    group_name = out_group.name
+                group_labels = [group_name + group_delim + label for label in self.get_column_names(out_group)]
+                anno.append(np.array(group_labels))
+        else:
+            anno = self.get_column_names(model_target_schema)
+        self.anno = anno
+
+    def get_flat_labels(self):
+        if isinstance(self.anno, dict):
+            labels = []
+            for k in self.standard_dict_order:
+                labels.append(self.anno[k])
+            flat_labels = np.concatenate(labels, axis=0)
+        elif isinstance(self.anno, list):
+            flat_labels = np.concatenate(self.anno, axis=0)
+        else:
+            flat_labels = self.anno
+        return flat_labels
+
+    def flatten(self, ds):
+        if isinstance(ds, dict):
+            if not isinstance(self.anno, dict):
+                raise Exception("Error in model output defintion: Model definition is"
+                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+            outputs = []
+            labels = []
+            for k in self.standard_dict_order:
+                assert(ds[k].shape[1] == self.anno[k].shape[0])
+                outputs.append(ds[k])
+                labels.append(self.anno[k])
+            flat = np.concatenate(outputs, axis=1)
+            flat_labels = np.concatenate(labels, axis=0)
+        elif isinstance(ds, list):
+            if not isinstance(self.anno, list):
+                raise Exception("Error in model output defintion: Model definition is"
+                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+            assert len(ds) == len(self.anno)
+            flat = np.concatenate(ds, axis=1)
+            flat_labels = np.concatenate(self.anno, axis=0)
+        else:
+            flat = ds
+            flat_labels = self.anno
+        assert flat.shape[1] == flat_labels.shape[0]
+        return flat, flat_labels
+
+    @staticmethod
+    def get_column_names(arrayschema_obj):
+        if arrayschema_obj.column_labels is not None:
+            ret = np.array(arrayschema_obj.column_labels)
+        else:
+            res_shape = [dim for dim in arrayschema_obj.shape if dim is not None]
+            if len(res_shape) > 1:
+                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s"%str(arrayschema_obj))
+            #if res_shape[0] == 1:
+            #    ret = np.array([""])
+            #else:
+            ret = np.arange(res_shape[0]).astype(np.str)
+        return ret
+
+def analyse_model_preds(model, ref, ref_rc, alt, alt_rc, mutation_positions, diff_types,
+        output_reshaper, output_filter =None, **kwargs):
+    seqs = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
+    if not isinstance(diff_types, dict):
+        raise Exception("diff_types has to be a dictionary of callables. Keys will be used to annotate output.")
+    assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
+    assert _get_seq_len(ref)[0] == mutation_positions.shape[0]
+    assert len(mutation_positions.shape) == 1
+
+    # Make predictions
+    preds = {}
+    out_annotation = None
+    for k in seqs:
+        # Flatten the model output
+        preds_out, pred_labels = output_reshaper.flatten(model.predict_on_batch(seqs[k]))
+        if out_annotation is None:
+            out_annotation = pred_labels
+            output_filter = np.zeros(pred_labels.shape[0]) == 0
+            # determine which outputs should be selected
+            if output_filter is None:
+                if output_filter.dtype == bool:
+                    assert(output_filter.shape == out_annotation.shape)
+                else:
+                    assert np.all(np.in1d(output_filter, out_annotation))
+                    output_filter = np.in1d(out_annotation, output_filter)
+        # Filter outputs if required
+        preds[k] = np.array(preds_out[..., output_filter])
+
+    # Run the analysis callables
+    outputs = {}
+    for k in diff_types:
+        outputs[k] = pd.DataFrame(diff_types[k](**preds), columns=out_annotation[output_filter])
+
+    return outputs
+
 
 
 def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
@@ -407,13 +502,13 @@ def predict_snvs(model,
                  dataloader,
                  batch_size,
                  num_workers=0,
-                 dataloader_args=None,
-                 model_out_annotation=None,
-                 evaluation_function=ism,
+                 dataloader_args = None,
+                 model_out_annotation = None,
+                 evaluation_function = analyse_model_preds,
                  debug=False,
-                 evaluation_function_kwargs=None,
-                 out_vcf_fpath=None,
-                 use_dataloader_example_data=False):
+                 evaluation_function_kwargs={'diff_types':{'logit':Logit()}},
+                 out_vcf_fpath = None,
+                 use_dataloader_example_data = False):
     """Predict the effect of SNVs
 
         Prediction of effects of SNV based on a VCF. If desired the VCF can be stored with the predicted values as
@@ -480,8 +575,8 @@ def predict_snvs(model,
             raise Exception("Variant effect prediction with dict(array) model output not implemented!")
             # model_out_annotation = np.array(list(model.schema.targets.keys()))
         elif isinstance(model.schema.targets, list):
-            raise Exception("Variant effect prediction with list(array) model output not implemented!")
-            # model_out_annotation = np.array([x.name for x in model.schema.targets])
+            #raise Exception("Variant effect prediction with list(array) model output not implemented!")
+            model_out_annotation = np.array([x.name for x in model.schema.targets])
         else:
             # TODO - all targets need to have the keys defined
             if model.schema.targets.column_labels is not None:
@@ -489,6 +584,8 @@ def predict_snvs(model,
 
     if model_out_annotation is None:
         model_out_annotation = np.array([str(i) for i in range(model.schema.targets.shape[0])])
+
+    out_reshaper = Output_reshaper(model.schema.targets)
 
     res = []
 
@@ -508,7 +605,7 @@ def predict_snvs(model,
                 print(k)
                 print(model.predict_on_batch(eval_kwargs[k]))
                 print("".join(["-"] * 80))
-        res_here = evaluation_function(model, **eval_kwargs)
+        res_here = evaluation_function(model, output_reshaper = out_reshaper, **eval_kwargs)
         for k in res_here:
             res_here[k].index = eval_kwargs["line_id"]
         res.append(res_here)
@@ -523,7 +620,11 @@ def predict_snvs(model,
 
     # actually annotate the VCF:
     if out_vcf_fpath is not None:
-        _annotate_vcf(vcf_fpath, out_vcf_fpath, res_concatenated)
+        if (model.info.name is None) or (model.info.name == ""):
+            model_name = model.info.doc[:15] + ":" + model.info.version
+        else:
+            model_name = model.info.name + ":" + str(model.info.version)
+        _annotate_vcf(vcf_fpath, out_vcf_fpath, res_concatenated, model_name = model_name)
 
     try:
         os.unlink(temp_bed3_file)
@@ -532,7 +633,19 @@ def predict_snvs(model,
     return res_concatenated
 
 
-def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":"):
+def prep_str(s):
+    #https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
+    # Remove all non-word characters (everything except numbers and letters)
+    #s = re.sub(r"[^\w\s]", '', s)
+    s = re.sub(r"[^\w\.\:\s]+", '', s)
+    #
+    # Replace all runs of whitespace with a single underscore
+    s = re.sub(r"\s+", '_', s)
+    #
+    return s
+
+
+def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim =":", model_name = None):
     # Use the ranges object to match predictions with the vcf
     # Add original index to the ranges object
     # Sort predictions according to the vcf
@@ -545,8 +658,11 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":"):
     vcf_reader = vcf.Reader(open(in_vcf_fpath, 'r'))
     column_labels = None
     # Generate the info tag for the VEP
+    info_tag_prefix = "KPVEP"
+    if (model_name is not None) or(model_name != ""):
+        info_tag_prefix += "_%s"% prep_str(model_name)
     for k in predictions:
-        info_tag = "KPVEP_%s" % k.upper()
+        info_tag = info_tag_prefix+"_%s"%k.upper()
         col_labels_here = predictions[k].columns.tolist()
         # Make sure that the column are consistent across different prediciton methods
         if column_labels is None:
@@ -566,8 +682,8 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":"):
         for k in predictions:
             # In case there is a pediction for this line, annotate the vcf...
             if line_id in predictions[k].index:
-                info_tag = "KPVEP_%s" % k.upper()
-                preds = predictions[k].loc[line_id, :].tolist()
+                info_tag = info_tag_prefix+"_%s"%k.upper()
+                preds = predictions[k].loc[line_id,:].tolist()
                 record.INFO[info_tag] = "|".join([str(pred) for pred in preds])
         vcf_writer.write_record(record)
     vcf_writer.close()
