@@ -3,6 +3,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+import sys
 import kipoi
 
 
@@ -45,3 +47,16 @@ def add_dataloader(parser, with_args=True):
         parser.add_argument('--dataloader_args',
                             help="Dataloader arguments either as a json string:" +
                             "'{\"arg1\": 1} or as a file path to a json file")
+
+
+# other utils
+def file_exists(fpath, logger):
+    if not os.path.exists(fpath):
+        logger.error("File {0} doesn't exist".format(fpath))
+        sys.exit(1)
+
+
+def dir_exists(dirname, logger):
+    if not os.path.exists(dirname):
+        logger.error("Directory {0} doesn't exist".format(dirname))
+        sys.exit(1)

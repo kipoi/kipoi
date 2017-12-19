@@ -3,10 +3,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import os
 import argparse
 import kipoi
-from kipoi.cli.parser_utils import add_model, add_dataloader
+from kipoi.cli.parser_utils import add_model, add_dataloader, file_exists, dir_exists
 from kipoi.utils import parse_json_file_str, cd
 import deepdish
 import logging
@@ -30,6 +31,7 @@ def cli_score_variants(command, raw_args):
     add_dataloader(parser, with_args=True)
     parser.add_argument('-v', '--vcf_path',
                         help='Input VCF.')
+    # TODO - rename path to fpath
     parser.add_argument('-a', '--out_vcf_fpath',
                         help='Output annotated VCF file path.', default=None)
     parser.add_argument('--batch_size', type=int, default=32,
@@ -43,7 +45,7 @@ def cli_score_variants(command, raw_args):
                         help='File format.')
     parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
-    parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs = "+")
+    parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs="+")
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
@@ -51,6 +53,11 @@ def cli_score_variants(command, raw_args):
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
+    # Check that all the folders exist
+    file_exists(args.vcf_path, logger)
+    dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
+    if args.output is not None:
+        dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -76,7 +83,6 @@ def cli_score_variants(command, raw_args):
     else:
         raise Exception("No scoring method was chosen!")
 
-
     res = kipoi.variant_effects.predict_snvs(
         model,
         vcf_path,
@@ -89,20 +95,21 @@ def cli_score_variants(command, raw_args):
     )
 
     # tabular files
-    if args.file_format in ["tsv"]:
-        for i, k in enumerate(res):
-            # Remove an old file if it is still there...
-            if i == 0:
-                try:
-                    os.unlink(args.output)
-                except:
-                    pass
-            with open(args.output, "w") as ofh:
-                ofh.write("KPVEP_%s\n" % k.upper())
-            res[k].to_csv(args.output, sep="\t", mode="a")
-
-    if args.file_format == "hdf5":
-        deepdish.io.save(args.output, res)
+    if args.output is not None:
+        if args.file_format in ["tsv"]:
+            for i, k in enumerate(res):
+                # Remove an old file if it is still there...
+                if i == 0:
+                    try:
+                        os.unlink(args.output)
+                    except:
+                        pass
+                with open(args.output, "w") as ofh:
+                    ofh.write("KPVEP_%s\n" % k.upper())
+                    res[k].to_csv(args.output, sep="\t", mode="a")
+    
+        if args.file_format == "hdf5":
+            deepdish.io.save(args.output, res)
 
     logger.info('Successfully predicted samples')
 
