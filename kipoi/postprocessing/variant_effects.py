@@ -622,6 +622,7 @@ def predict_snvs(model,
     regions = _prepare_regions(regions)
 
     # test that all predictions go through
+    keys = set()
     for i, batch in enumerate(tqdm(it)):
         # For debugging
         # if i >= 10:
@@ -640,16 +641,15 @@ def predict_snvs(model,
                 print("".join(["-"] * 80))
         res_here = evaluation_function(model, output_reshaper = out_reshaper, **eval_kwargs)
         for k in res_here:
+            keys.add(k)
             res_here[k].index = eval_kwargs["line_id"]
         res.append(res_here)
 
     res_concatenated = {}
-    for batch in res:
-        for k in batch:
-            if k not in res_concatenated:
-                res_concatenated[k] = batch[k]
-            else:
-                res_concatenated[k] = pd.concat([res_concatenated[k], batch[k]])
+    for k in keys:
+        res_concatenated[k] = pd.concat([batch[k]
+                                         for batch in res
+                                         if k in batch])
 
     # actually annotate the VCF:
     if out_vcf_fpath is not None:
@@ -713,6 +713,7 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":", model_
     # predictions_concat = {}
     for k in predictions:
         info_tag = info_tag_prefix+"_%s" % k.upper()
+        N = len(predictions[k])
         col_labels_here = predictions[k].columns.tolist()
         # Make sure that the column are consistent across different prediciton methods
         if column_labels is None:
@@ -729,7 +730,7 @@ def _annotate_vcf(in_vcf_fpath, out_vcf_fpath, predictions, id_delim=":", model_
     vcf_writer = vcf.Writer(open(out_vcf_fpath, 'w'), vcf_reader)
 
     logger.info("Writing the vcf file to: {0}".format(out_vcf_fpath))
-    for record in tqdm(vcf_reader):
+    for record in tqdm(vcf_reader, total=N):
         # Assemble line id as before for bed file generation
         line_id = "chr" + str(record.CHROM).lstrip("chr") + id_delim + str(record.POS) + id_delim + str(record.REF) + id_delim + str(record.ALT[0])
         for k in predictions:
