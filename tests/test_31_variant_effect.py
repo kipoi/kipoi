@@ -1,4 +1,3 @@
-
 import kipoi
 import kipoi.postprocessing.variant_effects as ve
 import numpy as np
@@ -15,7 +14,7 @@ import pandas as pd
 import tempfile
 from kipoi.metadata import GenomicRanges
 import kipoi
-from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds
+from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds, _prepare_regions
 import numpy as np
 from scipy.special import logit
 
@@ -257,6 +256,9 @@ def test__generate_seq_sets():
                                 "id":np.arange(num_seqs)}}
     #
     meta_data_options = [gr_meta, dict_meta]
+
+    annotated_regions = _prepare_regions(annotated_regions)
+
     for meta_data in meta_data_options:
         ## Test the dict case:
         dataloader = dummy_container()
@@ -386,6 +388,7 @@ def test_var_eff_pred():
                               dataloader=Dataloader, batch_size=32,
                               evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
                               out_vcf_fpath=out_vcf_fpath)
+        # pass
         assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         os.unlink(out_vcf_fpath)
 
