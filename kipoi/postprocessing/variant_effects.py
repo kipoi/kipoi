@@ -623,8 +623,9 @@ def predict_snvs(model,
 
     # test that all predictions go through
     for i, batch in enumerate(tqdm(it)):
-        if i >= 10:
-            break
+        # For debugging
+        # if i >= 10:
+        #     break
         # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
         eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, regions, array_trafo = dna_seq_trafo)
         if evaluation_function_kwargs is not None:
