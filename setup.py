@@ -49,7 +49,8 @@ setup(
                     "epc",
                     "pytest",
                     # "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
-                    # "pytest-cov"],
+                    # "pytest-cov"
+                   ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
