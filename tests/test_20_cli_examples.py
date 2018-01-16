@@ -159,6 +159,7 @@ def test_predict_variants_example(example, tmpdir):
         # run the
         if INSTALL_FLAG:
             args.append(INSTALL_FLAG)
+        print (" ".join(args))
         returncode = subprocess.call(args=args,
                                      cwd=os.path.realpath(example_dir))
         assert returncode == 0

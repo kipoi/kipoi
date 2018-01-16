@@ -83,15 +83,22 @@ def cli_score_variants(command, raw_args):
     else:
         raise Exception("No scoring method was chosen!")
 
-    res = kipoi.variant_effects.predict_snvs(
-        model,
+    model_info = kipoi.postprocessing.Model_info_extractor(model, Dl)
+    vcf_writer = kipoi.postprocessing.Vcf_writer(model, vcf_path, out_vcf_fpath)
+    vcf_to_region = kipoi.postprocessing.SNV_centered_rg(model_info)
+
+    keep_predictions = args.output is not None
+
+    res = kipoi.postprocessing.predict_snvs(
+        model_info,
         vcf_path,
-        dataloader=Dl,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         dataloader_args=dataloader_arguments,
+        vcf_to_region = vcf_to_region,
         evaluation_function_kwargs={"diff_types": dts},
-        out_vcf_fpath=out_vcf_fpath
+        sync_pred_writer=vcf_writer,
+        return_predictions=keep_predictions
     )
 
     # tabular files
