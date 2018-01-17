@@ -1,3 +1,4 @@
 # pip requirements for circle CI
 cython
 tensorflow
+cyvcf2
