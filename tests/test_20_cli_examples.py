@@ -9,6 +9,7 @@ import yaml
 import pandas as pd
 import config
 import h5py
+import filecmp
 
 # TODO - check if you are on travis or not regarding the --install_req flag
 if config.install_req:
@@ -16,7 +17,7 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_model"]
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -131,60 +132,75 @@ def test_predict_example(example, tmpdir):
 def test_predict_variants_example(example, tmpdir):
     """kipoi predict ...
     """
-    if example not in {"rbp"} or sys.version_info[0] == 2:
+    if example not in {"rbp", "non_bedinput_model"} or sys.version_info[0] == 2:
         pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
     example_dir = "examples/{0}".format(example)
 
     tmpdir_here = tmpdir.mkdir("example")
 
-    for file_format in ["tsv", "hdf5"]:
-        print(example)
-        print("tmpdir: {0}".format(tmpdir))
-        tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
-        vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
+    for restricted_bed in [True, False]:
+        # non_bedinput_model is not compatible with restricted bed files as
+        # alterations in region generation have no influence on that model
+        if restricted_bed and (example != "rbp"):
+            continue
+        for file_format in ["tsv", "hdf5"]:
+            print(example)
+            print("tmpdir: {0}".format(tmpdir))
+            tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
+            vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
-        args = ["python", os.path.abspath("./kipoi/__main__.py"),
-                "postproc",
-                "score_variants",
-                "./",  # directory
-                "--source=dir",
-                "--batch_size=4",
-                "--dataloader_args='{fasta_file: example_files/hg38_chr22.fa,preproc_transformer: "
-                "dataloader_files/encodeSplines.pkl,gtf_file: example_files/gencode_v25_chr22.gtf.pkl.gz}'",
-                "--vcf_path", "example_files/variants.vcf",
-                "--file_format", file_format,
-                "--out_vcf_fpath", vcf_tmpfile,
-                "--output", tmpfile]
-        # run the
-        if INSTALL_FLAG:
-            args.append(INSTALL_FLAG)
-        print (" ".join(args))
-        returncode = subprocess.call(args=args,
-                                     cwd=os.path.realpath(example_dir))
-        assert returncode == 0
+            args = ["python", os.path.abspath("./kipoi/__main__.py"),
+                    "postproc",
+                    "score_variants",
+                    "./",  # directory
+                    "--source=dir",
+                    "--batch_size=4",
+                    "--dataloader_args='{fasta_file: example_files/hg38_chr22.fa,preproc_transformer: "
+                    "dataloader_files/encodeSplines.pkl,gtf_file: example_files/gencode_v25_chr22.gtf.pkl.gz,"
+                    "intervals_file: example_files/variant_intervals.tsv}'",
+                    "--vcf_path", "example_files/variants.vcf",
+                    "--file_format", file_format,
+                    "--out_vcf_fpath", vcf_tmpfile,
+                    "--output", tmpfile]
+            # run the
+            if INSTALL_FLAG:
+                args.append(INSTALL_FLAG)
 
-        assert os.path.exists(tmpfile)
-        assert os.path.exists(vcf_tmpfile)
+            if restricted_bed:
+                args += ["--restriction_bed", "example_files/restricted_regions.bed"]
 
-        if file_format == "hdf5":
-            data = deepdish.io.load(tmpfile)
-        else:
-            table_labels = []
-            table_starts = []
-            table_ends = []
-            tables = {}
-            head_line_id = "KPVEP_"
-            with open(tmpfile, "r") as ifh:
-                for i, l in enumerate(ifh):
-                    if head_line_id in l:
-                        if (len(table_starts) > 0):
-                            table_ends.append(i - 1)
-                        table_labels.append(l.rstrip()[len(head_line_id):])
-                        table_starts.append(i + 1)
-                table_ends.append(i)
-            for label, start, end in zip(table_labels, table_starts, table_ends):
-                tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
+            returncode = subprocess.call(args=args,
+                                         cwd=os.path.realpath(example_dir))
+            assert returncode == 0
+
+            assert os.path.exists(tmpfile)
+            assert os.path.exists(vcf_tmpfile)
+
+            if restricted_bed:
+                assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+            else:
+                assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+
+            if file_format == "hdf5":
+                data = deepdish.io.load(tmpfile)
+            else:
+                table_labels = []
+                table_starts = []
+                table_ends = []
+                tables = {}
+                head_line_id = "KPVEP_"
+                with open(tmpfile, "r") as ifh:
+                    for i, l in enumerate(ifh):
+                        if head_line_id in l:
+                            if (len(table_starts) > 0):
+                                table_ends.append(i - 1)
+                            table_labels.append(l.rstrip()[len(head_line_id):])
+                            table_starts.append(i + 1)
+                    table_ends.append(i)
+                for label, start, end in zip(table_labels, table_starts, table_ends):
+                    tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
+
 
 
 def test_pull_kipoi():

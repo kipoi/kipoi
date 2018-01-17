@@ -11,6 +11,7 @@ from kipoi.cli.parser_utils import add_model, add_dataloader, file_exists, dir_e
 from kipoi.utils import parse_json_file_str, cd
 import deepdish
 import logging
+import pybedtools as pb
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -43,6 +44,8 @@ def cli_score_variants(command, raw_args):
     parser.add_argument('-f', '--file_format', default="tsv",
                         choices=["tsv", "hdf5"],
                         help='File format.')
+    parser.add_argument('-r', '--restriction_bed', default = None,
+                        help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
     parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs="+")
@@ -83,9 +86,39 @@ def cli_score_variants(command, raw_args):
     else:
         raise Exception("No scoring method was chosen!")
 
+    # Load effect prediction related model info
     model_info = kipoi.postprocessing.Model_info_extractor(model, Dl)
-    vcf_writer = kipoi.postprocessing.Vcf_writer(model, vcf_path, out_vcf_fpath)
-    vcf_to_region = kipoi.postprocessing.SNV_centered_rg(model_info)
+
+    # Select the appropriate region generator
+    if args.restriction_bed is not None:
+        # Select the restricted SNV-centered region generator
+        pbd = pb.BedTool(args.restriction_bed)
+        vcf_to_region = kipoi.postprocessing.SNV_pos_restricted_rg(model_info,pbd)
+        logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
+                    'Only defined regions will be tested.')
+    elif model_info.requires_region_definition:
+        # Select the SNV-centered region generator
+        vcf_to_region = kipoi.postprocessing.SNV_centered_rg(model_info)
+        logger.info('Using variant-centered sequence generation.')
+    else:
+        # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
+        vcf_to_region = None
+        # Make sure that the vcf is tabixed
+        vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
+        logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
+                    'produced regions can be predicted')
+
+    if model_info.supports_simple_rc:
+        logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
+    else:
+        logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
+
+    # Get a vcf output writer if needed
+    if out_vcf_fpath is not None:
+        logger.info('Annotated VCF will be written to %s.'%str(out_vcf_fpath))
+        vcf_writer = kipoi.postprocessing.Vcf_writer(model, vcf_path, out_vcf_fpath)
+    else:
+        vcf_writer = None
 
     keep_predictions = args.output is not None
 

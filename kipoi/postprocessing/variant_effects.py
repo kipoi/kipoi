@@ -160,6 +160,7 @@ def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo= N
         input_set = array_trafo.to_standard(input_set)
     assert input_set.shape[1] == \
         (preproc_conv["end"] - preproc_conv["start"] + 1).values[0]
+    assert preproc_conv["strand"].isin(["+", "-", "*", "."]).all()
     # Modify bases according to allele
     _modify_bases(seq_obj = input_set,
                   lines = preproc_conv["pp_line"].values,

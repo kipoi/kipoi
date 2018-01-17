@@ -7,6 +7,36 @@ import cyvcf2
 import vcf
 from tqdm import tqdm
 from kipoi.postprocessing.utils.generic import prep_str, convert_record
+import os
+import h5py
+import six
+import gzip
+
+
+def fopen(*args, **kwargs):
+    if isinstance(args[0], six.string_types) and args[0].endswith(".gz"):
+        return gzip.open(*args, **kwargs)
+    else:
+        return open(*args, **kwargs)
+
+def recursive_h5_writer(objs, handle, create):
+    for key in objs.keys():
+        if isinstance(objs[key], dict):
+            if create:
+                g = handle.create_group(key)
+            else:
+                g = handle['key']
+            recursive_h5_writer(objs[key], g, create)
+        else:
+            if create:
+                max_shape = list(np.array(objs[key]).shape)
+                max_shape[0] = None
+                handle.create_dataset(name=key, data=np.array(objs[key]), maxshape=tuple(max_shape), chunks=True, compression='gzip')
+            else:
+                dset = handle[key]
+                n = objs[key]
+                dset.resize(dset.shape[0] + n.shape[0], axis=0)
+                dset[-(n.shape[0]):] = n
 
 
 class Bed_writer:
@@ -27,6 +57,38 @@ class Bed_writer:
     #
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+class Seq_writer(object):
+    @abstractmethod
+    def __call__(self, model_input_sets):
+        """
+        Function that will be called by the predict function after every batch
+        """
+        pass
+
+
+
+
+class Sync_hdf5_writer(Seq_writer):
+    def __init__(self, ouput_fn):
+        try:
+            os.unlink(ouput_fn)
+        except:
+            pass
+        self.ofh = h5py.File(ouput_fn, "w")
+        self._initialised = False
+
+    def __call__(self, model_input_sets):
+        model_input_sets_reduced = {}
+        for k in ["ref", "alt", "ref_rc", "alt_rc"]:
+            if model_input_sets[k] is not None:
+                model_input_sets_reduced[k] = model_input_sets[k]
+        recursive_h5_writer(model_input_sets_reduced, self.ofh, not self._initialised)
+        if not self._initialised:
+            self._initialised = True
+
+    def close(self):
+        self.ofh.close()
 
 
 class Sync_predictons_writer(object):
@@ -120,7 +182,8 @@ class Vcf_writer_cyvcf2(Sync_predictons_writer):
 class Vcf_writer(Sync_predictons_writer):
     def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":"):
         super(Vcf_writer, self).__init__(model)
-        self.vcf_reader = vcf.Reader(open(reference_vcf_path), "r")
+        compressed = reference_vcf_path.endswith(".gz")
+        self.vcf_reader = vcf.Reader(filename = reference_vcf_path, compressed = compressed)
         #self.vcf_reader = reference_vcf_obj
         self.out_vcf_fpath = out_vcf_fpath
         self.id_delim = id_delim
@@ -137,9 +200,6 @@ class Vcf_writer(Sync_predictons_writer):
         # First itertation: the output file has to be created and the headers defined
         if len(predictions) == 0:
             return None
-
-        import pdb
-        #pdb.set_trace()
 
         if self.prediction_labels is None:
             # setup the header

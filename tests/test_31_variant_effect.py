@@ -332,9 +332,10 @@ def test__get_dl_bed_fields():
     model_dir = "examples/rbp/"
     assert(
     kipoi.postprocessing.utils.generic._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir")) == ['intervals_file'])
-    model_dir = "examples/extended_coda/"
-    with pytest.raises(Exception):
-        kipoi.postprocessing.utils.generic._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir"))
+    # This is not valid anymore:
+    #model_dir = "examples/extended_coda/"
+    #with pytest.raises(Exception):
+    #    kipoi.postprocessing.utils.generic._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir"))
 
 
 
@@ -396,7 +397,7 @@ def test_var_eff_pred():
         res = sp.predict_snvs(model_info, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds, batch_size=32,
                               vcf_to_region = vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
                               sync_pred_writer=writer)
         writer.close()
         # pass
@@ -437,7 +438,7 @@ def test_var_eff_pred2():
         res = sp.predict_snvs(model_info, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds,batch_size=32,
                               vcf_to_region = vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
                               sync_pred_writer=writer)
         writer.close()
         # pass
@@ -530,14 +531,15 @@ def test__generate_pos_restricted_seqs():
     tuples = (([21541490, 21541591], [21541491, 21541591]),
               ([21541390, 21541891], [21541540, 21541640]),
               ([21541570, 21541891], [21541571, 21541671]))
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
     for tpl in tuples:
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         qbf = pb.BedTool("chr22 %d %d"%tuple(tpl[0]), from_string=True)
         regions = Dummy_internval()
-        seq_length = 101
         #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, qbf, regions.append_interval, seq_length)
-        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(qbf)
-        region_generator.set_seq_length(seq_length)
+        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(model_info_extractor, qbf)
         _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
         vcf_fh.close()
         regions_df = pd.DataFrame(regions.storage)
@@ -549,6 +551,9 @@ def test__generate_pos_restricted_seqs():
 def test__generate_snv_centered_seqs():
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
     lct = 0
     hdr = None
     with open(vcf_path, "r") as ifh:
@@ -567,8 +572,8 @@ def test__generate_snv_centered_seqs():
     for seq_length in [100, 101]:
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         regions = Dummy_internval()
-        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg()
-        region_generator.set_seq_length(seq_length)
+        model_info_extractor.seq_length = seq_length
+        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg(model_info_extractor)
         _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
         vcf_fh.close()
         regions_df = pd.DataFrame(regions.storage)
@@ -582,10 +587,14 @@ def test__generate_snv_centered_seqs():
 def test__generate_seq_sets_v2():
     model_dir = "examples/rbp/"
     vcf_sub_path = "example_files/variants.vcf"
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
     vcf_path = model_dir + vcf_sub_path
     vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
     # for any given input type: list, dict and np.array return 4 identical sets, except for mutated bases on one position
     seq_len = 101
+    model_info_extractor.seq_length = seq_len
     for num_seqs in [1,5]:
         empty_seq_input = np.zeros((num_seqs, seq_len, 4))
         empty_other_input = np.zeros((num_seqs, seq_len, 4)) - 10
@@ -595,8 +604,8 @@ def test__generate_seq_sets_v2():
         vcf_fh = cyvcf2.VCF(vcf_path)
         regions = Dummy_internval()
         #
-        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg()
-        region_generator.set_seq_length(seq_len)
+        model_info_extractor.seq_length = seq_len
+        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg(model_info_extractor)
         _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
         #
         vcf_fh.close()
@@ -655,8 +664,7 @@ def test__generate_seq_sets_v2():
         pbd = pb.BedTool(model_dir + restricted_regions_fpath)
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         regions = Dummy_internval()
-        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(pbd)
-        region_generator.set_seq_length(seq_len)
+        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(model_info_extractor, pbd)
         _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
         #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, pbd, regions.append_interval, seq_len)
         vcf_fh.close()
@@ -812,7 +820,7 @@ with cd(model.source_dir):
     res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
                           evaluation_function=analyse_model_preds,
                        dataloader=Dataloader, batch_size=32,
-                       evaluation_function_kwargs={'diff_types':{'ism':Diff("absmax")}},
+                       evaluation_function_kwargs={'diff_types':{'diff':Diff("absmax")}},
                        out_vcf_fpath=out_vcf_fpath)
     assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
     os.unlink(out_vcf_fpath)

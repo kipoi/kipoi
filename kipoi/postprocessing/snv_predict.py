@@ -8,6 +8,7 @@ import cyvcf2
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import six
 
 from kipoi.postprocessing.utils.generic import select_from_model_inputs, Output_reshaper, _default_vcf_id_gen
 from kipoi.postprocessing.utils.io import Bed_writer
@@ -50,8 +51,10 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
     # first establish which VCF region we are talking about...
     ranges_input_objs = {}
     null_key = None
+    #print(1)
     # every sequence key can have it's own region definition
     for seq_key in relv_seq_keys:
+        #print(seq_key)
         if isinstance(dataloader.output_schema.inputs, dict):
             ranges_slots = dataloader.output_schema.inputs[seq_key].associated_metadata
         elif isinstance(dataloader.output_schema.inputs, list):
@@ -75,6 +78,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
     vcf_records = []
     process_ids = []
     process_lines = []
+    #print(2)
     if vcf_search_regions:
         vcf_records, process_lines = _overlap_vcf_region(vcf_fh, ranges_input_objs[null_key])
         process_ids = [ranges_input_objs[null_key]["id"][i] for i in process_lines]
@@ -90,7 +94,7 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
                 else:
                     # Warn here...
                     pass
-
+    #print(3)
     # short-cut if no sequences are left
     if len(process_lines) == 0:
         return None
@@ -102,27 +106,34 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
         seq_dirs = ["fwd", "rc"]
     for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
         k = "%s_%s" % (s_dir, allele)
+        #print(k)
         ds = model_input['inputs']
         all_lines = list(range(len(ranges_input_objs[null_key]["id"])))
         if process_ids != process_lines:
             # subset or rearrange elements
             ds = select_from_model_inputs(model_input['inputs'], process_lines, len(all_lines))
         input_set[k] = copy.deepcopy(ds)
-
+    #print(4)
 
     # Start from the sequence inputs mentioned in the model.yaml
     for seq_key in relv_seq_keys:
+        #print(str(seq_key) + str(1))
         # extract the metadata output
         ranges_input_obj = ranges_input_objs[seq_key]
         #
         # Assemble variant modification information
-        preproc_conv = {"pp_line":[], "varpos_rel":[], "strand":[], "ref":[], "alt":[], "start":[], "end":[], "id":[]}
+        preproc_conv = {"pp_line":[], "varpos_rel":[], "ref":[], "alt":[], "start":[], "end":[], "id":[]}
+
+        if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
+                                                   isinstance(ranges_input_obj["strand"], np.ndarray)):
+            preproc_conv["strand"] = []
 
         for i, record in enumerate(vcf_records):
-            assert process_ids[i] == ranges_input_obj["id"][i]
+            ranges_input_i = process_lines[i]
+            assert process_ids[i] == ranges_input_obj["id"][ranges_input_i]
             assert not record.is_indel # Catch indels, that needs a slightly modified processing
-            preproc_conv["start"].append(ranges_input_obj["start"][i]+1) # convert bed back to 1-based
-            preproc_conv["end"].append(ranges_input_obj["end"][i])
+            preproc_conv["start"].append(ranges_input_obj["start"][ranges_input_i]+1) # convert bed back to 1-based
+            preproc_conv["end"].append(ranges_input_obj["end"][ranges_input_i])
             preproc_conv["varpos_rel"].append(int(record.POS) - preproc_conv["start"][-1])
             if (preproc_conv["varpos_rel"][-1] < 0) or\
                     (preproc_conv["varpos_rel"][-1] > (preproc_conv["end"][-1] - preproc_conv["start"][-1]+1)):
@@ -132,22 +143,26 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
             preproc_conv["alt"].append(str(record.ALT[0]))
             preproc_conv["id"].append(str(process_ids[i]))
             preproc_conv["pp_line"].append(i)
+            if "strand" in preproc_conv:
+                preproc_conv["strand"].append(ranges_input_obj["strand"][ranges_input_i])
 
 
-        if "strand" in ranges_input_obj:
-            preproc_conv["strand"] = ranges_input_obj["strand"]
-        else:
-            preproc_conv["strand"] = ["*"] * len(ranges_input_obj["chr"])
+        # If strand wasn't a list then try to still fix it..
+        if "strand" not in preproc_conv:
+            if "strand" not in ranges_input_obj:
+                preproc_conv["strand"] = ["*"] * len(ranges_input_obj["chr"])
+            elif isinstance(ranges_input_obj["strand"], six.string_types):
+                preproc_conv["strand"] = [ranges_input_obj["strand"]] * len(ranges_input_obj["chr"])
+            else:
+                raise Exception("Strand defintion invalid in metadata returned by dataloader.")
 
         preproc_conv_df = pd.DataFrame(preproc_conv)
 
-        if preproc_conv_df.shape[0] != len(ranges_input_obj["id"]):
-            raise Exception("Error, id mismatch between generated sequences and VCF.")
-
-
+        #print(str(seq_key) + str(3))
         # Actually modify sequences according to annotation
         for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
             k = "%s_%s" % (s_dir, allele)
+            #print(str(seq_key) + str(k))
             if isinstance(dataloader.output_schema.inputs, dict):
                 if seq_key not in input_set[k]:
                     raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
@@ -162,6 +177,8 @@ def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_ge
                 input_set[k] = modified_set
             else:
                 input_set[k] = _process_sequence_set(input_set[k], preproc_conv_df, allele, s_dir, array_trafo)
+
+    #print(5)
     #
     # Reformat so that effect prediction function will get its required inputs
     pred_set = {"ref": input_set["fwd_ref"], "alt": input_set["fwd_alt"]}
@@ -185,7 +202,8 @@ def predict_snvs(model_info_extractor,
                  evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
                  sync_pred_writer=None,
                  use_dataloader_example_data=False,
-                 return_predictions=False
+                 return_predictions=False,
+                 generated_seq_writer=None
                  ):
     """Predict the effect of SNVs
 
@@ -228,12 +246,14 @@ def predict_snvs(model_info_extractor,
     exec_files_bed_keys = model_info_extractor.get_exec_files_bed_keys()
     temp_bed3_file = None
 
+    vcf_search_regions = True
 
     # If there is a field for putting the a postprocessing bed file, then generate the bed file.
     if exec_files_bed_keys is not None:
-
+        vcf_search_regions = False
         if vcf_to_region is None:
-            raise Exception("vcf_to_region parameter has to be set if regions are generated from a VCF.")
+            raise Exception("vcf_to_region parameter has to be set if regions should be generated from a VCF."
+                            "(Requested by defining: postprocessing > variant_effects > bed_input in: dataloader.yaml)")
 
         temp_bed3_file = tempfile.mktemp()  # file path of the temp file
 
@@ -278,6 +298,11 @@ def predict_snvs(model_info_extractor,
         if not isinstance(sync_pred_writer, list):
             sync_pred_writer = [sync_pred_writer]
 
+    # organise the prediction writers
+    if generated_seq_writer is not None:
+        if not isinstance(generated_seq_writer, list):
+            generated_seq_writer = [generated_seq_writer]
+
     # Open vcf again
     vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
 
@@ -291,9 +316,16 @@ def predict_snvs(model_info_extractor,
         #     break
         # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
         eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, vcf_fh, _default_vcf_id_gen,
+                                         vcf_search_regions = vcf_search_regions,
                                          array_trafo=dna_seq_trafo, generate_rc=model_info_extractor.supports_simple_rc)
         if eval_kwargs is None:
             # No generated datapoint overlapped any VCF region
+            continue
+
+        if generated_seq_writer is not None:
+            for writer in generated_seq_writer:
+                writer(eval_kwargs)
+            # Assume that we don't actually want the predictions to be calculated...
             continue
 
         if evaluation_function_kwargs is not None:
@@ -308,8 +340,6 @@ def predict_snvs(model_info_extractor,
             keys.add(k)
             res_here[k].index = eval_kwargs["line_id"]
         # write the predictions synchronously
-        import pdb
-        #pdb.set_trace()
         if sync_pred_writer is not None:
             for writer in sync_pred_writer:
                 writer(res_here, eval_kwargs["vcf_records"])

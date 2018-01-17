@@ -1,9 +1,9 @@
 ##fileformat=VCFv4.0
-##INFO=<ID=KPVEP_RBP_binding_pre:0.1_ISM,Number=.,Type=String,Description="ISM SNV effect prediction. Prediction from model outputs: rbp_prb">
+##INFO=<ID=KPVEP_RBP_binding_pre:0.1_DIFF,Number=.,Type=String,Description="DIFF SNV effect prediction. Prediction from model outputs: rbp_prb">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-chr22	21541590	rs1111	A	T	.	.	KPVEP_RBP_binding_pre:0.1_ISM=0.052547842
-chr22	21541952	rs1112	C	C	.	.	KPVEP_RBP_binding_pre:0.1_ISM=0.0
-chr22	30630220	rs1113	T	G	.	.	KPVEP_RBP_binding_pre:0.1_ISM=0.01054275
-chr22	30630701	rs1114	A	G	.	.	KPVEP_RBP_binding_pre:0.1_ISM=0.14524247
-chr22	35503223	rs1115	C	A	.	.	KPVEP_RBP_binding_pre:0.1_ISM=-0.07083912
-chr22	36702137	rs1116	C	A	.	.	KPVEP_RBP_binding_pre:0.1_ISM=-0.08933549
+chr22	21541590	rs1111	A	T	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=0.052547842
+chr22	21541952	rs1112	C	C	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=0.0
+chr22	30630220	rs1113	T	G	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=0.01054275
+chr22	30630701	rs1114	A	G	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=0.14524247
+chr22	35503223	rs1115	C	A	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=-0.07083912
+chr22	36702137	rs1116	C	A	.	.	KPVEP_RBP_binding_pre:0.1_DIFF=-0.08933549

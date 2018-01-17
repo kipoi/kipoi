@@ -368,7 +368,7 @@ class Model_info_extractor(object):
 
         self.requires_region_definition = False
         # If there is a field for putting the a postprocessing bed file, then generate the bed file.
-        if (self.exec_files_bed_keys is not None) or (len(self.exec_files_bed_keys) != 0):
+        if (self.exec_files_bed_keys is not None) and (len(self.exec_files_bed_keys) != 0):
             self.requires_region_definition = True
 
         self.model_out_annotation = None
@@ -449,5 +449,6 @@ def _get_dl_bed_fields(dataloader):
             seq_dict = pp_obj.args
             break
     if seq_dict is None:
-        raise Exception("Dataloader does not support any postprocessing")
+        #raise Exception("Dataloader does not support any postprocessing")
+        return None
     return seq_dict['bed_input']
