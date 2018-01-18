@@ -528,6 +528,8 @@ def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_
                 int_write_fn(chrom = chrom, start= start, end=end , id=id)
 
 def test__generate_pos_restricted_seqs():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
     tuples = (([21541490, 21541591], [21541491, 21541591]),
@@ -551,6 +553,8 @@ def test__generate_pos_restricted_seqs():
 
 
 def test__generate_snv_centered_seqs():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
     model = kipoi.get_model(model_dir, source="dir")
@@ -587,6 +591,8 @@ def test__generate_snv_centered_seqs():
 
 
 def test__generate_seq_sets_v2():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
     model_dir = "examples/rbp/"
     vcf_sub_path = "example_files/variants.vcf"
     model = kipoi.get_model(model_dir, source="dir")

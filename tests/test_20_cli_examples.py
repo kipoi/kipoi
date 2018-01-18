@@ -26,7 +26,7 @@ EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_
 def test_test_example(example):
     """kipoi test ...
     """
-    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
@@ -44,7 +44,7 @@ def test_test_example(example):
 def test_preproc_example(example, tmpdir):
     """kipoi preproc ...
     """
-    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
@@ -91,7 +91,7 @@ def test_predict_example(example, tmpdir):
 #     raise NotImplementedError
 # NotImplementedError
 # _________________________
-    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
@@ -134,7 +134,7 @@ def test_predict_example(example, tmpdir):
 def test_predict_variants_example(example, tmpdir):
     """kipoi predict ...
     """
-    if example not in {"rbp", "non_bedinput_model"} or sys.version_info[0] == 2:
+    if (example not in {"rbp", "non_bedinput_model"}) or (sys.version_info[0] == 2):
         pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
     example_dir = "examples/{0}".format(example)
