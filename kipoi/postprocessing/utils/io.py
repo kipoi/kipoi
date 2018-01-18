@@ -242,7 +242,7 @@ class Vcf_writer(Sync_predictons_writer):
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
                 info_tag = self.info_tag_prefix + "_{0}".format(k.upper())
-                record_vcf.INFO[info_tag] = "|".join([str(pred) for pred in preds])
+                record_vcf.INFO[info_tag] = "|".join([str("%.8f"%pred) for pred in preds])
             self.vcf_writer.write_record(record_vcf)
 
     def close(self):

@@ -29,6 +29,7 @@ warnings.filterwarnings('ignore')
 from kipoi.components import ArraySchema, ModelSchema
 from related import from_yaml
 from kipoi.postprocessing.utils.generic import Output_reshaper
+from utils import compare_vcfs
 
 CLS = ArraySchema
 MS = ModelSchema
@@ -207,18 +208,6 @@ def test__get_seq_len():
     assert (kipoi.postprocessing.utils.generic._get_seq_len({"a": np.array([111]), "b": np.array([111])}) == (1,))
     assert (kipoi.postprocessing.utils.generic._get_seq_len(np.array([111])) == (1,))
 
-
-def compare_vcfs(fpath1, fpath2):
-    fh1 = cyvcf2.VCF(fpath1)
-    fh2 = cyvcf2.VCF(fpath2)
-    for rec1, rec2 in zip(fh1, fh2):
-        i1 = dict(rec1.INFO)
-        i2 = dict(rec2.INFO)
-        for k in i1:
-            min_round = min(len(i1[k]) - i1[k].index("."), len(i2[k]) - i2[k].index("."))
-            assert np.round(float(i1[k]), min_round) == np.round(float(i2[k]), min_round)
-    fh2.close()
-    fh1.close()
 
 def test__vcf_to_regions():
     model_dir = "examples/rbp/"

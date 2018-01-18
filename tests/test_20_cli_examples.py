@@ -10,6 +10,7 @@ import pandas as pd
 import config
 import h5py
 import filecmp
+from utils import compare_vcfs
 
 # TODO - check if you are on travis or not regarding the --install_req flag
 if config.install_req:
@@ -18,6 +19,7 @@ else:
     INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_model"]
+
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -178,9 +180,11 @@ def test_predict_variants_example(example, tmpdir):
             assert os.path.exists(vcf_tmpfile)
 
             if restricted_bed:
-                assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+                #assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+                compare_vcfs(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
             else:
-                assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+                #assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+                compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
 
             if file_format == "hdf5":
                 data = deepdish.io.load(tmpfile)
