@@ -51,7 +51,7 @@ def select_from_model_inputs(obj, rows, nrows_expected=None):
     return out_obj
 
 
-class Reshape_dna(object):
+class ReshapeDna(object):
     def __init__(self, in_shape):
         in_shape = np.array(in_shape)
         none_pos = np.in1d(in_shape, None)
@@ -156,7 +156,7 @@ def _get_seq_len(input_data):
         raise ValueError("Input can only be of type: list, dict or np.ndarray")
 
 
-class Output_reshaper(object):
+class OutputReshaper(object):
     def __init__(self, model_target_schema, group_delim = "."):
         self.model_target_schema = model_target_schema
         self.standard_dict_order =None # This one is used to always produce the same order of outputs for a dict
@@ -272,7 +272,7 @@ def convert_record(input_record, pyvcf_reader):
                              info_tag, input_record.FORMAT,{})
 
 
-def _default_vcf_id_gen(vcf_record, id_delim=":"):
+def default_vcf_id_gen(vcf_record, id_delim=":"):
     return str(vcf_record.CHROM) + id_delim + str(vcf_record.POS) + id_delim + str(vcf_record.REF) + id_delim + str(vcf_record.ALT)
 
 
@@ -290,9 +290,9 @@ class RegionGenerator(object):
         pass
 
 
-class SNV_centered_rg(RegionGenerator):
+class SnvCenteredRg(RegionGenerator):
     def __init__(self, model_info_extractor):
-        super(SNV_centered_rg, self).__init__(model_info_extractor)
+        super(SnvCenteredRg, self).__init__(model_info_extractor)
         self.seq_length = model_info_extractor.get_seq_len()
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half
@@ -307,9 +307,9 @@ class SNV_centered_rg(RegionGenerator):
             }
 
 
-class SNV_pos_restricted_rg(RegionGenerator):
+class SnvPosRestrictedRg(RegionGenerator):
     def __init__(self, model_info_extractor, pybed_def):
-        super(SNV_pos_restricted_rg, self).__init__(model_info_extractor)
+        super(SnvPosRestrictedRg, self).__init__(model_info_extractor)
         self.tabixed = pybed_def.tabix(in_place=False)
         self.seq_length = model_info_extractor.get_seq_len()
         seq_length_half = int(self.seq_length / 2)
@@ -348,7 +348,7 @@ class SNV_pos_restricted_rg(RegionGenerator):
         return {"chrom": chroms, "start": starts, "end": ends}
 
 
-class Model_info_extractor(object):
+class ModelInfoExtractor(object):
     def __init__(self, model_obj, dataloader_obj):
         self.model = model_obj
         self.dataloader = dataloader_obj
@@ -360,7 +360,7 @@ class Model_info_extractor(object):
 
         self.seq_shape = list(seq_shapes)[0]
 
-        self.dna_seq_trafo = Reshape_dna(self.seq_shape)
+        self.dna_seq_trafo = ReshapeDna(self.seq_shape)
         self.seq_length = self.dna_seq_trafo.get_seq_len()
 
         # If then where do I have to put my bed file in the command?

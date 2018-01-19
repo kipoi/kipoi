@@ -87,18 +87,18 @@ def cli_score_variants(command, raw_args):
         raise Exception("No scoring method was chosen!")
 
     # Load effect prediction related model info
-    model_info = kipoi.postprocessing.Model_info_extractor(model, Dl)
+    model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dl)
 
     # Select the appropriate region generator
     if args.restriction_bed is not None:
         # Select the restricted SNV-centered region generator
         pbd = pb.BedTool(args.restriction_bed)
-        vcf_to_region = kipoi.postprocessing.SNV_pos_restricted_rg(model_info,pbd)
+        vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
         logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
                     'Only defined regions will be tested.')
     elif model_info.requires_region_definition:
         # Select the SNV-centered region generator
-        vcf_to_region = kipoi.postprocessing.SNV_centered_rg(model_info)
+        vcf_to_region = kipoi.postprocessing.SnvCenteredRg(model_info)
         logger.info('Using variant-centered sequence generation.')
     else:
         # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
@@ -116,14 +116,15 @@ def cli_score_variants(command, raw_args):
     # Get a vcf output writer if needed
     if out_vcf_fpath is not None:
         logger.info('Annotated VCF will be written to %s.'%str(out_vcf_fpath))
-        vcf_writer = kipoi.postprocessing.Vcf_writer(model, vcf_path, out_vcf_fpath)
+        vcf_writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
     else:
         vcf_writer = None
 
     keep_predictions = args.output is not None
 
     res = kipoi.postprocessing.predict_snvs(
-        model_info,
+        model,
+        Dl,
         vcf_path,
         batch_size=args.batch_size,
         num_workers=args.num_workers,

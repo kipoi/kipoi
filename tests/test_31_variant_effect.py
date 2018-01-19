@@ -28,7 +28,7 @@ warnings.filterwarnings('ignore')
 
 from kipoi.components import ArraySchema, ModelSchema
 from related import from_yaml
-from kipoi.postprocessing.utils.generic import Output_reshaper
+from kipoi.postprocessing.utils.generic import OutputReshaper
 from utils import compare_vcfs
 
 CLS = ArraySchema
@@ -346,7 +346,7 @@ def test_dna_reshaper():
                 content = np.arange(n_seqs*seq_len*4)
                 start = np.reshape(content, in_shape)
                 input_shape = start.shape[1:]
-                reshaper_obj = kipoi.postprocessing.utils.generic.Reshape_dna(input_shape)
+                reshaper_obj = kipoi.postprocessing.utils.generic.ReshapeDna(input_shape)
                 reshaped = reshaper_obj.to_standard(start)
                 reshaped_2 = reshaper_obj.from_standard(reshaped)
                 assert (np.all(start == reshaped_2))
@@ -391,10 +391,10 @@ def test_var_eff_pred():
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
     #
     with cd(model.source_dir):
-        model_info = kipoi.postprocessing.Model_info_extractor(model, Dataloader)
-        writer = kipoi.postprocessing.Vcf_writer(model, vcf_path, out_vcf_fpath)
-        vcf_to_region = kipoi.postprocessing.SNV_centered_rg(model_info)
-        res = sp.predict_snvs(model_info, vcf_path, dataloader_args=dataloader_arguments,
+        model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dataloader)
+        writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
+        vcf_to_region = kipoi.postprocessing.SnvCenteredRg(model_info)
+        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds, batch_size=32,
                               vcf_to_region = vcf_to_region,
                               evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
@@ -433,10 +433,10 @@ def test_var_eff_pred2():
     #
     with cd(model.source_dir):
         pbd = pb.BedTool(restricted_regions_fpath)
-        model_info = kipoi.postprocessing.Model_info_extractor(model, Dataloader)
-        vcf_to_region = kipoi.postprocessing.SNV_pos_restricted_rg(model_info, pbd)
-        writer = kipoi.postprocessing.utils.io.Vcf_writer(model, vcf_path, out_vcf_fpath)
-        res = sp.predict_snvs(model_info, vcf_path, dataloader_args=dataloader_arguments,
+        model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dataloader)
+        vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
+        writer = kipoi.postprocessing.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath)
+        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds,batch_size=32,
                               vcf_to_region = vcf_to_region,
                               evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
@@ -496,18 +496,18 @@ def test_output_reshaper():
     for k1 in RES:
         for k2 in YAMLS:
             if k1 == k2:
-                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                 fl, fll = o.flatten(RES[k1])
                 assert (fl.shape[1] == RES_OUT_SHAPES[k1])
                 assert (RES_OUT_LABELS[k2] == fll.tolist())
             elif (k1.replace("Lab", "NoLab") == k2) or (k1 == k2.replace("Lab", "NoLab")):
-                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                 fl, fll = o.flatten(RES[k1])
                 assert (fl.shape[1] == RES_OUT_SHAPES[k1])
                 assert (RES_OUT_LABELS[k2] == fll.tolist())
             else:
                 with pytest.raises(Exception):
-                    o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                    o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                     fl, fll = o.flatten(RES[k1])
 
 
@@ -537,14 +537,14 @@ def test__generate_pos_restricted_seqs():
               ([21541570, 21541891], [21541571, 21541671]))
     model = kipoi.get_model(model_dir, source="dir")
     dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
     for tpl in tuples:
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         qbf = pb.BedTool("chr22 %d %d"%tuple(tpl[0]), from_string=True)
         regions = Dummy_internval()
         #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, qbf, regions.append_interval, seq_length)
-        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(model_info_extractor, qbf)
-        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
+        region_generator = kipoi.postprocessing.SnvPosRestrictedRg(model_info_extractor, qbf)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
         vcf_fh.close()
         regions_df = pd.DataFrame(regions.storage)
         assert regions_df.shape[0] == 1
@@ -559,7 +559,7 @@ def test__generate_snv_centered_seqs():
     vcf_path = model_dir+"example_files/variants.vcf"
     model = kipoi.get_model(model_dir, source="dir")
     dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
     lct = 0
     hdr = None
     with open(vcf_path, "r") as ifh:
@@ -579,8 +579,8 @@ def test__generate_snv_centered_seqs():
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         regions = Dummy_internval()
         model_info_extractor.seq_length = seq_length
-        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg(model_info_extractor)
-        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
+        region_generator = kipoi.postprocessing.utils.generic.SnvCenteredRg(model_info_extractor)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
         vcf_fh.close()
         regions_df = pd.DataFrame(regions.storage)
         #
@@ -597,7 +597,7 @@ def test__generate_seq_sets_v2():
     vcf_sub_path = "example_files/variants.vcf"
     model = kipoi.get_model(model_dir, source="dir")
     dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.Model_info_extractor(model, dataloader)
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
     vcf_path = model_dir + vcf_sub_path
     vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
     # for any given input type: list, dict and np.array return 4 identical sets, except for mutated bases on one position
@@ -613,8 +613,8 @@ def test__generate_seq_sets_v2():
         regions = Dummy_internval()
         #
         model_info_extractor.seq_length = seq_len
-        region_generator = kipoi.postprocessing.utils.generic.SNV_centered_rg(model_info_extractor)
-        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
+        region_generator = kipoi.postprocessing.utils.generic.SnvCenteredRg(model_info_extractor)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
         #
         vcf_fh.close()
         annotated_regions = pd.DataFrame(regions.storage).iloc[:num_seqs,:]
@@ -646,7 +646,7 @@ def test__generate_seq_sets_v2():
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 #relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
                 ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
-                                              kipoi.postprocessing.utils.generic._default_vcf_id_gen,
+                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
                                               vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
@@ -672,8 +672,8 @@ def test__generate_seq_sets_v2():
         pbd = pb.BedTool(model_dir + restricted_regions_fpath)
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         regions = Dummy_internval()
-        region_generator = kipoi.postprocessing.SNV_pos_restricted_rg(model_info_extractor, pbd)
-        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic._default_vcf_id_gen, regions.append_interval, region_generator)
+        region_generator = kipoi.postprocessing.SnvPosRestrictedRg(model_info_extractor, pbd)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
         #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, pbd, regions.append_interval, seq_len)
         vcf_fh.close()
         annotated_regions = pd.DataFrame(regions.storage).iloc[:num_seqs, :]
@@ -707,7 +707,7 @@ def test__generate_seq_sets_v2():
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
                 ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
-                                              kipoi.postprocessing.utils.generic._default_vcf_id_gen,
+                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
                                               vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']

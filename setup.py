@@ -22,6 +22,7 @@ requirements = [
     "enum34",
     "colorlog",
     "pyvcf",
+    "cyvcf2",
     # "pytorch"
 ]
 
