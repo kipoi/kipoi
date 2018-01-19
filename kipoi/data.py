@@ -31,11 +31,19 @@ class BaseDataLoader(object):
     def batch_train_iter(self, **kwargs):
         """Returns samples directly useful for training the model:
         (x["inputs"],x["targets"])
+
+        Note: when using this function with Keras, you have to wrap the returned
+            iterator with `itertools.cycle` (i.e. run `itertools.cycle(dl.batch_train_iter(...))`)
+            in order to cycle through the dataset indefinitely
         """
         return ((x["inputs"], x["targets"]) for x in self.batch_iter(**kwargs))
 
     def batch_predict_iter(self, **kwargs):
         """Returns samples directly useful for prediction x["inputs"]
+
+        Note: when using this function with Keras, you have to wrap the returned
+            iterator with `itertools.cycle` (i.e. run `itertools.cycle(dl.batch_train_iter(...))`)
+            in order to cycle through the dataset indefinitely
         """
         return (x["inputs"] for x in self.batch_iter(**kwargs))
 
