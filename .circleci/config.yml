@@ -41,6 +41,7 @@ jobs:
           command: |
             conda install --yes --no-update-deps --file conda_requirements.txt
             conda install -c bioconda pyvcf
+            conda install -c bioconda bedtools htslib
             
       - run:
           name: install pip dependencies
@@ -107,7 +108,8 @@ jobs:
           name: install conda dependencies
           command: |
             conda install --yes --no-update-deps --file conda_requirements.txt
-            
+            conda install -c bioconda bedtools htslib
+
       - run:
           name: install pip dependencies
           command: |
