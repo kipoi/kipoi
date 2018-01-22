@@ -597,6 +597,12 @@ class ModelDescription(RelatedLoadSaveMixin):
     # TODO - add after loading validation for the arguments class?
 
 
+def example_kwargs(dl_args):
+    """Return the example kwargs
+    """
+    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
+
+
 @related.immutable
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
@@ -610,11 +616,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     path = related.StringField(required=False)
     postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
 
+    def get_example_kwargs(self):
+        return example_kwargs(self.args)
 
-def example_kwargs(dl_args):
-    """Return the example kwargs
-    """
-    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)
