@@ -37,7 +37,8 @@ def test_list_models():
     assert isinstance(df, pd.DataFrame)
 
     # column names
-    df_model_columns = ['model', 'version', 'authors', 'doc', 'type', 'inputs', 'targets', 'tags']
+    df_model_columns = ['model', 'version', 'authors', 'doc', 'type', 'inputs', 'targets',
+                        'license', 'cite_as', 'trained_on', 'training_procedure', 'tags']
     assert df_model_columns == list(df.columns)
 
     #
