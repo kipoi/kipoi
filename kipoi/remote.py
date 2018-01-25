@@ -195,7 +195,7 @@ class Source(object):
                              for author in authors}),
                 ("type", {t for t in x.type}),
                 ("license", {l for l in x.license}),
-                ("cite_as", {c for c in x.cite_as}),
+                ("cite_as", {c for c in x.cite_as if c is not None}),
                 ("tags", {tag for tags in x.tags
                           for tag in tags}),
             ]))
