@@ -127,8 +127,11 @@ class Source(object):
 
         df = pd.DataFrame([dict2df_dict(self.get_model_descr(model), model)
                            for model in self._list_components("model")])
-        # filter all template models
-        return df[~df.model.str.contains("/template$")]
+        if len(df):
+            # filter all template models
+            return df[~df.model.str.contains("/template$")]
+        else:
+            return df
 
     def list_dataloaders(self):
         """List all the models as a data.frame

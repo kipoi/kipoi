@@ -81,7 +81,7 @@ def list_sources():
                             ("n_dataloaders", len(lm)),  # TODO - update
                             # last_updated=TODO - implement?
                             ])
-    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources())])
+    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources()) if k != "dir"])
 
 
 def list_models(sources=model_sources()):
