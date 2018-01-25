@@ -89,10 +89,20 @@ class Info(RelatedConfigMixin):
       version: 0.1
     """
     authors = related.SequenceField(Author, repr=True)
-    doc = related.StringField()
+    doc = related.StringField()  # free-text description of the model
     name = related.StringField(required=False)  # TODO - deprecate
     version = related.StringField(default="0.1", required=False)
+    license = related.StringField(default="MIT", required=False)  # license of the model/dataloader - defaults to MIT
     tags = StrSequenceField(str, default=[], required=False)
+
+
+@related.immutable
+class ModelInfo(Info):
+    """Additional information for the model - not applicable to the dataloader
+    """
+    cite_as = related.StringField(required=False)  # a link or a description how to cite the paper (say a doi link)
+    trained_on = related.StringField(required=False)  # a link or a description of the training dataset
+    training_procedure = related.StringField(required=False)  # brief description about the training procedure for the trained_on dataset.
 
 
 @enum.unique
@@ -586,7 +596,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     """
     type = related.StringField()
     args = related.ChildField(dict)
-    info = related.ChildField(Info)
+    info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
     postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)

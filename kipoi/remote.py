@@ -118,6 +118,10 @@ class Source(object):
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
+                ("license", d.info.license),
+                ("cite_as", d.info.cite_as),
+                ("trained_on", d.info.trained_on),
+                ("training_procedure", d.info.training_procedure),
                 ("tags", d.info.tags),
             ])
 
@@ -139,6 +143,7 @@ class Source(object):
                 ("type", d.type),
                 ("inputs", to_namelist(d.output_schema.inputs)),
                 ("targets", to_namelist(d.output_schema.targets)),
+                ("license", d.info.license),
                 ("tags", d.info.tags),
             ])
 
@@ -189,6 +194,8 @@ class Source(object):
                 ("authors", {author for authors in x.authors
                              for author in authors}),
                 ("type", {t for t in x.type}),
+                ("license", {l for l in x.license}),
+                ("cite_as", {c for c in x.cite_as}),
                 ("tags", {tag for tags in x.tags
                           for tag in tags}),
             ]))
