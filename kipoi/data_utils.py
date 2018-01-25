@@ -76,6 +76,13 @@ def get_dataset_item(data, idx):
 
 
 def iter_cycle(it):
-    # TODO - replace with your own function
-    import itertools
-    return itertools.cycle(it)
+    """Alternative to itertools.cycle
+
+    This function doesn't store the iterator elements into a list
+    as itertools.cycle does
+    """
+    from itertools import tee
+    while True:
+        it, it_to_use = tee(it, 2)
+        for x in it_to_use:
+            yield x
