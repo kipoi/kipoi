@@ -73,3 +73,9 @@ def get_dataset_item(data, idx):
         return [get_dataset_item(sample, idx) for sample in data]
     else:
         raise ValueError("Leafs of the nested structure need to be numpy arrays")
+
+
+def iter_cycle(it):
+    # TODO - replace with your own function
+    import itertools
+    return itertools.cycle(it)
