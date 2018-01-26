@@ -1,0 +1,76 @@
+type: {{ cookiecutter.dataloader_type }}
+{%- if cookiecutter.dataloader_type in ["PreloadedDataset", "SampleGenerator", "BatchGenerator"] %}
+defined_as: dataloader.py::my{{ cookiecutter.dataloader_type }}
+{%- else %}
+defined_as: dataloader.py::My{{ cookiecutter.dataloader_type }}
+{%- endif %}
+args:
+    # TODO - describe the input features of your model
+    features_file:
+        doc: >
+          TODO
+          Csv file of the Iris Plants Database from
+          http://archive.ics.uci.edu/ml/datasets/Iris features.
+        type: str
+        example: example_files/features.csv
+    {%- if cookiecutter.dataloader_type in ["BatchDataset", "BatchIterator", "BatchGenerator"] %}
+    batch_size:
+        doc: Batch size
+        type: int
+        optional: True
+    {%- endif %}
+    targets_file:
+        doc: >
+          TODO
+          Csv file of the Iris Plants Database targets.
+          Not required for making the prediction.
+        type: str
+        example: example_files/targets.csv
+        optional: True
+info:
+    authors:
+        - name: {{ cookiecutter.author_name }}
+          github: {{ cookiecutter.author_github }}
+          {%- if cookiecutter.author_email != "Your email(optional)" %}
+          email: {{cookiecutter.author_email}}
+          {%- endif %}
+    doc: {{ cookiecutter.model_doc }}
+dependencies:
+    conda: # directly install via conda
+        - python=2.7
+        - TODO
+    pip:
+        - TODO  # pip packages
+output_schema:
+    inputs:
+        {%- if cookiecutter.model_input_type == "np.array" %}
+        name: features
+        shape: (4,)
+        doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- elif cookiecutter.model_input_type == "list of np.arrays" %}
+        - name: features
+          shape: (4,)
+          doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- elif cookiecutter.model_input_type == "dict of np.arrays" %}
+        features:
+            shape: (4,)
+            doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- endif %}
+    targets:
+        {%- if cookiecutter.model_output_type == "np.array" %}
+        name: iris_class
+        shape: (3,)
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- elif cookiecutter.model_output_type == "list of np.arrays" %}
+        - name: iris_class
+          shape: (3,)
+          doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- elif cookiecutter.model_output_type == "dict of np.arrays" %}
+        iris_class:
+          shape: (3,)
+          doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- endif %}
+    metadata:
+        example_row_number:
+            type: int
+            doc: Just an example metadata column
