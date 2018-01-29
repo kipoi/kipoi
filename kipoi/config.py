@@ -116,7 +116,7 @@ def list_dataloaders(sources=model_sources()):
 
     pd_list = []
     for name, source in six.iteritems(sources):
-        if source != "dir":
+        if name != "dir":
             pd_list.append(get_df(name, source))
 
     return pd.concat(pd_list)[pd_list[0].columns]

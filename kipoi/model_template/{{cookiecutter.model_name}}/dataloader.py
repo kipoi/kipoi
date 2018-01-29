@@ -147,6 +147,9 @@ class My{{ cookiecutter.dataloader_type }}(SampleIterator):
             y_class = np.ravel(self.y_transformer.transform(row2np(next(self.targets_it))[np.newaxis]))
             {{return_dict(True)|indent(12)}}
 
+    # python2
+    next = __next__
+
 
 {% elif cookiecutter.dataloader_type == 'BatchIterator' %}
 def row2np(row):
@@ -199,6 +202,10 @@ class My{{ cookiecutter.dataloader_type }}(BatchIterator):
         else:
             y_class = self.y_transformer.transform(np.stack(y_targets))
             {{return_dict(True)|indent(12)}}
+
+    # python2
+    next = __next__
+
 
 {% elif cookiecutter.dataloader_type == 'SampleGenerator' %}
 def row2np(row):
