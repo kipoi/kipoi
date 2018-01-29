@@ -1,0 +1,8 @@
+include conda_requirements.txt
+include requirements.txt
+
+include README.md
+include LICENSE
+
+recursive-include docs *.md *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+recursive-include model_template *

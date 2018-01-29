@@ -23,14 +23,17 @@ def not_implemented(command, arg_list):
 
 
 command_functions = {
+    # using
     'preproc': cli.main.cli_preproc,
     'predict': cli.main.cli_predict,
-    'test': cli.main.cli_test,
     'pull': cli.main.cli_pull,
     'ls': cli.ls.cli_ls,
     # further sub-commands
     'postproc': cli.postproc.cli_main,
     'env': cli.env.cli_main,
+    # Contribuing
+    'test': cli.main.cli_test,
+    'init': cli.main.cli_init,
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -39,15 +42,17 @@ parser = argparse.ArgumentParser(
     usage='''kipoi <command> [-h] ...
 
     # Kipoi model-zoo command line tool. Available sub-commands:
+    # - using models:
     ls               List all the available models
-    predict          Run the model prediction.
-    pull             Downloads the directory associated with the model
-    preproc          Returns an hdf5 array.
-    test             Runs a set of unit-tests for the model
-
-    # Further sub-commands:
+    predict          Run the model prediction
+    pull             Download the directory associated with the model
+    preproc          Run the dataloader and save the results to an hdf5 array
     postproc         Tools for model postprocessing like variant effect prediction
-    env              Tools to work with kipoi conda environments
+    env              Tools for managing Kipoi conda environments
+
+    # - contribuing models:
+    init             Initialize a new Kipoi model
+    test             Runs a set of unit-tests for the model
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 

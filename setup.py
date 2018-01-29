@@ -23,11 +23,12 @@ requirements = [
     "colorlog",
     "pyvcf",
     "cyvcf2",
+    "cookiecutter",
     # "pytorch"
 ]
 
 test_requirements = [
-    "pytest",
+    "pytest>=3.3.1",
     "virtualenv",
 ]
 # TODO - require conda to be installed? - to create custom environments
@@ -48,10 +49,10 @@ setup(
                     "wheel",
                     "jedi",
                     "epc",
-                    "pytest",
+                    "pytest>=3.3.1",
                     # "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
                     # "pytest-cov"
-                   ],
+                    ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
@@ -60,5 +61,6 @@ setup(
               "computational biology", "bioinformatics", "genomics"],
     test_suite='tests',
     package_data={'kipoi': ['logging.conf']},
+    include_package_data=True,
     tests_require=test_requirements
 )

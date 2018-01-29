@@ -20,19 +20,19 @@ class MyModel(BaseModel):
         """
         # TODO - implement
 
-        {% if cookiecutter.model_input_type == 'np.array' %}
-        out = np.softmax(np.dot(inputs, self.weights))
-        {% elif cookiecutter.model_input_type == 'list of np.arrays' %}
-	out = np.softmax(np.dot(inputs[0], self.weights))
-	{% elif cookiecutter.model_input_type == 'dict of np.arrays' %}
-	out = np.softmax(np.dot(inputs['features'], self.weights))
-        {% endif %}
+        {%- if cookiecutter.model_input_type == 'np.array' %}
+        out = softmax(np.dot(inputs, self.weights))
+        {%- elif cookiecutter.model_input_type == 'list of np.arrays' %}
+        out = softmax(np.dot(inputs[0], self.weights))
+	{%- elif cookiecutter.model_input_type == 'dict of np.arrays' %}
+        out = softmax(np.dot(inputs['features'], self.weights))
+        {%- endif %}
       
 
-        {% if cookiecutter.model_output_type == 'np.array' %}
+        {%- if cookiecutter.model_output_type == 'np.array' %}
         return out
-        {% elif cookiecutter.model_output_type == 'list of np.arrays' %}
-	return [out]
-	{% elif cookiecutter.model_output_type == 'dict of np.arrays' %}
-	return {"iris_class": out]}
-	{% endif %}
+        {%- elif cookiecutter.model_output_type == 'list of np.arrays' %}
+        return [out]
+	{%- elif cookiecutter.model_output_type == 'dict of np.arrays' %}
+        return {"iris_class": out}
+	{%- endif %}

@@ -46,7 +46,7 @@ def read_pickle(f):
 }    
 {%- endmacro %}
 {% if cookiecutter.dataloader_type == 'Dataset' %}
-class MyDataset(Dataset):
+class My{{ cookiecutter.dataloader_type }}(Dataset):
 
     def __init__(self, features_file, targets_file=None):
         self.features_file = features_file
@@ -72,7 +72,7 @@ class MyDataset(Dataset):
             {{return_dict(True)|indent(12)}}
 
 {% elif cookiecutter.dataloader_type == 'PreloadedDataset' %}
-def my_preloaded_dataset(features_file, targets_file=None):
+def my{{ cookiecutter.dataloader_type }}(features_file, targets_file=None):
     x_transformer = read_pickle(this_dir + "/dataloader_files/x_transformer.pkl")
 
     x_features = x_transformer.transform(pd.read_csv(features_file).values)
@@ -85,7 +85,7 @@ def my_preloaded_dataset(features_file, targets_file=None):
         {{return_dict(True)|indent(8)}}
 
 {% elif cookiecutter.dataloader_type == 'BatchDataset' %}
-class MyBatchDataset(BatchDataset):
+class My{{ cookiecutter.dataloader_type }}(BatchDataset):
 
     def __init__(self, features_file, batch_size=5, targets_file=None):
         self.features_file = features_file
@@ -98,7 +98,6 @@ class MyBatchDataset(BatchDataset):
         if targets_file is not None:
             self.y_transformer = read_pickle(this_dir + "/dataloader_files/y_transformer.pkl")
             self.targets = pd.read_csv(targets_file)
-            assert len(self.targets) == len(self.features)
 
     def __len__(self):
         return int(np.ceil(len(self.features) / self.batch_size))
@@ -118,12 +117,11 @@ class MyBatchDataset(BatchDataset):
 def row2np(row):
     return np.array(row.strip().split(",")).astype(float)
 
-class MySampleIterator(SampleIterator):
+class My{{ cookiecutter.dataloader_type }}(SampleIterator):
 
-    def __init__(self, features_file, batch_size=5, targets_file=None):
+    def __init__(self, features_file, targets_file=None):
         self.features_file = features_file
         self.targets_file = targets_file
-        self.batch_size = batch_size
 
         self.x_transformer = read_pickle(this_dir + "/dataloader_files/x_transformer.pkl")
 
@@ -135,7 +133,6 @@ class MySampleIterator(SampleIterator):
             self.y_transformer = read_pickle(this_dir + "/dataloader_files/y_transformer.pkl")
             self.targets_it = open(self.targets_file, "r")
             next(self.targets_it)  # skip the header
-            assert len(self.targets) == len(self.features)
 
     def __iter__(self):
         return self
@@ -151,12 +148,12 @@ class MySampleIterator(SampleIterator):
             {{return_dict(True)|indent(12)}}
 
 
-{% elif cookiecutter.dataloader_type == BatchIterator %}
+{% elif cookiecutter.dataloader_type == 'BatchIterator' %}
 def row2np(row):
     return np.array(row.strip().split(",")).astype(float)
 
 
-class MyBatchIterator(BatchIterator):
+class My{{ cookiecutter.dataloader_type }}(BatchIterator):
 
     def __init__(self, features_file, batch_size=5, targets_file=None):
         self.features_file = features_file
@@ -174,7 +171,6 @@ class MyBatchIterator(BatchIterator):
             self.targets_it = open(self.targets_file, "r")
             next(self.targets_it)  # skip the header
 
-            assert len(self.targets) == len(self.features)
 
     def __iter__(self):
         return self
@@ -189,13 +185,14 @@ class MyBatchIterator(BatchIterator):
                 x_feat.append(row2np(next(self.features_it)))
                 if self.features_file is not None:
                     y_targets.append(row2np(next(self.targets_it)))
-                 self.idx += 1
-                 idx.append(self.idx)
+                self.idx += 1
+                idx.append(self.idx)
             except StopIteration:
                 if len(x_feat) == 0:
                     raise StopIteration
                 else:
                     break
+        idx = np.array(idx)
         x_features = self.x_transformer.transform(np.stack(x_feat))
         if self.targets_file is None:
             {{return_dict(False)|indent(12)}}
@@ -208,7 +205,7 @@ def row2np(row):
     return np.array(row.strip().split(",")).astype(float)
 
 
-def mySampleGenerator(features_file, targets_file=None):
+def my{{ cookiecutter.dataloader_type }}(features_file, targets_file=None):
     x_transformer = read_pickle(this_dir + "/dataloader_files/x_transformer.pkl")
 
     features_it = open(features_file, "r")
@@ -230,7 +227,7 @@ def mySampleGenerator(features_file, targets_file=None):
 def row2np(row):
     return np.array(row.strip().split(",")).astype(float)
 
-def myBatchGenerator(features_file, targets_file=None, batch_size=5):
+def my{{ cookiecutter.dataloader_type }}(features_file, targets_file=None, batch_size=5):
     x_transformer = read_pickle(this_dir + "/dataloader_files/x_transformer.pkl")
 
     features_it = open(features_file, "r")
@@ -251,6 +248,7 @@ def myBatchGenerator(features_file, targets_file=None, batch_size=5):
                     y_targets.append(row2np(next(targets_it)))
                 idx.append(gidx)
                 gidx += 1
+            idx = np.array(idx)
             x_features = x_transformer.transform(np.stack(x_feat))
             if targets_file is None:
                 {{return_dict(False, "yield")|indent(16)}}
@@ -258,6 +256,9 @@ def myBatchGenerator(features_file, targets_file=None, batch_size=5):
                 y_class = y_transformer.transform(np.stack(y_targets))
                 {{return_dict(True, "yield"|indent(16))}}
     except StopIteration:
+        if len(x_feat) == 0:
+            raise StopIteration
+        idx = np.array(idx)
         if targets_file is None:
             {{return_dict(False, "yield")|indent(12)}}
         else:
