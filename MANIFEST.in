@@ -5,4 +5,4 @@ include README.md
 include LICENSE
 
 recursive-include docs *.md *.rst conf.py Makefile make.bat *.jpg *.png *.gif
-recursive-include model_template *
+recursive-include kipoi/model_template *

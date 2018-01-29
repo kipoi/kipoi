@@ -262,7 +262,7 @@ def cli_init(command, raw_args, **kwargs):
     import inspect
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     this_dir = os.path.dirname(os.path.abspath(filename))
-    template_path = os.path.join(this_dir, "../../model_template/")
+    template_path = os.path.join(this_dir, "../model_template/")
 
     # Create project from the cookiecutter-pypackage/ template
     try:
