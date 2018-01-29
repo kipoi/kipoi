@@ -83,7 +83,6 @@ class DistanceTransformer:
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
     """Extract distances to the closest genomic landmark
-
     # Arguments
         gtf_file: Genomic annotation file path (say gencode gtf)
         landmarks: List of landmarks to extract. See `concise.utils.position.extract_landmarks`
@@ -171,7 +170,7 @@ class SeqDistDataset(Dataset):
     def __init__(self, intervals_file, fasta_file, gtf_file, preproc_transformer, target_file=None):
         gtf = pd.read_pickle(gtf_file)
         self.gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
-
+        self.gtf = self.gtf.rename(columns={"seqnames": "seqname"})  # concise>=0.6.5
         # distance transformer
         with open(preproc_transformer, "rb") as f:
             self.transformer = pickle.load(f)

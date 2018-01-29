@@ -11,7 +11,7 @@ from pybedtools import BedTool
 
 from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
 from pysam import FastaFile
-from concise.utils.position import extract_landmarks, read_gtf, ALL_LANDMARKS
+from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 
 
 from kipoi.data import Dataset
@@ -35,7 +35,7 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
         self.use_strand = use_strand
 
         # set index to chromosome and strand - faster access
-        self.landmarks = {k: v.set_index(["seqnames", "strand"])
+        self.landmarks = {k: v.set_index(["seqname", "strand"])
                           for k, v in six.iteritems(self.landmarks)}
 
     def _extract(self, intervals, out, **kwargs):
@@ -107,6 +107,7 @@ class SeqDistDataset(Dataset):
     def __init__(self, intervals_file, fasta_file, gtf_file, preproc_transformer, target_file=None):
         gtf = pd.read_pickle(gtf_file)
         self.gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
+        self.gtf = self.gtf.rename(columns={"seqnames": "seqname"})  # concise>=0.6.5
 
         # distance transformer
         with open(preproc_transformer, "rb") as f:

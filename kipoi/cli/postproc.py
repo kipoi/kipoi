@@ -29,7 +29,7 @@ def cli_score_variants(command, raw_args):
         "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
     }
     assert command == "score_variants"
-    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+    parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
