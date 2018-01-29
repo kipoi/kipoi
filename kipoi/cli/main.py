@@ -248,11 +248,12 @@ def cli_init(command, raw_args, **kwargs):
     """
     assert command == "init"
     logger.info("Initializing a new Kipoi model")
-    print("\nSee the additional information about the questions bellow in : ")
-    print("- link1")
-    print("- link2")
-    print("\nPlease answer the following questions. Defaults are shown in square brackets.")
-    print("--------------------------------------------")
+
+    print("\nPlease answer the questions bellow. Defaults are shown in square brackets.\n")
+    print("You might find the following links useful: ")
+    print("- (model_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_models.md")
+    print("- (dataloader_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_dataloaders.md")
+    print("--------------------------------------------\n")
 
     from cookiecutter.main import cookiecutter
     from cookiecutter.exceptions import FailedHookException
