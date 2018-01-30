@@ -34,7 +34,12 @@ dependencies:
     conda:
         - TODO
     pip:
-        - TODO>=2.0.4
+      {%- if cookiecutter.model_type == "keras" %}
+        - keras>=2.0.4
+      {%- elif cookiecutter.model_type == "sklearn" %}
+        - scikit-learn
+      {%- endif %}
+        - TODO
 schema:
     inputs:
         {%- if cookiecutter.model_input_type == "np.array" %}
