@@ -76,7 +76,8 @@ dl.load_all()
 # re-train the Keras model
 dl = Dl(dataloader_arg1="inputs.csv", targets_file="mytargets.csv")
 it_train = dl.batch_train_iter(batch_size=32)  
-# batch_train_iter is a convenience wrapper of batch_iter yielding (inputs, targets) tuples
+# batch_train_iter is a convenience wrapper of batch_iter
+# yielding (inputs, targets) tuples indefinitely
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 

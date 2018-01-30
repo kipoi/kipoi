@@ -1,6 +1,8 @@
-
 import kipoi
+import kipoi.postprocessing.utils.generic
+import kipoi.postprocessing.utils.io
 import kipoi.postprocessing.variant_effects as ve
+import kipoi.postprocessing.snv_predict as sp
 import numpy as np
 import pytest
 import sys
@@ -15,16 +17,19 @@ import pandas as pd
 import tempfile
 from kipoi.metadata import GenomicRanges
 import kipoi
-from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds
+from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds, _prepare_regions
 import numpy as np
 from scipy.special import logit
+import cyvcf2
+import pybedtools as pb
 
 warnings.filterwarnings('ignore')
 
 
 from kipoi.components import ArraySchema, ModelSchema
 from related import from_yaml
-from kipoi.postprocessing.variant_effects import Output_reshaper
+from kipoi.postprocessing.utils.generic import OutputReshaper
+from utils import compare_vcfs
 
 CLS = ArraySchema
 MS = ModelSchema
@@ -198,11 +203,10 @@ def test__annotate_vcf():
     pass
 
 def test__get_seq_len():
-    assert (ve._get_seq_len([np.array([111])]) == (1,))
-    assert (ve._get_seq_len((np.array([111]))) == (1,))
-    assert (ve._get_seq_len({"a": np.array([111]), "b": np.array([111])}) == (1,))
-    assert (ve._get_seq_len(np.array([111])) == (1,))
-
+    assert (kipoi.postprocessing.utils.generic._get_seq_len([np.array([111])]) == (1,))
+    assert (kipoi.postprocessing.utils.generic._get_seq_len((np.array([111]))) == (1,))
+    assert (kipoi.postprocessing.utils.generic._get_seq_len({"a": np.array([111]), "b": np.array([111])}) == (1,))
+    assert (kipoi.postprocessing.utils.generic._get_seq_len(np.array([111])) == (1,))
 
 
 def test__vcf_to_regions():
@@ -257,6 +261,9 @@ def test__generate_seq_sets():
                                 "id":np.arange(num_seqs)}}
     #
     meta_data_options = [gr_meta, dict_meta]
+
+    annotated_regions = _prepare_regions(annotated_regions)
+
     for meta_data in meta_data_options:
         ## Test the dict case:
         dataloader = dummy_container()
@@ -314,18 +321,21 @@ def test__modify_bases():
 
 def test__get_seq_fields():
     model_dir = "examples/rbp/"
-    assert (ve._get_seq_fields(kipoi.get_model_descr(model_dir, source="dir")) == ['seq'])
+    assert (
+    kipoi.postprocessing.utils.generic._get_seq_fields(kipoi.get_model_descr(model_dir, source="dir")) == ['seq'])
     model_dir = "examples/extended_coda/"
     with pytest.raises(Exception):
-        ve._get_seq_fields(kipoi.get_model_descr(model_dir, source="dir"))
+        kipoi.postprocessing.utils.generic._get_seq_fields(kipoi.get_model_descr(model_dir, source="dir"))
 
 
 def test__get_dl_bed_fields():
     model_dir = "examples/rbp/"
-    assert(ve._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir")) == ['intervals_file'])
-    model_dir = "examples/extended_coda/"
-    with pytest.raises(Exception):
-        ve._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir"))
+    assert(
+    kipoi.postprocessing.utils.generic._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir")) == ['intervals_file'])
+    # This is not valid anymore:
+    #model_dir = "examples/extended_coda/"
+    #with pytest.raises(Exception):
+    #    kipoi.postprocessing.utils.generic._get_dl_bed_fields(kipoi.get_dataloader_descr(model_dir, source="dir"))
 
 
 
@@ -336,7 +346,7 @@ def test_dna_reshaper():
                 content = np.arange(n_seqs*seq_len*4)
                 start = np.reshape(content, in_shape)
                 input_shape = start.shape[1:]
-                reshaper_obj = ve.Reshape_dna(input_shape)
+                reshaper_obj = kipoi.postprocessing.utils.generic.ReshapeDna(input_shape)
                 reshaped = reshaper_obj.to_standard(start)
                 reshaped_2 = reshaper_obj.from_standard(reshaped)
                 assert (np.all(start == reshaped_2))
@@ -364,31 +374,78 @@ def test_var_eff_pred():
     model_dir = "examples/rbp/"
     if INSTALL_REQ:
         install_model_requirements(model_dir, "dir", and_dataloaders=True)
-
+    #
     model = kipoi.get_model(model_dir, source="dir")
     # The preprocessor
     Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-
+    #
     dataloader_arguments = {
         "fasta_file": "example_files/hg38_chr22.fa",
         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
     }
-
+    #
     # Run the actual predictions
     vcf_path = "example_files/variants.vcf"
     out_vcf_fpath = "example_files/variants_generated.vcf"
     ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
     #
     with cd(model.source_dir):
-        res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds,
-                              dataloader=Dataloader, batch_size=32,
-                              evaluation_function_kwargs={'diff_types': {'ism': Diff("absmax")}},
-                              out_vcf_fpath=out_vcf_fpath)
-        assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dataloader)
+        writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
+        vcf_to_region = kipoi.postprocessing.SnvCenteredRg(model_info)
+        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                              evaluation_function=analyse_model_preds, batch_size=32,
+                              vcf_to_region = vcf_to_region,
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
+                              sync_pred_writer=writer)
+        writer.close()
+        # pass
+        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
         os.unlink(out_vcf_fpath)
 
+
+
+def test_var_eff_pred2():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    # Take the rbp model
+    model_dir = "examples/rbp/"
+    if INSTALL_REQ:
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
+    #
+    model = kipoi.get_model(model_dir, source="dir")
+    # The preprocessor
+    Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    #
+    dataloader_arguments = {
+        "fasta_file": "example_files/hg38_chr22.fa",
+        "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+        "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+    }
+    #
+    # Run the actual predictions
+    vcf_path = "example_files/variants.vcf"
+    out_vcf_fpath = "example_files/variants_generated2.vcf"
+    ref_out_vcf_fpath = "example_files/variants_ref_out2.vcf"
+    restricted_regions_fpath = "example_files/restricted_regions.bed"
+    #
+    with cd(model.source_dir):
+        pbd = pb.BedTool(restricted_regions_fpath)
+        model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dataloader)
+        vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
+        writer = kipoi.postprocessing.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath)
+        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                              evaluation_function=analyse_model_preds,batch_size=32,
+                              vcf_to_region = vcf_to_region,
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
+                              sync_pred_writer=writer)
+        writer.close()
+        # pass
+        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)
 
 
 
@@ -439,19 +496,310 @@ def test_output_reshaper():
     for k1 in RES:
         for k2 in YAMLS:
             if k1 == k2:
-                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                 fl, fll = o.flatten(RES[k1])
                 assert (fl.shape[1] == RES_OUT_SHAPES[k1])
                 assert (RES_OUT_LABELS[k2] == fll.tolist())
             elif (k1.replace("Lab", "NoLab") == k2) or (k1 == k2.replace("Lab", "NoLab")):
-                o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                 fl, fll = o.flatten(RES[k1])
                 assert (fl.shape[1] == RES_OUT_SHAPES[k1])
                 assert (RES_OUT_LABELS[k2] == fll.tolist())
             else:
                 with pytest.raises(Exception):
-                    o = Output_reshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
+                    o = OutputReshaper(ModelSchema.from_config(from_yaml(YAMLS[k2])).targets)
                     fl, fll = o.flatten(RES[k1])
+
+
+
+class Dummy_internval:
+    def __init__(self):
+        self.storage = {"chrom":[], "start":[], "end":[], "id":[]}
+    def append_interval(self, **kwargs):
+        for k in kwargs:
+            self.storage[k].append(kwargs[k])
+
+def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_generator):
+    for record in vcf_iter:
+        if not record.is_indel:
+            region = region_generator(record)
+            id = vcf_id_generator_fn(record)
+            for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
+                int_write_fn(chrom = chrom, start= start, end=end , id=id)
+
+def test__generate_pos_restricted_seqs():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    model_dir = "examples/rbp/"
+    vcf_path = model_dir+"example_files/variants.vcf"
+    tuples = (([21541490, 21541591], [21541491, 21541591]),
+              ([21541390, 21541891], [21541540, 21541640]),
+              ([21541570, 21541891], [21541571, 21541671]))
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+    for tpl in tuples:
+        vcf_fh = cyvcf2.VCF(vcf_path, "r")
+        qbf = pb.BedTool("chr22 %d %d"%tuple(tpl[0]), from_string=True)
+        regions = Dummy_internval()
+        #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, qbf, regions.append_interval, seq_length)
+        region_generator = kipoi.postprocessing.SnvPosRestrictedRg(model_info_extractor, qbf)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
+        vcf_fh.close()
+        regions_df = pd.DataFrame(regions.storage)
+        assert regions_df.shape[0] == 1
+        assert np.all(regions_df[["start", "end"]].values == tpl[1])
+
+
+
+def test__generate_snv_centered_seqs():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    model_dir = "examples/rbp/"
+    vcf_path = model_dir+"example_files/variants.vcf"
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+    lct = 0
+    hdr = None
+    with open(vcf_path, "r") as ifh:
+        for l in ifh:
+            if not l.startswith("#"):
+                if (len(l.split("\t")[3]) == 1) and (len(l.split("\t")[4]) == 1):
+                    lct += 1
+            elif l[2] != "#":
+                hdr = l.lstrip("#").rstrip().split("\t")
+    #
+    vcf_df = pd.read_csv(vcf_path, sep="\t", comment='#', header=None, usecols=range(len(hdr)))
+    vcf_df.columns = hdr
+    # Subset the VCF to SNVs:
+    vcf_df = vcf_df.loc[(vcf_df["REF"].str.len() == 1) & (vcf_df["ALT"].str.len() == 1), :]
+    #
+    for seq_length in [100, 101]:
+        vcf_fh = cyvcf2.VCF(vcf_path, "r")
+        regions = Dummy_internval()
+        model_info_extractor.seq_length = seq_length
+        region_generator = kipoi.postprocessing.utils.generic.SnvCenteredRg(model_info_extractor)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
+        vcf_fh.close()
+        regions_df = pd.DataFrame(regions.storage)
+        #
+        # 1-based format?
+        assert ((regions_df["end"] - regions_df["start"] + 1) == seq_length).all()
+        assert (regions_df.shape[0] == lct)
+        assert (regions_df["start"].values == vcf_df["POS"] - int(seq_length/2)).all()
+
+
+def test__generate_seq_sets_v2():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    model_dir = "examples/rbp/"
+    vcf_sub_path = "example_files/variants.vcf"
+    model = kipoi.get_model(model_dir, source="dir")
+    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+    vcf_path = model_dir + vcf_sub_path
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
+    # for any given input type: list, dict and np.array return 4 identical sets, except for mutated bases on one position
+    seq_len = 101
+    model_info_extractor.seq_length = seq_len
+    for num_seqs in [1,5]:
+        empty_seq_input = np.zeros((num_seqs, seq_len, 4))
+        empty_other_input = np.zeros((num_seqs, seq_len, 4)) - 10
+        #
+        relv_seq_keys = ["seq"]
+        #
+        vcf_fh = cyvcf2.VCF(vcf_path)
+        regions = Dummy_internval()
+        #
+        model_info_extractor.seq_length = seq_len
+        region_generator = kipoi.postprocessing.utils.generic.SnvCenteredRg(model_info_extractor)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
+        #
+        vcf_fh.close()
+        annotated_regions = pd.DataFrame(regions.storage).iloc[:num_seqs,:]
+        #
+        gr_meta = {
+            "ranges": GenomicRanges(annotated_regions["chrom"].values, annotated_regions["start"].values - 1,
+                                    annotated_regions["end"].values,
+                                    annotated_regions["id"].values)}
+        #
+        dict_meta = {
+            "ranges": {"chr": annotated_regions["chrom"].values, "start": annotated_regions["start"].values - 1,
+                       "end": annotated_regions["end"].values,
+                       "id": annotated_regions["id"].values}}
+        #
+        meta_data_options = [gr_meta, dict_meta]
+        #
+        for meta_data in meta_data_options:
+            for vcf_search_regions in [False, True]:
+                ## Test the dict case:
+                dataloader = dummy_container()
+                dataloader.output_schema = dummy_container()
+                seq_container = dummy_container()
+                seq_container.associated_metadata = ["ranges"]
+                dataloader.output_schema.inputs = {"seq": seq_container, "other_input": None}
+                inputs = {"seq": copy.deepcopy(empty_seq_input), "other_input": copy.deepcopy(empty_other_input)}
+                inputs_2nd_copy = copy.deepcopy(inputs)
+                #
+                model_input = {"inputs": inputs, "metadata": meta_data}
+                vcf_fh = cyvcf2.VCF(vcf_path, "r")
+                #relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
+                ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
+                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
+                                              vcf_search_regions=vcf_search_regions)
+                vcf_fh.close()
+                req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
+                assert np.all(np.in1d(req_cols, list(ssets.keys())))
+                for k in req_cols:
+                    for k2 in inputs:
+                        assert (k2 in ssets[k])
+                        if k2 not in relv_seq_keys:
+                            assert np.all(ssets[k][k2] == inputs_2nd_copy[k2])
+                        else:
+                            # Assuming modification of matrices works as desired - see its own unit test
+                            # Assuming 1-hot coding with background as 0
+                            assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == num_seqs
+                #
+                for k in ["ref", "alt"]:
+                    for k2 in relv_seq_keys:
+                        assert np.all(ssets[k][k2] == ssets[k + "_rc"][k2][:, ::-1, ::-1])
+        #
+        #
+        # ------ Now also test the bed-restricted prediction -------
+        restricted_regions_fpath = "example_files/restricted_regions.bed"
+        #
+        pbd = pb.BedTool(model_dir + restricted_regions_fpath)
+        vcf_fh = cyvcf2.VCF(vcf_path, "r")
+        regions = Dummy_internval()
+        region_generator = kipoi.postprocessing.SnvPosRestrictedRg(model_info_extractor, pbd)
+        _write_regions_from_vcf(vcf_fh, kipoi.postprocessing.utils.generic.default_vcf_id_gen, regions.append_interval, region_generator)
+        #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, pbd, regions.append_interval, seq_len)
+        vcf_fh.close()
+        annotated_regions = pd.DataFrame(regions.storage).iloc[:num_seqs, :]
+        #
+        gr_meta = {
+            "ranges": GenomicRanges(annotated_regions["chrom"].values, annotated_regions["start"].values - 1,
+                                    annotated_regions["end"].values,
+                                    annotated_regions["id"].values)}
+        #
+        dict_meta = {
+            "ranges": {"chr": annotated_regions["chrom"].values, "start": annotated_regions["start"].values - 1,
+                       "end": annotated_regions["end"].values,
+                       "id": annotated_regions["id"].values}}
+        #
+        meta_data_options = [gr_meta, dict_meta]
+        #
+        n_qseq = annotated_regions.shape[0]
+        for meta_data in meta_data_options:
+            for vcf_search_regions in [False, True]:
+                ## Test the dict case:
+                dataloader = dummy_container()
+                dataloader.output_schema = dummy_container()
+                seq_container = dummy_container()
+                seq_container.associated_metadata = ["ranges"]
+                dataloader.output_schema.inputs = {"seq": seq_container, "other_input": None}
+                inputs = {"seq": copy.deepcopy(empty_seq_input[:n_qseq, ...]),
+                          "other_input": copy.deepcopy(empty_other_input[:n_qseq, ...])}
+                inputs_2nd_copy = copy.deepcopy(inputs)
+                #
+                model_input = {"inputs": inputs, "metadata": meta_data}
+                vcf_fh = cyvcf2.VCF(vcf_path, "r")
+                # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
+                ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
+                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
+                                              vcf_search_regions=vcf_search_regions)
+                vcf_fh.close()
+                req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
+                assert np.all(np.in1d(req_cols, list(ssets.keys())))
+                for k in req_cols:
+                    for k2 in inputs:
+                        assert (k2 in ssets[k])
+                        if k2 not in relv_seq_keys:
+                            assert np.all(ssets[k][k2] == inputs_2nd_copy[k2])
+                        else:
+                            # Assuming modification of matrices works as desired - see its own unit test
+                            # Assuming 1-hot coding with background as 0
+                            assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == n_qseq
+                #
+                for k in ["ref", "alt"]:
+                    for k2 in relv_seq_keys:
+                        assert np.all(ssets[k][k2] == ssets[k + "_rc"][k2][:, ::-1, ::-1])
+                #
+                # Now also assert that the nuc change has been performed at the correct position:
+                # Region: chr22 36702133    36706137
+                # Variant within: chr22 36702137    rs1116  C   A   .   .   .
+                mut_pos = 36702137 - 36702134 # bed file is 0-based
+                assert np.all(ssets["ref"]["seq"][0, mut_pos, :] == np.array([0, 1, 0, 0]))
+                assert np.all(ssets["alt"]["seq"][0, mut_pos, :] == np.array([1, 0, 0, 0]))
+
+
+def test_subsetting():
+    for sel in [[0], [1, 2, 3]]:
+        for k in RES:
+            if "dict" in k:
+                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                for k2 in ret:
+                    assert ret[k2].shape[0] == len(sel)
+                with pytest.raises(Exception):
+                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+            elif "list" in k:
+                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                assert all([el.shape[0] == len(sel) for el in ret])
+                with pytest.raises(Exception):
+                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+            else:
+                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                assert ret.shape[0] == len(sel)
+                with pytest.raises(Exception):
+                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+
+def test_ensure_tabixed_vcf():
+    vcf_in_fpath = "examples/rbp/example_files/variants.vcf"
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_in_fpath)
+    assert os.path.exists(vcf_path)
+    assert vcf_path.endswith(".gz")
+    with pytest.raises(Exception):
+        # since the file exists, we should now complain
+        vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_in_fpath, force_tabix=False)
+    vcf_in_fpath_gz = vcf_in_fpath + ".gz"
+    assert  vcf_in_fpath_gz == kipoi.postprocessing.ensure_tabixed_vcf(vcf_in_fpath_gz)
+
+
+def test__overlap_vcf_region():
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf")
+    vcf_obj = cyvcf2.VCF(vcf_path)
+    all_records = [rec for rec in vcf_obj]
+    vcf_obj.close()
+    vcf_obj = cyvcf2.VCF(vcf_path)
+    #
+    regions_dict = {"chr": ["chr22"], "start": [21541589],"end": [36702137],"id": [0]}
+    regions_gr = GenomicRanges(regions_dict["chr"], regions_dict["start"],
+                               regions_dict["end"],regions_dict["id"])
+    for regions in [regions_dict, regions_gr]:
+        found_vars, overlapping_region = sp._overlap_vcf_region(vcf_obj, regions, exclude_indels=False)
+        assert all([str(el1) == str(el2) for el1, el2 in zip(all_records, found_vars)])
+        assert len(overlapping_region) == len(found_vars)
+        assert all([el == 0 for el in overlapping_region])
+
+    regions_dict = {"chr": ["chr22", "chr22", "chr22"], "start": [21541589, 21541589, 30630220], "end": [36702137, 21541590, 30630222], "id": [0,1,2]}
+    regions_gr = GenomicRanges(regions_dict["chr"], regions_dict["start"],
+                               regions_dict["end"], regions_dict["id"])
+    #
+    plus_indel_results = all_records + all_records[:1] + all_records[3:4]
+    snv_results = [el for el in plus_indel_results if not el.is_indel]
+    #
+    ref_lines_indel = [0]*len(all_records) + [1] + [2]
+    snv_ref_lines = [el for el, el1 in zip(ref_lines_indel,plus_indel_results) if not el1.is_indel]
+    #
+    for regions in [regions_dict, regions_gr]:
+        for exclude_indels, ref_res, ref_lines in zip([False, True], [plus_indel_results, snv_results], [ref_lines_indel, snv_ref_lines]):
+            found_vars, overlapping_region = sp._overlap_vcf_region(vcf_obj, regions, exclude_indels)
+            assert all([str(el1) == str(el2) for el1, el2 in zip(ref_res, found_vars) if not el1.is_indel])
+            assert overlapping_region == ref_lines
+
+
+
 
 
 
@@ -480,7 +828,7 @@ with cd(model.source_dir):
     res = ve.predict_snvs(model, vcf_path, dataloader_args=dataloader_arguments,
                           evaluation_function=analyse_model_preds,
                        dataloader=Dataloader, batch_size=32,
-                       evaluation_function_kwargs={'diff_types':{'ism':Diff("absmax")}},
+                       evaluation_function_kwargs={'diff_types':{'diff':Diff("absmax")}},
                        out_vcf_fpath=out_vcf_fpath)
     assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
     os.unlink(out_vcf_fpath)

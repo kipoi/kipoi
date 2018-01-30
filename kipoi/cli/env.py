@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def replace_slash(s, replace_with="|"):
+def replace_slash(s, replace_with="__"):
+    """Conda doesn't suppport slashes. Hence we have
+    to replace it with another character.
+    """
     return s.replace("/", replace_with)
 
 
@@ -73,6 +76,8 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
     dataloader_descr = kipoi.get_dataloader_descr(dataloader, dataloader_source)
 
     deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
+    if os.path.dirname(env_file):
+        os.makedirs(os.path.dirname(env_file), exist_ok=True)
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
     return env, env_file
@@ -99,7 +104,6 @@ def cli_export(cmd, raw_args):
 
     print("Create the environment with:")
     print("conda env create --file {0}".format(env_file))
-    # print("source activate {0}".format(env))
 
 
 def cli_create(cmd, raw_args):
@@ -112,12 +116,12 @@ def cli_create(cmd, raw_args):
     add_model(parser)
     add_dataloader(parser, with_args=False)
     parser.add_argument('-e', '--env', default=None,
-                        help="Special environment name. default: kipoi-<model>-<dataloader>")
+                        help="Special environment name. default: kipoi-<model>[-<dataloader>]")
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
     tmpdir = "/tmp/kipoi/envfiles"
-    os.makedirs(os.path.dirname(tmpdir), exist_ok=True)
+    os.makedirs(tmpdir, exist_ok=True)
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
@@ -133,6 +137,8 @@ def cli_create(cmd, raw_args):
     logger.info("Creating conda env from file: {0}".format(env_file))
     kipoi.conda.create_env_from_file(env_file)
     logger.info("Done!")
+    print("\nActivate the environment via:")
+    print("source activate {0}".format(env))
 
 
 def cli_list(cmd, raw_args):
@@ -142,63 +148,34 @@ def cli_list(cmd, raw_args):
     subprocess.call("conda env list | grep ^kipoi | cut -f 1 -d ' '", shell=True)
 
 
-def cli_activate_test(cmd, raw_args):
-    """side function for debugging the activate() fn
+def cli_install(cmd, raw_args):
+    """Install the required packages for the model
     """
-    subprocess.call("/bin/bash -i source activate py27", shell=True)
-
-
-def cli_activate(cmd, raw_args):
-    """Activate a conda environment for a particular model
-    """
-    # TODO - fix this function
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
-        description='Create a conda environment for a specific model.'
+        description='Install all the dependencies for a model into the current conda environment.'
     )
     add_model(parser)
     add_dataloader(parser, with_args=False)
-    parser.add_argument('-e', '--env', default=None,
-                        help="Special environment name. default: kipoi-<model>-<dataloader>")
     args = parser.parse_args(raw_args)
-    logger.info("Loading model: {0} description".format(args.model))
-    model_descr = kipoi.get_model_descr(args.model, args.source)
 
-    # handle the dataloader=None case
     if args.dataloader is None:
-        args.dataloader = os.path.normpath(os.path.join(args.model,
-                                                        model_descr.default_dataloader))
-        args.dataloader_source = args.source
-        logger.info("Inferred dataloader name: {0} from".format(args.dataloader) +
-                    " the model.")
-
-    # specify the default environment
-    if args.env is None:
-        args.env = "kipoi-{0}-{1}".format(args.model, args.dataloader)
-    # normalize the path
-    args.env = replace_slash(args.env)
-    logger.info("Environment name: {0}".format(args.env))
-    # TODO - source activate
-    subprocess.call("source activate " + args.env, shell=True)
-    # # TODO - get the environmetn variable
-
-    # p = subprocess.Popen("which python", shell=True, executable='/bin/zsh')
-    # stdout, stderr = p.communicate()
-    # print(stdout)
-    # # TODO - get current shell
-    # p = subprocess.Popen(["/bin/bash", "-i", "-c", "source", "activate", args.env],
-    #                      shell=True,
-    #                      stdout=subprocess.PIPE)
-    # stdout, stderr = p.communicate()
-
-    # kipoi.conda._call_command("source", ["activate", args.env])
+        kipoi.pipeline.install_model_requirements(args.model,
+                                                  args.source,
+                                                  and_dataloaders=True)
+    else:
+        kipoi.pipeline.install_model_requirements(args.model,
+                                                  args.source,
+                                                  and_dataloaders=False)
+        kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
+    logger.info("Done!")
 
 
 command_functions = {
     'export': cli_export,
     'create': cli_create,
     'list': cli_list,
-    'activate': cli_activate_test,
+    'install': cli_install,
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -210,7 +187,7 @@ parser = argparse.ArgumentParser(
     export       Export the environment.yaml file for a specific model
     create       Create a conda environment for a model
     list         List all kipoi-induced conda environments
-    activate     Activate a conda environment for a particular model
+    install      Install all the dependencies for a model into the current conda environment
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 

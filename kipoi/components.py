@@ -1,12 +1,14 @@
 """Defines the base classes
 """
+import os
 import related
 import numpy as np
 import enum
 import collections
 from collections import OrderedDict
+from attr._make import fields
 import kipoi.conda as kconda
-from kipoi.utils import unique_list, yaml_ordered_dump
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
 from kipoi.metadata import GenomicRanges
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 import six
@@ -36,10 +38,23 @@ class RelatedConfigMixin(object):
         # if undefined_set:
         #     raise ValueError("The following arguments were not specified: {0}. Please specify them.".
         #                      format(undefined_set))
+        attrs = fields(cls)
+        cls_keys = {a.metadata.get('key') or a.name for a in attrs}
+        cfg_keys = set(cfg.keys())
+        extra_keys = cfg_keys - cls_keys
+        if len(extra_keys) > 0:
+            raise ValueError("Unrecognized fields: {0}. Available fields are {1}".format(extra_keys, cls_keys))
+
         return related.to_model(cls, cfg)
 
     def get_config(self):
         return related.to_dict(self)
+
+    def get_config_as_yaml(self):
+        generated_yaml = related.to_yaml(self,
+                                         suppress_empty_values=True,
+                                         suppress_map_key_values=True)
+        return generated_yaml
 
 
 class RelatedLoadSaveMixin(RelatedConfigMixin):
@@ -89,10 +104,20 @@ class Info(RelatedConfigMixin):
       version: 0.1
     """
     authors = related.SequenceField(Author, repr=True)
-    doc = related.StringField()
+    doc = related.StringField()  # free-text description of the model
     name = related.StringField(required=False)  # TODO - deprecate
     version = related.StringField(default="0.1", required=False)
+    license = related.StringField(default="MIT", required=False)  # license of the model/dataloader - defaults to MIT
     tags = StrSequenceField(str, default=[], required=False)
+
+
+@related.immutable
+class ModelInfo(Info):
+    """Additional information for the model - not applicable to the dataloader
+    """
+    cite_as = related.StringField(required=False)  # a link or a description how to cite the paper (say a doi link)
+    trained_on = related.StringField(required=False)  # a link or a description of the training dataset
+    training_procedure = related.StringField(required=False)  # brief description about the training procedure for the trained_on dataset.
 
 
 @enum.unique
@@ -184,21 +209,38 @@ class ArraySchema(RelatedConfigMixin):
         return self.compatible_with_schema(ArraySchema(shape=batch.shape[1:],
                                                        doc=""))
 
-    def compatible_with_schema(self, schema, verbose=True):
+    def compatible_with_schema(self, schema, name_self="", name_schema="", verbose=True):
         """Checks the compatibility with another schema
+
+        Args:
+          schema: Other ArraySchema
+          name_self: How to call self in the error messages
+          name_schema: analogously to name_self for the schema ArraySchema
+          verbose: bool, describe what went wrong through print()
         """
         def print_msg(msg):
             if verbose:
-                print("ArraySchema missmatch")
+                # print("ArraySchema missmatch")
                 print(msg)
 
         if not isinstance(schema, ArraySchema):
-            print_msg("Expecting ArraySchema. Got type(schema) = {0}".format(type(schema)))
+            print_msg("Expecting ArraySchema. Got type({0} schema) = {1}".format(name_schema,
+                                                                                 type(schema)))
             return False
 
         def print_msg_template():
-            print_msg("Array shapes don't match for : {0}".format(self))
-            print_msg("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
+            print("ArraySchema missmatch")
+            print("Array shapes don't match for the fields:")
+            print("--")
+            print(name_self)
+            print("--")
+            print(self.get_config_as_yaml())
+            print("--")
+            print(name_schema)
+            print("--")
+            print(schema.get_config_as_yaml())
+            print("--")
+            print("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
 
         bshape = schema.shape
         if not len(bshape) == len(self.shape):
@@ -251,7 +293,11 @@ class ModelSchema(RelatedConfigMixin):
             shapes match, dschema-dim matches
             """
             if isinstance(descr, cls):
-                return descr.compatible_with_schema(dschema, verbose=verbose)
+                # Recursion stop
+                return descr.compatible_with_schema(dschema,
+                                                    name_self="Model",
+                                                    name_schema="Dataloader",
+                                                    verbose=verbose)
             elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
                 if not set(descr.keys()).issubset(set(dschema.keys())):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
@@ -268,8 +314,8 @@ class ModelSchema(RelatedConfigMixin):
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
 
             print_msg("Invalid types:")
-            print_msg("type(dschema): {0}".format(type(dschema)))
-            print_msg("type(descr): {0}".format(type(descr)))
+            print_msg("type(Dataloader schema): {0}".format(type(dschema)))
+            print_msg("type(Model schema): {0}".format(type(descr)))
             return False
 
         if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, ArraySchema, verbose):
@@ -500,11 +546,26 @@ class DataLoaderArgument(RelatedConfigMixin):
 
 
 @related.immutable
-class Dependencies(object):
-    conda = related.SequenceField(str, default=[], required=False, repr=True)
-    pip = related.SequenceField(str, default=[], required=False, repr=True)
+class Dependencies(RelatedConfigMixin):
+    conda = StrSequenceField(str, default=[], required=False, repr=True)
+    pip = StrSequenceField(str, default=[], required=False, repr=True)
     # not really required
     conda_channels = related.SequenceField(str, default=[], required=False, repr=True)
+
+    def __attrs_post_init__(self):
+        """
+        In case conda or pip are filenames pointing to existing files,
+        read the files and populate the package names
+        """
+        if len(self.conda) == 1 and self.conda[0].endswith(".txt") and \
+           os.path.exists(self.conda[0]):
+            # found a conda txt file
+            object.__setattr__(self, "conda", read_txt(self.conda[0]))
+
+        if len(self.pip) == 1 and self.pip[0].endswith(".txt") and \
+           os.path.exists(self.pip[0]):
+            # found a pip txt file
+            object.__setattr__(self, "pip", read_txt(self.pip[0]))
 
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
@@ -586,7 +647,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     """
     type = related.StringField()
     args = related.ChildField(dict)
-    info = related.ChildField(Info)
+    info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
     postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
@@ -595,6 +656,12 @@ class ModelDescription(RelatedLoadSaveMixin):
                                       required=False)
     path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
+
+
+def example_kwargs(dl_args):
+    """Return the example kwargs
+    """
+    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
 @related.immutable
@@ -610,11 +677,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     path = related.StringField(required=False)
     postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
 
+    def get_example_kwargs(self):
+        return example_kwargs(self.args)
 
-def example_kwargs(dl_args):
-    """Return the example kwargs
-    """
-    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)

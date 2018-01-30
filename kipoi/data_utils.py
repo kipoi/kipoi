@@ -73,3 +73,16 @@ def get_dataset_item(data, idx):
         return [get_dataset_item(sample, idx) for sample in data]
     else:
         raise ValueError("Leafs of the nested structure need to be numpy arrays")
+
+
+def iter_cycle(it):
+    """Alternative to itertools.cycle
+
+    This function doesn't store the iterator elements into a list
+    as itertools.cycle does
+    """
+    from itertools import tee
+    while True:
+        it, it_to_use = tee(it, 2)
+        for x in it_to_use:
+            yield x

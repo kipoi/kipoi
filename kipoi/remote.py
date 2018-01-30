@@ -113,16 +113,25 @@ class Source(object):
                 ("model", model),
                 # ("name", d.info.name),
                 ("version", d.info.version),
-                ("authors", str(d.info.authors)),
+                ("authors", d.info.authors),
                 ("doc", d.info.doc),
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
+                ("license", d.info.license),
+                ("cite_as", d.info.cite_as),
+                ("trained_on", d.info.trained_on),
+                ("training_procedure", d.info.training_procedure),
                 ("tags", d.info.tags),
             ])
 
-        return pd.DataFrame([dict2df_dict(self.get_model_descr(model), model)
-                             for model in self._list_components("model")])
+        df = pd.DataFrame([dict2df_dict(self.get_model_descr(model), model)
+                           for model in self._list_components("model")])
+        if len(df):
+            # filter all template models
+            return df[~df.model.str.contains("/template$")]
+        else:
+            return df
 
     def list_dataloaders(self):
         """List all the models as a data.frame
@@ -132,16 +141,69 @@ class Source(object):
                 ("dataloader", dataloader),
                 # ("name", d.info.name),
                 ("version", d.info.version),
-                ("authors", str(d.info.authors)),
+                ("authors", d.info.authors),
                 ("doc", d.info.doc),
                 ("type", d.type),
                 ("inputs", to_namelist(d.output_schema.inputs)),
                 ("targets", to_namelist(d.output_schema.targets)),
+                ("license", d.info.license),
                 ("tags", d.info.tags),
             ])
 
-        return pd.DataFrame([dict2df_dict(self.get_dataloader_descr(dataloader), dataloader)
-                             for dataloader in self._list_components("dataloader")])
+        df = pd.DataFrame([dict2df_dict(self.get_dataloader_descr(dataloader), dataloader)
+                           for dataloader in self._list_components("dataloader")])
+        # filter all template models
+        return df[~df.dataloader.str.contains("/template$")]
+
+    def list_models_by_group(self, group_filter=""):
+        """Get a list of models by a group
+
+        Args:
+          group_filter, str: A relative path to the model group used to subset
+            model list.
+
+        Returns:
+          a pd.DataFrame with columns (or None in case no groups are found):
+            - group - name of the sub-group
+            - N_models
+            - is_group
+            - authors
+            - doc - ?
+            - type (list of types)
+            - tags - sum
+        """
+        df = self.list_models()
+
+        # add slashes
+        if group_filter == "":
+            group = "/"
+        else:
+            group = "/" + group_filter + "/"
+        df = df[df.model.str.contains("^" + group[1:])].copy()
+        # df['parent_group'] = group[1:]
+        df['model'] = df.model.str.replace("^" + group[1:], "")
+        df['is_group'] = df.model.str.contains("/")
+        if not df.is_group.any():
+            return None
+
+        df = df.join(df.model.str.split("/", n=1, expand=True).rename(columns={0: "group", 1: "child"}))
+
+        def fn(x):
+            # remove the templates
+            return pd.Series(OrderedDict([
+                ("N_models", x.shape[0]),
+                ("N_subgroups", x.child.fillna("").str.contains("/").sum()),
+                ("is_group", x.is_group.any()),
+                ("authors", {author for authors in x.authors
+                             for author in authors}),
+                ("type", {t for t in x.type}),
+                ("license", {l for l in x.license}),
+                ("cite_as", {c for c in x.cite_as if c is not None}),
+                ("tags", {tag for tags in x.tags
+                          for tag in tags}),
+            ]))
+
+        return df.groupby("group").apply(fn).reset_index()
 
     @abstractmethod
     def _get_component_descr(self, component, which="model"):

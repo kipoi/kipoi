@@ -1,6 +1,8 @@
 # python2, 3 compatibility
 from __future__ import absolute_import, division, print_function
 import six
+import os
+import inspect
 from builtins import str, open, range, dict
 
 import pickle
@@ -9,17 +11,78 @@ import pandas as pd
 import pybedtools
 from pybedtools import BedTool
 
+from sklearn.preprocessing import FunctionTransformer
 from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
 from pysam import FastaFile
-from concise.utils.position import extract_landmarks, read_gtf, ALL_LANDMARKS
-
-
+from concise.preprocessing.splines import encodeSplines
+from concise.utils.position import extract_landmarks, ALL_LANDMARKS
+from gtfparse import read_gtf_as_dataframe
+from kipoi.metadata import GenomicRanges
+import linecache
 from kipoi.data import Dataset
+
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+DATALOADER_DIR = os.path.dirname(os.path.abspath(filename))
+
+
+def sign_log_func(x):
+    return np.sign(x) * np.log10(np.abs(x) + 1)
+
+
+def sign_log_func_inverse(x):
+    return np.sign(x) * (np.power(10, np.abs(x)) - 1)
+
+
+class BedToolLinecache(BedTool):
+    """Fast BedTool accessor by Ziga Avsec
+
+    Normal BedTools loops through the whole file to get the
+    line of interest. Hence the access it o(n)
+    """
+
+    def __getitem__(self, idx):
+        line = linecache.getline(self.fn, idx + 1)
+        return pybedtools.create_interval_from_list(line.strip().split("\t"))
+
+
+class DistanceTransformer:
+    """Transforms the raw distances to the appropriate modeling form
+    """
+
+    def __init__(self, pos_features, pipeline_obj_path):
+        """
+        Args:
+          pos_features: list of positional features to use
+          pipeline_obj_path: path to the serialized pipeline obj_path
+        """
+        self.pos_features = pos_features
+        self.pipeline_obj_path = pipeline_obj_path
+
+        # deserialize the pickle file
+        with open(self.pipeline_obj_path, "rb") as f:
+            pipeline_obj = pickle.load(f)
+        self.POS_FEATURES = pipeline_obj[0]
+        self.minmax_scaler = pipeline_obj[1]
+        self.imp = pipeline_obj[2]
+
+        self.funct_transform = FunctionTransformer(func=sign_log_func,
+                                                   inverse_func=sign_log_func_inverse)
+        # for simplicity, assume all current pos_features are the
+        # same as from before
+        assert self.POS_FEATURES == self.pos_features
+
+    def transform(self, x):
+        # impute missing values and rescale the distances
+        xnew = self.minmax_scaler.transform(self.funct_transform.transform(self.imp.transform(x)))
+
+        # convert distances to spline bases
+        dist = {"dist_" + k: encodeSplines(xnew[:, i, np.newaxis], start=0, end=1, warn=False)
+                for i, k in enumerate(self.POS_FEATURES)}
+        return dist
 
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
     """Extract distances to the closest genomic landmark
-
     # Arguments
         gtf_file: Genomic annotation file path (say gencode gtf)
         landmarks: List of landmarks to extract. See `concise.utils.position.extract_landmarks`
@@ -35,7 +98,7 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
         self.use_strand = use_strand
 
         # set index to chromosome and strand - faster access
-        self.landmarks = {k: v.set_index(["seqnames", "strand"])
+        self.landmarks = {k: v.set_index(["seqname", "strand"])
                           for k, v in six.iteritems(self.landmarks)}
 
     def _extract(self, intervals, out, **kwargs):
@@ -107,7 +170,7 @@ class SeqDistDataset(Dataset):
     def __init__(self, intervals_file, fasta_file, gtf_file, preproc_transformer, target_file=None):
         gtf = pd.read_pickle(gtf_file)
         self.gtf = gtf[gtf["info"].str.contains('gene_type "protein_coding"')]
-
+        self.gtf = self.gtf.rename(columns={"seqnames": "seqname"})  # concise>=0.6.5
         # distance transformer
         with open(preproc_transformer, "rb") as f:
             self.transformer = pickle.load(f)

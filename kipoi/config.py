@@ -81,7 +81,7 @@ def list_sources():
                             ("n_dataloaders", len(lm)),  # TODO - update
                             # last_updated=TODO - implement?
                             ])
-    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources())])
+    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources()) if k != "dir"])
 
 
 def list_models(sources=model_sources()):
@@ -97,7 +97,7 @@ def list_models(sources=model_sources()):
 
     pd_list = []
     for name, source in six.iteritems(sources):
-        if source != "dir":
+        if name != "dir":
             pd_list.append(get_df(name, source))
 
     return pd.concat(pd_list)[pd_list[0].columns]
@@ -116,7 +116,7 @@ def list_dataloaders(sources=model_sources()):
 
     pd_list = []
     for name, source in six.iteritems(sources):
-        if source != "dir":
+        if name != "dir":
             pd_list.append(get_df(name, source))
 
     return pd.concat(pd_list)[pd_list[0].columns]

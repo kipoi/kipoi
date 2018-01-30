@@ -8,7 +8,7 @@ import kipoi  # for .config module
 from kipoi.components import DataLoaderDescription, example_kwargs
 from .utils import load_module, cd, getargs
 from .external.torch.data import DataLoader
-from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_item, get_dataset_lens
+from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_item, get_dataset_lens, iter_cycle
 from tqdm import tqdm
 import types
 
@@ -28,14 +28,25 @@ class BaseDataLoader(object):
     def batch_iter(self, **kwargs):
         raise NotImplementedError
 
-    def batch_train_iter(self, **kwargs):
+    def batch_train_iter(self, cycle=True, **kwargs):
         """Returns samples directly useful for training the model:
         (x["inputs"],x["targets"])
+
+        Args:
+          cycle: when True, the returned iterator will run indefinitely by using
+            a custom `itertools.cycle` implementation. Use True with `fit_generator` in Keras.
+          **kwargs: Arguments passed to self.batch_iter(**kwargs)
         """
-        return ((x["inputs"], x["targets"]) for x in self.batch_iter(**kwargs))
+        if cycle:
+            return ((x["inputs"], x["targets"]) for x in iter_cycle(self.batch_iter(**kwargs)))
+        else:
+            return ((x["inputs"], x["targets"]) for x in self.batch_iter(**kwargs))
 
     def batch_predict_iter(self, **kwargs):
         """Returns samples directly useful for prediction x["inputs"]
+
+        Args:
+          **kwargs: Arguments passed to self.batch_iter(**kwargs)
         """
         return (x["inputs"] for x in self.batch_iter(**kwargs))
 
