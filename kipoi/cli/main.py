@@ -264,6 +264,12 @@ def cli_init(command, raw_args, **kwargs):
     this_dir = os.path.dirname(os.path.abspath(filename))
     template_path = os.path.join(this_dir, "../model_template/")
 
+    # remove the pyc files in the template directory
+    # bug in cookiecutter: https://github.com/audreyr/cookiecutter/pull/1037
+    pyc_file = os.path.join(template_path, "hooks", "pre_gen_project.pyc")
+    if os.path.exists(pyc_file):
+        os.remove(pyc_file)
+
     # Create project from the cookiecutter-pypackage/ template
     try:
         out_dir = cookiecutter(template_path, **kwargs)
