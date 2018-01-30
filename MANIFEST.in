@@ -4,5 +4,8 @@ include requirements.txt
 include README.md
 include LICENSE
 
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
 recursive-include docs *.md *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 recursive-include kipoi/model_template *
