@@ -5,6 +5,7 @@ import numpy as np
 import enum
 import collections
 from collections import OrderedDict
+from attr._make import fields
 import kipoi.conda as kconda
 from kipoi.utils import unique_list, yaml_ordered_dump
 from kipoi.metadata import GenomicRanges
@@ -36,6 +37,13 @@ class RelatedConfigMixin(object):
         # if undefined_set:
         #     raise ValueError("The following arguments were not specified: {0}. Please specify them.".
         #                      format(undefined_set))
+        attrs = fields(cls)
+        cls_keys = {a.metadata.get('key') or a.name for a in attrs}
+        cfg_keys = set(cfg.keys())
+        extra_keys = cfg_keys - cls_keys
+        if len(extra_keys) > 0:
+            raise ValueError("Unrecognized fields: {0}. Available fields are {1}".format(extra_keys, cls_keys))
+
         return related.to_model(cls, cfg)
 
     def get_config(self):
