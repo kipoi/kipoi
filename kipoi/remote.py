@@ -35,6 +35,14 @@ def list_yamls_recursively(root_dir, basename):
                 for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
 
 
+def list_softlink_realpaths(root_dir):
+    for root, dirnames, filenames in os.walk(root_dir):
+        for name in filenames:
+            fname = os.path.join(root, name)
+            if os.path.islink(fname):
+                yield os.path.realpath(fname)
+
+
 def load_component_descr(component_path, which="model"):
     """Return the parsed yaml file
     """
@@ -45,6 +53,23 @@ def load_component_descr(component_path, which="model"):
             return DataLoaderDescription.load(os.path.basename(component_path))
         else:
             raise ValueError("which needs to be from {'model', 'dataloader'}")
+
+
+def is_subdir(path, directory):
+    """Check if the path is in a particular directory
+    """
+    path = os.path.realpath(path)
+    directory = os.path.realpath(directory)
+    relative = os.path.relpath(path, directory)
+    return not (relative == os.pardir or relative.startswith(os.pardir + os.sep))
+
+
+def relative_path(path, directory):
+    path = os.path.realpath(path)
+    assert directory != ""
+    directory = os.path.realpath(directory)
+    relative = os.path.relpath(path, directory)
+    return relative
 
 
 def get_model_descr(model, source="kipoi"):
@@ -291,17 +316,26 @@ class GitLFSSource(Source):
         if not self._pulled:
             self.pull_source()
 
-        cpath = get_component_file(os.path.join(self.local_path, component), which)
+        component_dir = os.path.join(self.local_path, component)
+
+        # get a list of directories to source (relative to the local_path)
+        softlink_dirs = list({relative_path(f, self.local_path) if os.path.isdir(f)
+                              else relative_path(os.path.dirname(f), self.local_path)
+                              for f in list_softlink_realpaths(component_dir)
+                              if is_subdir(f, self.local_path)})
+
+        cpath = get_component_file(component_dir, which)
         if not os.path.exists(cpath):
             raise ValueError("{0}: {1} doesn't exist in {2}".
                              format(component, self.remote_url))
 
-        cmd = ["git-lfs",
-               "pull",
-               "-I {component}/**".format(component=component)]
-        logger.info(" ".join(cmd))
-        subprocess.call(cmd,
-                        cwd=self.local_path)
+        for pull_dir in [component] + softlink_dirs:
+            cmd = ["git-lfs",
+                   "pull",
+                   "-I {0}/**".format(pull_dir)]
+            logger.info(" ".join(cmd))
+            subprocess.call(cmd,
+                            cwd=self.local_path)
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
