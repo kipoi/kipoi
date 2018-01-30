@@ -18,7 +18,7 @@ requirements = [
     "keras",
     "tqdm",
     "deepdish",
-    "related>=6.0",
+    "related>=0.6.0",
     "enum34",
     "colorlog",
     "pyvcf",
