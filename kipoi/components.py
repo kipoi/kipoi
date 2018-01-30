@@ -49,6 +49,12 @@ class RelatedConfigMixin(object):
     def get_config(self):
         return related.to_dict(self)
 
+    def get_config_as_yaml(self):
+        generated_yaml = related.to_yaml(self,
+                                         suppress_empty_values=True,
+                                         suppress_map_key_values=True)
+        return generated_yaml
+
 
 class RelatedLoadSaveMixin(RelatedConfigMixin):
     """Adds load and dump on top of RelatedConfigMixin for reading and writing from a yaml file
@@ -202,21 +208,38 @@ class ArraySchema(RelatedConfigMixin):
         return self.compatible_with_schema(ArraySchema(shape=batch.shape[1:],
                                                        doc=""))
 
-    def compatible_with_schema(self, schema, verbose=True):
+    def compatible_with_schema(self, schema, name_self="", name_schema="", verbose=True):
         """Checks the compatibility with another schema
+
+        Args:
+          schema: Other ArraySchema
+          name_self: How to call self in the error messages
+          name_schema: analogously to name_self for the schema ArraySchema
+          verbose: bool, describe what went wrong through print()
         """
         def print_msg(msg):
             if verbose:
-                print("ArraySchema missmatch")
+                # print("ArraySchema missmatch")
                 print(msg)
 
         if not isinstance(schema, ArraySchema):
-            print_msg("Expecting ArraySchema. Got type(schema) = {0}".format(type(schema)))
+            print_msg("Expecting ArraySchema. Got type({0} schema) = {1}".format(name_schema,
+                                                                                 type(schema)))
             return False
 
         def print_msg_template():
-            print_msg("Array shapes don't match for : {0}".format(self))
-            print_msg("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
+            print("ArraySchema missmatch")
+            print("Array shapes don't match for the fields:")
+            print("--")
+            print(name_self)
+            print("--")
+            print(self.get_config_as_yaml())
+            print("--")
+            print(name_schema)
+            print("--")
+            print(schema.get_config_as_yaml())
+            print("--")
+            print("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
 
         bshape = schema.shape
         if not len(bshape) == len(self.shape):
@@ -269,7 +292,11 @@ class ModelSchema(RelatedConfigMixin):
             shapes match, dschema-dim matches
             """
             if isinstance(descr, cls):
-                return descr.compatible_with_schema(dschema, verbose=verbose)
+                # Recursion stop
+                return descr.compatible_with_schema(dschema,
+                                                    name_self="Model",
+                                                    name_schema="Dataloader",
+                                                    verbose=verbose)
             elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
                 if not set(descr.keys()).issubset(set(dschema.keys())):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
@@ -286,8 +313,8 @@ class ModelSchema(RelatedConfigMixin):
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
 
             print_msg("Invalid types:")
-            print_msg("type(dschema): {0}".format(type(dschema)))
-            print_msg("type(descr): {0}".format(type(descr)))
+            print_msg("type(Dataloader schema): {0}".format(type(dschema)))
+            print_msg("type(Model schema): {0}".format(type(descr)))
             return False
 
         if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, ArraySchema, verbose):
