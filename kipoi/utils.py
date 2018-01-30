@@ -224,3 +224,17 @@ def unique_list(seq):
     """Modified version of Dave Kirby solution"""
     seen = set()
     return [x for x in seq if x not in seen and not seen.add(x)]
+
+
+def read_txt(file_path, comment_str="#"):
+    """Txt file reader that ignores comments and
+    empty lines
+    """
+    out = []
+    with open(file_path) as f:
+        for line in f:
+            line = line.partition(comment_str)[0]
+            line = line.strip()
+            if len(line) > 0:
+                out.append(line)
+    return out

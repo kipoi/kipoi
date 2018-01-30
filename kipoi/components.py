@@ -1,5 +1,6 @@
 """Defines the base classes
 """
+import os
 import related
 import numpy as np
 import enum
@@ -7,7 +8,7 @@ import collections
 from collections import OrderedDict
 from attr._make import fields
 import kipoi.conda as kconda
-from kipoi.utils import unique_list, yaml_ordered_dump
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
 from kipoi.metadata import GenomicRanges
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 import six
@@ -545,11 +546,26 @@ class DataLoaderArgument(RelatedConfigMixin):
 
 
 @related.immutable
-class Dependencies(object):
-    conda = related.SequenceField(str, default=[], required=False, repr=True)
-    pip = related.SequenceField(str, default=[], required=False, repr=True)
+class Dependencies(RelatedConfigMixin):
+    conda = StrSequenceField(str, default=[], required=False, repr=True)
+    pip = StrSequenceField(str, default=[], required=False, repr=True)
     # not really required
     conda_channels = related.SequenceField(str, default=[], required=False, repr=True)
+
+    def __attrs_post_init__(self):
+        """
+        In case conda or pip are filenames pointing to existing files,
+        read the files and populate the package names
+        """
+        if len(self.conda) == 1 and self.conda[0].endswith(".txt") and \
+           os.path.exists(self.conda[0]):
+            # found a conda txt file
+            object.__setattr__(self, "conda", read_txt(self.conda[0]))
+
+        if len(self.pip) == 1 and self.pip[0].endswith(".txt") and \
+           os.path.exists(self.pip[0]):
+            # found a pip txt file
+            object.__setattr__(self, "pip", read_txt(self.pip[0]))
 
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
