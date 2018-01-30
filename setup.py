@@ -18,7 +18,7 @@ requirements = [
     "keras",
     "tqdm",
     "deepdish",
-    "related==0.4",
+    "related>=0.6.0",
     "enum34",
     "colorlog",
     "pyvcf",
@@ -50,8 +50,8 @@ setup(
                     "jedi",
                     "epc",
                     "pytest>=3.3.1",
-                    # "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
-                    # "pytest-cov"
+                    "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
+                    "pytest-cov"
                     ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
