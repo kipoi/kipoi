@@ -84,16 +84,19 @@ def list_sources():
     return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources()) if k != "dir"])
 
 
-def list_models(sources=model_sources()):
+def list_models(sources=None):
     """List models as a `pandas.DataFrame`
 
     Args:
-      sources: list of model sources to use
+      sources: list of model sources to use. If None, use all
     """
     def get_df(source_name, source):
         df = source.list_models()
         df.insert(0, "source", source_name)
         return df
+
+    if sources is None:
+        sources = model_sources()
 
     pd_list = []
     for name, source in six.iteritems(sources):
@@ -103,16 +106,19 @@ def list_models(sources=model_sources()):
     return pd.concat(pd_list)[pd_list[0].columns]
 
 
-def list_dataloaders(sources=model_sources()):
+def list_dataloaders(sources=None):
     """List datalaoders as a `pandas.DataFrame`
 
     Args:
-      sources: list of model sources to use
+sources: list of model sources to use. If None, use all
     """
     def get_df(source_name, source):
         df = source.list_dataloaders()
         df.insert(0, "source", source_name)
         return df
+
+    if sources is None:
+        sources = model_sources()
 
     pd_list = []
     for name, source in six.iteritems(sources):
