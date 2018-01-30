@@ -16,12 +16,14 @@ logger.addHandler(logging.NullHandler())
 
 
 class Pred_analysis(object):
-    def __call__(self,ref, alt, ref_rc=None, alt_rc=None):
+    def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         raise NotImplementedError("Analysis routine has to be implemented")
+
 
 class Rc_merging_pred_analysis(Pred_analysis):
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
     #
+
     def __init__(self, rc_merging="max"):
         if isinstance(rc_merging, str):
             if rc_merging == "absmax":
@@ -33,6 +35,7 @@ class Rc_merging_pred_analysis(Pred_analysis):
         else:
             raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
     #
+
     @staticmethod
     def absmax(x, y, inplace=True):
         if not inplace:
@@ -40,6 +43,7 @@ class Rc_merging_pred_analysis(Pred_analysis):
         replace_filt = np.abs(x) < np.abs(y)
         x[replace_filt] = y[replace_filt]
         return x
+
 
 class Logit(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
@@ -54,6 +58,7 @@ class Logit(Rc_merging_pred_analysis):
         else:
             return diffs
 
+
 class Diff(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
@@ -64,6 +69,7 @@ class Diff(Rc_merging_pred_analysis):
             return self.rc_merging(diffs, diffs_rc)
         else:
             return diffs
+
 
 class DeepSEA_effect(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
@@ -82,12 +88,12 @@ class DeepSEA_effect(Rc_merging_pred_analysis):
 
 
 def analyse_model_preds(model, ref, alt, mutation_positions, diff_types,
-        output_reshaper, output_filter =None, ref_rc= None, alt_rc=None, **kwargs):
+                        output_reshaper, output_filter=None, ref_rc=None, alt_rc=None, **kwargs):
     seqs = {"ref": ref, "alt": alt}
     if ref_rc is not None:
-        seqs["ref_rc"] =ref_rc
+        seqs["ref_rc"] = ref_rc
     if alt_rc is not None:
-        seqs["alt_rc"] =alt_rc
+        seqs["alt_rc"] = alt_rc
     if not isinstance(diff_types, dict):
         raise Exception("diff_types has to be a dictionary of callables. Keys will be used to annotate output.")
     assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
@@ -127,7 +133,7 @@ def _vcf_to_regions(vcf_fpath, seq_length, id_delim=":"):
     vcf = pd.read_csv(vcf_fpath, sep="\t", comment='#', header=None, usecols=range(len(colnames)))
     vcf.columns = colnames
     # Subset the VCF to SNVs:
-    vcf = vcf.loc[(vcf["ref"].str.len() == 1) &(vcf["alt"].str.len() == 1),:]
+    vcf = vcf.loc[(vcf["ref"].str.len() == 1) & (vcf["alt"].str.len() == 1), :]
     vcf["chrom"] = "chr" + vcf["chrom"].astype(str).str.lstrip("chr")
     seq_length_half = int(seq_length / 2)
     l_offset = seq_length_half
@@ -154,7 +160,7 @@ def _bed3(regions, fpath):
     to_write.to_csv(fpath, sep="\t", header=False, index=False)
 
 
-def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo= None):
+def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo=None):
     # make sure the sequence objects have the correct length (acording to the ranges specifications)
     if array_trafo is not None:
         input_set = array_trafo.to_standard(input_set)
@@ -162,11 +168,11 @@ def _process_sequence_set(input_set, preproc_conv, allele, s_dir, array_trafo= N
         (preproc_conv["end"] - preproc_conv["start"] + 1).values[0]
     assert preproc_conv["strand"].isin(["+", "-", "*", "."]).all()
     # Modify bases according to allele
-    _modify_bases(seq_obj = input_set,
-                  lines = preproc_conv["pp_line"].values,
-                  pos = preproc_conv["varpos_rel"].values,
+    _modify_bases(seq_obj=input_set,
+                  lines=preproc_conv["pp_line"].values,
+                  pos=preproc_conv["varpos_rel"].values,
                   base=preproc_conv[allele].values,
-                  is_rc = preproc_conv["strand"].values == "-")
+                  is_rc=preproc_conv["strand"].values == "-")
     # subset to the lines that have been identified
     if input_set.shape[0] != preproc_conv.shape[0]:
         raise Exception("Mismatch between requested and generated DNA sequences.")
@@ -190,7 +196,6 @@ def _prepare_regions(annotated_regions):
     annotated_regions["id"] = annotated_regions["id"].values.astype(np.str)
     annotated_regions.set_index("id", inplace=True)
     return annotated_regions
-
 
 
 def _generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions, array_trafo=None):

@@ -21,8 +21,11 @@ def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
     scoring_options = {
+        # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
         "logit": kipoi.variant_effects.Logit,
         "diff": kipoi.variant_effects.Diff,
+        # TODO - function name and string options should be the same
+        # i.e. I'd use DeepSEA_effect...
         "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
     }
     assert command == "score_variants"
@@ -44,7 +47,7 @@ def cli_score_variants(command, raw_args):
     parser.add_argument('-f', '--file_format', default="tsv",
                         choices=["tsv", "hdf5"],
                         help='File format.')
-    parser.add_argument('-r', '--restriction_bed', default = None,
+    parser.add_argument('-r', '--restriction_bed', default=None,
                         help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
@@ -115,7 +118,7 @@ def cli_score_variants(command, raw_args):
 
     # Get a vcf output writer if needed
     if out_vcf_fpath is not None:
-        logger.info('Annotated VCF will be written to %s.'%str(out_vcf_fpath))
+        logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
         vcf_writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
     else:
         vcf_writer = None
@@ -129,7 +132,7 @@ def cli_score_variants(command, raw_args):
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         dataloader_args=dataloader_arguments,
-        vcf_to_region = vcf_to_region,
+        vcf_to_region=vcf_to_region,
         evaluation_function_kwargs={"diff_types": dts},
         sync_pred_writer=vcf_writer,
         return_predictions=keep_predictions
@@ -148,7 +151,7 @@ def cli_score_variants(command, raw_args):
                 with open(args.output, "w") as ofh:
                     ofh.write("KPVEP_%s\n" % k.upper())
                     res[k].to_csv(args.output, sep="\t", mode="a")
-    
+
         if args.file_format == "hdf5":
             deepdish.io.save(args.output, res)
 
