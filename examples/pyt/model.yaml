@@ -1,0 +1,26 @@
+type: pytorch
+args:
+    gen_fn: model_files/pyt.py::get_model # for testing implement two callables, one is the class itself, the other is the model + preloaded weights
+    weights: model_files/only_weights.pth
+default_dataloader: . # path to the directory
+info:
+    authors:
+        - name: Roman Kreuzhuber
+          github: krrome
+    doc: Simple testing model for pytorch
+dependencies:
+    pip:
+        - torch>=0.2.0
+schema:
+    inputs:
+        name: input
+        shape: (1000, 4)
+        special_type: DNASeq
+        doc: DNA sequence
+        # associated_metadata: ranges # --> has to be defined in dataloader.yaml.
+        #                                   This field is ignored in model.yaml.
+    targets:
+        shape: (1, )
+        doc: Predicted binding strength
+        column_labels:
+            - some_probability
