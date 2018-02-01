@@ -295,8 +295,8 @@ class SnvCenteredRg(RegionGenerator):
         super(SnvCenteredRg, self).__init__(model_info_extractor)
         self.seq_length = model_info_extractor.get_seq_len()
         seq_length_half = int(self.seq_length / 2)
-        self.centered_l_offset = seq_length_half
-        self.centered_r_offset = seq_length_half - 1 + self.seq_length % 2
+        self.centered_l_offset = seq_length_half - 1
+        self.centered_r_offset = seq_length_half + self.seq_length % 2
 
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
@@ -313,8 +313,8 @@ class SnvPosRestrictedRg(RegionGenerator):
         self.tabixed = pybed_def.tabix(in_place=False)
         self.seq_length = model_info_extractor.get_seq_len()
         seq_length_half = int(self.seq_length / 2)
-        self.centered_l_offset = seq_length_half
-        self.centered_r_offset = seq_length_half - 1 + self.seq_length % 2
+        self.centered_l_offset = seq_length_half - 1
+        self.centered_r_offset = seq_length_half + self.seq_length % 2
 
 
     def __call__(self, variant_record):

@@ -71,14 +71,16 @@ class DeepSEA_effect(Rc_merging_pred_analysis):
         if np.any([(preds[k].min() < 0 or preds[k].max() > 1) for k in preds]):
             warnings.warn("Using log_odds on model outputs that are not bound [0,1]")
         logit_diffs = np.log(preds["alt"] / (1 - preds["alt"])) - np.log(preds["ref"] / (1 - preds["ref"]))
-        logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
         diffs = preds["alt"] - preds["ref"]
 
         if (preds["ref_rc"] is not None) and ((preds["alt_rc"] is not None)):
+            logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
             diffs_rc = preds["alt_rc"] - preds["ref_rc"]
-            return self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
-        else:
-            return np.abs(logit_diffs) * np.abs(diffs)
+            logit_diffs = self.rc_merging(logit_diffs, logit_diffs_rc)
+            diffs = self.rc_merging(diffs, diffs_rc)
+            #self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
+        
+        return np.abs(logit_diffs) * np.abs(diffs)
 
 
 def analyse_model_preds(model, ref, alt, mutation_positions, diff_types,

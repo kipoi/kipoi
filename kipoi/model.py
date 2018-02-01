@@ -308,6 +308,14 @@ class PyTorchModel(BaseModel):
         # Assuming that model should be used for predictions only
         self.model.eval()
 
+    @staticmethod
+    def correct_neg_stride(x):
+        if any([el<0 for el in  x.strides]):
+            # pytorch doesn't support negative strides at the moment, copying the numpy array will create a new array
+            # with positive strides.
+            return x.copy()
+        return x
+
     def predict_on_batch(self, x):
         """
         Input dictionaries will be translated into **kwargs of the `model.forward(...)` call
@@ -320,17 +328,17 @@ class PyTorchModel(BaseModel):
 
         if isinstance(x, np.ndarray):
             # convert to a pytorch tensor and then to a pytorch variable
-            input = Variable(torch.from_numpy(x))
+            input = Variable(torch.from_numpy(self.correct_neg_stride(x)))
             pred = self.model(input)
 
         elif isinstance(x, dict):
             # convert all entries in the dict to pytorch variables
-            input_dict = {k: Variable(torch.from_numpy(x[k])) for k in x}
+            input_dict = {k: Variable(torch.from_numpy(self.correct_neg_stride(x[k]))) for k in x}
             pred = self.model(**input_dict)
 
         elif isinstance(x, list):
             # convert all entries in the list to pytorch variables
-            input_list = [Variable(torch.from_numpy(el)) for el in x]
+            input_list = [Variable(torch.from_numpy(self.correct_neg_stride(el))) for el in x]
             pred = self.model(*input_list)
 
         else:
