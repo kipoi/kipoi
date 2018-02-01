@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
+import sys
 import os
 from ..utils import parse_json_file_str, cd
 import kipoi  # for .config module
@@ -240,3 +241,41 @@ def cli_pull(command, raw_args):
         env = kipoi.cli.env.export_env(args.env_file, args.model, args.source)
         print("Activate the environment with:")
         print("source activate {0}".format(env))
+
+
+def cli_init(command, raw_args, **kwargs):
+    """Initialize the repository using cookiecutter
+    """
+    assert command == "init"
+    logger.info("Initializing a new Kipoi model")
+
+    print("\nPlease answer the questions bellow. Defaults are shown in square brackets.\n")
+    print("You might find the following links useful: ")
+    print("- (model_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_models.md")
+    print("- (dataloader_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_dataloaders.md")
+    print("--------------------------------------------\n")
+
+    from cookiecutter.main import cookiecutter
+    from cookiecutter.exceptions import FailedHookException
+
+    # Get the information about the current directory
+    import inspect
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    this_dir = os.path.dirname(os.path.abspath(filename))
+    template_path = os.path.join(this_dir, "../model_template/")
+
+    # remove the pyc files in the template directory
+    # bug in cookiecutter: https://github.com/audreyr/cookiecutter/pull/1037
+    pyc_file = os.path.join(template_path, "hooks", "pre_gen_project.pyc")
+    if os.path.exists(pyc_file):
+        os.remove(pyc_file)
+
+    # Create project from the cookiecutter-pypackage/ template
+    try:
+        out_dir = cookiecutter(template_path, **kwargs)
+    except FailedHookException:
+        # pre_gen_project.py detected an error in the configuration
+        logger.error("Failed to initialize the model")
+        sys.exit(1)
+    print("--------------------------------------------")
+    logger.info("Done!\nCreated the following folder into the current working directory: {0}".format(os.path.basename(out_dir)))

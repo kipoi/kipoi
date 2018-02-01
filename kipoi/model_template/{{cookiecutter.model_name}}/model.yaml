@@ -1,0 +1,71 @@
+# TODO - optionally create a model.py file - if model type is custom...
+
+# TODO - model files
+# ifelse - different model types - specify the arguments
+{#-
+# model definition
+-#}
+{%- if cookiecutter.model_type == "keras" %}
+type: keras
+args:
+    weights: model_files/weights.h5
+    arch: model_files/model.json
+    # Note: if you saved the model with model.save(), you can omit `arch: ...`
+{%- elif cookiecutter.model_type == "custom" %}
+type: custom
+args:
+    file: model.py
+    object: MyModel
+{%- elif cookiecutter.model_type == "sklearn" %}
+type: sklearn
+args:
+    pkl_file: model_files/model.pkl
+{%- endif %}
+default_dataloader: . # path to the directory
+info:
+    authors:
+        - name: {{cookiecutter.author_name}}
+          github: {{cookiecutter.author_github}}
+          {%- if cookiecutter.author_email != "Your email(optional)" %}
+          email: {{cookiecutter.author_email}}
+          {%- endif %}
+    doc: {{cookiecutter.model_doc}}
+dependencies:
+    conda:
+        - TODO
+    pip:
+      {%- if cookiecutter.model_type == "keras" %}
+        - keras>=2.0.4
+      {%- elif cookiecutter.model_type == "sklearn" %}
+        - scikit-learn
+      {%- endif %}
+        - TODO
+schema:
+    inputs:
+        {%- if cookiecutter.model_input_type == "np.array" %}
+        name: features
+        shape: (4,)
+        doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- elif cookiecutter.model_input_type == "list of np.arrays" %}
+        - name: features
+          shape: (4,)
+          doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- elif cookiecutter.model_input_type == "dict of np.arrays" %}
+        features:
+            shape: (4,)
+            doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+        {%- endif %}
+    targets:
+        {%- if cookiecutter.model_output_type == "np.array" %}
+        name: iris_class
+        shape: (3,)
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- elif cookiecutter.model_output_type == "list of np.arrays" %}
+        - name: iris_class
+          shape: (3,)
+          doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- elif cookiecutter.model_output_type == "dict of np.arrays" %}
+        iris_class:
+          shape: (3,)
+          doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+        {%- endif %}

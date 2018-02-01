@@ -1,0 +1,1 @@
+Cookiecutter model template

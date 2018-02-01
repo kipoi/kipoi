@@ -39,6 +39,47 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 | BatchGenerator    	| no            	| yes                                               	| no                                  	|
 
 
+### Returned values
+
+The dataloader returns a dictonary with the following keys:
+- inputs
+- targets
+- metadata
+
+#### Inputs/targets
+
+The returned values under the `inputs` or `targets` keys can be of the following types:
+- numpy array
+- list of numpy arrays
+- dictionary of numpy arrays
+
+To specify which of the three options your dataloader implements, we make use of the yaml synthax ([YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)):
+
+```yaml
+# np.array
+output_schema:
+  inputs:
+    name: seq
+    shape: (1000, 4)
+    doc: DNA sequence
+
+# list of numpy arrays
+output_schema:
+  inputs:
+    - name: seq
+      shape: (1000, 4)
+      doc: DNA sequence
+
+# Dictionary of numpy arrays
+output_schema:
+  inputs:
+    seq:
+      shape: (1000, 4)
+      doc: DNA sequence
+```
+
+Note that for the dictionary of numpy arrays we don't need to specify `name: seq`. The name is infered from the dictionary key (`seq`).
+
 ## Examples
 
 See [tests/test_12_dataloader_classes.py](../tests/test_12_dataloader_classes.py) for implementation examples of each

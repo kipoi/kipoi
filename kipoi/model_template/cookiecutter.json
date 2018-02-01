@@ -1,0 +1,13 @@
+{
+    "model_name": "my_model",
+    "author_name": "Your name",
+    "author_github": "Your github username",
+    "author_email": "Your email(optional)",
+    "model_doc": "Model description",
+    "model_license": ["MIT", "BSD", "ISCL", "Apache Software License 2.0", "Not open source"],
+    "model_type": ["keras", "custom", "sklearn"],
+    "model_input_type": ["np.array", "list of np.arrays", "dict of np.arrays"],
+    "model_output_type": ["np.array", "list of np.arrays", "dict of np.arrays"],
+    "dataloader_type": ["Dataset", "PreloadedDataset", "BatchDataset", "SampleIterator",
+			"SampleGenerator", "BatchIterator", "BatchGenerator"]
+}
