@@ -21,9 +21,12 @@ def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
     scoring_options = {
+        #deepsea_scr diff logit_diff logit_ref logit_alt
         # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
         "logit": kipoi.variant_effects.Logit,
         "diff": kipoi.variant_effects.Diff,
+        "logit_ref":kipoi.variant_effects.LogitRef,
+        "logit_alt":kipoi.variant_effects.LogitAlt,
         # TODO - function name and string options should be the same
         # i.e. I'd use DeepSEA_effect...
         "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
@@ -85,7 +88,7 @@ def cli_score_variants(command, raw_args):
     if len(args.scoring) >= 1:
         dts = {}
         for k in args.scoring:
-            dts[k] = scoring_options[k]("absmax")
+            dts[k] = scoring_options[k]("mean")
     else:
         raise Exception("No scoring method was chosen!")
 

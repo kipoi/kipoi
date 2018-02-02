@@ -1,0 +1,29 @@
+type: pytorch
+args:
+    file: model_files/pyt.py
+    build_fn: get_model
+    weights: model_files/only_weights.pth
+default_dataloader: . # path to the directory
+info:
+    authors:
+        - name: Roman Kreuzhuber
+          github: krrome
+    doc: Simple testing model for pytorch
+dependencies:
+    conda:
+        - pytorch::pytorch>=0.2.0
+        - pytorch::torchvision
+
+schema:
+    inputs:
+        name: input
+        shape: (1000, 4)
+        special_type: DNASeq
+        doc: DNA sequence
+        # associated_metadata: ranges # --> has to be defined in dataloader.yaml.
+        #                                   This field is ignored in model.yaml.
+    targets:
+        shape: (1, )
+        doc: Predicted binding strength
+        column_labels:
+            - some_probability

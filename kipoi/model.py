@@ -7,6 +7,7 @@ import kipoi  # for .config module
 from .utils import load_module, cd
 import abc
 import six
+import numpy as np
 
 from .components import ModelDescription
 from .pipeline import Pipeline
@@ -256,6 +257,131 @@ class KerasModel(BaseModel, GradientMixin):
 #     def predict_on_batch(self, x):
 #         return self.model(x)
 
+class PyTorchModel(BaseModel):
+    """Loads a pytorch model. 
+    
+    """
+    #(file=None, build_fn=None, weights=None)
+    def __init__(self, file = None, build_fn=None, weights=None, auto_use_cuda = True):
+        """
+        Load model
+        `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
+        `gen_fn`: Either callable or path to callable that returns a pytorch model object. If `weights` is not None
+        then the model weights will be loaded from that file, otherwise it is assumed that the weights are already set
+        after execution of `gen_fn()` or the function defined in `gen_fn`.  
+        
+        Models can be loaded in 2 ways:
+        If the model was saved:
+        
+        * `torch.save(model, ...)` then the model will be loaded by calling `torch.load(weights)`
+        * `torch.save(model.state_dict(), ...)` then another callable has to be passed to arch which returns the
+        `model` object, on then `model.load_state_dict(torch.load(weights))` will then be called. 
+        
+        Where `weights` is the parameter of this function.
+        Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
+        """
+        import torch
+        if build_fn is not None:
+            if callable(build_fn):
+                gen_fn_callable = build_fn
+
+            elif isinstance(build_fn, six.string_types):
+                file_path = file
+                obj_name = build_fn
+                gen_fn_callable = getattr(load_module(file_path), obj_name)
+
+            else:
+                raise Exception("gen_fn has to be callable or a string pointing to the callable.")
+
+            # Load model using generator function
+            self.model = gen_fn_callable()
+
+            # Load weights
+            if weights is not None:
+                self.model.load_state_dict(torch.load(weights))
+
+        elif weights is not None:
+            # Architecture is stored with the weights (not recommended)
+            self.model = torch.load(weights)
+
+        else:
+            raise Exception("At least one of the arguments 'weights' or 'gen_fn' has to be set.")
+
+        if auto_use_cuda and torch.cuda.is_available():
+            self.model = self.model.cuda()
+            self.use_cuda = True
+        else:
+            self.use_cuda = False
+
+        # Assuming that model should be used for predictions only
+        self.model.eval()
+
+    @staticmethod
+    def correct_neg_stride(x):
+        if any([el<0 for el in  x.strides]):
+            # pytorch doesn't support negative strides at the moment, copying the numpy array will create a new array
+            # with positive strides.
+            return x.copy()
+        return x
+
+    def _torch_var(self, input):
+        from torch.autograd import Variable
+        out = Variable(input)
+        if self.use_cuda:
+            out = out.cuda()
+        return out
+
+    def _torch_var_to_numpy(self, input):
+        if input.is_cuda:
+            input = input.cpu()
+        return input.data.numpy()
+
+    def _model_is_cuda(self):
+        return next(self.model.parameters()).is_cuda
+
+    def predict_on_batch(self, x):
+        """
+        Input dictionaries will be translated into **kwargs of the `model.forward(...)` call
+        Input lists will be translated into *args of the `model.forward(...)` call
+        Input np.ndarray will be used as the only argument in a `model.forward(...)` call
+        """
+        #TODO: Understand how pytorch models could return multiple outputs
+        import torch
+        from torch.autograd import Variable
+
+        if isinstance(x, np.ndarray):
+            # convert to a pytorch tensor and then to a pytorch variable
+            input = self._torch_var(torch.from_numpy(self.correct_neg_stride(x)))
+            pred = self.model(input)
+
+        elif isinstance(x, dict):
+            # convert all entries in the dict to pytorch variables
+            input_dict = {k: self._torch_var(torch.from_numpy(self.correct_neg_stride(x[k]))) for k in x}
+            pred = self.model(**input_dict)
+
+        elif isinstance(x, list):
+            # convert all entries in the list to pytorch variables
+            input_list = [self._torch_var(torch.from_numpy(self.correct_neg_stride(el))) for el in x]
+            pred = self.model(*input_list)
+
+        else:
+            raise Exception("Input not supported!")
+
+        # convert results back to numpy arrays
+        if isinstance(pred, Variable):
+            pred_np = self._torch_var_to_numpy(pred)
+
+        elif isinstance(pred, dict):
+            pred_np = {k: self._torch_var_to_numpy(pred[k]) for k in pred}
+
+        elif isinstance(pred, list) or isinstance(pred, tuple):
+            pred_np = [self._torch_var_to_numpy(el) for el in pred]
+
+        else:
+            raise Exception("Model output format not supported!")
+
+        return pred_np
+
 
 class SklearnModel(BaseModel):
     """Loads the serialized scikit learn model
@@ -287,6 +413,6 @@ class SklearnModel(BaseModel):
 
 
 AVAILABLE_MODELS = {"keras": KerasModel,
-                    # "pytorch": PyTorchModel,
+                    "pytorch": PyTorchModel,
                     "sklearn": SklearnModel}
 # "custom": load_model_custom}

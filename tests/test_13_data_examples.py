@@ -14,7 +14,7 @@ import config
 # INSTALL_REQ = True
 INSTALL_REQ = config.install_req
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "pyt"]
 
 
 def read_json_yaml(filepath):

@@ -18,7 +18,7 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_model"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_model", "pyt"]
 
 
 
@@ -72,7 +72,8 @@ def test_preproc_example(example, tmpdir):
     with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
+    if example != "pyt":
+        assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

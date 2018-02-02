@@ -397,7 +397,7 @@ def test_var_eff_pred():
         res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds, batch_size=32,
                               vcf_to_region = vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
                               sync_pred_writer=writer)
         writer.close()
         # pass
@@ -439,7 +439,7 @@ def test_var_eff_pred2():
         res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
                               evaluation_function=analyse_model_preds,batch_size=32,
                               vcf_to_region = vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("absmax")}},
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
                               sync_pred_writer=writer)
         writer.close()
         # pass
@@ -489,6 +489,10 @@ def test_enhanced_analysis_effects():
         x =(DeepSEA_effect()(**preds_arb))
     #
     assert np.all((Diff()(**preds_arb) == counts - probs_r))
+    #
+    preds_prob_r = {"ref": probs_r, "ref_rc": probs_r, "alt": probs_a, "alt_rc": probs_a}
+    assert np.all((ve.LogitAlt()(**preds_prob_r) == logit(probs_a)))
+    assert np.all((ve.LogitRef()(**preds_prob_r) == logit(probs_r)))
 
 
 
@@ -533,7 +537,7 @@ def test__generate_pos_restricted_seqs():
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
     tuples = (([21541490, 21541591], [21541491, 21541591]),
-              ([21541390, 21541891], [21541540, 21541640]),
+              ([21541390, 21541891], [21541541, 21541641]),
               ([21541570, 21541891], [21541571, 21541671]))
     model = kipoi.get_model(model_dir, source="dir")
     dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
@@ -587,7 +591,7 @@ def test__generate_snv_centered_seqs():
         # 1-based format?
         assert ((regions_df["end"] - regions_df["start"] + 1) == seq_length).all()
         assert (regions_df.shape[0] == lct)
-        assert (regions_df["start"].values == vcf_df["POS"] - int(seq_length/2)).all()
+        assert (regions_df["start"].values == vcf_df["POS"] - int(seq_length/2) +1).all()
 
 
 def test__generate_seq_sets_v2():
