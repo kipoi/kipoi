@@ -6,7 +6,7 @@ import sys
 import config
 from kipoi.pipeline import install_model_requirements
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template"]
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "pyt"]
 # TODO - finish the unit-test
 INSTALL_REQ = config.install_req
 
@@ -22,12 +22,13 @@ def test_load_model(example):
         install_model_requirements(example_dir, "dir")
     m = kipoi.get_model(example_dir, source="dir")
 
-    m.arch
+    if isinstance(m, kipoi.model.KerasModel):
+        m.arch
+        m.weights
     m.info
     m.schema
     m.schema.inputs
     m.source
-    m.weights
     m.default_dataloader
     m.model
     m.predict_on_batch

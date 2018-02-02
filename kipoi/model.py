@@ -261,7 +261,8 @@ class PyTorchModel(BaseModel):
     """Loads a pytorch model. 
     
     """
-    def __init__(self, weights=None, gen_fn=None):
+    #(file=None, build_fn=None, weights=None)
+    def __init__(self, file = None, build_fn=None, weights=None, auto_use_cuda = True):
         """
         Load model
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
@@ -280,12 +281,13 @@ class PyTorchModel(BaseModel):
         Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
         """
         import torch
-        if gen_fn is not None:
-            if callable(gen_fn):
-                gen_fn_callable = gen_fn
+        if build_fn is not None:
+            if callable(build_fn):
+                gen_fn_callable = build_fn
 
-            elif isinstance(gen_fn, six.string_types):
-                file_path, obj_name = tuple(gen_fn.split("::"))
+            elif isinstance(build_fn, six.string_types):
+                file_path = file
+                obj_name = build_fn
                 gen_fn_callable = getattr(load_module(file_path), obj_name)
 
             else:
@@ -305,6 +307,12 @@ class PyTorchModel(BaseModel):
         else:
             raise Exception("At least one of the arguments 'weights' or 'gen_fn' has to be set.")
 
+        if auto_use_cuda and torch.cuda.is_available():
+            self.model = self.model.cuda()
+            self.use_cuda = True
+        else:
+            self.use_cuda = False
+
         # Assuming that model should be used for predictions only
         self.model.eval()
 
@@ -315,6 +323,21 @@ class PyTorchModel(BaseModel):
             # with positive strides.
             return x.copy()
         return x
+
+    def _torch_var(self, input):
+        from torch.autograd import Variable
+        out = Variable(input)
+        if self.use_cuda:
+            out = out.cuda()
+        return out
+
+    def _torch_var_to_numpy(self, input):
+        if input.is_cuda:
+            input = input.cpu()
+        return input.data.numpy()
+
+    def _model_is_cuda(self):
+        return next(self.model.parameters()).is_cuda
 
     def predict_on_batch(self, x):
         """
@@ -328,17 +351,17 @@ class PyTorchModel(BaseModel):
 
         if isinstance(x, np.ndarray):
             # convert to a pytorch tensor and then to a pytorch variable
-            input = Variable(torch.from_numpy(self.correct_neg_stride(x)))
+            input = self._torch_var(torch.from_numpy(self.correct_neg_stride(x)))
             pred = self.model(input)
 
         elif isinstance(x, dict):
             # convert all entries in the dict to pytorch variables
-            input_dict = {k: Variable(torch.from_numpy(self.correct_neg_stride(x[k]))) for k in x}
+            input_dict = {k: self._torch_var(torch.from_numpy(self.correct_neg_stride(x[k]))) for k in x}
             pred = self.model(**input_dict)
 
         elif isinstance(x, list):
             # convert all entries in the list to pytorch variables
-            input_list = [Variable(torch.from_numpy(self.correct_neg_stride(el))) for el in x]
+            input_list = [self._torch_var(torch.from_numpy(self.correct_neg_stride(el))) for el in x]
             pred = self.model(*input_list)
 
         else:
@@ -346,13 +369,13 @@ class PyTorchModel(BaseModel):
 
         # convert results back to numpy arrays
         if isinstance(pred, Variable):
-            pred_np = pred.data.numpy()
+            pred_np = self._torch_var_to_numpy(pred)
 
         elif isinstance(pred, dict):
-            pred_np = {k: pred[k].data.numpy() for k in pred}
+            pred_np = {k: self._torch_var_to_numpy(pred[k]) for k in pred}
 
         elif isinstance(pred, list) or isinstance(pred, tuple):
-            pred_np = [el.data.numpy() for el in pred]
+            pred_np = [self._torch_var_to_numpy(el) for el in pred]
 
         else:
             raise Exception("Model output format not supported!")

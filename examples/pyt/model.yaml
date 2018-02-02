@@ -1,6 +1,7 @@
 type: pytorch
 args:
-    gen_fn: model_files/pyt.py::get_model # for testing implement two callables, one is the class itself, the other is the model + preloaded weights
+    file: model_files/pyt.py
+    build_fn: get_model
     weights: model_files/only_weights.pth
 default_dataloader: . # path to the directory
 info:
@@ -9,8 +10,10 @@ info:
           github: krrome
     doc: Simple testing model for pytorch
 dependencies:
-    pip:
-        - torch>=0.2.0
+    conda:
+        - pytorch::pytorch>=0.2.0
+        - pytorch::torchvision
+
 schema:
     inputs:
         name: input
