@@ -22,7 +22,7 @@ class BedToolLinecache(BedTool):
     """
 
     def __getitem__(self, idx):
-        l = linecache.getline(self.fn, idx + 1)
+        line = linecache.getline(self.fn, idx + 1)
         return pybedtools.create_interval_from_list(line.strip().split("\t"))
 
 
