@@ -109,6 +109,7 @@ jobs:
           command: |
             conda install --yes --no-update-deps --file conda_requirements.txt
             conda install -c bioconda bedtools htslib
+            conda install pytorch torchvision -c pytorch
 
       - run:
           name: install pip dependencies
