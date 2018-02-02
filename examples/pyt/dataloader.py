@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pandas as pd
+import pybedtools
 from pybedtools import BedTool
 from genomelake.extractors import FastaExtractor
 from kipoi.data import Dataset
@@ -22,7 +23,7 @@ class BedToolLinecache(BedTool):
 
     def __getitem__(self, idx):
         l = linecache.getline(self.fn, idx + 1)
-        return BedTool(l, from_string=True)[0]
+        return pybedtools.create_interval_from_list(line.strip().split("\t"))
 
 
 class SeqDataset(Dataset):
