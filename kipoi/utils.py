@@ -238,3 +238,11 @@ def read_txt(file_path, comment_str="#"):
             if len(line) > 0:
                 out.append(line)
     return out
+
+
+def merge_dicts(x, y):
+    """https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
+    """
+    z = x.copy()   # start with x's keys and values
+    z.update(y)    # modifies z with y's keys and values & returns None
+    return z

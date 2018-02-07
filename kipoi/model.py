@@ -4,7 +4,7 @@ from __future__ import print_function
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd
+from .utils import load_module, cd, merge_dicts
 import abc
 import six
 import numpy as np
@@ -411,8 +411,95 @@ class SklearnModel(BaseModel):
         # x = x.popitem()[1]
         return self.model.predict(x)
 
+# --------------------------------------------
+# Tensorflow
+
+
+def get_op_outputs(graph, node_names):
+    """Query op names
+    """
+    if isinstance(node_names, dict):
+        return {k: graph.get_operation_by_name(v).outputs[0]
+                for k, v in six.iteritems(node_names)}
+    elif isinstance(node_names, list):
+        return [graph.get_operation_by_name(v).outputs[0]
+                for v in node_names]
+    elif isinstance(node_names, str):
+        return graph.get_operation_by_name(node_names).outputs[0]
+    else:
+        raise ValueError("node_names has to be dict, list or str. Found: {0}".
+                         format(type(node_names)))
+
+
+class TensorFlowModel(BaseModel):
+
+    # TODO - rethink the input args
+    def __init__(self,
+                 input_nodes,
+                 target_nodes,
+                 meta_graph,
+                 checkpoint,
+                 const_feed_dict_pkl=None
+                 ):
+        """Tensorflow graph
+
+        Args:
+          input_nodes: dict(str), list(str) or str: input node names.
+            Keys correspond to the values in the feeded data (in schema)
+          target_nodes: Same as input_nodes, but for the output node.
+            If dict/list, the model will return a dict/list of np.arrays.
+          const_feed_dict_pkl: Constant feed dict stored as a pickle file.
+            Values of this dict will get passed every time to feed_dict
+        """
+        import tensorflow as tf
+
+        self.input_nodes = input_nodes
+        self.target_nodes = target_nodes
+        self.meta_graph = meta_graph
+        self.checkpoint = checkpoint
+        self.sess = tf.Session()
+        self.graph = tf.get_default_graph()  # TODO - use a dedicated graph?
+
+        saver = tf.train.import_meta_graph(self.meta_graph)
+        saver.restore(self.sess, self.checkpoint)
+
+        self.input_ops = get_op_outputs(self.graph,  input_nodes)
+        self.target_ops = get_op_outputs(self.graph, target_nodes)
+
+        self.const_feed_dict_pkl = const_feed_dict_pkl
+        if self.const_feed_dict_pkl is not None:
+            # Load the feed dictionary from the pickle file
+            from sklearn.externals import joblib
+            const_feed_dict = joblib.load(self.const_feed_dict_pkl)
+            self.const_feed_dict = {self.graph.get_operation_by_name(k).outputs[0]: v
+                                    for k, v in six.iteritems(const_feed_dict)}
+        else:
+            self.const_feed_dict = {}
+
+    def predict_on_batch(self, x):
+
+        # build feed_dict
+        if isinstance(self.input_nodes, dict):
+            # dict
+            assert isinstance(x, dict)
+            feed_dict = {v: x[k] for k, v in six.iteritems(self.input_ops)}
+        elif isinstance(self.input_nodes, list):
+            # list
+            assert isinstance(x, list)
+            feed_dict = {v: x[i] for i, v in enumerate(self.input_ops)}
+        elif isinstance(self.input_nodes, str):
+            # single array
+            feed_dict = {self.input_ops: x}
+        else:
+            raise ValueError
+
+        return self.sess.run(self.target_ops,
+                             feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
+
 
 AVAILABLE_MODELS = {"keras": KerasModel,
                     "pytorch": PyTorchModel,
-                    "sklearn": SklearnModel}
+                    "sklearn": SklearnModel,
+                    "tensorflow": TensorFlowModel}
 # "custom": load_model_custom}
