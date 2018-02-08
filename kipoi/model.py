@@ -4,7 +4,7 @@ from __future__ import print_function
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd
+from .utils import load_module, cd, merge_dicts
 import abc
 import six
 import numpy as np
@@ -259,24 +259,25 @@ class KerasModel(BaseModel, GradientMixin):
 
 class PyTorchModel(BaseModel):
     """Loads a pytorch model. 
-    
+
     """
     #(file=None, build_fn=None, weights=None)
-    def __init__(self, file = None, build_fn=None, weights=None, auto_use_cuda = True):
+
+    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """
         Load model
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
         `gen_fn`: Either callable or path to callable that returns a pytorch model object. If `weights` is not None
         then the model weights will be loaded from that file, otherwise it is assumed that the weights are already set
         after execution of `gen_fn()` or the function defined in `gen_fn`.  
-        
+
         Models can be loaded in 2 ways:
         If the model was saved:
-        
+
         * `torch.save(model, ...)` then the model will be loaded by calling `torch.load(weights)`
         * `torch.save(model.state_dict(), ...)` then another callable has to be passed to arch which returns the
         `model` object, on then `model.load_state_dict(torch.load(weights))` will then be called. 
-        
+
         Where `weights` is the parameter of this function.
         Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
         """
@@ -318,7 +319,7 @@ class PyTorchModel(BaseModel):
 
     @staticmethod
     def correct_neg_stride(x):
-        if any([el<0 for el in  x.strides]):
+        if any([el < 0 for el in x.strides]):
             # pytorch doesn't support negative strides at the moment, copying the numpy array will create a new array
             # with positive strides.
             return x.copy()
@@ -345,7 +346,7 @@ class PyTorchModel(BaseModel):
         Input lists will be translated into *args of the `model.forward(...)` call
         Input np.ndarray will be used as the only argument in a `model.forward(...)` call
         """
-        #TODO: Understand how pytorch models could return multiple outputs
+        # TODO: Understand how pytorch models could return multiple outputs
         import torch
         from torch.autograd import Variable
 
@@ -411,8 +412,96 @@ class SklearnModel(BaseModel):
         # x = x.popitem()[1]
         return self.model.predict(x)
 
+# --------------------------------------------
+# Tensorflow
+
+
+def get_op_outputs(graph, node_names):
+    """Query op names
+    """
+    if isinstance(node_names, dict):
+        return {k: graph.get_operation_by_name(v).outputs[0]
+                for k, v in six.iteritems(node_names)}
+    elif isinstance(node_names, list):
+        return [graph.get_operation_by_name(v).outputs[0]
+                for v in node_names]
+    elif isinstance(node_names, str):
+        return graph.get_operation_by_name(node_names).outputs[0]
+    else:
+        raise ValueError("node_names has to be dict, list or str. Found: {0}".
+                         format(type(node_names)))
+
+
+class TensorFlowModel(BaseModel):
+
+    def __init__(self,
+                 input_nodes,
+                 target_nodes,
+                 checkpoint_path,
+                 const_feed_dict_pkl=None
+                 ):
+        """Tensorflow graph
+
+        Args:
+          input_nodes: dict(str), list(str) or str: input node names.
+            Keys correspond to the values in the feeded data (in schema)
+          target_nodes: Same as input_nodes, but for the output node.
+            If dict/list, the model will return a dict/list of np.arrays.
+          checkpoint_path: Path to the saved model using:
+            `saver = tf.train.Saver(); saver.save(checkpoint_path)`
+          const_feed_dict_pkl: Constant feed dict stored as a pickle file.
+            Values of this dict will get passed every time to feed_dict.
+            Hence, const_feed_dict holds required values by the model not
+            provided by the Dataloader.
+        """
+        import tensorflow as tf
+
+        self.input_nodes = input_nodes
+        self.target_nodes = target_nodes
+        self.checkpoint_path = checkpoint_path
+        self.graph = tf.Graph()  # use a fresh graph for the model
+        self.sess = tf.Session(graph=self.graph)
+
+        with self.graph.as_default():
+            saver = tf.train.import_meta_graph(self.checkpoint_path + '.meta')
+            saver.restore(self.sess, self.checkpoint_path)
+
+        self.input_ops = get_op_outputs(self.graph, input_nodes)
+        self.target_ops = get_op_outputs(self.graph, target_nodes)
+
+        self.const_feed_dict_pkl = const_feed_dict_pkl
+        if self.const_feed_dict_pkl is not None:
+            # Load the feed dictionary from the pickle file
+            from sklearn.externals import joblib
+            const_feed_dict = joblib.load(self.const_feed_dict_pkl)
+            self.const_feed_dict = {self.graph.get_operation_by_name(k).outputs[0]: v
+                                    for k, v in six.iteritems(const_feed_dict)}
+        else:
+            self.const_feed_dict = {}
+
+    def predict_on_batch(self, x):
+
+        # build feed_dict
+        if isinstance(self.input_nodes, dict):
+            # dict
+            assert isinstance(x, dict)
+            feed_dict = {v: x[k] for k, v in six.iteritems(self.input_ops)}
+        elif isinstance(self.input_nodes, list):
+            # list
+            assert isinstance(x, list)
+            feed_dict = {v: x[i] for i, v in enumerate(self.input_ops)}
+        elif isinstance(self.input_nodes, str):
+            # single array
+            feed_dict = {self.input_ops: x}
+        else:
+            raise ValueError
+
+        return self.sess.run(self.target_ops,
+                             feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
 
 AVAILABLE_MODELS = {"keras": KerasModel,
                     "pytorch": PyTorchModel,
-                    "sklearn": SklearnModel}
+                    "sklearn": SklearnModel,
+                    "tensorflow": TensorFlowModel}
 # "custom": load_model_custom}
