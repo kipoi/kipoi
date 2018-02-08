@@ -18,8 +18,8 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "non_bedinput_model", "pyt"]
-
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template",
+                   "non_bedinput_model", "pyt", "iris_tensorflow"]
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -205,7 +205,6 @@ def test_predict_variants_example(example, tmpdir):
                     table_ends.append(i)
                 for label, start, end in zip(table_labels, table_starts, table_ends):
                     tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
-
 
 
 def test_pull_kipoi():
