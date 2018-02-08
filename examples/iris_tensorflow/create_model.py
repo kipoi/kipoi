@@ -21,7 +21,7 @@ def write_graph():
         saver.save(sess, "model_files/model.ckpt")
     # write the constant input
     with open("model_files/const_feed_dict.pkl", "wb") as f:
-        pickle.dump({"const_input": 10}, f)
+        pickle.dump({"const_input": 10}, f, protocol=2)
 
 
 if __name__ == "__main__":
