@@ -12,7 +12,14 @@ model sources.
 
 ## Installation
 
-After cloning the repository `git clone https://github.com/kipoi/kipoi.git && cd kipoi`, run:
+After cloning the repository 
+
+```
+git clone https://github.com/kipoi/kipoi.git
+cd kipoi
+```
+
+run:
 
 ```
 pip install .
