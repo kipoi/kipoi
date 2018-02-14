@@ -123,6 +123,7 @@ class ModelInfo(Info):
 @enum.unique
 class ArraySpecialType(enum.Enum):
     DNASeq = "DNASeq"
+    DNAStringSeq = "DNAStringSeq"
     BIGWIG = "bigwig"
     VPLOT = "v-plot"
     Array = "Array"

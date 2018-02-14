@@ -16,7 +16,7 @@ logger.addHandler(logging.NullHandler())
 
 from kipoi.postprocessing.utils.generic import select_from_model_inputs, OutputReshaper, default_vcf_id_gen, ModelInfoExtractor
 from kipoi.postprocessing.utils.io import BedWriter
-from kipoi.postprocessing.variant_effects import _process_sequence_set, analyse_model_preds, Logit
+from kipoi.postprocessing.variant_effects import analyse_model_preds, Logit
 
 
 def _overlap_vcf_region(vcf_obj, regions, exclude_indels = True):
@@ -41,159 +41,329 @@ def _overlap_vcf_region(vcf_obj, regions, exclude_indels = True):
     return vcf_records, contained_regions
 
 
+# For every post-processing-activated DNA output assign a sequence mutator + the name of the metadata ranges name
+# In _generate_seq_sets collect all the regions that might overlap. Make an object with mutatability:
+# [{vcf_record, region, sample_within_batch_id, affected_seqeunce_output_name},...]
 
-def _generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, vcf_search_regions = False,
-                       array_trafo=None, generate_rc = True):
+def merge_intervals_strandaware(ranges_dict):
     """
-    Perform in-silico mutagenesis on what the dataloader has returned.  
-    
-    This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
-    return a dictionary of which the keys are compliant with evaluation_function arguments
-    
-    DataLoaders that implement fwd and rc sequence output *__at once__* are not treated in any special way.
+    `ranges_dict`: dictionary of GenomicsRanges
+    Returns unified ranges
     """
-    # first establish which VCF region we are talking about...
-    ranges_input_objs = {}
-    null_key = None
-    #print(1)
-    # every sequence key can have it's own region definition
-    for seq_key in relv_seq_keys:
-        #print(seq_key)
-        if isinstance(dataloader.output_schema.inputs, dict):
-            ranges_slots = dataloader.output_schema.inputs[seq_key].associated_metadata
-        elif isinstance(dataloader.output_schema.inputs, list):
-            ranges_slots = [x.associated_metadata for x in dataloader.output_schema.inputs if x.name == seq_key][0]
+    from intervaltree import IntervalTree
+    chrom_trees = {}
+    for k in ranges_dict:
+        assert len(ranges_dict[k]["chr"]) == 1
+        chr_str = [ranges_dict[k]["chr"][0], ranges_dict[k]["strand"][0]]
+        start = ranges_dict[k]["start"][0]
+        end = ranges_dict[k]["end"][0]
+        if chr_str not in chrom_trees:
+            chrom_trees[chr_str] = IntervalTree()
+        # append new region to the interval tree
+        chrom_trees[chr_str][start:end] = [k]
+    # merge overlapping regions and append the metadata fields
+    [chrom_trees[chr_str].merge_overlaps(lambda x,y: x+y) for chr_str in chrom_trees]
+    out_regions = {k:[] for k in ["chr", "start", "end", "strand"]}
+    ranges_ks = []
+    for chr_str in chrom_trees:
+        for interval in chrom_trees[chr_str]:
+            out_regions["chr"].append(chr_str[0])
+            out_regions["strand"].append(chr_str[1])
+            out_regions["start"].append(interval.begin)
+            out_regions["end"].append(interval.end)
+            ranges_ks.append(interval.data)
+    return out_regions, ranges_ks
+
+def merge_intervals(ranges_dict):
+    """
+    `ranges_dict`: dictionary of GenomicsRanges
+    Returns unified ranges
+    """
+    from intervaltree import IntervalTree
+    chrom_trees = {}
+    for k in ranges_dict:
+        assert len(ranges_dict[k]["chr"])==1
+        chr = ranges_dict[k]["chr"][0]
+        start = ranges_dict[k]["start"][0]
+        end = ranges_dict[k]["end"][0]
+        if chr not in chrom_trees:
+            chrom_trees[chr] = IntervalTree()
+        # append new region to the interval tree
+        chrom_trees[chr][start:end] = [k]
+    # merge overlapping regions and append the metadata fields
+    [chrom_trees[chr].merge_overlaps(lambda x, y: x + y) for chr in chrom_trees]
+    # convert back to GenomicRanges-compliant dictionaries
+    out_regions = {k: [] for k in ["chr", "start", "end"]}
+    ranges_ks = []
+    for chr in chrom_trees:
+        for interval in chrom_trees[chr]:
+            out_regions["chr"].append(chr)
+            out_regions["start"].append(interval.begin)
+            out_regions["end"].append(interval.end)
+            ranges_ks.append(interval.data)
+    out_regions["strand"] = ["*"]*len(out_regions["chr"])
+    return out_regions, ranges_ks
+
+
+def get_genomicranges_line(gr_obj, i):
+    return {k:v[i:(i+1)] for k,v in gr_obj.items()}
+
+
+
+def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
+    """
+    Function that overlaps metadata ranges with a vcf by merging the regions. When regions are party overlapping then
+    a variant will be tagged with all sequence-fields that participated in the merged region, hence not all input
+    regions might be affected by the variant.
+    """
+    vcf_records = []  # list of vcf records to use
+    process_lines = []  # sample id within batch
+    process_seq_fields = []  # sequence fields that should be mutated
+    #
+    meta_to_seq = {v: [k for k in seq_to_meta if seq_to_meta[k] == v] for v in seq_to_meta.values()}
+    all_meta_fields = list(set(seq_to_meta.values()))
+    #
+    num_samples_in_batch = len(model_input['metadata'][all_meta_fields[0]]["chr"])
+    #
+    # If we should search for the overlapping VCF lines - for every sample collect all region objects
+    # under the assumption that all generated sequences have the same number of samples in a batch:
+    for line_id in range(num_samples_in_batch):
+        # check is there is more than one metadata_field that is used:
+        if len(all_meta_fields) > 1:
+            # one region per meta_field
+            regions_by_meta = {k: get_genomicranges_line(model_input['metadata'][k], line_id)
+                               for k in all_meta_fields}
+            # regions_unif: union across all regions. meta_field_unif_r: meta_fields, has the length of regions_unif
+            regions_unif, meta_field_unif_r = merge_intervals(regions_by_meta)
         else:
-            ranges_slots = dataloader.output_schema.inputs.associated_metadata
-        # check the ranges slots
-        if len(ranges_slots) != 1:
-            raise ValueError("Exactly one metadata ranges field must defined for a sequence that has to be used for effect precition.")
+            # Only one meta_field and only one line hence:
+            meta_field_unif_r = [all_meta_fields]
+            # Only one region:
+            regions_unif = get_genomicranges_line(model_input['metadata'][all_meta_fields[0]], line_id)
         #
-        # there will at max be one element in the ranges_slots object
-        # extract the metadata output
-        ranges_input_objs[seq_key] = model_input['metadata'][ranges_slots[0]]
-        if null_key is None:
-            null_key = seq_key
+        vcf_records_here, process_lines_rel = _overlap_vcf_region(vcf_fh, regions_unif)
+        #
+        for rec, sub_line_id in zip(vcf_records_here, process_lines_rel):
+            vcf_records.append(rec)
+            process_lines.append(line_id)
+            metas = []
+            for f in meta_field_unif_r[sub_line_id]:
+                metas += meta_to_seq[f]
+            process_seq_fields.append(metas)
+    return vcf_records, process_lines, process_seq_fields
+
+
+
+def by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, vcf_id_generator_fn):
+    vcf_records = []  # list of vcf records to use
+    process_ids = []  # id from genomic ranges metadata
+    process_lines = []  # sample id within batch
+    process_seq_fields = []  # sequence fields that should be mutated
+
+    all_mut_seq_fields = list(set(seq_to_meta.keys()))
+    all_meta_fields = list(set(seq_to_meta.values()))
+
+    ranges = None
+    for meta_field in all_meta_fields:
+        rng = model_input['metadata'][meta_field]
+        if ranges is None:
+            ranges = rng
         else:
-            for k in  ["chr", "start", "end", "id"]:
-                assert(ranges_input_objs[seq_key][k] == ranges_input_objs[null_key][k])
+            # for k in ["chr", "start", "end", "id"]:
+            for k in ["id"]:
+                assert np.all(ranges[k] == rng[k])
 
-    # now get the right region from the vcf:
-    vcf_records = []
-    process_ids = []
-    process_lines = []
-    #print(2)
-    if vcf_search_regions:
-        vcf_records, process_lines = _overlap_vcf_region(vcf_fh, ranges_input_objs[null_key])
-        process_ids = [ranges_input_objs[null_key]["id"][i] for i in process_lines]
-    else:
-        for i, returned_id in enumerate(ranges_input_objs[null_key]["id"]):
-            for record in vcf_fh:
-                id = vcf_id_generator_fn(record)
-                if str(id) == str(returned_id):
-                    vcf_records.append(record)
-                    process_ids.append(returned_id)
-                    process_lines.append(i)
-                    break
-                else:
-                    # Warn here...
-                    logger.warn("Skipping VCF line (%s) because generated region is for different variant.."%str(id))
-                    pass
-    #print(3)
-    # short-cut if no sequences are left
-    if len(process_lines) == 0:
-        return None
-
-    # Generate 4 copies of the input set. subset datapoints if needed.
-    input_set = {}
-    seq_dirs = ["fwd"]
-    if generate_rc:
-        seq_dirs = ["fwd", "rc"]
-    for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
-        k = "%s_%s" % (s_dir, allele)
-        #print(k)
-        ds = model_input['inputs']
-        all_lines = list(range(len(ranges_input_objs[null_key]["id"])))
-        if process_ids != process_lines:
-            # subset or rearrange elements
-            ds = select_from_model_inputs(model_input['inputs'], process_lines, len(all_lines))
-        input_set[k] = copy.deepcopy(ds)
-    #print(4)
-
-    # Start from the sequence inputs mentioned in the model.yaml
-    for seq_key in relv_seq_keys:
-        #print(str(seq_key) + str(1))
-        # extract the metadata output
-        ranges_input_obj = ranges_input_objs[seq_key]
-        #
-        # Assemble variant modification information
-        preproc_conv = {"pp_line":[], "varpos_rel":[], "ref":[], "alt":[], "start":[], "end":[], "id":[]}
-
-        if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
-                                                   isinstance(ranges_input_obj["strand"], np.ndarray)):
-            preproc_conv["strand"] = []
-
-        for i, record in enumerate(vcf_records):
-            ranges_input_i = process_lines[i]
-            assert process_ids[i] == ranges_input_obj["id"][ranges_input_i]
-            assert not record.is_indel # Catch indels, that needs a slightly modified processing
-            preproc_conv["start"].append(ranges_input_obj["start"][ranges_input_i]+1) # convert bed back to 1-based
-            preproc_conv["end"].append(ranges_input_obj["end"][ranges_input_i])
-            preproc_conv["varpos_rel"].append(int(record.POS) - preproc_conv["start"][-1])
-            if (preproc_conv["varpos_rel"][-1] < 0) or\
-                    (preproc_conv["varpos_rel"][-1] > (preproc_conv["end"][-1] - preproc_conv["start"][-1]+1)):
-                raise Exception("Variant does not lie in suggested region!")
-
-            preproc_conv["ref"].append(str(record.REF))
-            preproc_conv["alt"].append(str(record.ALT[0]))
-            preproc_conv["id"].append(str(process_ids[i]))
-            preproc_conv["pp_line"].append(i)
-            if "strand" in preproc_conv:
-                preproc_conv["strand"].append(ranges_input_obj["strand"][ranges_input_i])
-
-
-        # If strand wasn't a list then try to still fix it..
-        if "strand" not in preproc_conv:
-            if "strand" not in ranges_input_obj:
-                preproc_conv["strand"] = ["*"] * len(ranges_input_obj["chr"])
-            elif isinstance(ranges_input_obj["strand"], six.string_types):
-                preproc_conv["strand"] = [ranges_input_obj["strand"]] * len(ranges_input_obj["chr"])
+    # Now continue going sequentially through the vcf assigning vcf record with regions to test.
+    for i, returned_id in enumerate(ranges["id"]):
+        for record in vcf_fh:
+            id = vcf_id_generator_fn(record)
+            if str(id) == str(returned_id):
+                vcf_records.append(record)
+                process_ids.append(returned_id)
+                process_lines.append(i)
+                process_seq_fields.append(all_mut_seq_fields)
+                break
             else:
-                raise Exception("Strand defintion invalid in metadata returned by dataloader.")
+                # Warn here...
+                logger.warn("Skipping VCF line (%s) because generated region is for different variant.." % str(id))
+                pass
+    return vcf_records, process_lines, process_seq_fields, process_ids
 
-        preproc_conv_df = pd.DataFrame(preproc_conv)
 
-        #print(str(seq_key) + str(3))
-        # Actually modify sequences according to annotation
+
+
+
+def get_preproc_conv(seq_key, ranges_input_obj, vcf_records, process_lines, process_ids, process_seq_fields):
+    preproc_conv = {"pp_line": [], "varpos_rel": [], "ref": [], "alt": [], "start": [], "end": [], "id": [],
+                    "do_mutate": []}
+
+    if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
+                                               isinstance(ranges_input_obj["strand"], np.ndarray)):
+        preproc_conv["strand"] = []
+
+    for i, record in enumerate(vcf_records):
+        assert not record.is_indel  # Catch indels, that needs a slightly modified processing
+        ranges_input_i = process_lines[i]
+        new_vals = {k: np.nan for k in preproc_conv.keys() if k not in ["do_mutate", "pp_line"]}
+        new_vals["do_mutate"] = False
+        new_vals["pp_line"] = i
+        new_vals["id"] = str(process_ids[i])
+        if seq_key in process_seq_fields[i]:
+            pre_new_vals = {}
+            pre_new_vals["start"] = ranges_input_obj["start"][ranges_input_i] + 1
+            pre_new_vals["end"] = ranges_input_obj["end"][ranges_input_i]
+            pre_new_vals["varpos_rel"] = int(record.POS) - pre_new_vals["start"]
+            if not ((pre_new_vals["varpos_rel"] < 0) or
+                        (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
+
+                # If variant lies in the region then continue
+                pre_new_vals["do_mutate"] = True
+                pre_new_vals["ref"] = str(record.REF)
+                pre_new_vals["alt"] = str(record.ALT[0])
+
+                if "strand" in preproc_conv:
+                    pre_new_vals["strand"] = ranges_input_obj["strand"][ranges_input_i]
+
+                # overwrite the nans with actual data now that
+                for k in pre_new_vals:
+                    new_vals[k] = pre_new_vals[k]
+
+        for k in new_vals:
+            preproc_conv[k].append(new_vals[k])
+
+    # If strand wasn't a list then try to still fix it..
+    if "strand" not in preproc_conv:
+        if "strand" not in ranges_input_obj:
+            preproc_conv["strand"] = ["*"] * len(preproc_conv["pp_line"])
+        elif isinstance(ranges_input_obj["strand"], six.string_types):
+            preproc_conv["strand"] = [ranges_input_obj["strand"]] * len(preproc_conv["pp_line"])
+        else:
+            raise Exception("Strand defintion invalid in metadata returned by dataloader.")
+
+    preproc_conv_df = pd.DataFrame(preproc_conv)
+    return preproc_conv_df
+
+
+class GenerateSeqSets(object):
+    def __init__(self):
+        self.sample_it_counter = 0
+
+    def __call__(self, dataloader, model_input, vcf_fh, vcf_id_generator_fn, seq_to_mut, seq_to_meta,
+                       vcf_search_regions = False, generate_rc = True):
+        """
+            Perform in-silico mutagenesis on what the dataloader has returned.  
+
+            This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
+            return a dictionary of which the keys are compliant with evaluation_function arguments
+
+            DataLoaders that implement fwd and rc sequence output *__at once__* are not treated in any special way.
+
+            Arguments:
+            `dataloader`: dataloader object
+            `model_input`: model input as generated by the datalaoder
+            `vcf_fh`: cyvcf2 file handle
+            `vcf_id_generator_fn`: function that generates ids for VCF records
+            `seq_to_mut`: dictionary that contains DNAMutator classes with seq_fields as keys
+            `seq_to_meta`: dictionary that contains Metadata key names with seq_fields as keys
+            `vcf_search_regions`: if `False` assume that the regions are labelled and only test variants/region combinations for
+            which the label fits. If `True` find all variants overlapping with all regions and test all.
+            `generate_rc`: generate also reverse complement sequences. Only makes sense if supported by model.
+            """
+
+        all_meta_fields = list(set(seq_to_meta.values()))
+
+        num_samples_in_batch = len(model_input['metadata'][all_meta_fields[0]]["chr"])
+
+        if "_id" in  model_input['metadata']:
+            metadata_ids =  model_input['metadata']['id']
+            assert num_samples_in_batch == len(metadata_ids)
+        else:
+            metadata_ids = [str(i) for i in range(self.sample_it_counter, self.sample_it_counter+num_samples_in_batch)]
+
+        self.sample_it_counter += num_samples_in_batch
+
+        # now get the right region from the vcf:
+        # list of vcf records to use: vcf_records
+        process_ids = None  # id from genomic ranges metadata: process_lines
+        # sample id within batch: process_lines
+        # sequence fields that should be mutated: process_seq_fields
+
+        if vcf_search_regions:
+            vcf_records, process_lines, process_seq_fields = search_vcf_in_regions(model_input, seq_to_meta, vcf_fh)
+        else:
+            # vcf_search_regions == False means: rely completely on the variant id
+            # so for every sample assert that all metadata ranges ids agree and then find the entry.
+            vcf_records, process_lines, process_seq_fields, process_ids = by_id_vcf_in_regions(model_input, seq_to_meta,
+                                                                                               vcf_fh,
+                                                                                               vcf_id_generator_fn)
+
+        # short-cut if no sequences are left
+        if len(process_lines) == 0:
+            return None
+
+        if process_ids is None:
+            process_ids = []
+            for line_id in process_lines:
+                process_ids.append(metadata_ids[line_id])
+
+        # Generate 4 copies of the input set. subset datapoints if needed.
+        input_set = {}
+        seq_dirs = ["fwd"]
+        if generate_rc:
+            seq_dirs = ["fwd", "rc"]
         for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
             k = "%s_%s" % (s_dir, allele)
-            #print(str(seq_key) + str(k))
-            if isinstance(dataloader.output_schema.inputs, dict):
-                if seq_key not in input_set[k]:
-                    raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
-                input_set[k][seq_key] = _process_sequence_set(input_set[k][seq_key], preproc_conv_df, allele, s_dir, array_trafo)
-            elif isinstance(dataloader.output_schema.inputs, list):
-                modified_set = []
-                for seq_el, input_schema_el in zip(input_set[k], dataloader.output_schema.inputs):
-                    if input_schema_el.name == seq_key:
-                        modified_set.append(_process_sequence_set(seq_el, preproc_conv_df, allele, s_dir, array_trafo))
-                    else:
-                        modified_set.append(seq_el)
-                input_set[k] = modified_set
-            else:
-                input_set[k] = _process_sequence_set(input_set[k], preproc_conv_df, allele, s_dir, array_trafo)
+            ds = model_input['inputs']
+            all_lines = list(range(num_samples_in_batch))
+            if process_lines != all_lines:
+                # subset or rearrange elements
+                ds = select_from_model_inputs(model_input['inputs'], process_lines, num_samples_in_batch)
+            input_set[k] = copy.deepcopy(ds)
 
-    #print(5)
-    #
-    # Reformat so that effect prediction function will get its required inputs
-    pred_set = {"ref": input_set["fwd_ref"], "alt": input_set["fwd_alt"]}
-    if generate_rc:
-        pred_set["ref_rc"] = input_set["rc_ref"]
-        pred_set["alt_rc"] = input_set["rc_alt"]
-    pred_set["mutation_positions"] = preproc_conv_df["varpos_rel"].values
-    pred_set["line_id"] = preproc_conv_df["id"].values
-    pred_set["vcf_records"] = vcf_records
-    return pred_set
+        # input_set matrices now are in the order required for mutation
+
+        all_mut_seq_keys = list(set(itertools.chain.from_iterable(process_seq_fields)))
+
+        # Start from the sequence inputs mentioned in the model.yaml
+        for seq_key in all_mut_seq_keys:
+            ranges_input_obj = model_input['metadata'][seq_to_meta[seq_key]]
+            #
+            # Assemble variant modification information
+            preproc_conv_df = get_preproc_conv(seq_key, ranges_input_obj, vcf_records,
+                                               process_lines, process_ids, process_seq_fields)
+
+            # for the individual sequence input key get the correct sequence mutator callable
+            dna_mutator = seq_to_mut[seq_key]
+
+            # Actually modify sequences according to annotation
+            for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
+                k = "%s_%s" % (s_dir, allele)
+                if isinstance(dataloader.output_schema.inputs, dict):
+                    if seq_key not in input_set[k]:
+                        raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
+                    input_set[k][seq_key] = dna_mutator(input_set[k][seq_key], preproc_conv_df, allele, s_dir)
+                elif isinstance(dataloader.output_schema.inputs, list):
+                    modified_set = []
+                    for seq_el, input_schema_el in zip(input_set[k], dataloader.output_schema.inputs):
+                        if input_schema_el.name == seq_key:
+                            modified_set.append(dna_mutator(seq_el, preproc_conv_df, allele, s_dir))
+                        else:
+                            modified_set.append(seq_el)
+                    input_set[k] = modified_set
+                else:
+                    input_set[k] = dna_mutator(input_set[k], preproc_conv_df, allele, s_dir)
+
+        #
+        # Reformat so that effect prediction function will get its required inputs
+        pred_set = {"ref": input_set["fwd_ref"], "alt": input_set["fwd_alt"]}
+        if generate_rc:
+            pred_set["ref_rc"] = input_set["rc_ref"]
+            pred_set["alt_rc"] = input_set["rc_alt"]
+        pred_set["mutation_positions"] = preproc_conv_df["varpos_rel"].values
+        pred_set["line_id"] = np.array(process_ids)
+        pred_set["vcf_records"] = vcf_records
+        return pred_set
+
 
 
 def predict_snvs(model,
@@ -248,9 +418,6 @@ def predict_snvs(model,
                     for each model output (target) column VCF SNV line. If return_predictions == False, returns None.
             """
     model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
-    seq_fields = model_info_extractor.seq_fields
-
-    dna_seq_trafo = model_info_extractor.dna_seq_trafo
 
     # If then where do I have to put my bed file in the command?
 
@@ -320,14 +487,19 @@ def predict_snvs(model,
     # pre-process regions
     keys = set()
 
+    # get sequence generation class
+    _generate_seq_sets = GenerateSeqSets()
+
     for i, batch in enumerate(tqdm(it)):
         # For debugging
         # if i >= 10:
         #     break
         # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
-        eval_kwargs = _generate_seq_sets(seq_fields, dataloader, batch, vcf_fh, default_vcf_id_gen,
-                                         vcf_search_regions = vcf_search_regions,
-                                         array_trafo=dna_seq_trafo, generate_rc=model_info_extractor.supports_simple_rc)
+        seq_to_mut = model_info_extractor.seq_input_mutator
+        seq_to_meta = model_info_extractor.seq_input_metadata
+        eval_kwargs = _generate_seq_sets(dataloader, batch, vcf_fh, vcf_id_generator_fn, seq_to_mut = seq_to_mut,
+                                         seq_to_meta = seq_to_meta, vcf_search_regions = vcf_search_regions,
+                                         generate_rc = model_info_extractor.supports_simple_rc)
         if eval_kwargs is None:
             # No generated datapoint overlapped any VCF region
             continue
@@ -352,7 +524,7 @@ def predict_snvs(model,
         # write the predictions synchronously
         if sync_pred_writer is not None:
             for writer in sync_pred_writer:
-                writer(res_here, eval_kwargs["vcf_records"])
+                writer(res_here, eval_kwargs["vcf_records"], eval_kwargs["line_id"])
         if return_predictions:
             res.append(res_here)
 

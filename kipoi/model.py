@@ -8,6 +8,7 @@ from .utils import load_module, cd, merge_dicts
 import abc
 import six
 import numpy as np
+import json
 
 from .components import ModelDescription
 from .pipeline import Pipeline

@@ -17,7 +17,8 @@ import pandas as pd
 import tempfile
 from kipoi.metadata import GenomicRanges
 import kipoi
-from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, analyse_model_preds, _prepare_regions
+from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, Rc_merging_pred_analysis, \
+    analyse_model_preds, _prepare_regions, rc_str, _modify_single_string_base
 import numpy as np
 from scipy.special import logit
 import cyvcf2
@@ -193,6 +194,12 @@ INSTALL_REQ = True
 class dummy_container(object):
     pass
 
+class DummyModelInfo(object):
+    def __init__(self, seq_length):
+        self.seq_length = seq_length
+
+    def get_seq_len(self):
+        return self.seq_length
 
 def test_ism():
     # Here we should have a simple dummy model, at the moment tested in test_var_eff_pred
@@ -240,82 +247,55 @@ def test__bed3():
     os.unlink(temp_bed3_file)
 
 
-def test__generate_seq_sets():
-    model_dir = "examples/rbp/"
-    vcf_path = "example_files/variants.vcf"
-    # for any given input type: list, dict and np.array return 4 identical sets, except for mutated bases on one position
-    seq_len = 101
-    num_seqs = 5
-    empty_seq_input = np.zeros((num_seqs, seq_len, 4))
-    empty_other_input = np.zeros((num_seqs, seq_len, 4))-10
-    #
-    relv_seq_keys = ["seq"]
-    annotated_regions = ve._vcf_to_regions(model_dir + vcf_path, seq_len).iloc[:num_seqs,:]
-    #
-    gr_meta = {
-        "ranges": GenomicRanges(annotated_regions["chrom"].values, annotated_regions["start"].values - 1, annotated_regions["end"].values,
-                                np.arange(num_seqs))}
-    #
-    dict_meta = {
-        "ranges": {"chr": annotated_regions["chrom"].values, "start": annotated_regions["start"].values - 1, "end": annotated_regions["end"].values,
-                                "id":np.arange(num_seqs)}}
-    #
-    meta_data_options = [gr_meta, dict_meta]
-
-    annotated_regions = _prepare_regions(annotated_regions)
-
-    for meta_data in meta_data_options:
-        ## Test the dict case:
-        dataloader = dummy_container()
-        dataloader.output_schema = dummy_container()
-        seq_container = dummy_container()
-        seq_container.associated_metadata = ["ranges"]
-        dataloader.output_schema.inputs = {"seq": seq_container, "other_input": None}
-        inputs = {"seq": copy.deepcopy(empty_seq_input), "other_input": copy.deepcopy(empty_other_input)}
-        inputs_2nd_copy = copy.deepcopy(inputs)
-        #
-        model_input= {"inputs": inputs, "metadata":meta_data}
-        ssets = ve._generate_seq_sets(relv_seq_keys, dataloader, model_input, annotated_regions)
-        req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
-        assert np.all(np.in1d(req_cols, list(ssets.keys())))
-        for k in req_cols:
-            for k2 in inputs:
-                assert(k2 in ssets[k])
-                if k2 not in relv_seq_keys:
-                    assert np.all(ssets[k][k2] == inputs_2nd_copy[k2])
-                else:
-                    # Assuming modification of matrices works as desired - see its own unit test
-                    # Assuming 1-hot coding with background as 0
-                    assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == num_seqs
-        #
-        for k in ["ref", "alt"]:
-            for k2 in relv_seq_keys:
-                assert np.all(ssets[k][k2] == ssets[k + "_rc"][k2][:,::-1,::-1])
-
-
 
 
 def test__modify_bases():
     # actually modify the bases of a numpy array
+    # test whether samples that are included in `lines` are left untouched.
     seq_len = 101
     var_pos = np.array([1,2,3,4,5])
     alphabet = np.array(['A', "C", "G", "T"])
     new_base = np.array(['A', "C", "G", "T", "T"])
-    lines = np.array([0,4,2,1,3])
+    lines = np.array([0,5,2,1,3])
     is_rc_vec = np.zeros((5))==1
     is_rc_vec[[1,2]] = True
     for is_rc in [False, True]:
-        empty_input = np.zeros((5, seq_len, 4)) - 1
+        empty_input = np.zeros((6, seq_len, 4)) - 1
         if is_rc:
             is_rc_vec = ~is_rc_vec
-        ve._modify_bases(empty_input, lines, var_pos, new_base, is_rc_vec)
-        empty_input[is_rc_vec, ...] = empty_input[is_rc_vec, ::-1, ::-1]
-        assert np.all(empty_input.sum(axis=1).sum(axis=1)==((-101)*4 + 4 +1))
+        warn_lines = ve._modify_bases(empty_input, lines, var_pos, new_base, is_rc_vec)
+        assert len(warn_lines) ==0
+        empty_input[lines[is_rc_vec], ...] = empty_input[lines[is_rc_vec], ::-1, ::-1]
+        untouched_lines = np.where(~np.in1d(np.arange(empty_input.shape[0]), lines))[0]
+        assert np.all(empty_input[lines,...].sum(axis=1).sum(axis=1)==((-101)*4 + 4 +1))
+        assert np.all(empty_input[untouched_lines,...] == -1)
         for p,b,l in zip(var_pos, new_base, lines):
             base_sel = alphabet == b
             assert empty_input[l, p, base_sel] == 1
             assert np.all(empty_input[l, p, ~base_sel] == 0)
             assert np.all(empty_input[l, ~np.in1d(np.arange(seq_len), [p]), :] == -1)
+    # test the warning when the reference base is wrong.
+    input_set = ["AGTGTCGT", "AGTGTCGT", "AGTGTCGT"]
+    input_set_onehot = np.array([onehot(el) for el in input_set])
+    preproc_conv_bad = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "G"],
+                    "alt": ["n", np.nan, "t"],
+                    "start": [0, np.nan, 0], "end": [7, np.nan, 7], "id": ["a", "b", "c"],
+                    "do_mutate": [True, False, True],
+                    "strand": ["+", np.nan, "-"]}
+    ppcb_df = pd.DataFrame(preproc_conv_bad).query("do_mutate")
+    warn_lines = ve._modify_bases(input_set_onehot, ppcb_df["pp_line"].values, ppcb_df["varpos_rel"].values.astype(np.int), ppcb_df["ref"].str.upper().values, ppcb_df["strand"].values == "-", return_ref_warning = True)
+    assert warn_lines == [2]
+    mut_set = [one_hot2string(input_set_onehot[i, ...]) for i in range(input_set_onehot.shape[0])]
+    ref_mut_set = ["AGTGTCGT", "AGTGTCGT", "AGTGCCGT"]
+    assert mut_set == ref_mut_set
+    # Now test if the "N" is converted to 0:
+    input_set_onehot = np.array([onehot(el) for el in input_set])
+    warn_lines = ve._modify_bases(input_set_onehot, ppcb_df["pp_line"].values, ppcb_df["varpos_rel"].values.astype(np.int), ppcb_df["alt"].str.upper().values, ppcb_df["strand"].values == "-", return_ref_warning = True)
+    assert np.all(input_set_onehot[0,2,:] == 0)
+    assert np.all(input_set_onehot[2,4,0] == 1) # A
+    assert np.all(input_set_onehot[2,4,1:] == 0) # A
+
+
 
 
 
@@ -365,6 +345,204 @@ def test_dna_reshaper():
                 for expa in range(len(in_shape)):
                     with pytest.raises(Exception):
                         reshaped = reshaper_obj.to_standard(np.expand_dims(start, expa))
+                # check if it also works for a single sample with missing batch axis
+                with pytest.warns(None):
+                    reshaped = reshaper_obj.to_standard(start[0,...])
+                    assert (reshaped.shape[1:] == (seq_len, 4))
+                    reshaped_2 = reshaper_obj.from_standard(reshaped)
+                    assert reshaped_2.shape == start.shape[1:]
+
+
+def test_DNAStringArrayConverter():
+    ### there is a problem with shape (), also what is if there is only one sample and that's not properly in a batch?!
+    in_shape = [(), (1,), (8,)]
+    in_str = [np.array("ACGTAGCT"), np.array(["ACGTAGCT"]), np.array(list("ACGTAGCT"))]
+    for shape, arr in zip(in_shape, in_str):
+        for add_batch_axis in [True, False]:
+            conv = kipoi.postprocessing.utils.generic.ReshapeDnaString(shape)
+            arr_here = copy.copy(arr)
+            if add_batch_axis:
+                arr_here = arr_here[None,...]
+            converted = conv.to_standard(arr_here)
+            assert isinstance(converted, list)
+            assert all([isinstance(el, str) for el in converted])
+            arr_back = conv.from_standard(converted)
+            assert np.all(arr_back == arr_here)
+    # Any shape that has a length other than 0 or 1 is not allowed.
+    with pytest.raises(Exception):
+        conv = kipoi.postprocessing.utils.generic.ReshapeDnaString((1, 8))
+
+
+def test_search_vcf_in_regions():
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_fh = cyvcf2.VCF(vcf_path, "r")
+    ints1 = {"chr": ["chr22"]*2, "start": [21541589, 30630701], "end": [21541953, 36702138], "strand": ["*"]*2}
+    ints2 = {"chr": ["chr22"]*2, "start": [30630219, 30630220], "end": [30630222, 30630222], "strand": ["*"]*2}
+    model_input={"metadata":{"gr_a":ints1, "gr_b":ints1, "gr_c":ints2}}
+    seq_to_meta = {"seq_a":"gr_a", "seq_a2": "gr_a", "seq_b": "gr_b", "seq_c":"gr_c"}
+    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.search_vcf_in_regions(model_input, seq_to_meta, vcf_fh)
+    assert process_lines == [0, 0, 0, 1, 1]
+    expected = [['seq_a2', 'seq_a', 'seq_b'], ['seq_a2', 'seq_a', 'seq_b'], ['seq_c'],
+                                 ['seq_a2', 'seq_a', 'seq_b'], ['seq_a2', 'seq_a', 'seq_b']]
+    assert all([set(el) == set(el2) for el, el2 in zip(process_seq_fields, expected)])
+    for rec, l, field in  zip(vcf_records, process_lines, process_seq_fields):
+        for sid in field:
+            ints = model_input["metadata"][seq_to_meta[sid]]
+            assert (rec.POS >= ints["start"][l]) and (rec.POS <= ints["end"][l])
+
+
+def test_merge_intervals():
+    from kipoi.postprocessing.snv_predict import merge_intervals
+    ints1 = {"chr": ["chr1"], "start": [1234], "end": [2345], "strand": ["*"]}
+    ints2 = {"chr": ["chr2"], "start": [1234], "end": [2345], "strand": ["*"]}
+    ints3 = {"chr": ["chr1"], "start": [2345], "end": [2888], "strand": ["*"]}
+    all_ints = {"a":ints1, "b":ints2, "c":ints3}
+    merged_ints, ovlps = merge_intervals(all_ints)
+    for i, labels in enumerate(ovlps):
+        assert merged_ints["strand"][i] == "*"
+        if merged_ints["chr"][i] == "chr1":
+            assert merged_ints["start"][i] == 1234
+            assert merged_ints["end"][i] == 2888
+            assert labels == ["a", "c"]
+        else:
+            assert merged_ints["start"][i] == 1234
+            assert merged_ints["end"][i] == 2345
+            assert labels == ["b"]
+
+def test_get_genomicranges_line():
+    from kipoi.postprocessing.snv_predict import get_genomicranges_line
+    ints = {"chr": ["chr1", "chr2"], "start": [1234]*2, "end": [2345]*2, "strand": ["*"]*2}
+    for i in range(2):
+        first_entry = get_genomicranges_line(ints, i)
+        for k in ints:
+            assert len(first_entry[k]) == 1
+            assert first_entry[k][0] == ints[k][i]
+
+
+def test_by_id_vcf_in_regions():
+    from kipoi.postprocessing.utils.generic import default_vcf_id_gen
+    from kipoi.postprocessing.snv_predict import by_id_vcf_in_regions
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_fh = cyvcf2.VCF(vcf_path, "r")
+    ints1 = {"chr": [], "start": [], "end": [], "strand": [], "id":[]}
+    for rec in vcf_fh:
+        ints1["chr"].append(rec.CHROM)
+        ints1["start"].append(rec.POS -20)
+        ints1["end"].append(rec.POS + 20)
+        ints1["strand"].append("*")
+        ints1["id"].append(default_vcf_id_gen(rec))
+
+    vcf_fh.close()
+    vcf_fh = cyvcf2.VCF(vcf_path, "r")
+    model_input = {"metadata": {"gr_a": ints1, "gr_b": ints1}}
+    seq_to_meta = {"seq_a": "gr_a", "seq_a2": "gr_a", "seq_b": "gr_b"}
+    vcf_records, process_lines, process_seq_fields, process_ids = by_id_vcf_in_regions(model_input, seq_to_meta,
+                                                                                       vcf_fh, default_vcf_id_gen)
+    num_entries = len(model_input["metadata"]["gr_a"]["chr"])
+    assert len(vcf_records) == num_entries
+    assert process_lines == list(range(num_entries))
+    assert all([set(el) == set(seq_to_meta.keys()) for el in process_seq_fields])
+    #
+    # Now imitate bad id in one range:
+    ints2 = copy.deepcopy(ints1)
+    ints2["id"][2] = ""
+    model_input = {"metadata": {"gr_a": ints1, "gr_b": ints2}}
+    seq_to_meta = {"seq_a": "gr_a", "seq_a2": "gr_a", "seq_b": "gr_b"}
+    with pytest.raises(Exception):
+        by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, default_vcf_id_gen)
+
+
+def test_get_preproc_conv():
+    import itertools
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_fh = cyvcf2.VCF(vcf_path, "r")
+    ints1 = {"chr": ["chr22"] * 4, "start": [21541589, 30630701, 21541589, 200],
+             "end": [21541953, 36702138, 21541953, 500], "strand": ["*"] * 4}
+    ints2 = {"chr": ["chr22"] * 4, "start": [21541950, 30630220, 200, 200], "end": [30630220, 30630222, 500, 500],
+             "strand": ["*"] * 4}
+    model_input = {"metadata": {"gr_a": ints1, "gr_c": ints2}}
+    seq_to_meta = {"seq_a": "gr_a", "seq_c": "gr_c"}
+    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.search_vcf_in_regions(model_input,
+                                                                                                            seq_to_meta,
+                                                                                                            vcf_fh)
+    process_ids = np.arange(len(process_lines))
+    all_mut_seq_keys = list(set(itertools.chain.from_iterable(process_seq_fields)))
+
+    assert(process_lines == [0, 0, 0, 1, 1, 2, 2])
+    mut_seqs = {"seq_a": [0,1,3,4,5,6], "seq_c":[1,2]}
+    # Start from the sequence inputs mentioned in the model.yaml
+    for seq_key in all_mut_seq_keys:
+        ranges_input_obj = model_input['metadata'][seq_to_meta[seq_key]]
+        preproc_conv_df = kipoi.postprocessing.snv_predict.get_preproc_conv(seq_key, ranges_input_obj, vcf_records,
+                                           process_lines, process_ids, process_seq_fields)
+        assert preproc_conv_df.query("do_mutate")["pp_line"].tolist()== mut_seqs[seq_key]
+        assert preproc_conv_df.query("do_mutate").isnull().sum().sum() == 0
+
+
+def test_DNAStringSequenceMutator():
+    from kipoi.postprocessing.utils.generic import DNAStringSequenceMutator
+    import pandas as pd
+    input_set = ["AGTGTCGT", "AGTGTCGT", "AGTGTCGT"]
+    ref_mut_set = ["AGNGTCGT", "AGTGTCGT", "AGTGACGT"]
+    preproc_conv = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "A"],
+                    "alt": ["N", np.nan, "T"],
+                    "start": [0, np.nan, 0], "end": [7, np.nan, 7], "id": ["a", "b", "c"],
+                    "do_mutate": [True, False, True],
+                    "strand": ["+", np.nan, "-"]}
+    #
+    mut_set = DNAStringSequenceMutator()(input_set, pd.DataFrame(preproc_conv), "alt", "fwd")
+    assert mut_set == ref_mut_set
+    preproc_conv_bad = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "G"],
+                        "alt": ["N", np.nan, "A"],
+                        "start": [0, np.nan, 0], "end": [7, np.nan, 7], "id": ["a", "b", "c"],
+                        "do_mutate": [True, False, True],
+                        "strand": ["+", np.nan, "-"]}
+    #
+    with pytest.warns(None):
+        mut_set = DNAStringSequenceMutator()(input_set, pd.DataFrame(preproc_conv_bad), "ref", "fwd")
+        ref_mut_set = ["AGTGTCGT", "AGTGTCGT", "AGTGCCGT"]
+        assert mut_set == ref_mut_set
+
+
+BASES = ['A', 'C', 'G', 'T']
+
+def one_hot2string(arr):
+    return "".join([['A', 'C', 'G', 'T', 'N'][x.argmax() if x.sum() != 0 else 4] for x in arr])
+
+def onehot(seq):
+    X = np.zeros((len(seq), len(BASES)))
+    for i, char in enumerate(seq):
+        X[i, BASES.index(char.upper())] = 1
+    return X
+
+
+def test_OneHotSequenceMutator():
+    from kipoi.postprocessing.utils.generic import OneHotSequenceMutator
+    import pandas as pd
+    input_set = ["AGTGTCGT", "AGTGTCGT", "AGTGTCGT"]
+    ref_mut_set = ["AGNGTCGT", "AGTGTCGT", "AGTGACGT"]
+    preproc_conv = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "A"],
+                    "alt": ["N", np.nan, "T"],
+                    "start": [0, np.nan, 0], "end": [7, np.nan, 7], "id": ["a", "b", "c"],
+                    "do_mutate": [True, False, True],
+                    "strand": ["+", np.nan, "-"]}
+    #
+    input_set_onehot = np.array([onehot(el) for el in input_set])
+    mut_set_onehot = OneHotSequenceMutator()(input_set_onehot, pd.DataFrame(preproc_conv), "alt", "fwd")
+    mut_set = [one_hot2string(mut_set_onehot[i,...]) for i in range(mut_set_onehot.shape[0])]
+    assert mut_set == ref_mut_set
+    preproc_conv_bad = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "G"],
+                        "alt": ["N", np.nan, "A"],
+                        "start": [0, np.nan, 0], "end": [7, np.nan, 7], "id": ["a", "b", "c"],
+                        "do_mutate": [True, False, True],
+                        "strand": ["+", np.nan, "-"]}
+    #
+    with pytest.warns(None):
+        input_set_onehot = np.array([onehot(el) for el in input_set])
+        mut_set_onehot = OneHotSequenceMutator()(input_set_onehot, pd.DataFrame(preproc_conv_bad), "ref", "fwd")
+        mut_set = [one_hot2string(mut_set_onehot[i, ...]) for i in range(mut_set_onehot.shape[0])]
+        ref_mut_set = ["AGTGTCGT", "AGTGTCGT", "AGTGCCGT"]
+        assert mut_set == ref_mut_set
 
 
 def test_var_eff_pred():
@@ -532,16 +710,12 @@ def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_
                 int_write_fn(chrom = chrom, start= start, end=end , id=id)
 
 def test__generate_pos_restricted_seqs():
-    if sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
     tuples = (([21541490, 21541591], [21541491, 21541591]),
               ([21541390, 21541891], [21541541, 21541641]),
               ([21541570, 21541891], [21541571, 21541671]))
-    model = kipoi.get_model(model_dir, source="dir")
-    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+    model_info_extractor = DummyModelInfo(101)
     for tpl in tuples:
         vcf_fh = cyvcf2.VCF(vcf_path, "r")
         qbf = pb.BedTool("chr22 %d %d"%tuple(tpl[0]), from_string=True)
@@ -557,13 +731,9 @@ def test__generate_pos_restricted_seqs():
 
 
 def test__generate_snv_centered_seqs():
-    if sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
     model_dir = "examples/rbp/"
     vcf_path = model_dir+"example_files/variants.vcf"
-    model = kipoi.get_model(model_dir, source="dir")
-    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+    model_info_extractor = DummyModelInfo(101)
     lct = 0
     hdr = None
     with open(vcf_path, "r") as ifh:
@@ -594,21 +764,19 @@ def test__generate_snv_centered_seqs():
         assert (regions_df["start"].values == vcf_df["POS"] - int(seq_length/2) +1).all()
 
 
-def test__generate_seq_sets_v2():
-    if sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
+
+def test__generate_seq_sets():
     model_dir = "examples/rbp/"
     vcf_sub_path = "example_files/variants.vcf"
-    model = kipoi.get_model(model_dir, source="dir")
-    dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
-    model_info_extractor = kipoi.postprocessing.ModelInfoExtractor(model, dataloader)
+
     vcf_path = model_dir + vcf_sub_path
     vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
     # for any given input type: list, dict and np.array return 4 identical sets, except for mutated bases on one position
     seq_len = 101
-    model_info_extractor.seq_length = seq_len
+    model_info_extractor = DummyModelInfo(seq_len)
     for num_seqs in [1,5]:
         empty_seq_input = np.zeros((num_seqs, seq_len, 4))
+        empty_seq_input[:,:,0] = 1 # All As
         empty_other_input = np.zeros((num_seqs, seq_len, 4)) - 10
         #
         relv_seq_keys = ["seq"]
@@ -635,6 +803,10 @@ def test__generate_seq_sets_v2():
         #
         meta_data_options = [gr_meta, dict_meta]
         #
+        seq_to_mut = {"seq": kipoi.postprocessing.utils.generic.OneHotSequenceMutator()}
+        seq_to_meta = {"seq": "ranges"}
+        #
+        _generate_seq_sets = kipoi.postprocessing.snv_predict.GenerateSeqSets()
         for meta_data in meta_data_options:
             for vcf_search_regions in [False, True]:
                 ## Test the dict case:
@@ -649,9 +821,11 @@ def test__generate_seq_sets_v2():
                 model_input = {"inputs": inputs, "metadata": meta_data}
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 #relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
-                ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
-                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
-                                              vcf_search_regions=vcf_search_regions)
+                ssets = _generate_seq_sets(dataloader, model_input, vcf_fh,
+                            vcf_id_generator_fn =kipoi.postprocessing.utils.generic.default_vcf_id_gen,
+                                              seq_to_mut = seq_to_mut,
+                                              seq_to_meta = seq_to_meta,
+                            vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
                 assert np.all(np.in1d(req_cols, list(ssets.keys())))
@@ -663,7 +837,8 @@ def test__generate_seq_sets_v2():
                         else:
                             # Assuming modification of matrices works as desired - see its own unit test
                             # Assuming 1-hot coding with background as 0
-                            assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == num_seqs
+                            if k.endswith("fwd"):
+                                assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == 2*num_seqs
                 #
                 for k in ["ref", "alt"]:
                     for k2 in relv_seq_keys:
@@ -710,8 +885,11 @@ def test__generate_seq_sets_v2():
                 model_input = {"inputs": inputs, "metadata": meta_data}
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
-                ssets = sp._generate_seq_sets(relv_seq_keys, dataloader, model_input, vcf_fh,
-                                              kipoi.postprocessing.utils.generic.default_vcf_id_gen,
+                _generate_seq_sets = kipoi.postprocessing.snv_predict.GenerateSeqSets()
+                ssets = _generate_seq_sets(dataloader, model_input, vcf_fh,
+                                              vcf_id_generator_fn=kipoi.postprocessing.utils.generic.default_vcf_id_gen,
+                                              seq_to_mut=seq_to_mut,
+                                              seq_to_meta=seq_to_meta,
                                               vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
@@ -724,7 +902,8 @@ def test__generate_seq_sets_v2():
                         else:
                             # Assuming modification of matrices works as desired - see its own unit test
                             # Assuming 1-hot coding with background as 0
-                            assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == n_qseq
+                            if k.endswith("fwd"):
+                                assert np.sum(ssets[k][k2] != inputs_2nd_copy[k2]) == 2*n_qseq
                 #
                 for k in ["ref", "alt"]:
                     for k2 in relv_seq_keys:
@@ -837,3 +1016,18 @@ with cd(model.source_dir):
     assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
     os.unlink(out_vcf_fpath)
 """
+
+
+def test_rc_str():
+    input = "ACTGGN"
+    output = "NCCAGT"
+    assert rc_str(input) == output
+    assert rc_str(input.lower()) == output.lower()
+
+def test_modify_single_string_base():
+    input = "ACTGG"
+    pos = 3
+    allele = "N"
+    ret = "ACTNG"
+    assert _modify_single_string_base(input, pos, allele, False) == ret
+    assert _modify_single_string_base(rc_str(input), pos, allele, True) == rc_str(ret)

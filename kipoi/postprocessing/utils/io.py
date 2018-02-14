@@ -6,7 +6,7 @@ import numpy as np
 import cyvcf2
 import vcf
 from tqdm import tqdm
-from kipoi.postprocessing.utils.generic import prep_str, convert_record
+from kipoi.postprocessing.utils.generic import prep_str, convert_record, default_vcf_id_gen
 import os
 import h5py
 import six
@@ -131,7 +131,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
     The reference cyvcf2 object here has to be the one from which the records are taken. INFO tags of this reference
     object will be modified in the process! Hence use carefully!
     """
-    def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":"):
+    def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":", vcf_id_generator= default_vcf_id_gen):
         super(VcfWriterCyvcf2, self).__init__(model)
         # self.vcf_reader = cyvcf2.Reader(reference_vcf_path, "r")
         self.vcf_reader = reference_cyvcf2_obj
@@ -139,8 +139,9 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
         self.id_delim = id_delim
         self.prediction_labels = None
         self.column_labels = None
+        self.vcf_id_generator = vcf_id_generator
 
-    def __call__(self, predictions, records):
+    def __call__(self, predictions, records, line_ids = None):
         # First itertation: the output file has to be created and the headers defined
         if len(predictions) == 0:
             return None
@@ -182,6 +183,8 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
 
         # Actually write the vcf entries.
         for pred_line, record in tqdm(enumerate(records)):
+            if self.vcf_id_generator is not None:
+                record.ID = self.vcf_id_generator(record)
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
@@ -199,7 +202,7 @@ class VcfWriter(SyncPredictonsWriter):
     This version uses PyVCF and converts cyvcf2 records into PyVCF ones prior to writing. Here just make sure that
     the VCF file used here is identical to the one used in cyvcf2.
     """
-    def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":"):
+    def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":", vcf_id_generator= default_vcf_id_gen):
         super(VcfWriter, self).__init__(model)
         compressed = reference_vcf_path.endswith(".gz")
         self.vcf_reader = vcf.Reader(filename = reference_vcf_path, compressed = compressed)
@@ -208,6 +211,7 @@ class VcfWriter(SyncPredictonsWriter):
         self.id_delim = id_delim
         self.prediction_labels = None
         self.column_labels = None
+        self.vcf_id_generator = vcf_id_generator
 
     @staticmethod
     def _generate_info_field(id, num, info_type, desc, source, version):
@@ -215,7 +219,7 @@ class VcfWriter(SyncPredictonsWriter):
                                 info_type, desc,
                                 source, version)
 
-    def __call__(self, predictions, records):
+    def __call__(self, predictions, records, line_ids = None):
         # First itertation: the output file has to be created and the headers defined
         if len(predictions) == 0:
             return None
@@ -257,6 +261,8 @@ class VcfWriter(SyncPredictonsWriter):
         # Actually write the vcf entries.
         for pred_line, record in tqdm(enumerate(records)):
             record_vcf = convert_record(record, self.vcf_reader)
+            if self.vcf_id_generator is not None:
+                record_vcf.ID = self.vcf_id_generator(record)
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
