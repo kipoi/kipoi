@@ -12,26 +12,50 @@ model sources.
 
 ## Installation
 
-After cloning the repository 
+### 1. Install miniconda/anaconda
+
+Kipoi requires [conda](https://conda.io/) to manage model dependencies.
+Make sure you have either anaconda ([download page](https://conda.io/miniconda.html)) or miniconda ([download page](https://www.anaconda.com/download/)) installed.
+
+### 2. Install Git LFS
+
+For downloading models, Kipoi uses [Git Large File Storage](https://git-lfs.github.com/) (LFS). To install it on Ubuntu, run:
+
+```bash
+# on Ubuntu
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+sudo apt-get install -y git-lfs
+git-lfs install
+```
+
+Alternatively, install it through conda:
+
+```bash
+conda install -c conda-forge git-lfs 
+```
+
+
+### 3. Install Kipoi
+
+Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
 ```
 git clone https://github.com/kipoi/kipoi.git
-cd kipoi
+pip install kipoi/
 ```
 
-run:
-
-```
-pip install .
-```
+## Development
 
 If you wish to develop `kipoi`, run instead:
 
 ```
+conda install pytorch-cpu
 pip install -e '.[develop]'
 ```
 
-This will install some additional packages like `pytest`.
+This will install some additional packages like `pytest`. You can test the package by running `py.test`. 
+
+If you wish to run tests in parallel, run `py.test -n 6`.
 
 ## Quick start
 

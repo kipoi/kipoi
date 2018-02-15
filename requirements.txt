@@ -2,3 +2,4 @@
 cython
 keras
 tensorflow
+scikit-learn

@@ -32,10 +32,10 @@ requirements = [
 test_requirements = [
     "pytest>=3.3.1",
     "virtualenv",
-    # model requirements - TODO - add also pytorch
+    # model requirements
     "scikit-learn",
     "cython",
-    "genomelake",
+    # "genomelake",  # TODO - add
     "keras",
     "tensorflow",
 ]
@@ -58,7 +58,12 @@ setup(
                     "pytest>=3.3.1",
                     "pytest-xdist",  # running tests in parallel
                     "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
-                    "pytest-cov"
+                    "pytest-cov",
+                    "scikit-learn",
+                    "cython",
+                    # "genomelake",
+                    "keras",
+                    "tensorflow",
                     ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
