@@ -12,27 +12,33 @@ with open('README.md') as readme_file:
 requirements = [
     "pyyaml",
     "future",
-    "h5py",
     "numpy",
     "pandas",
-    "keras",
     "tqdm",
-    "deepdish",
     "related>=0.6.0",
     "enum34",
     "colorlog",
+    "cookiecutter",
+    # sometimes required
+    "h5py",
+    "deepdish",
+    # only required for score_variants
     "pyvcf",
     "cyvcf2",
-    "cookiecutter",
-    # "pytorch"
+    "pybedtools",
+    "pysam",  # required by pybedtools
 ]
 
 test_requirements = [
     "pytest>=3.3.1",
     "virtualenv",
+    # model requirements - TODO - add also pytorch
+    "scikit-learn",
+    "cython",
+    "genomelake",
+    "keras",
+    "tensorflow",
 ]
-# TODO - require conda to be installed? - to create custom environments
-
 
 setup(
     name='kipoi',
@@ -50,6 +56,7 @@ setup(
                     "jedi",
                     "epc",
                     "pytest>=3.3.1",
+                    "pytest-xdist",  # running tests in parallel
                     "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
                     "pytest-cov"
                     ],

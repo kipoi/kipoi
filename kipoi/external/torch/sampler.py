@@ -44,7 +44,6 @@ class RandomSampler(Sampler):
         self.data_source = data_source
 
     def __iter__(self):
-        # TODO - do the random permutation in numpy
         return iter(np.random.permutation(len(self.data_source)))
 
     def __len__(self):

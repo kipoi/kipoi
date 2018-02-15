@@ -248,20 +248,10 @@ class KerasModel(BaseModel, GradientMixin):
         return self._input_grad(x, -1, output_slice)
 
 
-# def PyTorchModel(BaseModel):
-# TODO - implement and test
-#     def __init__(self, path):
-#         import torch
-#         self.model = torch.load(path)
-
-#     def predict_on_batch(self, x):
-#         return self.model(x)
-
 class PyTorchModel(BaseModel):
     """Loads a pytorch model. 
 
     """
-    #(file=None, build_fn=None, weights=None)
 
     def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """

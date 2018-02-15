@@ -1,33 +1,32 @@
 from abc import abstractmethod
 
 import numpy as np
-import pybedtools
 from collections import OrderedDict
 import re
-import vcf
-
 from kipoi.components import PostProcType
 
 
-def ensure_tabixed_vcf(input_fn, is_sorted = False, force_tabix = True):
+def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
+    import pybedtools
     pbh = pybedtools.BedTool(input_fn)
     fn = input_fn
     if not pbh._tabixed():
-        tbxd = pbh.tabix(is_sorted = is_sorted, force = force_tabix)
+        tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
         fn = tbxd.fn
     return fn
 
 
 def prep_str(s):
-    #https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
+    # https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
     # Remove all non-word characters (everything except numbers and letters)
-    #s = re.sub(r"[^\w\s]", '', s)
+    # s = re.sub(r"[^\w\s]", '', s)
     s = re.sub(r"[^\w\.\:\s]+", '', s)
     #
     # Replace all runs of whitespace with a single underscore
     s = re.sub(r"\s+", '_', s)
     #
     return s
+
 
 def select_from_model_inputs(obj, rows, nrows_expected=None):
     def subset(in_obj):
@@ -109,7 +108,7 @@ class ReshapeDna(object):
         #
         # Iterative removal of dummy dimensions has to start from highest dimension
         for d in sorted(self.dummy_dimensions)[::-1]:
-            squeezed = np.squeeze(squeezed, axis = d+additional_axis)
+            squeezed = np.squeeze(squeezed, axis=d + additional_axis)
         # check that the shape is now as expected:
         one_hot_dim_here = additional_axis + self.one_hot_dim
         seq_len_dim_here = additional_axis + self.seq_len_dim
@@ -120,7 +119,7 @@ class ReshapeDna(object):
             raise Exception("Input array sequence length does not follow the input definition!")
         #
         if self.one_hot_dim != 1:
-            assert (self.seq_len_dim == 1) # Anything else would be weird...
+            assert (self.seq_len_dim == 1)  # Anything else would be weird...
             squeezed = squeezed.swapaxes(one_hot_dim_here, seq_len_dim_here)
         return squeezed
 
@@ -140,7 +139,7 @@ class ReshapeDna(object):
         #
         if len(self.dummy_dimensions) != 0:
             for d in self.dummy_dimensions:
-                in_array = np.expand_dims(in_array,d+assumed_additional_axis)
+                in_array = np.expand_dims(in_array, d + assumed_additional_axis)
         return in_array
 
 
@@ -157,9 +156,9 @@ def _get_seq_len(input_data):
 
 
 class OutputReshaper(object):
-    def __init__(self, model_target_schema, group_delim = "."):
+    def __init__(self, model_target_schema, group_delim="."):
         self.model_target_schema = model_target_schema
-        self.standard_dict_order =None # This one is used to always produce the same order of outputs for a dict
+        self.standard_dict_order = None  # This one is used to always produce the same order of outputs for a dict
         # extract output labels correctly.
         if isinstance(model_target_schema, dict):
             anno = {}
@@ -202,7 +201,7 @@ class OutputReshaper(object):
         if isinstance(ds, dict):
             if not isinstance(self.anno, dict):
                 raise Exception("Error in model output defintion: Model definition is"
-                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+                                "of type %s but predictions are of type %s!" % (str(type(ds)), str(type(self.anno))))
             outputs = []
             labels = []
             for k in self.standard_dict_order:
@@ -214,7 +213,7 @@ class OutputReshaper(object):
         elif isinstance(ds, list):
             if not isinstance(self.anno, list):
                 raise Exception("Error in model output defintion: Model definition is"
-                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+                                "of type %s but predictions are of type %s!" % (str(type(ds)), str(type(self.anno))))
             assert len(ds) == len(self.anno)
             flat = np.concatenate(ds, axis=1)
             flat_labels = np.concatenate(self.anno, axis=0)
@@ -231,10 +230,10 @@ class OutputReshaper(object):
         else:
             res_shape = [dim for dim in arrayschema_obj.shape if dim is not None]
             if len(res_shape) > 1:
-                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s"%str(arrayschema_obj))
-            #if res_shape[0] == 1:
+                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s" % str(arrayschema_obj))
+            # if res_shape[0] == 1:
             #    ret = np.array([""])
-            #else:
+            # else:
             ret = np.arange(res_shape[0]).astype(np.str)
         return ret
 
@@ -250,12 +249,15 @@ def concat_columns(df, sep="|"):
             column = column.str.cat(vec, sep=sep)
     return column
 
-#TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
+
+# TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
 def convert_record(input_record, pyvcf_reader):
     """
     Convert a cyvcf2 record into a pyvcf record. The source files should at least be similar in terms of INFO tags.
     FILTER and FORMAT tags might not be handeled correctly at the moment!
     """
+    import vcf
+
     def revert_to_info(info_obj):
         out_str_elms = []
         for el in list(info_obj):
@@ -269,7 +271,7 @@ def convert_record(input_record, pyvcf_reader):
     alt = pyvcf_reader._map(pyvcf_reader._parse_alt, input_record.ALT)
     return vcf.model._Record(input_record.CHROM, input_record.POS, input_record.ID,
                              input_record.REF, alt, input_record.QUAL, input_record.FILTER,
-                             info_tag, input_record.FORMAT,{})
+                             info_tag, input_record.FORMAT, {})
 
 
 def default_vcf_id_gen(vcf_record, id_delim=":"):
@@ -301,10 +303,10 @@ class SnvCenteredRg(RegionGenerator):
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
         """
-        return {"chrom":[variant_record.CHROM],
-            "start": [variant_record.POS - self.centered_l_offset],
-            "end": [variant_record.POS + self.centered_r_offset],
-            }
+        return {"chrom": [variant_record.CHROM],
+                "start": [variant_record.POS - self.centered_l_offset],
+                "end": [variant_record.POS + self.centered_r_offset],
+                }
 
 
 class SnvPosRestrictedRg(RegionGenerator):
@@ -316,11 +318,10 @@ class SnvPosRestrictedRg(RegionGenerator):
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
 
-
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
         """
-        overlap = self.tabixed.tabix_intervals("%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS+1))
+        overlap = self.tabixed.tabix_intervals("%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS + 1))
         chroms = []
         starts = []
         ends = []

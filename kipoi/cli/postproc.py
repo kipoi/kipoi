@@ -9,9 +9,7 @@ import argparse
 import kipoi
 from kipoi.cli.parser_utils import add_model, add_dataloader, file_exists, dir_exists
 from kipoi.utils import parse_json_file_str, cd
-import deepdish
 import logging
-import pybedtools as pb
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -20,13 +18,14 @@ logger.addHandler(logging.NullHandler())
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
+    import pybedtools
     scoring_options = {
-        #deepsea_scr diff logit_diff logit_ref logit_alt
+        # deepsea_scr diff logit_diff logit_ref logit_alt
         # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
         "logit": kipoi.variant_effects.Logit,
         "diff": kipoi.variant_effects.Diff,
-        "logit_ref":kipoi.variant_effects.LogitRef,
-        "logit_alt":kipoi.variant_effects.LogitAlt,
+        "logit_ref": kipoi.variant_effects.LogitRef,
+        "logit_alt": kipoi.variant_effects.LogitAlt,
         # TODO - function name and string options should be the same
         # i.e. I'd use DeepSEA_effect...
         "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
@@ -61,6 +60,10 @@ def cli_score_variants(command, raw_args):
     vcf_path = args.vcf_path
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
+
+    if args.file_format == "hdf5":
+        # only if hdf5 output is used, import deepdish
+        import deepdish
 
     # Check that all the folders exist
     file_exists(args.vcf_path, logger)
@@ -98,7 +101,7 @@ def cli_score_variants(command, raw_args):
     # Select the appropriate region generator
     if args.restriction_bed is not None:
         # Select the restricted SNV-centered region generator
-        pbd = pb.BedTool(args.restriction_bed)
+        pbd = pybedtools.BedTool(args.restriction_bed)
         vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
         logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
                     'Only defined regions will be tested.')

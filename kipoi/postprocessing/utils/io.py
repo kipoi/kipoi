@@ -1,14 +1,8 @@
-
-# simple class to save a bed file sequentially
 from abc import abstractmethod
-
 import numpy as np
-import cyvcf2
-import vcf
 from tqdm import tqdm
 from kipoi.postprocessing.utils.generic import prep_str, convert_record
 import os
-import h5py
 import six
 import gzip
 import logging
@@ -21,6 +15,7 @@ def fopen(*args, **kwargs):
         return gzip.open(*args, **kwargs)
     else:
         return open(*args, **kwargs)
+
 
 def recursive_h5_writer(objs, handle, create):
     for key in objs.keys():
@@ -43,23 +38,32 @@ def recursive_h5_writer(objs, handle, create):
 
 
 class BedWriter:
-    ## At the moment
+    """
+    simple class to save a bed file sequentially
+    """
+
+    # At the moment
     def __init__(self, output_fname):
         self.output_fname = output_fname
         self.ofh = open(self.output_fname, "w")
     #
+
     def append_interval(self, chrom, start, end, id):
         chrom = "chr" + str(chrom).strip("chr")
-        self.ofh.write("\t".join([chrom, str(int(start)-1), str(end), str(id)]) + "\n")
+        self.ofh.write("\t".join([chrom, str(int(start) - 1), str(end), str(id)]) + "\n")
     #
+
     def close(self):
         self.ofh.close()
     #
+
     def __enter__(self):
         return self
     #
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
 
 class SeqWriter(object):
     """
@@ -74,14 +78,14 @@ class SeqWriter(object):
         pass
 
 
-
-
 class SyncHdf5SeqWriter(SeqWriter):
     """
     Write generated ref / alt / ref_rc / alt_rc DNA sequences in an hdf5 file. For small batches this is slow as it has
      to resize the dataset with every call.
     """
+
     def __init__(self, ouput_fn):
+        import h5py
         try:
             os.unlink(ouput_fn)
         except:
@@ -106,6 +110,7 @@ class SyncPredictonsWriter(object):
     """
     Abstract class for synchronous writers of effect predictions.
     """
+
     def __init__(self, model):
         self.info_tag_prefix = "KPVEP"
         if (model.info.name is None) or (model.info.name == ""):
@@ -115,7 +120,6 @@ class SyncPredictonsWriter(object):
 
         if (self.model_name is not None) or (self.model_name != ""):
             self.info_tag_prefix += "_%s" % prep_str(self.model_name)
-
 
     @abstractmethod
     def __call__(self, predictions, records):
@@ -131,6 +135,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
     The reference cyvcf2 object here has to be the one from which the records are taken. INFO tags of this reference
     object will be modified in the process! Hence use carefully!
     """
+
     def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":"):
         super(VcfWriterCyvcf2, self).__init__(model)
         # self.vcf_reader = cyvcf2.Reader(reference_vcf_path, "r")
@@ -142,6 +147,8 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
 
     def __call__(self, predictions, records):
         # First itertation: the output file has to be created and the headers defined
+        import cyvcf2
+
         if len(predictions) == 0:
             return None
 
@@ -159,10 +166,10 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
                             "Prediction columns are not identical for methods %s and %s" % (predictions.keys()[0], k))
                 # Add the tag to the vcf file
                 #"##INFO=<ID={ID},Number={Number},Type={Type},Description=\"{Description}\">".format(**adict)
-                info_tag = {"ID":self.info_tag_prefix + "_%s" % k.upper(),
-                            "Number":None, "Type":"String",
-                            "Description":"%s SNV effect prediction. Prediction from model outputs: %s" % (
-                                                                  k.upper(), "|".join(self.column_labels))}
+                info_tag = {"ID": self.info_tag_prefix + "_%s" % k.upper(),
+                            "Number": None, "Type": "String",
+                            "Description": "%s SNV effect prediction. Prediction from model outputs: %s" % (
+                    k.upper(), "|".join(self.column_labels))}
                 self.vcf_reader.add_info_to_header(info_tag)
             # Now we can also create the vcf writer
             self.vcf_writer = cyvcf2.Writer(self.out_vcf_fpath, self.vcf_reader)
@@ -178,7 +185,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
         # sanity check that the number of records matches the prediction rows:
         for k in predictions:
             if predictions[k].shape[0] != len(records):
-                raise Exception("number of records does not match number the prediction rows for prediction %s."%str(k))
+                raise Exception("number of records does not match number the prediction rows for prediction %s." % str(k))
 
         # Actually write the vcf entries.
         for pred_line, record in tqdm(enumerate(records)):
@@ -199,11 +206,13 @@ class VcfWriter(SyncPredictonsWriter):
     This version uses PyVCF and converts cyvcf2 records into PyVCF ones prior to writing. Here just make sure that
     the VCF file used here is identical to the one used in cyvcf2.
     """
+
     def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":"):
+        import vcf
         super(VcfWriter, self).__init__(model)
         compressed = reference_vcf_path.endswith(".gz")
-        self.vcf_reader = vcf.Reader(filename = reference_vcf_path, compressed = compressed)
-        #self.vcf_reader = reference_vcf_obj
+        self.vcf_reader = vcf.Reader(filename=reference_vcf_path, compressed=compressed)
+        # self.vcf_reader = reference_vcf_obj
         self.out_vcf_fpath = out_vcf_fpath
         self.id_delim = id_delim
         self.prediction_labels = None
@@ -211,12 +220,14 @@ class VcfWriter(SyncPredictonsWriter):
 
     @staticmethod
     def _generate_info_field(id, num, info_type, desc, source, version):
+        import vcf
         return vcf.parser._Info(id, num,
                                 info_type, desc,
                                 source, version)
 
     def __call__(self, predictions, records):
         # First itertation: the output file has to be created and the headers defined
+        import vcf
         if len(predictions) == 0:
             return None
 
@@ -235,9 +246,9 @@ class VcfWriter(SyncPredictonsWriter):
                 # Add the tag to the vcf file
                 info_tag = self.info_tag_prefix + "_%s" % k.upper()
                 self.vcf_reader.infos[info_tag] = self._generate_info_field(info_tag, None, 'String',
-                                                                  "%s SNV effect prediction. Prediction from model outputs: %s" % (
-                                                                  k.upper(), "|".join(self.column_labels)),
-                                                                  None, None)
+                                                                            "%s SNV effect prediction. Prediction from model outputs: %s" % (
+                                                                                k.upper(), "|".join(self.column_labels)),
+                                                                            None, None)
             # Now we can also create the vcf writer
             self.vcf_writer = vcf.Writer(open(self.out_vcf_fpath, 'w'), self.vcf_reader)
         else:
@@ -252,7 +263,7 @@ class VcfWriter(SyncPredictonsWriter):
         # sanity check that the number of records matches the prediction rows:
         for k in predictions:
             if predictions[k].shape[0] != len(records):
-                raise Exception("number of records does not match number the prediction rows for prediction %s."%str(k))
+                raise Exception("number of records does not match number the prediction rows for prediction %s." % str(k))
 
         # Actually write the vcf entries.
         for pred_line, record in tqdm(enumerate(records)):
@@ -261,10 +272,8 @@ class VcfWriter(SyncPredictonsWriter):
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
                 info_tag = self.info_tag_prefix + "_{0}".format(k.upper())
-                record_vcf.INFO[info_tag] = "|".join([str("%.8f"%pred) for pred in preds])
+                record_vcf.INFO[info_tag] = "|".join([str("%.8f" % pred) for pred in preds])
             self.vcf_writer.write_record(record_vcf)
 
     def close(self):
         self.vcf_writer.close()
-
-
