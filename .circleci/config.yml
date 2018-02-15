@@ -24,7 +24,11 @@ jobs:
           command: |
             pip install '.[develop]'
             
-      # run tests!
+      - run:
+          name: list models
+          command: |
+            kipoi ls
+	    
       - run:
           name: run tests
           command: |
@@ -52,7 +56,12 @@ jobs:
           name: install the kipoi package
           command: |
             pip install '.[develop]'
-            
+
+      - run:
+          name: list models
+          command: |
+            kipoi ls
+
       # run tests!
       - run:
           name: run tests
