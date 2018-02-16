@@ -20,17 +20,18 @@ def replace_slash(s, replace_with="__"):
     return s.replace("/", replace_with)
 
 
-def conda_env_name(model_name, dataloader_name):
+def conda_env_name(model_name, dataloader_name, source):
     """Create a conda env name
     """
     model_name = os.path.normpath(model_name)
     dataloader_name = os.path.normpath(dataloader_name)
 
     if dataloader_name == model_name:
-        return "kipoi-{0}".format(replace_slash(model_name))
+        return "{0}-{1}".format(source, replace_slash(model_name))
     else:
-        return "kipoi-{0}-{1}".format(replace_slash(model_name),
-                                      replace_slash(dataloader_name))
+        return "{0}-{1}-{2}".format(source,
+                                    replace_slash(model_name),
+                                    replace_slash(dataloader_name))
 
 
 def export_env(model, source, dataloader=None, dataloader_source="kipoi",
@@ -65,7 +66,7 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
 
     # specify the default environment
     if env is None:
-        env = conda_env_name(model, dataloader)
+        env = conda_env_name(model, dataloader, source)
 
     if env_file is None:
         env_file = os.path.join(env_dir, "{env}.yaml".format(env=env))

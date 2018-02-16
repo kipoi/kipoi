@@ -57,6 +57,6 @@ def file_exists(fpath, logger):
 
 
 def dir_exists(dirname, logger):
-    if not os.path.exists(dirname):
+    if not os.path.exists(os.path.abspath(dirname)):
         logger.error("Directory {0} doesn't exist".format(dirname))
         sys.exit(1)

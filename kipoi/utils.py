@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import glob
 import os
 import sys
 import subprocess
@@ -210,7 +211,7 @@ def du(path):
     """disk usage in human readable format (e.g. '2,1GB')"""
     try:
         return subprocess.check_output(['du', '-sh', path]).split()[0].decode('utf-8')
-    except:
+    except Exception:
         return "NA"
 
 
@@ -246,3 +247,16 @@ def merge_dicts(x, y):
     z = x.copy()   # start with x's keys and values
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
+
+
+def list_files_recursively(root_dir, basename, suffix='y?ml'):
+    """search for filenames matching the pattern: {root_dir}/**/{basename}.{suffix}
+    """
+    if sys.version_info >= (3, 5):
+        return [filename[len(root_dir):] for filename in
+                glob.iglob(root_dir + '**/{0}.{1}'.format(basename, suffix), recursive=True)]
+    else:
+        import fnmatch
+        return [os.path.join(root, filename)[len(root_dir):]
+                for root, dirnames, filenames in os.walk(root_dir)
+                for filename in fnmatch.filter(filenames, '{0}.{1}'.format(basename, suffix))]

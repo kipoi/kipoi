@@ -54,6 +54,25 @@ def create_env(env_name, conda_deps):
     return create_env_from_file(tmp_file_path)
 
 
+def get_env_path(env_name):
+    for env in get_envs():
+        if env.endswith(env_name):
+            return env
+    return None
+
+
+def get_kipoi_bin(env_name):
+    """Returns the path to the kipoi executable in {env_name} environment
+    """
+    env_root = get_env_path(env_name)
+    if env_root is None:
+        raise ValueError("Conda environment {0} doesn't exist".format(env_name))
+    out_path = os.path.join(env_root, "bin", "kipoi")
+    if not os.path.exists(out_path):
+        raise ValueError("kipoi is not installed in conda environment: {0}".format(env_name))
+    return out_path
+
+
 def create_env_from_file(env_file):
     cmd_list = ["env", "create", "--file", env_file]
     return _call_conda(cmd_list, use_stdout=True)

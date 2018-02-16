@@ -7,9 +7,8 @@ import os
 import six
 import subprocess
 import logging
-import glob
 from collections import OrderedDict
-from .utils import lfs_installed, get_file_path, cd
+from .utils import lfs_installed, get_file_path, cd, list_files_recursively
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
@@ -25,14 +24,7 @@ def get_component_file(component_dir, which="model"):
 
 
 def list_yamls_recursively(root_dir, basename):
-    if sys.version_info >= (3, 5):
-        return [os.path.dirname(filename)[len(root_dir):] for filename in
-                glob.iglob(root_dir + '**/{0}.y?ml'.format(basename), recursive=True)]
-    else:
-        import fnmatch
-        return [os.path.dirname(os.path.join(root, filename))[len(root_dir):]
-                for root, dirnames, filenames in os.walk(root_dir)
-                for filename in fnmatch.filter(filenames, '{0}.y?ml'.format(basename))]
+    return [os.path.dirname(x) for x in list_files_recursively(root_dir, basename, suffix='y?ml')]
 
 
 def list_softlink_realpaths(root_dir):
@@ -213,11 +205,17 @@ class Source(object):
 
         df = df.join(df.model.str.split("/", n=1, expand=True).rename(columns={0: "group", 1: "child"}))
 
+        def n_subgroups(ch):
+            if ch.str.contains("/").sum() > 0:
+                return len(ch[ch.str.contains("/")].str.split("/", n=1, expand=True).iloc[:, 0].unique())
+            else:
+                return 0
+
         def fn(x):
             # remove the templates
             return pd.Series(OrderedDict([
                 ("N_models", x.shape[0]),
-                ("N_subgroups", x.child.fillna("").str.contains("/").sum()),
+                ("N_subgroups", n_subgroups(x.child.fillna(""))),
                 ("is_group", x.is_group.any()),
                 ("authors", {author for authors in x.authors
                              for author in authors}),
