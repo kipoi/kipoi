@@ -523,16 +523,62 @@ class DataLoaderSchema(RelatedConfigMixin):
 class PostProcType(enum.Enum):
     VAR_EFFECT_PREDICTION = "variant_effects"
 
+@enum.unique
+class PostProcFuncType(enum.Enum):
+    logit = "logit"
+    diff = "diff"
+    deepsea_scr = "deepsea_scr"
+    custom = "custom"
+
 
 @related.immutable
 class PostProcSeqinput(object):
     seq_input = related.SequenceField(str)
 
+@related.immutable
+class PostProcScoringFuncArgument(RelatedConfigMixin):
+    # MAYBE - make this a general argument class
+    doc = related.StringField(required = False)
+    name = related.StringField(required=False)
+    type = related.StringField(default='str', required=False)
+    optional = related.BooleanField(default=False, required=False)
+    default = related.StringField(required=False)
+    tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
+
 
 @related.immutable
-class PostProcStruct(RelatedConfigMixin):
+class PostProcScoringFunctions(RelatedConfigMixin):
+    name = related.StringField(required = False, default = "")
+    type = related.ChildField(PostProcFuncType, required = False)
+    defined_as = related.StringField(required = False, default = "")
+    args = related.MappingField(PostProcScoringFuncArgument, "name", required = False)
+    default = related.BooleanField(required=False, default = False)
+
+
+@related.immutable
+class PostProcDataloaderArgs(RelatedConfigMixin):
+    bed_input = related.SequenceField(str, required = False)
+    scoring_functions = related.SequenceField(PostProcScoringFunctions, default=[], required = False)
+
+@related.immutable
+class PostProcModelArgs(RelatedConfigMixin):
+    seq_input = related.SequenceField(str)
+    supports_simple_rc = related.BooleanField(required = False, default=False)
+    scoring_functions = related.SequenceField(PostProcScoringFunctions, default=[], required=False)
+
+@related.immutable
+class PostProcModelStruct(RelatedConfigMixin):
     type = related.ChildField(PostProcType)  # enum
-    args = related.ChildField(dict)  # contains
+    args = related.ChildField(PostProcModelArgs)  # contains
+
+@related.immutable
+class PostProcDataloaderStruct(RelatedConfigMixin):
+    type = related.ChildField(PostProcType)  # enum
+    args = related.ChildField(PostProcDataloaderArgs, required = False)  # contains
+
+
+
+
 
 
 @related.immutable
@@ -651,7 +697,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
+    postprocessing = related.SequenceField(PostProcModelStruct, default=[], required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
@@ -663,6 +709,11 @@ def example_kwargs(dl_args):
     """Return the example kwargs
     """
     return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
+
+def default_kwargs(args):
+    """Return the example kwargs
+    """
+    return {k: v.default for k, v in six.iteritems(args) if not v.default is None}
 
 
 @related.immutable
@@ -676,7 +727,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
+    postprocessing = related.SequenceField(PostProcDataloaderStruct, default=[], required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)

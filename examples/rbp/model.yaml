@@ -35,5 +35,4 @@ postprocessing:
       args:
           seq_input:
             - seq
-          supports_simple_rc: # Optional, Indicate whether the model supports reverse-complements of the sequences defined in 'seq_input'
-            - true
+          supports_simple_rc: true

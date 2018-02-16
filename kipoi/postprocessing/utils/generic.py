@@ -505,12 +505,11 @@ def _get_seq_fields(model):
         if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
             seq_dict = pp_obj.args
             break
-    if seq_dict is None:
+    if (seq_dict is None) or (not hasattr(seq_dict, 'seq_input')):
         raise Exception("Model does not support var_effect_prediction")
-    return seq_dict['seq_input']
+    return seq_dict.seq_input
 
 def _get_model_supports_simple_rc(model):
-    search_key = 'supports_simple_rc'
     pp_instructions = False
     for pp_obj in model.postprocessing:
         if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
@@ -518,13 +517,8 @@ def _get_model_supports_simple_rc(model):
             break
     if pp_instructions is None:
         return False
-    if search_key not in pp_instructions:
-        return False
-    rco = pp_instructions[search_key]
-    if isinstance(rco, list) and (len(rco) == 1) and (isinstance(rco[0], bool)):
-        return rco[0]
     else:
-        raise Exception("Error in model.yaml: Value in postprocessing > variant_effects > supports_simple_rc invalid")
+        return pp_instructions.supports_simple_rc
 
 
 def _get_seq_shape(dataloader, seq_field):
@@ -543,10 +537,10 @@ def _get_dl_bed_fields(dataloader):
         if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
             seq_dict = pp_obj.args
             break
-    if seq_dict is None:
+    if (seq_dict is None) or (not hasattr(seq_dict, 'bed_input')):
         #raise Exception("Dataloader does not support any postprocessing")
         return None
-    return seq_dict['bed_input']
+    return seq_dict.bed_input
 
 
 class ReshapeDnaString(object):

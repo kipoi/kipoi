@@ -98,8 +98,7 @@ postprocessing:
 
 
 
-supports_simple_rc_str = """supports_simple_rc:
-            - true
+supports_simple_rc_str = """supports_simple_rc: true
 """
 def test_ModelDescription():
     for rc_support in [True, False]:

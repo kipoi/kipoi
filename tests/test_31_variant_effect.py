@@ -374,7 +374,7 @@ def test_DNAStringArrayConverter():
 
 
 def test_search_vcf_in_regions():
-    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf")
     vcf_fh = cyvcf2.VCF(vcf_path, "r")
     ints1 = {"chr": ["chr22"]*2, "start": [21541589, 30630701], "end": [21541953, 36702138], "strand": ["*"]*2}
     ints2 = {"chr": ["chr22"]*2, "start": [30630219, 30630220], "end": [30630222, 30630222], "strand": ["*"]*2}
@@ -422,7 +422,7 @@ def test_get_genomicranges_line():
 def test_by_id_vcf_in_regions():
     from kipoi.postprocessing.utils.generic import default_vcf_id_gen
     from kipoi.postprocessing.snv_predict import by_id_vcf_in_regions
-    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf")
     vcf_fh = cyvcf2.VCF(vcf_path, "r")
     ints1 = {"chr": [], "start": [], "end": [], "strand": [], "id":[]}
     for rec in vcf_fh:
@@ -454,7 +454,7 @@ def test_by_id_vcf_in_regions():
 
 def test_get_preproc_conv():
     import itertools
-    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf.gz")
+    vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf")
     vcf_fh = cyvcf2.VCF(vcf_path, "r")
     ints1 = {"chr": ["chr22"] * 4, "start": [21541589, 30630701, 21541589, 200],
              "end": [21541953, 36702138, 21541953, 500], "strand": ["*"] * 4}
