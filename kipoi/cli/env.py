@@ -8,6 +8,7 @@ import argparse
 import subprocess
 import kipoi
 from kipoi.cli.parser_utils import add_model, add_dataloader
+from kipoi.components import Dependencies
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -77,6 +78,12 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
     dataloader_descr = kipoi.get_dataloader_descr(dataloader, dataloader_source)
 
     deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
+
+    # add Kipoi to the dependencies
+    deps = Dependencies(pip=["kipoi"]).merge(deps)
+
+    # TODO - if we should do VEP - add vep dependencies
+
     if os.path.dirname(env_file):
         os.makedirs(os.path.dirname(env_file), exist_ok=True)
     deps.to_env_file(env, env_file)

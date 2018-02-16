@@ -617,6 +617,11 @@ class Dependencies(RelatedConfigMixin):
 
     def to_env_dict(self, env_name):
         channels, packages = self._get_channels_packages()
+        if isinstance(packages, related.types.TypedSequence):
+            packages = packages.list
+        if isinstance(channels, related.types.TypedSequence):
+            channels = channels.list
+
         env_dict = OrderedDict(
             name=env_name,
             channels=channels,
@@ -628,7 +633,25 @@ class Dependencies(RelatedConfigMixin):
         """Dump the dependencies to a file
         """
         with open(path, 'w') as f:
-            f.write(yaml_ordered_dump(self.to_env_dict(env_name),
+            d = self.to_env_dict(env_name)
+
+            # add python if not present
+            add_py = True
+            for dep in d['dependencies']:
+                if isinstance(dep, str) and dep.startswith("python"):
+                    add_py = False
+
+            if add_py:
+                d['dependencies'] = ["python"] + d['dependencies']
+            # -----
+            # remove fields that are empty
+            out = []
+            for k in d:
+                if not (isinstance(d[k], list) and len(d[k]) == 0):
+                    out.append((k, d[k]))
+            # -----
+
+            f.write(yaml_ordered_dump(OrderedDict(out),
                                       indent=2,
                                       default_flow_style=False))
 

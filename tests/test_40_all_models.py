@@ -7,14 +7,12 @@
   - run `kipoi test model --source=kipoi` in that environment
 """
 
+import pytest
 import subprocess
 import kipoi
-from kipoi.conda import get_kipoi_bin
+from kipoi.conda import get_kipoi_bin, env_exists, remove_env
 from kipoi.cli.env import conda_env_name
 from kipoi.utils import list_files_recursively, read_txt
-
-dfm = kipoi.get_source("kipoi").list_models()
-dfg = kipoi.get_source("kipoi").list_models_by_group()
 
 
 def models_to_test(src):
@@ -47,14 +45,21 @@ def models_to_test(src):
     return list(models) + include
 
 
-def test_model(model_name, source_name):
+@pytest.mark.parametrize("model_name", models_to_test(kipoi.get_source("kipoi")))
+def test_model(model_name):
     """kipoi test ...
     """
-    # TODO - install the environment - get the path to the environment path
+
+    source_name = "kipoi"
     assert source_name == "kipoi"
 
     env_name = conda_env_name(model_name, model_name, source_name)
     env_name = "test-" + env_name  # prepend "test-"
+
+    # if environment already exists, remove it
+    if env_exists(env_name):
+        print("Removing the environment: {0}".format(env_name))
+        remove_env(env_name)
 
     # create the model test environment
     args = ["kipoi", "env", "create",
@@ -71,5 +76,3 @@ def test_model(model_name, source_name):
             model_name]
     returncode = subprocess.call(args=args)
     assert returncode == 0
-
-    # TODO - remove the environments?
