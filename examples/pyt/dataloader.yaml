@@ -1,0 +1,50 @@
+type: Dataset
+defined_as: dataloader.py::SeqDataset
+args:
+  intervals_file:
+    doc: bed3 file with `chrom start end id score strand`
+    example: example_files/intervals.tsv
+  fasta_file:
+    doc: Reference genome sequence
+    example: example_files/hg38_chr22.fa
+  target_file:
+    doc: path to the targets (.tsv) file
+    optional: True
+  use_linecache:
+    doc: if True, use linecache https://docs.python.org/3/library/linecache.html to access bed file rows
+    optional: True
+info:
+  authors:
+      - name: Lara Urban
+        github: LaraUrban
+      - name: Ziga Avsec
+        github: avsecz
+  doc: Dataloader for the DeepSEA model.
+dependencies:
+  conda:
+    - python=3.5
+    - numpy
+    - pandas
+  pip:
+    # - genomelake
+    - pybedtools
+output_schema:
+  inputs:
+    name: input
+    shape: (1000, 4)
+    special_type: DNASeq
+    doc: DNA sequence
+    associated_metadata: ranges
+  targets:
+    name: epigen_mod
+    shape: (1, )
+    doc: Specific epigentic feature class (multi-task binary classification)
+  metadata:
+    ranges:
+      type: GenomicRanges
+      doc: Ranges describing inputs.seq
+postprocessing:
+    - type: variant_effects
+      args:
+          bed_input:
+            - intervals_file
