@@ -29,7 +29,7 @@ def _numpy_collate(stack_fn=np.stack):
             return {key: numpy_collate_fn([d[key] for d in batch]) for key in batch[0]}
         elif isinstance(batch[0], collections.Sequence):
             transposed = zip(*batch)
-            return np.array([numpy_collate_fn(samples) for samples in transposed])
+            return [numpy_collate_fn(samples) for samples in transposed]
 
         raise TypeError(("batch must contain tensors, numbers, dicts or lists; found {}"
                          .format(type(batch[0]))))
