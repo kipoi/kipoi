@@ -22,11 +22,6 @@ requirements = [
     # sometimes required
     "h5py",
     "deepdish",
-    # only required for score_variants
-    "pyvcf",
-    "cyvcf2",
-    "pybedtools",
-    "pysam",  # required by pybedtools
 ]
 
 test_requirements = [
@@ -65,6 +60,12 @@ setup(
                     "keras",
                     "tensorflow",
                     ],
+         # variant effect prediction
+         "vep": ["pyvcf",
+                 "cyvcf2",
+                 "pybedtools",
+                 "pysam",  # required by pybedtools
+                 ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
