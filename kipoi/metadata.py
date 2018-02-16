@@ -53,8 +53,17 @@ class GenomicRanges(Mapping):
         """Convert GenomicRanges object to a Interval object
         """
         from pybedtools import Interval
-        return Interval(self.chr,
-                        self.start,
-                        self.end,
-                        name=self.id,
-                        strand=self.strand)
+        if isinstance(self.chr, str):
+            return Interval(self.chr,
+                            self.start,
+                            self.end,
+                            name=self.id,
+                            strand=self.strand)
+        else:
+            return [Interval(self.chr[i],
+                             self.start[i],
+                             self.end[i],
+                             name=self.id[i],
+                             strand=self.strand[i])
+                    for i in range(len(self.chr))]
+                
