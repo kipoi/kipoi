@@ -360,7 +360,7 @@ class GenerateSeqSets(object):
             pred_set["ref_rc"] = input_set["rc_ref"]
             pred_set["alt_rc"] = input_set["rc_alt"]
         pred_set["mutation_positions"] = preproc_conv_df["varpos_rel"].values
-        pred_set["line_id"] = np.array(process_ids)
+        pred_set["line_id"] = np.array(process_ids).astype(str)
         pred_set["vcf_records"] = vcf_records
         return pred_set
 
