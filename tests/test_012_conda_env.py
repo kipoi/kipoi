@@ -62,7 +62,7 @@ def test_create_env():
 
 
 def test_create_env_wrong_dependencies():
-    dependencies = ["python=3.6", "numpyxzy"] like
+    dependencies = ["python=3.6", "numpyxzy"]
     ENV_NAME = "kipoi-test-env2"
     if kipoi.conda.env_exists(ENV_NAME):
         kipoi.conda.remove_env(ENV_NAME)
