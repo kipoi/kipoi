@@ -62,7 +62,7 @@ def test_create_env():
 
 
 def test_create_env_wrong_dependencies():
-    dependencies = ["python=3.6", "numpyxzy"]
+    dependencies = ["python=3.6", "numpyxzy"] like
     ENV_NAME = "kipoi-test-env2"
     if kipoi.conda.env_exists(ENV_NAME):
         kipoi.conda.remove_env(ENV_NAME)
@@ -73,7 +73,7 @@ def test_create_env_wrong_dependencies():
 def test_install():
     # TODO - write a conda installation test with a certain channel
     # TODO - add a conda channels for installing
-    conda_deps = ["python=3.6", "jedi"]
+    conda_deps = ["python=3.6", "pep8"]
     pip_deps = ["tqdm"]
 
     install_conda(conda_deps)
