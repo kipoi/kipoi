@@ -2,7 +2,6 @@
 """
 from collections import Mapping
 from kipoi.data_utils import numpy_collate, numpy_collate_concat
-from pybedtools import Interval
 
 
 class GenomicRanges(Mapping):
@@ -53,6 +52,7 @@ class GenomicRanges(Mapping):
     def to_interval(self):
         """Convert GenomicRanges object to a Interval object
         """
+        from pybedtools import Interval
         return Interval(self.chr,
                         self.start,
                         self.end,
