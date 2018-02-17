@@ -704,5 +704,25 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
         return example_kwargs(self.args)
 
 
+# ---------------------
+# Global source config
+
+# TODO - write a unit-test for these three
+@related.immutable
+class TestModelConfig(RelatedConfigMixin):
+    batch_size = related.IntegerField(default=None, required=False)
+
+
+@related.immutable
+class TestConfig(RelatedConfigMixin):
+    """Models config.yaml in the model root
+    """
+    constraints = related.MappingField(TestModelConfig, "name", required=False)
+
+
+@related.immutable
+class SourceConfig(RelatedLoadSaveMixin):
+    test = related.ChildField(TestConfig, required=False)
+
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)
