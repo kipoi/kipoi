@@ -84,8 +84,8 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
 
     # TODO - if we should do VEP - add vep dependencies
 
-    if os.path.dirname(env_file):
-        os.makedirs(os.path.dirname(env_file), exist_ok=True)
+    if not os.path.exists(os.path.dirname(env_file)):
+        os.makedirs(os.path.dirname(env_file))
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
     return env, env_file
@@ -129,7 +129,8 @@ def cli_create(cmd, raw_args):
 
     # create the tmp dir
     tmpdir = "/tmp/kipoi/envfiles"
-    os.makedirs(tmpdir, exist_ok=True)
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
