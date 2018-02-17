@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import pickle
 import glob
 import os
 import sys
@@ -239,6 +240,11 @@ def read_txt(file_path, comment_str="#"):
             if len(line) > 0:
                 out.append(line)
     return out
+
+
+def read_pickle(f):
+    with open(f, "rb") as f:
+        return pickle.load(f)
 
 
 def merge_dicts(x, y):
