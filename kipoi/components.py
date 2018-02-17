@@ -62,12 +62,14 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
     """
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, append_path=True):
         """Loads model from a yaml file
+
+        Append_path: appends path to the model append_path
         """
         original_yaml = open(path).read().strip()
         parsed_dict = related.from_yaml(original_yaml)
-        if "path" not in parsed_dict:
+        if append_path and "path" not in parsed_dict:
             parsed_dict["path"] = path
         return cls.from_config(parsed_dict)
 
@@ -717,7 +719,8 @@ class TestModelConfig(RelatedConfigMixin):
 class TestConfig(RelatedConfigMixin):
     """Models config.yaml in the model root
     """
-    constraints = related.MappingField(TestModelConfig, "name", required=False)
+    constraints = related.MappingField(TestModelConfig, "name", required=False,
+                                       repr=True)
 
 
 @related.immutable

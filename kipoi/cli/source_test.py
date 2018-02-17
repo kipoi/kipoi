@@ -1,16 +1,15 @@
 """test-source command
 """
 import argparse
+from colorlog import escape_codes, default_log_colors
 import sys
 import os
 import subprocess as sp
 import kipoi
-from kipoi.conda import get_kipoi_bin, env_exists, remove_env
+from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.cli.env import conda_env_name
+from kipoi.remote import list_softlink_dependencies
 from kipoi.utils import list_files_recursively, read_txt, get_file_path
-from kipoi.components import SourceConfig, TestConfig, TestModelConfig
-from distutils.version import LooseVersion
-import re
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -32,6 +31,7 @@ def run(cmds, env=None, mask=None, **kwargs):
         p.stdout = p.stdout.decode(errors='replace')
     except sp.CalledProcessError as e:
         e.stdout = e.stdout.decode(errors='replace')
+        print(e)
         # mask command arguments
 
         def do_mask(arg):
@@ -52,7 +52,7 @@ def run(cmds, env=None, mask=None, **kwargs):
     return p
 
 
-def modified_files(git_range, source_folder):
+def modified_files(git_range, source_folder, relative=True):
     """
     Returns files under the models dir that have been modified within the git
     range. Filenames are returned with the `source_folder` included.
@@ -65,57 +65,27 @@ def modified_files(git_range, source_folder):
           comparison is any changes in the working tree relative to the commit.
       source_folder : str
           Root of the model source/git repo
+      relative=True: return the relative path
     """
-    # orig_git_range = git_range[:]
-    if len(git_range) == 2:
-        git_range = '...'.join(git_range)
-    elif len(git_range) == 1 and isinstance(git_range, list):
-        git_range = git_range[0]
-    else:
-        raise ValueError('Expected 1 or 2 args for git_range; got {}'.
-                         format(git_range))
+    assert isinstance(git_range, list)
+    cmds = ['git', 'diff', '--name-only'] + git_range
 
-    cmds = (
-        [
-            'git', 'diff', '--relative={}'.format(source_folder),
-            '--name-only',
-            git_range,
-            "--"
-        ] +
-        [
-            os.path.join(source_folder, '*'),
-            os.path.join(source_folder, '*', '*')
-        ]
-    )
+    p = run(cmds, cwd=source_folder)
 
-    # In versions >2 git expands globs. But if it's older than that we need to
-    # run the command using shell=True to get the shell to expand globs.
-    shell = False
-    p = run(['git', '--version'])
-    matches = re.match(r'^git version (?P<version>[\d\.]*)(?:.*)$', p.stdout)
-    git_version = matches.group("version")
+    modified = [os.path.join(source_folder, m)
+                for m in p.stdout.strip().split('\n')]
 
-    if git_version < LooseVersion('2'):
-        logger.warn(
-            'git version (%s) is < 2.0. Running git diff using shell=True. '
-            'Please consider upgrading git', git_version)
-        cmds = ' '.join(cmds)
-        shell = True
-
-    p = run(cmds, shell=shell)
-
-    modified = [
-        os.path.join(source_folder, m)
-        for m in p.stdout.strip().split('\n')
-    ]
-
-    # exclude recipes that were deleted in the git-range
+    # exclude files that were deleted in the git-range
     existing = list(filter(os.path.exists, modified))
 
-    # if the only diff is that files were deleted, we can have ['recipes/'], so
+    # if the only diff is that files were deleted, we can have ['model/'], so
     # filter on existing *files*
     existing = list(filter(os.path.isfile, existing))
-    return existing
+    if relative:
+        return [os.path.relpath(f, source_folder)
+                for f in existing]
+    else:
+        return existing
 
 
 def all_models_to_test(src):
@@ -138,9 +108,9 @@ def all_models_to_test(src):
         include += [os.path.join(d, l)
                     for l in read_txt(os.path.join(src.local_path, x))]
 
-    # try to load every model
-    for m in include:
-        src.get_model_descr(m)
+    # try to load every model extra included -- will get tested downstream
+    # for m in include:
+    #     src.get_model_descr(m)
 
     models = src.list_models().model
     for excl in exclude:
@@ -155,36 +125,45 @@ def test_model(model_name, source_name, env_name, batch_size):
       model_name (str)
       source_name: source name
     """
-    # TODO - detect warinings from the command line
-    # caplog.set_level(logging.INFO)
     if env_exists(env_name):
         logger.info("Environment {0} exists. Removing it.".format(env_name))
         remove_env(env_name)
 
     # create the model test environment
-    args = ["kipoi", "env", "create",
+    cmd = "kipoi"
+    args = ["env", "create",
             "--source", source_name,
             "--env", env_name,
             model_name]
-    returncode = sp.call(args=args)
+    returncode = _call_command(cmd, args, use_stdout=True)
     assert returncode == 0
 
     # run the tests in the environment
-    args = [get_kipoi_bin(env_name), "test",
+    cmd = get_kipoi_bin(env_name)
+    args = ["test",
             "--batch_size", str(batch_size),
             "--source", source_name,
             model_name]
-    returncode = sp.call(args=args)
+    returncode, logs = _call_command(cmd, args, use_stdout=True,
+                                     return_logs_with_stdout=True)
     assert returncode == 0
-    # for record in caplog.records:
-    # there shoudn't be any warning
-    #    assert record.levelname not in \
-    #      ['WARN', 'WARNING', 'ERROR', 'CRITICAL']
+
+    # detect WARNING in the output log
+    warn = 0
+    for line in logs:
+        warn_start = escape_codes[default_log_colors['WARNING']] + \
+            'WARNING' + escape_codes['reset']
+        if line.startswith(warn_start):
+            logger.error("Warning present: {0}".format(line))
+            warn += 1
+    if warn > 0:
+        raise ValueError("{0} warnings were observed for model {1}".
+                         format(warn, model_name))
 
 
-# test this function
 def restrict_models_to_test(all_models, source, git_range):
-    """
+    """Subset all_models to the ones with changed files
+
     Args:
       all_models: list of all models to test
       source: used source
@@ -193,30 +172,34 @@ def restrict_models_to_test(all_models, source, git_range):
     Inspired by bioconda-utils ... --git-range
     1. check
     """
-    # TODO - test this function
-    modified = modified_files(git_range, source.local_path)
-    if not modified:
-        logger.info('No model modified according to git, exiting.')
-        exit(0)
+    modified = modified_files(git_range, source.local_path, relative=True)
 
-    # obtain list of models to test. `modified` will be a list of *all*
-    # files so we need to extract just the package names since
-    # build_recipes expects globs
-    # TODO - modify this
-    models = list(
-        set(
-            [
-                os.path.dirname(os.path.relpath(f, source.local_path))
-                for f in modified
-            ]
-        )
-    )
-    logger.info('Models modified according to git: {}'.
-                format(' '.join(models)))
-    return list(set(all_models).intersection(set(models)))
+    def dependency_modified(model_name, modified_files):
+        """Test if the dependency was modified
+        """
+        def contains_any(x, file_list):
+            """Test if the directory x contains any files from file_list
+            """
+            for y in file_list:
+                if y.startswith(x + os.sep) or x == y:
+                    return True
+            return False
+        # get all the dependency directories
+        dep_dirs = list_softlink_dependencies(os.path.join(source.local_path,
+                                                           model_name),
+                                              source.local_path)
+
+        for model_dir in [model_name] + list(dep_dirs):
+            if contains_any(model_dir, modified_files):
+                return True
+        return False
+
+    return [x for x in all_models if dependency_modified(x, modified)]
 
 
 def rm_env(env_name):
+    """Alias for remove_env
+    """
     if env_exists(env_name):
         logger.info("Removing environment: {0}".
                     format(env_name))
@@ -252,6 +235,8 @@ def cli_test_source(command, raw_args):
                         "master HEAD" to check commits in HEAD vs master, or just "HEAD" to
                         include uncommitted changes). All models modified within this range will
                         be tested.''')
+    parser.add_argument('-n', '--dry_run', action='store_true',
+                        help='Dont run model testing')
     parser.add_argument('-b', '--batch_size', default=4, type=int,
                         help='Batch size')
     parser.add_argument('-x', '--exitfirst', action='store_true',
@@ -265,27 +250,45 @@ def cli_test_source(command, raw_args):
     # --------------------------------------------
     source = kipoi.get_source(args.source)
     all_models = all_models_to_test(source)
+    if len(all_models) == 0:
+        logger.info("No models found in the source")
+        sys.exit(1)
     if args.all:
         test_models = all_models
+        logger.info('Testing all models:\n- {0}'.
+                    format('\n- '.join(test_models)))
     else:
         test_models = restrict_models_to_test(all_models,
                                               source,
                                               args.git_range)
+        if len(test_models) == 0:
+            logger.info("No model modified according to git, exiting.")
+            sys.exit(0)
+        logger.info('{0}/{1} models modified according to git:\n- {2}'.
+                    format(len(test_models), len(all_models),
+                           '\n- '.join(test_models)))
+
     # Parse the repo config
     cfg_path = get_file_path(source.local_path, "config",
                              extensions=[".yml", ".yaml"],
                              raise_err=False)
     if cfg_path is not None:
-        cfg = kipoi.components.SourceConfig.load(cfg_path)
+        cfg = kipoi.components.SourceConfig.load(cfg_path, append_path=False)
+        logger.info("Found config {0}:\n{1}".format(cfg_path, cfg))
     else:
         cfg = None
 
+    if args.dry_run:
+        logger.info("-n/--dry_run enabled. Skipping model testing and exiting.")
+        sys.exit(0)
+
+    logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
     for i in range(len(test_models)):
         m = test_models[i]
         print('-' * 20)
-        print("{0}/{1} - model: {2}".format(i,
-                                            len(test_models),
+        print("{0}/{1} - model: {2}".format(i + 1,
+                                            len(test_models) + 1,
                                             m))
         print('-' * 20)
         try:
@@ -305,10 +308,10 @@ def cli_test_source(command, raw_args):
                 rm_env(env_name)
     print('-' * 40)
     if failed_models:
-        logger.error("{0}/{1} tests failed for models: {2}".
+        logger.error("{0}/{1} tests failed for models:\n- {2}".
                      format(len(failed_models),
                             len(test_models),
-                            ",".join(failed_models)))
+                            "\n- ".join(failed_models)))
         sys.exit(1)
 
     logger.info('All tests ({0}) passed'.format(len(test_models)))

@@ -47,6 +47,17 @@ def load_component_descr(component_path, which="model"):
             raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
+def list_softlink_dependencies(component_dir, source_path):
+    """List dependencies of a directory
+
+    Returns a set
+    """
+    return {relative_path(f, source_path) if os.path.isdir(f)
+            else relative_path(os.path.dirname(f), source_path)
+            for f in list_softlink_realpaths(component_dir)
+            if is_subdir(f, source_path)}
+
+
 def is_subdir(path, directory):
     """Check if the path is in a particular directory
     """
@@ -317,10 +328,7 @@ class GitLFSSource(Source):
         component_dir = os.path.join(self.local_path, component)
 
         # get a list of directories to source (relative to the local_path)
-        softlink_dirs = list({relative_path(f, self.local_path) if os.path.isdir(f)
-                              else relative_path(os.path.dirname(f), self.local_path)
-                              for f in list_softlink_realpaths(component_dir)
-                              if is_subdir(f, self.local_path)})
+        softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
 
         cpath = get_component_file(component_dir, which)
         if not os.path.exists(cpath):
