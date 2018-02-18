@@ -2,6 +2,7 @@
 """
 import argparse
 from colorlog import escape_codes, default_log_colors
+import re
 import sys
 import os
 import subprocess as sp
@@ -241,6 +242,8 @@ def cli_test_source(command, raw_args):
                         help='Batch size')
     parser.add_argument('-x', '--exitfirst', action='store_true',
                         help='exit instantly on first error or failed test.')
+    parser.add_argument('-k', default=None,
+                        help='only run tests which match the given substring expression')
     parser.add_argument('-c', '--clean_env', action='store_true',
                         help='clean the environment after running.')
     parser.add_argument('--all', action='store_true',
@@ -250,6 +253,9 @@ def cli_test_source(command, raw_args):
     # --------------------------------------------
     source = kipoi.get_source(args.source)
     all_models = all_models_to_test(source)
+    if args.k is not None:
+        all_models = [x for x in all_models if re.match(args.k, x)]
+
     if len(all_models) == 0:
         logger.info("No models found in the source")
         sys.exit(1)
@@ -288,7 +294,7 @@ def cli_test_source(command, raw_args):
         m = test_models[i]
         print('-' * 20)
         print("{0}/{1} - model: {2}".format(i + 1,
-                                            len(test_models) + 1,
+                                            len(test_models),
                                             m))
         print('-' * 20)
         try:
