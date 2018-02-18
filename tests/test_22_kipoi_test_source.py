@@ -1,7 +1,7 @@
 """test: kipoi test-source
 """
 
-from kipoi.cli.test_source import modified_files
+from kipoi.cli.source_test import modified_files
 from kipoi.remote import list_softlink_dependencies
 import kipoi
 import os
