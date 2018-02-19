@@ -25,10 +25,15 @@ jobs:
           command: |
             kipoi ls
 
+      # run tests!
       - run:
           name: run tests
           command: |
-            py.test tests/ -v -n 4
+            mkdir test-reports
+            py.test --cov=kipoi/ tests/ -n 4 --junitxml=test-reports/junit.xml
+
+      - store_test_results:
+          path: test-reports
 
       - store_artifacts:
           path: test-reports
@@ -62,13 +67,15 @@ jobs:
       - run:
           name: run tests
           command: |
-            py.test --cov=kipoi/ tests/ -n 4
+            mkdir test-reports
+            py.test --cov=kipoi/ tests/ -n 4 --junitxml=test-reports/junit.xml
+
+      - store_test_results:
+          path: test-reports
 
       - store_artifacts:
           path: test-reports
           destination: test-reports
-
-          
           
 workflows:
   version: 2
