@@ -13,6 +13,8 @@ from . import remote
 from . import model
 from . import data_utils
 from . import data
+from . import conda
+from . import components
 
 # shortcuts
 from .model import get_model

@@ -1,9 +1,20 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 from abc import abstractmethod
 
 import numpy as np
 from collections import OrderedDict
 import re
+import kipoi
 from kipoi.components import PostProcType
+import logging
+
+import kipoi
+from kipoi.postprocessing.variant_effects import _modify_bases, _modify_single_string_base, rc_str
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
@@ -28,7 +39,7 @@ def prep_str(s):
     return s
 
 
-def select_from_model_inputs(obj, rows, nrows_expected=None):
+def select_from_dl_batch(obj, rows, nrows_expected=None):
     def subset(in_obj):
         if nrows_expected is not None:
             if not in_obj.shape[0] == nrows_expected:
@@ -88,6 +99,9 @@ class ReshapeDna(object):
         if (len(dummy_dimensions) == 0) and (one_hot_dim == 1) and (seq_len_dim == 0):
             self.reshape_needed = False
 
+        # Set default that even for a single sample a batch axis is prepended
+        self.single_sample_no_batch_axis = False
+
     def get_seq_len(self):
         return self.seq_len
 
@@ -97,10 +111,22 @@ class ReshapeDna(object):
         :return:
         """
         #
+        # if there is no "batch" axis prepended to the array then add it, but remember
+        # that as a rule for `from_standard`
+        if (len(in_array.shape) - len(self.in_shape)) == 0:
+            in_array = in_array[None, ...]
+            logger.warn("Prepending missing batch axis to input shape %s." % str(self.in_shape))
+            self.single_sample_no_batch_axis = True
+
+        # if there is a "batch" axis prepended to the array then remember that as a rule
+        elif in_array.shape[0] == 1:
+            self.single_sample_no_batch_axis = False
+
         #  is there an actual sequence sample axis?
         additional_axis = len(in_array.shape) - len(self.in_shape)
         if (additional_axis != 1) or (in_array.shape[1:] != tuple(self.in_shape)):
-            raise Exception("Expecting the 0th dimension to be the sequence samples or general array mismatch!")
+            raise Exception("General array mismatch! Given: %s Expecting: %s" % (str(in_array.shape),
+                                                                                 "([N]," + str(self.in_shape)[1:]))
         #
         if not self.reshape_needed:
             return in_array
@@ -125,6 +151,8 @@ class ReshapeDna(object):
 
     def from_standard(self, in_array):
         if not self.reshape_needed:
+            if (in_array.shape[0] == 1) and self.single_sample_no_batch_axis:
+                in_array = in_array[0, ...]
             return in_array
         #
         assumed_additional_axis = 1
@@ -140,6 +168,9 @@ class ReshapeDna(object):
         if len(self.dummy_dimensions) != 0:
             for d in self.dummy_dimensions:
                 in_array = np.expand_dims(in_array, d + assumed_additional_axis)
+        # If single sample and the convention seems to require no prepended batch axis then remove it.
+        if (in_array.shape[0] == 1) and self.single_sample_no_batch_axis:
+            in_array = in_array[0, ...]
         return in_array
 
 
@@ -249,7 +280,6 @@ def concat_columns(df, sep="|"):
             column = column.str.cat(vec, sep=sep)
     return column
 
-
 # TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
 def convert_record(input_record, pyvcf_reader):
     """
@@ -354,15 +384,31 @@ class ModelInfoExtractor(object):
         self.model = model_obj
         self.dataloader = dataloader_obj
         self.seq_fields = _get_seq_fields(model_obj)
-        seq_shapes = set([_get_seq_shape(dataloader_obj, seq_field) for seq_field in self.seq_fields])
+        # Here we really have to go and collect all the possible different input DNA sequences and prepare the correct
+        # transformation to standard
 
-        if len(seq_shapes) > 1:
-            raise Exception("DNA sequence output shapes must agree for fields: %s" % str(self.seq_fields))
+        # Collect the different sequence inputs and the corresponfing ranges objects:
+        self.seq_input_metadata = {}
+        self.seq_input_mutator = {}
+        self.seq_input_array_trafo = {}
+        for seq_field in self.seq_fields:
+            special_type = _get_specialtype(dataloader_obj, seq_field)
 
-        self.seq_shape = list(seq_shapes)[0]
+            if special_type is None:
+                logger.warn("special_type of sequence field '%s' is not set,"
+                            "assuming 1-hot encoded DNA sequence." % str(seq_field))
 
-        self.dna_seq_trafo = ReshapeDna(self.seq_shape)
-        self.seq_length = self.dna_seq_trafo.get_seq_len()
+            if (special_type is None) or (special_type == kipoi.components.ArraySpecialType.DNASeq):
+                dna_seq_trafo = ReshapeDna(_get_seq_shape(dataloader_obj, seq_field))
+                self.seq_input_mutator[seq_field] = OneHotSequenceMutator(dna_seq_trafo)
+                self.seq_input_array_trafo[seq_field] = dna_seq_trafo
+
+            if special_type == kipoi.components.ArraySpecialType.DNAStringSeq:
+                dna_seq_trafo = ReshapeDnaString(_get_seq_shape(dataloader_obj, seq_field))
+                self.seq_input_mutator[seq_field] = DNAStringSequenceMutator(dna_seq_trafo)
+                self.seq_input_array_trafo[seq_field] = dna_seq_trafo
+
+            self.seq_input_metadata[seq_field] = _get_metadata_name(dataloader_obj, seq_field)
 
         # If then where do I have to put my bed file in the command?
         self.exec_files_bed_keys = _get_dl_bed_fields(dataloader_obj)
@@ -371,6 +417,21 @@ class ModelInfoExtractor(object):
         # If there is a field for putting the a postprocessing bed file, then generate the bed file.
         if (self.exec_files_bed_keys is not None) and (len(self.exec_files_bed_keys) != 0):
             self.requires_region_definition = True
+
+        self.seq_length = None
+        if self.requires_region_definition:
+            # seems to require a bed file definition, so try to assign a sequence length:
+            seq_lens = [self.seq_input_array_trafo[seq_field].get_seq_len() for seq_field in self.seq_input_array_trafo]
+            seq_len = list(set([el for el in seq_lens if el is not None]))
+            if len(seq_len) == 0:
+                raise Exception("dataloader.yaml defines postprocessing > args > bed_input, but in model.yaml none of "
+                                "the postprocessing > args > seq_input entries defines a sequence length within their "
+                                "shape.")
+            elif len(seq_len) > 1:
+                raise Exception("dataloader.yaml defines postprocessing > args > bed_input, but in model.yaml sequence"
+                                "lengths differ in the postprocessing > args > seq_input entries which is inferred "
+                                "from the shapes.")
+            self.seq_length = seq_len[0]
 
         self.model_out_annotation = None
 
@@ -389,7 +450,19 @@ class ModelInfoExtractor(object):
             self.model_out_annotation = np.array([str(i) for i in range(model_obj.schema.targets.shape[0])])
 
         # Check if model supports simple rc-testing of input sequences:
-        self.supports_simple_rc = _get_model_supports_simple_rc(model_obj)
+        self.use_seq_only_rc = _get_model_use_seq_only_rc(model_obj)
+
+    def get_mutatable_inputs(self):
+        return list(self.seq_input_mutator.keys())
+
+    def get_seq_mutator(self, seq_field):
+        return self.seq_input_mutator[seq_field]
+
+    def get_seq_metadata(self, seq_field):
+        return self.seq_input_metadata[seq_field]
+
+    def get_all_metadata_fields(self):
+        return list(set(self.seq_input_metadata.values()))
 
     def get_seq_len(self):
         return self.seq_length
@@ -405,32 +478,45 @@ class ModelInfoExtractor(object):
         return self.model_out_annotation
 
 
-def _get_seq_fields(model):
-    seq_dict = None
-    for pp_obj in model.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            seq_dict = pp_obj.args
-            break
-    if seq_dict is None:
-        raise Exception("Model does not support var_effect_prediction")
-    return seq_dict['seq_input']
-
-def _get_model_supports_simple_rc(model):
-    search_key = 'supports_simple_rc'
-    pp_instructions = False
-    for pp_obj in model.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            pp_instructions = pp_obj.args
-            break
-    if pp_instructions is None:
-        return False
-    if search_key not in pp_instructions:
-        return False
-    rco = pp_instructions[search_key]
-    if isinstance(rco, list) and (len(rco) == 1) and (isinstance(rco[0], bool)):
-        return rco[0]
+def _get_metadata_name(dataloader, seq_key):
+    if isinstance(dataloader.output_schema.inputs, dict):
+        ranges_slots = dataloader.output_schema.inputs[seq_key].associated_metadata
+    elif isinstance(dataloader.output_schema.inputs, list):
+        ranges_slots = [x.associated_metadata for x in dataloader.output_schema.inputs if x.name == seq_key][0]
     else:
-        raise Exception("Error in model.yaml: Value in postprocessing > variant_effects > supports_simple_rc invalid")
+        ranges_slots = dataloader.output_schema.inputs.associated_metadata
+    # check the ranges slots
+    if len(ranges_slots) != 1:
+        raise ValueError(
+            "Exactly one metadata ranges field must defined for a sequence that has to be used for effect precition.")
+    return ranges_slots[0]
+
+
+def _get_specialtype(dataloader, seq_field):
+    if isinstance(dataloader.output_schema.inputs, dict):
+        seq_obj = dataloader.output_schema.inputs[seq_field]
+    elif isinstance(dataloader.output_schema.inputs, list):
+        seq_obj = [x for x in dataloader.output_schema.inputs if x.name == seq_field][0]
+    else:
+        seq_obj = dataloader.output_schema.inputs
+    if hasattr(seq_obj, "special_type"):
+        return seq_obj.special_type
+    else:
+        return None
+
+
+def _get_seq_fields(model):
+    if model.postprocessing.variant_effects is None:
+        raise Exception("Model does not support var_effect_prediction")
+    else:
+        return model.postprocessing.variant_effects.seq_input
+
+
+def _get_model_use_seq_only_rc(model):
+    if model.postprocessing.variant_effects is None:
+        return False
+    else:
+        return model.postprocessing.variant_effects.use_rc
 
 
 def _get_seq_shape(dataloader, seq_field):
@@ -444,12 +530,158 @@ def _get_seq_shape(dataloader, seq_field):
 
 
 def _get_dl_bed_fields(dataloader):
-    seq_dict = None
-    for pp_obj in dataloader.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            seq_dict = pp_obj.args
-            break
-    if seq_dict is None:
-        #raise Exception("Dataloader does not support any postprocessing")
+    if dataloader.postprocessing.variant_effects is None:
         return None
-    return seq_dict['bed_input']
+    else:
+        return dataloader.postprocessing.variant_effects.bed_input
+
+
+class ReshapeDnaString(object):
+    def __init__(self, input_shape):
+        if len(input_shape) == 0:
+            self.format_style = "string"
+            self.seq_len = None
+        elif len(input_shape) == 1 and (input_shape[0] == 1):
+            self.format_style = "string_in_vect"
+            self.seq_len = None
+        elif len(input_shape) == 1 and (input_shape[0] > 1):
+            self.format_style = "string_as_vect"
+            self.seq_len = input_shape[0]
+        else:
+            raise Exception("String output definition not recognized in array string converter!")
+        self.single_sample_no_batch_axis = False
+        self.input_shape = input_shape
+
+    def get_seq_len(self):
+        return self.seq_len
+
+    def to_standard(self, arr):
+        if len(arr.shape) == len(self.input_shape):
+            arr = arr[None, ...]
+            logger.warn("Prepending missing batch axis to input shape %s." % str(self.input_shape))
+            self.single_sample_no_batch_axis = True
+        elif arr.shape[0] == 1:
+            self.single_sample_no_batch_axis = False
+        if self.format_style == "string":
+            return [str(el) for el in arr]
+        elif self.format_style == "string_in_vect":
+            return [str(el[0]) for el in arr]
+        elif self.format_style == "string_as_vect":
+            return ["".join(el.tolist()) for el in arr]
+
+    def from_standard(self, arr):
+        if self.format_style == "string":
+            arr = np.array(arr)
+        elif self.format_style == "string_in_vect":
+            arr = np.array(arr)[:, None]
+        elif self.format_style == "string_as_vect":
+            arr = np.array([list(el) for el in arr])
+        if (arr.shape[0] == 1) and self.single_sample_no_batch_axis:
+            arr = arr[0, ...]
+        return arr
+
+
+class SequenceMutator(object):
+    def __call__(self, input_set, preproc_conv, allele, s_dir):
+        """
+        Process sequence object `input_set` according to information given in the `preproc_conv` dataframe of which
+        the column with name set in argument `allele` is used. `s_dir` defines the output sequence direction: 'fwd'
+        or 'rc'. The DNA sequence will then be mutated accordingly.
+        """
+        raise NotImplementedError("This functionality has to be implemented in the specific subclasses")
+
+
+class OneHotSequenceMutator(SequenceMutator):
+    def __init__(self, array_trafo=None):
+        # from the model info object guess
+        self.array_trafo = array_trafo
+
+    def __call__(self, input_set, preproc_conv, allele, s_dir):
+        """
+        Process sequence object `input_set` according to information given in the `preproc_conv` dataframe of which
+        the column with name set in argument `allele` is used. `s_dir` defines the output sequence direction: 'fwd'
+        or 'rc'. The DNA sequence will then be mutated accordingly. `array_trafo` objects are used to bring non-
+        (N,seq_len, 4) arrays into the that shape and convert it back.
+        """
+        # make sure the sequence objects have the correct length (acording to the ranges specifications)
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        # only keep lines that
+        preproc_conv_mutate = preproc_conv.query("do_mutate")
+        exp_seq_lens = (preproc_conv_mutate["end"] - preproc_conv_mutate["start"] + 1).unique()
+        assert exp_seq_lens.shape[0] == 1
+        assert input_set.shape[1] == exp_seq_lens[0]
+        assert preproc_conv_mutate["strand"].isin(["+", "-", "*", "."]).all()
+        # Modify bases according to allele
+        get_warnings = allele == "ref"
+        ref_warnings = _modify_bases(seq_obj=input_set,
+                                     lines=preproc_conv_mutate["pp_line"].values,
+                                     pos=preproc_conv_mutate["varpos_rel"].values.astype(np.int),
+                                     base=preproc_conv_mutate[allele].str.upper().values,
+                                     is_rc=preproc_conv_mutate["strand"].values == "-",
+                                     return_ref_warning=get_warnings)
+        for ppl in ref_warnings:
+            pcl = np.where(preproc_conv["pp_line"].values == ppl)[0][0]
+            vstr = "".join([['A', 'C', 'G', 'T', 'N'][x.argmax() if (x.sum() != 0) and
+                                                      np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in input_set[pcl, ...]])
+            logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
+                        "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), vstr))
+        # generate reverse complement if needed
+        if s_dir == "rc":
+            input_set = input_set[:, ::-1, ::-1]
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.from_standard(input_set)
+        return input_set
+
+
+class DNAStringSequenceMutator(SequenceMutator):
+    def __init__(self, array_trafo=None):
+        self.array_trafo = array_trafo
+
+    def __call__(self, input_set, preproc_conv, allele, s_dir):
+        """
+        Process sequence object `input_set` according to information given in the `preproc_conv` dataframe of which
+        the column with name set in argument `allele` is used. `s_dir` defines the output sequence direction: 'fwd'
+        or 'rc'. The DNA sequence will then be mutated accordingly.
+
+        The input sequence object must be according to the definition in the dataloader.
+        """
+        # input_set has to be <list(<str>)> which is achieved by the `array_trafo`.
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        seq_lens = np.unique([len(el) for el in input_set])
+        exp_seq_lens = (preproc_conv["end"] - preproc_conv["start"] + 1).unique()
+        exp_seq_lens = exp_seq_lens[~np.isnan(exp_seq_lens)]
+        assert seq_lens.shape[0] == 1
+        assert exp_seq_lens.shape[0] == 1
+        assert seq_lens[0] == exp_seq_lens[0]
+        strands = preproc_conv.query("do_mutate")["strand"]
+        assert strands.isin(["+", "-", "*", "."]).all()
+        # Modify bases according to allele.
+        output_set = []
+        for pcl, l in enumerate(preproc_conv["pp_line"].values):
+            if preproc_conv["do_mutate"].values[pcl]:
+                output_set.append(_modify_single_string_base(input_set[l],
+                                                             pos=int(preproc_conv["varpos_rel"].values[pcl]),
+                                                             base=preproc_conv[allele].values[pcl],
+                                                             is_rc=preproc_conv["strand"].values[pcl] == "-"))
+                if allele == "ref":
+                    is_rc = preproc_conv["strand"].values[pcl] == "-"
+                    base = preproc_conv[allele].values[pcl]
+                    vstr = input_set[l]
+                    if is_rc:
+                        vstr = rc_str(input_set[l])
+                    if vstr[int(preproc_conv["varpos_rel"].values[pcl])] != base:
+                        logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
+                                    "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), str(input_set[l])))
+            else:
+                output_set.append(input_set[l])
+        # subset to the lines that have been identified
+        if len(output_set) != preproc_conv.shape[0]:
+            raise Exception("Mismatch between requested and generated DNA sequences.")
+        # generate reverse complement if needed
+        if s_dir == "rc":
+            output_set = [rc_str(el) for el in output_set]
+        if self.array_trafo is not None:
+            output_set = self.array_trafo.from_standard(output_set)
+        return output_set

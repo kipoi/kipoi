@@ -1,99 +1,39 @@
 """Defines the base classes
 """
-import os
-import related
-import numpy as np
-import enum
+from __future__ import absolute_import
+from __future__ import print_function
+
 import collections
-from collections import OrderedDict
-from attr._make import fields
-import kipoi.conda as kconda
-from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
-from kipoi.metadata import GenomicRanges
-from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
-import six
 import logging
+import os
+from collections import OrderedDict
+
+import enum
+import numpy as np
+import related
+import six
+from attr._make import fields
+
+import kipoi.conda as kconda
+from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
+from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi.metadata import GenomicRanges
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
+from kipoi import postprocessing
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-# --------------------------------------------
-# TODO additionally validate the special type properties - ???
-
-# Abstract classes & Mixins for models defined using related
-
-
-class RelatedConfigMixin(object):
-    """Provides from_config and get_config to @related.immutable decorated classes
-    """
-    @classmethod
-    def from_config(cls, cfg):
-        # TODO - create a nicer error message - see above
-                # Verbose unrecognized field
-        # for k in kwargs.keys():
-        #     if k not in cls.REQ_FIELDS + cls.OPT_FIELDS:
-        #         raise ValueError("Unrecognized field in info: '{f}'. Avaiable fields are: {l}".
-        #                          format(f=k, l=cls.REQ_FIELDS))
-
-        # # Verbose undefined field
-        # undefined_set = set(cls.REQ_FIELDS) - kwargs.keys()
-        # if undefined_set:
-        #     raise ValueError("The following arguments were not specified: {0}. Please specify them.".
-        #                      format(undefined_set))
-        attrs = fields(cls)
-        cls_keys = {a.metadata.get('key') or a.name for a in attrs}
-        cfg_keys = set(cfg.keys())
-        extra_keys = cfg_keys - cls_keys
-        if len(extra_keys) > 0:
-            raise ValueError("Unrecognized fields: {0}. Available fields are {1}".format(extra_keys, cls_keys))
-
-        return related.to_model(cls, cfg)
-
-    def get_config(self):
-        return related.to_dict(self)
-
-    def get_config_as_yaml(self):
-        generated_yaml = related.to_yaml(self,
-                                         suppress_empty_values=True,
-                                         suppress_map_key_values=True)
-        return generated_yaml
-
-
-class RelatedLoadSaveMixin(RelatedConfigMixin):
-    """Adds load and dump on top of RelatedConfigMixin for reading and writing from a yaml file
-    """
-
-    @classmethod
-    def load(cls, path, append_path=True):
-        """Loads model from a yaml file
-
-        Append_path: appends path to the model append_path
-        """
-        original_yaml = open(path).read().strip()
-        parsed_dict = related.from_yaml(original_yaml)
-        if append_path and "path" not in parsed_dict:
-            parsed_dict["path"] = path
-        return cls.from_config(parsed_dict)
-
-    def dump(self, path):
-        """Dump the object to a yaml file
-        """
-        generated_yaml = related.to_yaml(self,
-                                         suppress_empty_values=True,
-                                         suppress_map_key_values=True)  # .strip()
-        with open(path, "w") as f:
-            f.write(generated_yaml)
-
 
 # --------------------------------------------
 # Common components (model and dataloader)
 
-@related.immutable
+@related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
     github = related.StringField(required=False)
     email = related.StringField(required=False)
 
 
-@related.immutable
+@related.immutable(strict=True)
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
@@ -113,7 +53,7 @@ class Info(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)
 
 
-@related.immutable
+@related.immutable(strict=True)
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
@@ -125,12 +65,13 @@ class ModelInfo(Info):
 @enum.unique
 class ArraySpecialType(enum.Enum):
     DNASeq = "DNASeq"
+    DNAStringSeq = "DNAStringSeq"
     BIGWIG = "bigwig"
     VPLOT = "v-plot"
     Array = "Array"
 
 
-@related.immutable
+@related.immutable(strict=True)
 class ArraySchema(RelatedConfigMixin):
     """
 
@@ -260,7 +201,7 @@ class ArraySchema(RelatedConfigMixin):
 # --------------------------------------------
 # Model specific components
 
-@related.immutable
+@related.immutable(strict=True)
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
@@ -347,7 +288,7 @@ class MetadataType(enum.Enum):
     # TODO - add bed3 or bed6 ranges
 
 
-@related.immutable
+@related.immutable(strict=True)
 class MetadataStruct(RelatedConfigMixin):
 
     doc = related.StringField()
@@ -409,7 +350,7 @@ class MetadataStruct(RelatedConfigMixin):
         return True
 
 
-@related.immutable
+@related.immutable(strict=True)
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
 
@@ -520,23 +461,17 @@ class DataLoaderSchema(RelatedConfigMixin):
         return True
 
 
-@enum.unique
-class PostProcType(enum.Enum):
-    VAR_EFFECT_PREDICTION = "variant_effects"
+@related.immutable(strict=True)
+class PostProcDataLoaderStruct(RelatedConfigMixin):
+    variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
 
 
-@related.immutable
-class PostProcSeqinput(object):
-    seq_input = related.SequenceField(str)
+@related.immutable(strict=True)
+class PostProcModelStruct(RelatedConfigMixin):
+    variant_effects = related.ChildField(postprocessing.components.VarEffectModelArgs, required=False)
 
 
-@related.immutable
-class PostProcStruct(RelatedConfigMixin):
-    type = related.ChildField(PostProcType)  # enum
-    args = related.ChildField(dict)  # contains
-
-
-@related.immutable
+@related.immutable(strict=True)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField()
@@ -547,7 +482,7 @@ class DataLoaderArgument(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
 
 
-@related.immutable
+@related.immutable(strict=True)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
@@ -666,7 +601,7 @@ class Dependencies(RelatedConfigMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.immutable
+@related.immutable(strict=True)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -675,7 +610,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
+    postprocessing = related.ChildField(PostProcModelStruct, default=PostProcModelStruct(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
@@ -689,7 +624,13 @@ def example_kwargs(dl_args):
     return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
-@related.immutable
+def default_kwargs(args):
+    """Return the example kwargs
+    """
+    return {k: v.default for k, v in six.iteritems(args) if v.default is not None}
+
+
+@related.immutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
     """
@@ -700,7 +641,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.SequenceField(PostProcStruct, default=[], required=False)
+    postprocessing = related.ChildField(PostProcDataLoaderStruct,
+                                        default=PostProcDataLoaderStruct(),
+                                        required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)

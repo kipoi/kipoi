@@ -65,6 +65,7 @@ setup(
                  "cyvcf2",
                  "pybedtools",
                  "pysam",  # required by pybedtools
+                 "intervaltree",
                  ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},

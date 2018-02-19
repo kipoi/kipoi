@@ -181,10 +181,10 @@ def test_predict_variants_example(example, tmpdir):
             assert os.path.exists(vcf_tmpfile)
 
             if restricted_bed:
-                #assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+                # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
                 compare_vcfs(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
             else:
-                #assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+                # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
                 compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
 
             if file_format == "hdf5":
