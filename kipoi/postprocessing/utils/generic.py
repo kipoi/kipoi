@@ -12,7 +12,7 @@ from kipoi.postprocessing.variant_effects import _modify_bases, _modify_single_s
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-from kipoi.components import PostProcType, ArraySpecialType
+from kipoi.components import PostProcType, ArraySpecialType, VarEffectRCTypes
 
 
 def ensure_tabixed_vcf(input_fn, is_sorted = False, force_tabix = True):
@@ -35,7 +35,7 @@ def prep_str(s):
     #
     return s
 
-def select_from_model_inputs(obj, rows, nrows_expected=None):
+def select_from_dl_batch(obj, rows, nrows_expected=None):
     def subset(in_obj):
         if nrows_expected is not None:
             if not in_obj.shape[0] == nrows_expected:
@@ -446,7 +446,7 @@ class ModelInfoExtractor(object):
             self.model_out_annotation = np.array([str(i) for i in range(model_obj.schema.targets.shape[0])])
 
         # Check if model supports simple rc-testing of input sequences:
-        self.supports_simple_rc = _get_model_supports_simple_rc(model_obj)
+        self.use_seq_only_rc = _get_model_use_seq_only_rc(model_obj)
 
     def get_mutatable_inputs(self):
         return list(self.seq_input_mutator.keys())
@@ -509,7 +509,7 @@ def _get_seq_fields(model):
         raise Exception("Model does not support var_effect_prediction")
     return seq_dict.seq_input
 
-def _get_model_supports_simple_rc(model):
+def _get_model_use_seq_only_rc(model):
     pp_instructions = False
     for pp_obj in model.postprocessing:
         if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
@@ -518,7 +518,7 @@ def _get_model_supports_simple_rc(model):
     if pp_instructions is None:
         return False
     else:
-        return pp_instructions.supports_simple_rc
+        return pp_instructions.use_rc == VarEffectRCTypes.seq_only
 
 
 def _get_seq_shape(dataloader, seq_field):

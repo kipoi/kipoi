@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-from kipoi.postprocessing.utils.generic import select_from_model_inputs, OutputReshaper, default_vcf_id_gen, ModelInfoExtractor
+from kipoi.postprocessing.utils.generic import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, ModelInfoExtractor
 from kipoi.postprocessing.utils.io import BedWriter
 from kipoi.postprocessing.variant_effects import analyse_model_preds, Logit
 
@@ -110,7 +110,7 @@ def get_genomicranges_line(gr_obj, i):
 
 
 
-def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
+def get_variants_in_regions_search_vcf(dl_batch, seq_to_meta, vcf_fh):
     """
     Function that overlaps metadata ranges with a vcf by merging the regions. When regions are party overlapping then
     a variant will be tagged with all sequence-fields that participated in the merged region, hence not all input
@@ -123,7 +123,7 @@ def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
     meta_to_seq = {v: [k for k in seq_to_meta if seq_to_meta[k] == v] for v in seq_to_meta.values()}
     all_meta_fields = list(set(seq_to_meta.values()))
     #
-    num_samples_in_batch = len(model_input['metadata'][all_meta_fields[0]]["chr"])
+    num_samples_in_batch = len(dl_batch['metadata'][all_meta_fields[0]]["chr"])
     #
     # If we should search for the overlapping VCF lines - for every sample collect all region objects
     # under the assumption that all generated sequences have the same number of samples in a batch:
@@ -131,7 +131,7 @@ def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
         # check is there is more than one metadata_field that is used:
         if len(all_meta_fields) > 1:
             # one region per meta_field
-            regions_by_meta = {k: get_genomicranges_line(model_input['metadata'][k], line_id)
+            regions_by_meta = {k: get_genomicranges_line(dl_batch['metadata'][k], line_id)
                                for k in all_meta_fields}
             # regions_unif: union across all regions. meta_field_unif_r: meta_fields, has the length of regions_unif
             regions_unif, meta_field_unif_r = merge_intervals(regions_by_meta)
@@ -139,7 +139,7 @@ def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
             # Only one meta_field and only one line hence:
             meta_field_unif_r = [all_meta_fields]
             # Only one region:
-            regions_unif = get_genomicranges_line(model_input['metadata'][all_meta_fields[0]], line_id)
+            regions_unif = get_genomicranges_line(dl_batch['metadata'][all_meta_fields[0]], line_id)
         #
         vcf_records_here, process_lines_rel = _overlap_vcf_region(vcf_fh, regions_unif)
         #
@@ -153,8 +153,7 @@ def search_vcf_in_regions(model_input, seq_to_meta, vcf_fh):
     return vcf_records, process_lines, process_seq_fields
 
 
-
-def by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, vcf_id_generator_fn):
+def get_variants_in_regions_sequential_vcf(dl_batch, seq_to_meta, vcf_fh, vcf_id_generator_fn):
     vcf_records = []  # list of vcf records to use
     process_ids = []  # id from genomic ranges metadata
     process_lines = []  # sample id within batch
@@ -165,7 +164,7 @@ def by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, vcf_id_generator_fn):
 
     ranges = None
     for meta_field in all_meta_fields:
-        rng = model_input['metadata'][meta_field]
+        rng = dl_batch['metadata'][meta_field]
         if ranges is None:
             ranges = rng
         else:
@@ -193,7 +192,7 @@ def by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, vcf_id_generator_fn):
 
 
 
-def get_preproc_conv(seq_key, ranges_input_obj, vcf_records, process_lines, process_ids, process_seq_fields):
+def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, process_ids, process_seq_fields):
     preproc_conv = {"pp_line": [], "varpos_rel": [], "ref": [], "alt": [], "start": [], "end": [], "id": [],
                     "do_mutate": []}
 
@@ -244,125 +243,133 @@ def get_preproc_conv(seq_key, ranges_input_obj, vcf_records, process_lines, proc
     return preproc_conv_df
 
 
-class GenerateSeqSets(object):
+
+class SampleCounter():
     def __init__(self):
         self.sample_it_counter = 0
 
-    def __call__(self, dataloader, model_input, vcf_fh, vcf_id_generator_fn, seq_to_mut, seq_to_meta,
-                       vcf_search_regions = False, generate_rc = True):
+    def get_ids(self, number = 1):
+        ret = [str(i) for i in range(self.sample_it_counter, self.sample_it_counter+number)]
+        self.sample_it_counter += number
+        return ret
+
+
+def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, seq_to_mut, seq_to_meta,
+                       sample_counter, vcf_search_regions = False, generate_rc = True):
+    """
+        Perform in-silico mutagenesis on what the dataloader has returned.  
+
+        This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
+        return a dictionary of which the keys are compliant with evaluation_function arguments
+
+        DataLoaders that implement fwd and rc sequence output *__at once__* are not treated in any special way.
+
+        Arguments:
+        `dataloader`: dataloader object
+        `dl_batch`: model input as generated by the datalaoder
+        `vcf_fh`: cyvcf2 file handle
+        `vcf_id_generator_fn`: function that generates ids for VCF records
+        `seq_to_mut`: dictionary that contains DNAMutator classes with seq_fields as keys
+        `seq_to_meta`: dictionary that contains Metadata key names with seq_fields as keys
+        `vcf_search_regions`: if `False` assume that the regions are labelled and only test variants/region combinations for
+        which the label fits. If `True` find all variants overlapping with all regions and test all.
+        `generate_rc`: generate also reverse complement sequences. Only makes sense if supported by model.
         """
-            Perform in-silico mutagenesis on what the dataloader has returned.  
 
-            This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
-            return a dictionary of which the keys are compliant with evaluation_function arguments
+    all_meta_fields = list(set(seq_to_meta.values()))
 
-            DataLoaders that implement fwd and rc sequence output *__at once__* are not treated in any special way.
+    num_samples_in_batch = len(dl_batch['metadata'][all_meta_fields[0]]["chr"])
 
-            Arguments:
-            `dataloader`: dataloader object
-            `model_input`: model input as generated by the datalaoder
-            `vcf_fh`: cyvcf2 file handle
-            `vcf_id_generator_fn`: function that generates ids for VCF records
-            `seq_to_mut`: dictionary that contains DNAMutator classes with seq_fields as keys
-            `seq_to_meta`: dictionary that contains Metadata key names with seq_fields as keys
-            `vcf_search_regions`: if `False` assume that the regions are labelled and only test variants/region combinations for
-            which the label fits. If `True` find all variants overlapping with all regions and test all.
-            `generate_rc`: generate also reverse complement sequences. Only makes sense if supported by model.
-            """
+    metadata_ids = sample_counter.get_ids(num_samples_in_batch)
 
-        all_meta_fields = list(set(seq_to_meta.values()))
+    if "_id" in  dl_batch['metadata']:
+        metadata_ids =  dl_batch['metadata']['id']
+        assert num_samples_in_batch == len(metadata_ids)
 
-        num_samples_in_batch = len(model_input['metadata'][all_meta_fields[0]]["chr"])
 
-        if "_id" in  model_input['metadata']:
-            metadata_ids =  model_input['metadata']['id']
-            assert num_samples_in_batch == len(metadata_ids)
-        else:
-            metadata_ids = [str(i) for i in range(self.sample_it_counter, self.sample_it_counter+num_samples_in_batch)]
 
-        self.sample_it_counter += num_samples_in_batch
+    # now get the right region from the vcf:
+    # list of vcf records to use: vcf_records
+    process_ids = None  # id from genomic ranges metadata: process_lines
+    # sample id within batch: process_lines
+    # sequence fields that should be mutated: process_seq_fields
 
-        # now get the right region from the vcf:
-        # list of vcf records to use: vcf_records
-        process_ids = None  # id from genomic ranges metadata: process_lines
-        # sample id within batch: process_lines
-        # sequence fields that should be mutated: process_seq_fields
+    if vcf_search_regions:
+        vcf_records, process_lines, process_seq_fields = get_variants_in_regions_search_vcf(dl_batch, seq_to_meta, vcf_fh)
+    else:
+        # vcf_search_regions == False means: rely completely on the variant id
+        # so for every sample assert that all metadata ranges ids agree and then find the entry.
+        vcf_records, process_lines, process_seq_fields, process_ids = get_variants_in_regions_sequential_vcf(dl_batch, seq_to_meta,
+                                                                                                             vcf_fh,
+                                                                                                             vcf_id_generator_fn)
 
-        if vcf_search_regions:
-            vcf_records, process_lines, process_seq_fields = search_vcf_in_regions(model_input, seq_to_meta, vcf_fh)
-        else:
-            # vcf_search_regions == False means: rely completely on the variant id
-            # so for every sample assert that all metadata ranges ids agree and then find the entry.
-            vcf_records, process_lines, process_seq_fields, process_ids = by_id_vcf_in_regions(model_input, seq_to_meta,
-                                                                                               vcf_fh,
-                                                                                               vcf_id_generator_fn)
+    # short-cut if no sequences are left
+    if len(process_lines) == 0:
+        return None
 
-        # short-cut if no sequences are left
-        if len(process_lines) == 0:
-            return None
+    if process_ids is None:
+        process_ids = []
+        for line_id in process_lines:
+            process_ids.append(metadata_ids[line_id])
 
-        if process_ids is None:
-            process_ids = []
-            for line_id in process_lines:
-                process_ids.append(metadata_ids[line_id])
+    # Generate 4 copies of the input set. subset datapoints if needed.
+    input_set = {}
+    seq_dirs = ["fwd"]
+    if generate_rc:
+        seq_dirs = ["fwd", "rc"]
+    for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
+        k = "%s_%s" % (s_dir, allele)
+        ds = dl_batch['inputs']
+        all_lines = list(range(num_samples_in_batch))
+        if process_lines != all_lines:
+            # subset or rearrange elements
+            ds = select_from_dl_batch(dl_batch['inputs'], process_lines, num_samples_in_batch)
+        input_set[k] = copy.deepcopy(ds)
 
-        # Generate 4 copies of the input set. subset datapoints if needed.
-        input_set = {}
-        seq_dirs = ["fwd"]
-        if generate_rc:
-            seq_dirs = ["fwd", "rc"]
+    # input_set matrices now are in the order required for mutation
+
+    all_mut_seq_keys = list(set(itertools.chain.from_iterable(process_seq_fields)))
+
+    # Start from the sequence inputs mentioned in the model.yaml
+    for seq_key in all_mut_seq_keys:
+        ranges_input_obj = dl_batch['metadata'][seq_to_meta[seq_key]]
+        #
+        # Assemble variant modification information
+        variants_df = get_variants_df(seq_key, ranges_input_obj, vcf_records,
+                                          process_lines, process_ids, process_seq_fields)
+
+        # for the individual sequence input key get the correct sequence mutator callable
+        dna_mutator = seq_to_mut[seq_key]
+
+        # Actually modify sequences according to annotation
+        # two for loops
         for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
             k = "%s_%s" % (s_dir, allele)
-            ds = model_input['inputs']
-            all_lines = list(range(num_samples_in_batch))
-            if process_lines != all_lines:
-                # subset or rearrange elements
-                ds = select_from_model_inputs(model_input['inputs'], process_lines, num_samples_in_batch)
-            input_set[k] = copy.deepcopy(ds)
+            if isinstance(dl_ouput_schema.inputs, dict):
+                if seq_key not in input_set[k]:
+                    raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
+                input_set[k][seq_key] = dna_mutator(input_set[k][seq_key], variants_df, allele, s_dir)
+            elif isinstance(dl_ouput_schema.inputs, list):
+                modified_set = []
+                for seq_el, input_schema_el in zip(input_set[k], dl_ouput_schema.inputs):
+                    if input_schema_el.name == seq_key:
+                        modified_set.append(dna_mutator(seq_el, variants_df, allele, s_dir))
+                    else:
+                        modified_set.append(seq_el)
+                input_set[k] = modified_set
+            else:
+                input_set[k] = dna_mutator(input_set[k], variants_df, allele, s_dir)
 
-        # input_set matrices now are in the order required for mutation
-
-        all_mut_seq_keys = list(set(itertools.chain.from_iterable(process_seq_fields)))
-
-        # Start from the sequence inputs mentioned in the model.yaml
-        for seq_key in all_mut_seq_keys:
-            ranges_input_obj = model_input['metadata'][seq_to_meta[seq_key]]
-            #
-            # Assemble variant modification information
-            preproc_conv_df = get_preproc_conv(seq_key, ranges_input_obj, vcf_records,
-                                               process_lines, process_ids, process_seq_fields)
-
-            # for the individual sequence input key get the correct sequence mutator callable
-            dna_mutator = seq_to_mut[seq_key]
-
-            # Actually modify sequences according to annotation
-            for s_dir, allele in itertools.product(seq_dirs, ["ref", "alt"]):
-                k = "%s_%s" % (s_dir, allele)
-                if isinstance(dataloader.output_schema.inputs, dict):
-                    if seq_key not in input_set[k]:
-                        raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
-                    input_set[k][seq_key] = dna_mutator(input_set[k][seq_key], preproc_conv_df, allele, s_dir)
-                elif isinstance(dataloader.output_schema.inputs, list):
-                    modified_set = []
-                    for seq_el, input_schema_el in zip(input_set[k], dataloader.output_schema.inputs):
-                        if input_schema_el.name == seq_key:
-                            modified_set.append(dna_mutator(seq_el, preproc_conv_df, allele, s_dir))
-                        else:
-                            modified_set.append(seq_el)
-                    input_set[k] = modified_set
-                else:
-                    input_set[k] = dna_mutator(input_set[k], preproc_conv_df, allele, s_dir)
-
-        #
-        # Reformat so that effect prediction function will get its required inputs
-        pred_set = {"ref": input_set["fwd_ref"], "alt": input_set["fwd_alt"]}
-        if generate_rc:
-            pred_set["ref_rc"] = input_set["rc_ref"]
-            pred_set["alt_rc"] = input_set["rc_alt"]
-        pred_set["mutation_positions"] = preproc_conv_df["varpos_rel"].values
-        pred_set["line_id"] = np.array(process_ids).astype(str)
-        pred_set["vcf_records"] = vcf_records
-        return pred_set
+    #
+    # Reformat so that effect prediction function will get its required inputs
+    pred_set = {"ref": input_set["fwd_ref"], "alt": input_set["fwd_alt"]}
+    if generate_rc:
+        pred_set["ref_rc"] = input_set["rc_ref"]
+        pred_set["alt_rc"] = input_set["rc_alt"]
+    pred_set["mutation_positions"] = variants_df["varpos_rel"].values
+    pred_set["line_id"] = np.array(process_ids).astype(str)
+    pred_set["vcf_records"] = vcf_records
+    return pred_set
 
 
 
@@ -485,10 +492,9 @@ def predict_snvs(model,
     vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
 
     # pre-process regions
-    keys = set()
+    keys = set() # what is that?
 
-    # get sequence generation class
-    _generate_seq_sets = GenerateSeqSets()
+    sample_counter = SampleCounter()
 
     for i, batch in enumerate(tqdm(it)):
         # For debugging
@@ -497,9 +503,10 @@ def predict_snvs(model,
         # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
         seq_to_mut = model_info_extractor.seq_input_mutator
         seq_to_meta = model_info_extractor.seq_input_metadata
-        eval_kwargs = _generate_seq_sets(dataloader, batch, vcf_fh, vcf_id_generator_fn, seq_to_mut = seq_to_mut,
-                                         seq_to_meta = seq_to_meta, vcf_search_regions = vcf_search_regions,
-                                         generate_rc = model_info_extractor.supports_simple_rc)
+        eval_kwargs = _generate_seq_sets(dataloader.output_schema, batch, vcf_fh, vcf_id_generator_fn,
+                                         seq_to_mut = seq_to_mut, seq_to_meta = seq_to_meta,
+                                         sample_counter = sample_counter, vcf_search_regions = vcf_search_regions,
+                                         generate_rc = model_info_extractor.use_seq_only_rc)
         if eval_kwargs is None:
             # No generated datapoint overlapped any VCF region
             continue

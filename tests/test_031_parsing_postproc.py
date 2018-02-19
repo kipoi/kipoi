@@ -1,7 +1,8 @@
-from kipoi.components import *
-from related import from_yaml
 import pytest
+from related import from_yaml
 
+from kipoi.components import *
+from kipoi.components import VarEffectFuncType
 
 yaml_in_no_args = """type: variant_effects
 """
@@ -9,7 +10,7 @@ def test_insufficient_info():
     with pytest.raises(Exception):
         # args.seq_input is required.
         pps = PostProcModelStruct.from_config(from_yaml(yaml_in_no_args))
-
+    #
     pps = PostProcDataloaderStruct.from_config(from_yaml(yaml_in_no_args))
     assert pps.args is None
 
@@ -23,7 +24,7 @@ def test_minimal_info():
     pps = PostProcModelStruct.from_config(from_yaml(yaml_in_simple))
     assert pps.type is PostProcType.VAR_EFFECT_PREDICTION
     assert pps.args.seq_input == ["seq"] # should always be there and is always a list of strings
-    assert pps.args.supports_simple_rc == False
+    assert pps.args.use_rc == VarEffectRCTypes.none
 
 
 
@@ -31,13 +32,13 @@ yaml_in_simple_rc = """type: variant_effects
 args:
   seq_input:
     - seq
-  supports_simple_rc: true
+  use_rc: seq_only
 """
-def test_supports_simple_rc():
+def test_use_rc():
     pps = PostProcModelStruct.from_config(from_yaml(yaml_in_simple_rc))
     assert pps.type is PostProcType.VAR_EFFECT_PREDICTION
     assert pps.args.seq_input == ["seq"] # should always be there and is always a list of strings
-    assert pps.args.supports_simple_rc
+    assert pps.args.use_rc == VarEffectRCTypes.seq_only
 
 
 yaml_in_bed = """type: variant_effects
@@ -77,10 +78,10 @@ def test_complex_example():
     pps = PostProcModelStruct.from_config(from_yaml(yaml_in))
     assert pps.type is PostProcType.VAR_EFFECT_PREDICTION
     assert pps.args.seq_input == ["seq"] # should always be there and is always a list of strings
-    scoring_fns = [{"name": "diff", "type": PostProcFuncType.diff, "default": False},
-                   {"type": PostProcFuncType.logit, "default": False},
-                   {"default": True, "type": PostProcFuncType.deepsea_scr},
-                   {"name": "mydiff", "type": PostProcFuncType.custom, "defined_as": "postproc.py::myfun", "default": False}]
+    scoring_fns = [{"name": "diff", "type": VarEffectFuncType.diff, "default": False},
+                   {"type": VarEffectFuncType.logit, "default": False},
+                   {"default": True, "type": VarEffectFuncType.deepsea_scr},
+                   {"name": "mydiff", "type": VarEffectFuncType.custom, "defined_as": "postproc.py::myfun", "default": False}]
 
     for in_obj, fn in zip(pps.args.scoring_functions, scoring_fns):
         for k in fn:

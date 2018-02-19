@@ -98,7 +98,7 @@ postprocessing:
 
 
 
-supports_simple_rc_str = """supports_simple_rc: true
+supports_simple_rc_str = """use_rc: seq_only
 """
 def test_ModelDescription():
     for rc_support in [True, False]:
@@ -110,7 +110,7 @@ def test_ModelDescription():
         model = ModelDescription.from_config(from_yaml(model_yaml%(seq_string_shape, ssrs)))
         dataloader = DataLoaderDescription.from_config(from_yaml(dataloader_yaml%(seq_string_shape)))
         mi = ModelInfoExtractor(model,dataloader)
-        assert mi.supports_simple_rc == rc_support
+        assert mi.use_seq_only_rc == rc_support
         assert all([isinstance(mi.seq_input_mutator[sl], OneHotSequenceMutator) for sl in ["seq_a", "seq_c"]])
         assert all([isinstance(mi.seq_input_mutator[sl], DNAStringSequenceMutator) for sl in ["seq_b"]])
         assert all([mi.seq_input_metadata[sl] == "ranges" for sl in ["seq_a", "seq_b"]])

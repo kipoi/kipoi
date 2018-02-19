@@ -13,7 +13,7 @@ import deepdish
 import logging
 import pybedtools as pb
 import copy
-from kipoi.components import PostProcType, PostProcFuncType, default_kwargs
+from kipoi.components import PostProcType, default_kwargs, VarEffectFuncType
 from kipoi.utils import load_module, getargs
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -31,9 +31,9 @@ scoring_options = {
 }
 
 scoring_names = {
-    PostProcFuncType.diff: "diff",
-    PostProcFuncType.logit: "logit",
-    PostProcFuncType.deepsea_scr: "deepsea_scr",
+    VarEffectFuncType.diff: "diff",
+    VarEffectFuncType.logit: "logit",
+    VarEffectFuncType.deepsea_scr: "deepsea_scr",
 }
 
 builtin_default_kwargs = {"rc_merging":"mean"}
@@ -52,7 +52,7 @@ def _get_avail_scoring_methods(model):
     avail_scoring_fn_names = [] # contains the labels
     default_scoring_fns = [] # contains the labels of the defaults
     for sf in pp_instructions.scoring_functions:
-        if sf.type is not PostProcFuncType.custom:
+        if sf.type is not VarEffectFuncType.custom:
             sn = scoring_names[sf.type]
             sf_obj = scoring_options[sn]
             s_label = sn
@@ -251,7 +251,7 @@ def cli_score_variants(command, raw_args):
         logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
                     'produced regions can be predicted')
 
-    if model_info.supports_simple_rc:
+    if model_info.use_seq_only_rc:
         logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
     else:
         logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')

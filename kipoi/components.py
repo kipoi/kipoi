@@ -1,18 +1,21 @@
 """Defines the base classes
 """
-import os
-import related
-import numpy as np
-import enum
 import collections
-from collections import OrderedDict
-from attr._make import fields
-import kipoi.conda as kconda
-from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
-from kipoi.metadata import GenomicRanges
-from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
-import six
 import logging
+import os
+from collections import OrderedDict
+
+import enum
+import numpy as np
+import related
+import six
+from attr._make import fields
+
+import kipoi.conda as kconda
+from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi.metadata import GenomicRanges
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 # --------------------------------------------
@@ -523,20 +526,26 @@ class DataLoaderSchema(RelatedConfigMixin):
 class PostProcType(enum.Enum):
     VAR_EFFECT_PREDICTION = "variant_effects"
 
-@enum.unique
-class PostProcFuncType(enum.Enum):
-    logit = "logit"
-    diff = "diff"
-    deepsea_scr = "deepsea_scr"
-    custom = "custom"
 
 
 @related.immutable
 class PostProcSeqinput(object):
     seq_input = related.SequenceField(str)
 
+@enum.unique
+class VarEffectFuncType(enum.Enum):
+    logit = "logit"
+    diff = "diff"
+    deepsea_scr = "deepsea_scr"
+    custom = "custom"
+
+@enum.unique
+class VarEffectRCTypes(enum.Enum):
+    seq_only = "seq_only"
+    none = "none"
+
 @related.immutable
-class PostProcScoringFuncArgument(RelatedConfigMixin):
+class VarEffectScoringFuncArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField(required = False)
     name = related.StringField(required=False)
@@ -547,34 +556,34 @@ class PostProcScoringFuncArgument(RelatedConfigMixin):
 
 
 @related.immutable
-class PostProcScoringFunctions(RelatedConfigMixin):
+class VarEffectScoringFunctions(RelatedConfigMixin):
     name = related.StringField(required = False, default = "")
-    type = related.ChildField(PostProcFuncType, required = False)
+    type = related.ChildField(VarEffectFuncType, required = False)
     defined_as = related.StringField(required = False, default = "")
-    args = related.MappingField(PostProcScoringFuncArgument, "name", required = False)
+    args = related.MappingField(VarEffectScoringFuncArgument, "name", required = False)
     default = related.BooleanField(required=False, default = False)
 
 
 @related.immutable
-class PostProcDataloaderArgs(RelatedConfigMixin):
+class VarEffectDataloaderArgs(RelatedConfigMixin):
     bed_input = related.SequenceField(str, required = False)
-    scoring_functions = related.SequenceField(PostProcScoringFunctions, default=[], required = False)
+    scoring_functions = related.SequenceField(VarEffectScoringFunctions, default=[], required = False)
 
 @related.immutable
-class PostProcModelArgs(RelatedConfigMixin):
+class VarEffectModelArgs(RelatedConfigMixin):
     seq_input = related.SequenceField(str)
-    supports_simple_rc = related.BooleanField(required = False, default=False)
-    scoring_functions = related.SequenceField(PostProcScoringFunctions, default=[], required=False)
+    use_rc = related.ChildField(VarEffectRCTypes, default=VarEffectRCTypes.none)
+    scoring_functions = related.SequenceField(VarEffectScoringFunctions, default=[], required=False)
 
 @related.immutable
 class PostProcModelStruct(RelatedConfigMixin):
     type = related.ChildField(PostProcType)  # enum
-    args = related.ChildField(PostProcModelArgs)  # contains
+    args = related.ChildField(VarEffectModelArgs)  # contains
 
 @related.immutable
 class PostProcDataloaderStruct(RelatedConfigMixin):
     type = related.ChildField(PostProcType)  # enum
-    args = related.ChildField(PostProcDataloaderArgs, required = False)  # contains
+    args = related.ChildField(VarEffectDataloaderArgs, required = False)  # contains
 
 
 

@@ -380,7 +380,7 @@ def test_search_vcf_in_regions():
     ints2 = {"chr": ["chr22"]*2, "start": [30630219, 30630220], "end": [30630222, 30630222], "strand": ["*"]*2}
     model_input={"metadata":{"gr_a":ints1, "gr_b":ints1, "gr_c":ints2}}
     seq_to_meta = {"seq_a":"gr_a", "seq_a2": "gr_a", "seq_b": "gr_b", "seq_c":"gr_c"}
-    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.search_vcf_in_regions(model_input, seq_to_meta, vcf_fh)
+    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.get_variants_in_regions_search_vcf(model_input, seq_to_meta, vcf_fh)
     assert process_lines == [0, 0, 0, 1, 1]
     expected = [['seq_a2', 'seq_a', 'seq_b'], ['seq_a2', 'seq_a', 'seq_b'], ['seq_c'],
                                  ['seq_a2', 'seq_a', 'seq_b'], ['seq_a2', 'seq_a', 'seq_b']]
@@ -421,7 +421,7 @@ def test_get_genomicranges_line():
 
 def test_by_id_vcf_in_regions():
     from kipoi.postprocessing.utils.generic import default_vcf_id_gen
-    from kipoi.postprocessing.snv_predict import by_id_vcf_in_regions
+    from kipoi.postprocessing.snv_predict import get_variants_in_regions_sequential_vcf
     vcf_path = kipoi.postprocessing.ensure_tabixed_vcf("examples/rbp/example_files/variants.vcf")
     vcf_fh = cyvcf2.VCF(vcf_path, "r")
     ints1 = {"chr": [], "start": [], "end": [], "strand": [], "id":[]}
@@ -436,8 +436,8 @@ def test_by_id_vcf_in_regions():
     vcf_fh = cyvcf2.VCF(vcf_path, "r")
     model_input = {"metadata": {"gr_a": ints1, "gr_b": ints1}}
     seq_to_meta = {"seq_a": "gr_a", "seq_a2": "gr_a", "seq_b": "gr_b"}
-    vcf_records, process_lines, process_seq_fields, process_ids = by_id_vcf_in_regions(model_input, seq_to_meta,
-                                                                                       vcf_fh, default_vcf_id_gen)
+    vcf_records, process_lines, process_seq_fields, process_ids = get_variants_in_regions_sequential_vcf(model_input, seq_to_meta,
+                                                                                                         vcf_fh, default_vcf_id_gen)
     num_entries = len(model_input["metadata"]["gr_a"]["chr"])
     assert len(vcf_records) == num_entries
     assert process_lines == list(range(num_entries))
@@ -449,7 +449,7 @@ def test_by_id_vcf_in_regions():
     model_input = {"metadata": {"gr_a": ints1, "gr_b": ints2}}
     seq_to_meta = {"seq_a": "gr_a", "seq_a2": "gr_a", "seq_b": "gr_b"}
     with pytest.raises(Exception):
-        by_id_vcf_in_regions(model_input, seq_to_meta, vcf_fh, default_vcf_id_gen)
+        get_variants_in_regions_sequential_vcf(model_input, seq_to_meta, vcf_fh, default_vcf_id_gen)
 
 
 def test_get_preproc_conv():
@@ -462,9 +462,9 @@ def test_get_preproc_conv():
              "strand": ["*"] * 4}
     model_input = {"metadata": {"gr_a": ints1, "gr_c": ints2}}
     seq_to_meta = {"seq_a": "gr_a", "seq_c": "gr_c"}
-    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.search_vcf_in_regions(model_input,
-                                                                                                            seq_to_meta,
-                                                                                                            vcf_fh)
+    vcf_records, process_lines, process_seq_fields = kipoi.postprocessing.snv_predict.get_variants_in_regions_search_vcf(model_input,
+                                                                                                                         seq_to_meta,
+                                                                                                                         vcf_fh)
     process_ids = np.arange(len(process_lines))
     all_mut_seq_keys = list(set(itertools.chain.from_iterable(process_seq_fields)))
 
@@ -473,8 +473,8 @@ def test_get_preproc_conv():
     # Start from the sequence inputs mentioned in the model.yaml
     for seq_key in all_mut_seq_keys:
         ranges_input_obj = model_input['metadata'][seq_to_meta[seq_key]]
-        preproc_conv_df = kipoi.postprocessing.snv_predict.get_preproc_conv(seq_key, ranges_input_obj, vcf_records,
-                                           process_lines, process_ids, process_seq_fields)
+        preproc_conv_df = kipoi.postprocessing.snv_predict.get_variants_df(seq_key, ranges_input_obj, vcf_records,
+                                                                           process_lines, process_ids, process_seq_fields)
         assert preproc_conv_df.query("do_mutate")["pp_line"].tolist()== mut_seqs[seq_key]
         assert preproc_conv_df.query("do_mutate").isnull().sum().sum() == 0
 
@@ -806,7 +806,7 @@ def test__generate_seq_sets():
         seq_to_mut = {"seq": kipoi.postprocessing.utils.generic.OneHotSequenceMutator()}
         seq_to_meta = {"seq": "ranges"}
         #
-        _generate_seq_sets = kipoi.postprocessing.snv_predict.GenerateSeqSets()
+        sample_counter = sp.SampleCounter()
         for meta_data in meta_data_options:
             for vcf_search_regions in [False, True]:
                 ## Test the dict case:
@@ -821,10 +821,10 @@ def test__generate_seq_sets():
                 model_input = {"inputs": inputs, "metadata": meta_data}
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 #relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
-                ssets = _generate_seq_sets(dataloader, model_input, vcf_fh,
+                ssets = sp._generate_seq_sets(dataloader.output_schema, model_input, vcf_fh,
                             vcf_id_generator_fn =kipoi.postprocessing.utils.generic.default_vcf_id_gen,
                                               seq_to_mut = seq_to_mut,
-                                              seq_to_meta = seq_to_meta,
+                                              seq_to_meta = seq_to_meta,sample_counter = sample_counter,
                             vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
@@ -885,11 +885,12 @@ def test__generate_seq_sets():
                 model_input = {"inputs": inputs, "metadata": meta_data}
                 vcf_fh = cyvcf2.VCF(vcf_path, "r")
                 # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
-                _generate_seq_sets = kipoi.postprocessing.snv_predict.GenerateSeqSets()
-                ssets = _generate_seq_sets(dataloader, model_input, vcf_fh,
+                sample_counter = sp.SampleCounter()
+                ssets = sp._generate_seq_sets(dataloader.output_schema, model_input, vcf_fh,
                                               vcf_id_generator_fn=kipoi.postprocessing.utils.generic.default_vcf_id_gen,
                                               seq_to_mut=seq_to_mut,
                                               seq_to_meta=seq_to_meta,
+                                              sample_counter = sample_counter,
                                               vcf_search_regions=vcf_search_regions)
                 vcf_fh.close()
                 req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
@@ -921,21 +922,21 @@ def test_subsetting():
     for sel in [[0], [1, 2, 3]]:
         for k in RES:
             if "dict" in k:
-                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                ret = sp.select_from_dl_batch(RES[k], sel, 50)
                 for k2 in ret:
                     assert ret[k2].shape[0] == len(sel)
                 with pytest.raises(Exception):
-                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+                    ret = sp.select_from_dl_batch(RES[k], sel, 20)
             elif "list" in k:
-                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                ret = sp.select_from_dl_batch(RES[k], sel, 50)
                 assert all([el.shape[0] == len(sel) for el in ret])
                 with pytest.raises(Exception):
-                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+                    ret = sp.select_from_dl_batch(RES[k], sel, 20)
             else:
-                ret = sp.select_from_model_inputs(RES[k], sel, 50)
+                ret = sp.select_from_dl_batch(RES[k], sel, 50)
                 assert ret.shape[0] == len(sel)
                 with pytest.raises(Exception):
-                    ret = sp.select_from_model_inputs(RES[k], sel, 20)
+                    ret = sp.select_from_dl_batch(RES[k], sel, 20)
 
 def test_ensure_tabixed_vcf():
     vcf_in_fpath = "examples/rbp/example_files/variants.vcf"
