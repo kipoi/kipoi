@@ -48,3 +48,22 @@ class GenomicRanges(Mapping):
         """
         assert all([isinstance(x, cls) for x in obj_list])
         return cls.from_dict(collate_fn(obj_list))
+
+    def to_interval(self):
+        """Convert GenomicRanges object to a Interval object
+        """
+        from pybedtools import Interval
+        if isinstance(self.chr, str):
+            return Interval(self.chr,
+                            self.start,
+                            self.end,
+                            name=self.id,
+                            strand=self.strand)
+        else:
+            return [Interval(self.chr[i],
+                             self.start[i],
+                             self.end[i],
+                             name=self.id[i],
+                             strand=self.strand[i])
+                    for i in range(len(self.chr))]
+                

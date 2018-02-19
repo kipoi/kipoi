@@ -192,7 +192,8 @@ class Dataset(BaseDataLoader):
                         collate_fn=numpy_collate,
                         shuffle=shuffle,
                         num_workers=num_workers,
-                        drop_last=drop_last)
+                        drop_last=drop_last,
+                        **kwargs)
         return iter(dl)
 
     def load_all(self, batch_size=32, num_workers=0, **kwargs):

@@ -26,7 +26,6 @@ logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 # Common components (model and dataloader)
 
-
 @related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
@@ -465,6 +464,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 @related.immutable(strict=True)
 class PostProcDataLoaderStruct(RelatedConfigMixin):
     variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
+
 
 
 @related.immutable(strict=True)

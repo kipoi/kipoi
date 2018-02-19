@@ -1,7 +1,6 @@
 # Kipoi
 
-![Build Status](https://circleci.com/gh/kipoi/kipoi/tree/master.svg?style=shield)
-<!-- ![Build Status](https://api.travis-ci.com/kipoi/kipoi.svg?token=EQhjUezyCnoyp9tzNxc3&branch=master) -->
+[![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
 
 Kipoi defines a common 'model-zoo' API for predictive models. This repository implements a 
 command-line interface (CLI) and a python SDK to query (and use) the Kipoi models. The Kipoi models can be hosted in 

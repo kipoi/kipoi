@@ -198,6 +198,7 @@ def get_variants_in_regions_sequential_vcf(dl_batch, seq_to_meta, vcf_fh, vcf_id
     return vcf_records, process_lines, process_seq_fields, process_ids
 
 
+
 def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, process_ids, process_seq_fields):
     preproc_conv = {"pp_line": [], "varpos_rel": [], "ref": [], "alt": [], "start": [], "end": [], "id": [],
                     "do_mutate": []}
@@ -247,6 +248,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
 
     preproc_conv_df = pd.DataFrame(preproc_conv)
     return preproc_conv_df
+
 
 
 class SampleCounter():
@@ -373,6 +375,7 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
     pred_set["line_id"] = np.array(process_ids).astype(str)
     pred_set["vcf_records"] = vcf_records
     return pred_set
+
 
 
 def predict_snvs(model,
