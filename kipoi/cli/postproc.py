@@ -12,25 +12,151 @@ from kipoi.utils import parse_json_file_str, cd
 import deepdish
 import logging
 import pybedtools as pb
+import copy
+from kipoi.components import default_kwargs
+from kipoi.postprocessing.components import VarEffectFuncType
+from kipoi.utils import load_module, getargs
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+scoring_options = {
+    # deepsea_scr diff logit_diff logit_ref logit_alt
+    # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
+    "logit": kipoi.variant_effects.Logit,
+    "diff": kipoi.variant_effects.Diff,
+    "logit_ref": kipoi.variant_effects.LogitRef,
+    "logit_alt": kipoi.variant_effects.LogitAlt,
+    # TODO - function name and string options should be the same
+    # i.e. I'd use DeepSEA_effect...
+    "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
+}
+
+scoring_names = {
+    VarEffectFuncType.diff: "diff",
+    VarEffectFuncType.logit: "logit",
+    VarEffectFuncType.deepsea_scr: "deepsea_scr",
+}
+
+builtin_default_kwargs = {"rc_merging": "mean"}
+
+
+def _get_avail_scoring_methods(model):
+    if model.postprocessing.variant_effects is None:
+        raise Exception("Model deosn't support variant effect prediction according model yaml file.")
+    avail_scoring_fns = []  # contains callables
+    avail_scoring_fn_def_args = []  # default kwargs for every callable
+    avail_scoring_fn_names = []  # contains the labels
+    default_scoring_fns = []  # contains the labels of the defaults
+    for sf in model.postprocessing.variant_effects.scoring_functions:
+        if sf.type is not VarEffectFuncType.custom:
+            sn = scoring_names[sf.type]
+            sf_obj = scoring_options[sn]
+            s_label = sn
+            if (sf.name != "") and (sf.name not in scoring_options):
+                if sf.name in avail_scoring_fn_names:
+                    raise Exception("Scoring function names have to unique in the model yaml file.")
+                s_label = sf.name
+            def_kwargs = builtin_default_kwargs
+        else:
+            prefix = ""
+            if (sf.name == "") or (sf.name in scoring_options):
+                prefix = "custom_"
+            s_label = prefix + sf.name
+            if s_label in avail_scoring_fn_names:
+                raise Exception("Scoring function names have to unique in the model yaml file.")
+            if sf.defined_as == "":
+                raise Exception("`defined_as` has to be defined for a custom function.")
+            file_path, obj_name = tuple(sf.defined_as.split("::"))
+            sf_obj = getattr(load_module(file_path), obj_name)
+            # check that the scoring function arguments match yaml arguments
+            if not getargs(sf_obj) == set(sf.args.keys()):
+                raise ValueError("Scoring function arguments: \n{0}\n don't match ".format(set(getargs(sf_obj))) +
+                                 "the specification in the dataloader.yaml file:\n{0}".
+                                 format(set(sf.args.keys())))
+
+            def_kwargs = None
+            if all([(sf.args[k].default is not None) or (sf.args[k].optional) for k in sf.args]):
+                def_kwargs = default_kwargs(sf.args)
+            if len(sf.args) == 0:
+                def_kwargs = {}  # indicates that this callable doesn't accept any arguments for initialisation.
+
+        if s_label in avail_scoring_fn_names:
+            raise Exception("Mulitple scoring functions defined with name '%s' in the model yaml file!" % s_label)
+
+        avail_scoring_fn_def_args.append(def_kwargs)
+        avail_scoring_fns.append(sf_obj)
+        avail_scoring_fn_names.append(s_label)
+        if sf.default:
+            default_scoring_fns.append(s_label)
+
+    if len(default_scoring_fns) == 0:
+        default_scoring_fns = copy.copy(avail_scoring_fn_names)
+
+    if scoring_options["diff"] not in avail_scoring_fns:
+        avail_scoring_fn_def_args.append(builtin_default_kwargs)
+        avail_scoring_fns.append(scoring_options["diff"])
+        s_label = "diff"
+        if s_label in avail_scoring_fn_names:
+            s_label = "default_" + s_label
+        avail_scoring_fn_names.append(s_label)
+        if len(default_scoring_fns) == 0:
+            default_scoring_fns.append(s_label)
+
+    return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
+
+def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
+    # get the scoring methods according to the model definition
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, \
+        default_scoring_fns = _get_avail_scoring_methods(model)
+
+    errmsg_scoring_kwargs = "When defining `--scoring_kwargs` a JSON representation of arguments (or the path of a" \
+                            " file containing them) must be given for every `--scoring` function."
+
+    dts = {}
+    if len(sel_scoring_labels) >= 1:
+        # if -k set check that length matches with -s
+        if len(sel_scoring_kwargs) >= 1:
+            if not len(sel_scoring_labels) == len(sel_scoring_kwargs):
+                raise ValueError(errmsg_scoring_kwargs)
+        dts = {}
+        for arg_iter, k in enumerate(sel_scoring_labels):
+            # if -s set check is available for model
+            if k in avail_scoring_fn_names:
+                si = avail_scoring_fn_names.index(k)
+                # get the default kwargs
+                kwargs = avail_scoring_fn_def_args[si]
+                # if the user has set scoring function kwargs then load them here.
+                if len(sel_scoring_kwargs) >= 1:
+                    # all the {}s in -k replace by their defaults, if the default is None
+                    # raise exception with the corrsponding scoring function label etc.
+                    defined_kwargs = parse_json_file_str(sel_scoring_kwargs[si])
+                    if len(defined_kwargs) != 0:
+                        kwargs = defined_kwargs
+                if kwargs is None:
+                    raise ValueError("No kwargs were given for scoring function %s"
+                                     " with no defaults but required argmuents. "
+                                     "Please also define `--scoring_kwargs`." % (k))
+                # instantiate the scoring fn
+                dts[k] = avail_scoring_fns[si](**kwargs)
+            else:
+                raise ValueError("Cannot choose scoring function %s. "
+                                 "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
+    # if -s not set use all defaults
+    elif len(default_scoring_fns) != 0:
+        for arg_iter, k in enumerate(default_scoring_fns):
+            si = avail_scoring_fn_names.index(k)
+            kwargs = avail_scoring_fn_def_args[si]
+            dts[k] = avail_scoring_fns[si](**kwargs)
+    else:
+        raise Exception("No scoring method was chosen!")
+
+    return dts
 
 
 # TODO - --output is not always required
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
-    scoring_options = {
-        #deepsea_scr diff logit_diff logit_ref logit_alt
-        # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
-        "logit": kipoi.variant_effects.Logit,
-        "diff": kipoi.variant_effects.Diff,
-        "logit_ref":kipoi.variant_effects.LogitRef,
-        "logit_alt":kipoi.variant_effects.LogitAlt,
-        # TODO - function name and string options should be the same
-        # i.e. I'd use DeepSEA_effect...
-        "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
-    }
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
@@ -54,7 +180,17 @@ def cli_score_variants(command, raw_args):
                         help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=False,
                         help="Output hdf5 file")
-    parser.add_argument('-s', "--scoring", choices=list(scoring_options.keys()), default="diff", nargs="+")
+    parser.add_argument('-s', "--scoring", default="diff", nargs="+",
+                        help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
+                             "available except for `diff` which is always available. Select scoring function by the"
+                             "`name` tag defined in the model yaml file.")
+    parser.add_argument('-k', "--scoring_kwargs", default="", nargs="+",
+                        help="JSON definition of the kwargs for the scoring functions selected in --scoring. The "
+                             "definiton can either be in JSON in the command line or the path of a .json file. The "
+                             "individual JSONs are expected to be supplied in the same order as the labels defined in "
+                             "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
+                             "scoring method.")
+
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
@@ -85,12 +221,7 @@ def cli_score_variants(command, raw_args):
     if not isinstance(args.scoring, list):
         args.scoring = [args.scoring]
 
-    if len(args.scoring) >= 1:
-        dts = {}
-        for k in args.scoring:
-            dts[k] = scoring_options[k]("mean")
-    else:
-        raise Exception("No scoring method was chosen!")
+    dts = _get_scoring_fns(model, args.scoring, args.scoring_kwargs)
 
     # Load effect prediction related model info
     model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dl)
@@ -114,7 +245,7 @@ def cli_score_variants(command, raw_args):
         logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
                     'produced regions can be predicted')
 
-    if model_info.supports_simple_rc:
+    if model_info.use_seq_only_rc:
         logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
     else:
         logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')

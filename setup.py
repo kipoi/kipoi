@@ -24,6 +24,7 @@ requirements = [
     "pyvcf",
     "cyvcf2",
     "cookiecutter",
+    "intervaltree", # Variant effect prediction
     # "pytorch"
 ]
 

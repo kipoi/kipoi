@@ -8,6 +8,7 @@ from .utils import load_module, cd, merge_dicts
 import abc
 import six
 import numpy as np
+import json
 
 from .components import ModelDescription
 from .pipeline import Pipeline
@@ -96,6 +97,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.source = source
     mod.source_name = source_name
     mod.source_dir = source_dir
+    # parse the postprocessing module
     mod.postprocessing = md.postprocessing
     if with_dataloader:
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)

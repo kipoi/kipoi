@@ -1,0 +1,1 @@
+from kipoi.postprocessing.variant_effects import LogitAlt
