@@ -11,6 +11,10 @@ jobs:
       - checkout
 
       - run:
+          name: Update conda
+          command: conda update --yes conda
+
+      - run:
           name: install genomelake
           command: |
             pip install git+ssh://git@github.com/avsecz/genomelake.git --no-deps
@@ -47,6 +51,10 @@ jobs:
 
     steps:
       - checkout
+
+      - run:
+          name: Update conda
+          command: conda update --yes conda
 
       - run:
           name: install genomelake
