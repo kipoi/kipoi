@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import print_function
+
 from abc import abstractmethod
 
 import numpy as np
@@ -7,33 +10,34 @@ import re
 import vcf
 import logging
 
+import kipoi
 from kipoi.postprocessing.variant_effects import _modify_bases, _modify_single_string_base, rc_str
+from kipoi.postprocessing.components import VarEffectRCTypes
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-from kipoi.components import PostProcType, ArraySpecialType, VarEffectRCTypes
 
-
-def ensure_tabixed_vcf(input_fn, is_sorted = False, force_tabix = True):
+def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
     pbh = pybedtools.BedTool(input_fn)
     fn = input_fn
     if not pbh._tabixed():
-        tbxd = pbh.tabix(is_sorted = is_sorted, force = force_tabix)
+        tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
         fn = tbxd.fn
     return fn
 
 
 def prep_str(s):
-    #https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
+    # https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
     # Remove all non-word characters (everything except numbers and letters)
-    #s = re.sub(r"[^\w\s]", '', s)
+    # s = re.sub(r"[^\w\s]", '', s)
     s = re.sub(r"[^\w\.\:\s]+", '', s)
     #
     # Replace all runs of whitespace with a single underscore
     s = re.sub(r"\s+", '_', s)
     #
     return s
+
 
 def select_from_dl_batch(obj, rows, nrows_expected=None):
     def subset(in_obj):
@@ -110,8 +114,8 @@ class ReshapeDna(object):
         # if there is no "batch" axis prepended to the array then add it, but remember
         # that as a rule for `from_standard`
         if (len(in_array.shape) - len(self.in_shape)) == 0:
-            in_array = in_array[None,...]
-            logger.warn("Prepending missing batch axis to input shape %s."%str(self.in_shape))
+            in_array = in_array[None, ...]
+            logger.warn("Prepending missing batch axis to input shape %s." % str(self.in_shape))
             self.single_sample_no_batch_axis = True
 
         # if there is a "batch" axis prepended to the array then remember that as a rule
@@ -121,8 +125,8 @@ class ReshapeDna(object):
         #  is there an actual sequence sample axis?
         additional_axis = len(in_array.shape) - len(self.in_shape)
         if (additional_axis != 1) or (in_array.shape[1:] != tuple(self.in_shape)):
-            raise Exception("General array mismatch! Given: %s Expecting: %s"%(str(in_array.shape),
-                                                                               "([N]," + str(self.in_shape)[1:]))
+            raise Exception("General array mismatch! Given: %s Expecting: %s" % (str(in_array.shape),
+                                                                                 "([N]," + str(self.in_shape)[1:]))
         #
         if not self.reshape_needed:
             return in_array
@@ -130,7 +134,7 @@ class ReshapeDna(object):
         #
         # Iterative removal of dummy dimensions has to start from highest dimension
         for d in sorted(self.dummy_dimensions)[::-1]:
-            squeezed = np.squeeze(squeezed, axis = d+additional_axis)
+            squeezed = np.squeeze(squeezed, axis=d + additional_axis)
         # check that the shape is now as expected:
         one_hot_dim_here = additional_axis + self.one_hot_dim
         seq_len_dim_here = additional_axis + self.seq_len_dim
@@ -141,7 +145,7 @@ class ReshapeDna(object):
             raise Exception("Input array sequence length does not follow the input definition!")
         #
         if self.one_hot_dim != 1:
-            assert (self.seq_len_dim == 1) # Anything else would be weird...
+            assert (self.seq_len_dim == 1)  # Anything else would be weird...
             squeezed = squeezed.swapaxes(one_hot_dim_here, seq_len_dim_here)
         return squeezed
 
@@ -163,10 +167,10 @@ class ReshapeDna(object):
         #
         if len(self.dummy_dimensions) != 0:
             for d in self.dummy_dimensions:
-                in_array = np.expand_dims(in_array,d+assumed_additional_axis)
+                in_array = np.expand_dims(in_array, d + assumed_additional_axis)
         # If single sample and the convention seems to require no prepended batch axis then remove it.
         if (in_array.shape[0] == 1) and self.single_sample_no_batch_axis:
-            in_array = in_array[0,...]
+            in_array = in_array[0, ...]
         return in_array
 
 
@@ -183,9 +187,9 @@ def _get_seq_len(input_data):
 
 
 class OutputReshaper(object):
-    def __init__(self, model_target_schema, group_delim = "."):
+    def __init__(self, model_target_schema, group_delim="."):
         self.model_target_schema = model_target_schema
-        self.standard_dict_order =None # This one is used to always produce the same order of outputs for a dict
+        self.standard_dict_order = None  # This one is used to always produce the same order of outputs for a dict
         # extract output labels correctly.
         if isinstance(model_target_schema, dict):
             anno = {}
@@ -228,7 +232,7 @@ class OutputReshaper(object):
         if isinstance(ds, dict):
             if not isinstance(self.anno, dict):
                 raise Exception("Error in model output defintion: Model definition is"
-                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+                                "of type %s but predictions are of type %s!" % (str(type(ds)), str(type(self.anno))))
             outputs = []
             labels = []
             for k in self.standard_dict_order:
@@ -240,7 +244,7 @@ class OutputReshaper(object):
         elif isinstance(ds, list):
             if not isinstance(self.anno, list):
                 raise Exception("Error in model output defintion: Model definition is"
-                                "of type %s but predictions are of type %s!"%(str(type(ds)), str(type(self.anno))))
+                                "of type %s but predictions are of type %s!" % (str(type(ds)), str(type(self.anno))))
             assert len(ds) == len(self.anno)
             flat = np.concatenate(ds, axis=1)
             flat_labels = np.concatenate(self.anno, axis=0)
@@ -257,10 +261,10 @@ class OutputReshaper(object):
         else:
             res_shape = [dim for dim in arrayschema_obj.shape if dim is not None]
             if len(res_shape) > 1:
-                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s"%str(arrayschema_obj))
-            #if res_shape[0] == 1:
+                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s" % str(arrayschema_obj))
+            # if res_shape[0] == 1:
             #    ret = np.array([""])
-            #else:
+            # else:
             ret = np.arange(res_shape[0]).astype(np.str)
         return ret
 
@@ -276,7 +280,7 @@ def concat_columns(df, sep="|"):
             column = column.str.cat(vec, sep=sep)
     return column
 
-#TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
+# TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
 def convert_record(input_record, pyvcf_reader):
     """
     Convert a cyvcf2 record into a pyvcf record. The source files should at least be similar in terms of INFO tags.
@@ -295,7 +299,7 @@ def convert_record(input_record, pyvcf_reader):
     alt = pyvcf_reader._map(pyvcf_reader._parse_alt, input_record.ALT)
     return vcf.model._Record(input_record.CHROM, input_record.POS, input_record.ID,
                              input_record.REF, alt, input_record.QUAL, input_record.FILTER,
-                             info_tag, input_record.FORMAT,{})
+                             info_tag, input_record.FORMAT, {})
 
 
 def default_vcf_id_gen(vcf_record, id_delim=":"):
@@ -327,10 +331,10 @@ class SnvCenteredRg(RegionGenerator):
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
         """
-        return {"chrom":[variant_record.CHROM],
-            "start": [variant_record.POS - self.centered_l_offset],
-            "end": [variant_record.POS + self.centered_r_offset],
-            }
+        return {"chrom": [variant_record.CHROM],
+                "start": [variant_record.POS - self.centered_l_offset],
+                "end": [variant_record.POS + self.centered_r_offset],
+                }
 
 
 class SnvPosRestrictedRg(RegionGenerator):
@@ -342,11 +346,10 @@ class SnvPosRestrictedRg(RegionGenerator):
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
 
-
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
         """
-        overlap = self.tabixed.tabix_intervals("%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS+1))
+        overlap = self.tabixed.tabix_intervals("%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS + 1))
         chroms = []
         starts = []
         ends = []
@@ -373,6 +376,7 @@ class SnvPosRestrictedRg(RegionGenerator):
             ends.append(i_e)
         return {"chrom": chroms, "start": starts, "end": ends}
 
+
 class ModelInfoExtractor(object):
     def __init__(self, model_obj, dataloader_obj):
         self.model = model_obj
@@ -390,21 +394,19 @@ class ModelInfoExtractor(object):
 
             if special_type is None:
                 logger.warn("special_type of sequence field '%s' is not set,"
-                            "assuming 1-hot encoded DNA sequence."%str(seq_field))
+                            "assuming 1-hot encoded DNA sequence." % str(seq_field))
 
-            if (special_type is None) or (special_type == ArraySpecialType.DNASeq):
+            if (special_type is None) or (special_type == kipoi.components.ArraySpecialType.DNASeq):
                 dna_seq_trafo = ReshapeDna(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = OneHotSequenceMutator(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
-            if special_type == ArraySpecialType.DNAStringSeq:
+            if special_type == kipoi.components.ArraySpecialType.DNAStringSeq:
                 dna_seq_trafo = ReshapeDnaString(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = DNAStringSequenceMutator(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
             self.seq_input_metadata[seq_field] = _get_metadata_name(dataloader_obj, seq_field)
-
-
 
         # If then where do I have to put my bed file in the command?
         self.exec_files_bed_keys = _get_dl_bed_fields(dataloader_obj)
@@ -419,7 +421,7 @@ class ModelInfoExtractor(object):
             # seems to require a bed file definition, so try to assign a sequence length:
             seq_lens = [self.seq_input_array_trafo[seq_field].get_seq_len() for seq_field in self.seq_input_array_trafo]
             seq_len = list(set([el for el in seq_lens if el is not None]))
-            if len(seq_len) ==0:
+            if len(seq_len) == 0:
                 raise Exception("dataloader.yaml defines postprocessing > args > bed_input, but in model.yaml none of "
                                 "the postprocessing > args > seq_input entries defines a sequence length within their "
                                 "shape.")
@@ -487,6 +489,7 @@ def _get_metadata_name(dataloader, seq_key):
             "Exactly one metadata ranges field must defined for a sequence that has to be used for effect precition.")
     return ranges_slots[0]
 
+
 def _get_specialtype(dataloader, seq_field):
     if isinstance(dataloader.output_schema.inputs, dict):
         seq_obj = dataloader.output_schema.inputs[seq_field]
@@ -499,26 +502,19 @@ def _get_specialtype(dataloader, seq_field):
     else:
         return None
 
+
 def _get_seq_fields(model):
-    seq_dict = None
-    for pp_obj in model.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            seq_dict = pp_obj.args
-            break
-    if (seq_dict is None) or (not hasattr(seq_dict, 'seq_input')):
+    if model.postprocessing.variant_effects is None:
         raise Exception("Model does not support var_effect_prediction")
-    return seq_dict.seq_input
+    else:
+        return model.postprocessing.variant_effects.seq_input
+
 
 def _get_model_use_seq_only_rc(model):
-    pp_instructions = False
-    for pp_obj in model.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            pp_instructions = pp_obj.args
-            break
-    if pp_instructions is None:
+    if model.postprocessing.variant_effects is None:
         return False
     else:
-        return pp_instructions.use_rc == VarEffectRCTypes.seq_only
+        return model.postprocessing.variant_effects.use_rc == VarEffectRCTypes.seq_only
 
 
 def _get_seq_shape(dataloader, seq_field):
@@ -532,15 +528,10 @@ def _get_seq_shape(dataloader, seq_field):
 
 
 def _get_dl_bed_fields(dataloader):
-    seq_dict = None
-    for pp_obj in dataloader.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            seq_dict = pp_obj.args
-            break
-    if (seq_dict is None) or (not hasattr(seq_dict, 'bed_input')):
-        #raise Exception("Dataloader does not support any postprocessing")
+    if dataloader.postprocessing.variant_effects is None:
         return None
-    return seq_dict.bed_input
+    else:
+        return dataloader.postprocessing.variant_effects.bed_input
 
 
 class ReshapeDnaString(object):
@@ -548,10 +539,10 @@ class ReshapeDnaString(object):
         if len(input_shape) == 0:
             self.format_style = "string"
             self.seq_len = None
-        elif len(input_shape) == 1 and (input_shape[0]== 1):
+        elif len(input_shape) == 1 and (input_shape[0] == 1):
             self.format_style = "string_in_vect"
             self.seq_len = None
-        elif len(input_shape) == 1 and (input_shape[0]>1):
+        elif len(input_shape) == 1 and (input_shape[0] > 1):
             self.format_style = "string_as_vect"
             self.seq_len = input_shape[0]
         else:
@@ -584,7 +575,7 @@ class ReshapeDnaString(object):
         elif self.format_style == "string_as_vect":
             arr = np.array([list(el) for el in arr])
         if (arr.shape[0] == 1) and self.single_sample_no_batch_axis:
-            arr = arr[0,...]
+            arr = arr[0, ...]
         return arr
 
 
@@ -599,7 +590,7 @@ class SequenceMutator(object):
 
 
 class OneHotSequenceMutator(SequenceMutator):
-    def __init__(self, array_trafo = None):
+    def __init__(self, array_trafo=None):
         # from the model info object guess
         self.array_trafo = array_trafo
 
@@ -622,15 +613,15 @@ class OneHotSequenceMutator(SequenceMutator):
         # Modify bases according to allele
         get_warnings = allele == "ref"
         ref_warnings = _modify_bases(seq_obj=input_set,
-                          lines=preproc_conv_mutate["pp_line"].values,
-                          pos=preproc_conv_mutate["varpos_rel"].values.astype(np.int),
-                          base=preproc_conv_mutate[allele].str.upper().values,
-                          is_rc=preproc_conv_mutate["strand"].values == "-",
-                          return_ref_warning=get_warnings)
+                                     lines=preproc_conv_mutate["pp_line"].values,
+                                     pos=preproc_conv_mutate["varpos_rel"].values.astype(np.int),
+                                     base=preproc_conv_mutate[allele].str.upper().values,
+                                     is_rc=preproc_conv_mutate["strand"].values == "-",
+                                     return_ref_warning=get_warnings)
         for ppl in ref_warnings:
-            pcl = np.where(preproc_conv["pp_line"].values==ppl)[0][0]
+            pcl = np.where(preproc_conv["pp_line"].values == ppl)[0][0]
             vstr = "".join([['A', 'C', 'G', 'T', 'N'][x.argmax() if (x.sum() != 0) and
-                    np.all(np.in1d(x, np.arange(0,4))) else 4] for x in input_set[pcl,...]])
+                                                      np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in input_set[pcl, ...]])
             logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
                         "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), vstr))
         # generate reverse complement if needed
@@ -642,7 +633,7 @@ class OneHotSequenceMutator(SequenceMutator):
 
 
 class DNAStringSequenceMutator(SequenceMutator):
-    def __init__(self, array_trafo = None):
+    def __init__(self, array_trafo=None):
         self.array_trafo = array_trafo
 
     def __call__(self, input_set, preproc_conv, allele, s_dir):
@@ -650,7 +641,7 @@ class DNAStringSequenceMutator(SequenceMutator):
         Process sequence object `input_set` according to information given in the `preproc_conv` dataframe of which
         the column with name set in argument `allele` is used. `s_dir` defines the output sequence direction: 'fwd'
         or 'rc'. The DNA sequence will then be mutated accordingly.
-        
+
         The input sequence object must be according to the definition in the dataloader.
         """
         # input_set has to be <list(<str>)> which is achieved by the `array_trafo`.
@@ -669,9 +660,9 @@ class DNAStringSequenceMutator(SequenceMutator):
         for pcl, l in enumerate(preproc_conv["pp_line"].values):
             if preproc_conv["do_mutate"].values[pcl]:
                 output_set.append(_modify_single_string_base(input_set[l],
-                                                      pos=int(preproc_conv["varpos_rel"].values[pcl]),
-                                                      base=preproc_conv[allele].values[pcl],
-                                                      is_rc=preproc_conv["strand"].values[pcl] == "-"))
+                                                             pos=int(preproc_conv["varpos_rel"].values[pcl]),
+                                                             base=preproc_conv[allele].values[pcl],
+                                                             is_rc=preproc_conv["strand"].values[pcl] == "-"))
                 if allele == "ref":
                     is_rc = preproc_conv["strand"].values[pcl] == "-"
                     base = preproc_conv[allele].values[pcl]
@@ -680,7 +671,7 @@ class DNAStringSequenceMutator(SequenceMutator):
                         vstr = rc_str(input_set[l])
                     if vstr[int(preproc_conv["varpos_rel"].values[pcl])] != base:
                         logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
-                                    "Sequence:\n%s"%(str(preproc_conv.iloc[pcl]), str(input_set[l])))
+                                    "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), str(input_set[l])))
             else:
                 output_set.append(input_set[l])
         # subset to the lines that have been identified
@@ -692,7 +683,3 @@ class DNAStringSequenceMutator(SequenceMutator):
         if self.array_trafo is not None:
             output_set = self.array_trafo.from_standard(output_set)
         return output_set
-
-
-
-

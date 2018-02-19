@@ -56,6 +56,7 @@ class Logit(Rc_merging_pred_analysis):
         else:
             return diffs
 
+
 class LogitAlt(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
@@ -69,6 +70,7 @@ class LogitAlt(Rc_merging_pred_analysis):
         else:
             return logits
 
+
 class LogitRef(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         preds = {"ref": ref, "ref_rc": ref_rc, "alt": alt, "alt_rc": alt_rc}
@@ -81,9 +83,6 @@ class LogitRef(Rc_merging_pred_analysis):
             return self.rc_merging(logits, logits_rc)
         else:
             return logits
-
-
-
 
 
 class Diff(Rc_merging_pred_analysis):
@@ -112,7 +111,7 @@ class DeepSEA_effect(Rc_merging_pred_analysis):
             logit_diffs = self.rc_merging(logit_diffs, logit_diffs_rc)
             diffs = self.rc_merging(diffs, diffs_rc)
             #self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
-        
+
         return np.abs(logit_diffs) * np.abs(diffs)
 
 
@@ -190,7 +189,6 @@ def _bed3(regions, fpath):
     to_write.to_csv(fpath, sep="\t", header=False, index=False)
 
 
-
 def _prepare_regions(annotated_regions):
     # A bit of regions annotation and string matching to modify the DNA sequences at the correct positions.
     # annotated_regions are 1-based coordinates!
@@ -204,14 +202,13 @@ def _prepare_regions(annotated_regions):
     return annotated_regions
 
 
-
 def _modify_bases(seq_obj, lines, pos, base, is_rc, return_ref_warning=False):
     # Assumes a fixed order of ACGT and requires one-hot encoding
     assert lines.shape[0] == pos.shape[0]
     assert base.shape[0] == pos.shape[0]
     alphabet = np.array(['A', "C", "G", "T"])
     base_sel = np.where(alphabet[None, :] == base[:, None])
-    base_sel_idx = (np.zeros(base.shape[0], dtype=np.int)-1)
+    base_sel_idx = (np.zeros(base.shape[0], dtype=np.int) - 1)
     base_sel_idx[base_sel[0]] = base_sel[1]
     pos = copy.deepcopy(pos)
     # get bases that are not in the alphabet
@@ -232,11 +229,10 @@ def _modify_bases(seq_obj, lines, pos, base, is_rc, return_ref_warning=False):
     return warn_lines
 
 
-
 def rc_str(dna):
     """Reverse complement a string
     """
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N':'N'}
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'}
     ks = list(complement.keys())
     for k in ks:
         complement[k.lower()] = complement[k].lower()
@@ -247,7 +243,7 @@ def _modify_single_string_base(seq_obj, pos, base, is_rc):
     if is_rc:
         pos = len(seq_obj) - pos - 1
         base = rc_str(base)
-    ret_obj = seq_obj[:pos] + base + seq_obj[(pos+1):]
+    ret_obj = seq_obj[:pos] + base + seq_obj[(pos + 1):]
     return ret_obj
 
 

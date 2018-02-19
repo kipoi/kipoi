@@ -31,8 +31,7 @@ schema:
         column_labels:
             - rbp_prb
 postprocessing:
-    - type: variant_effects
-      args:
-          seq_input:
-            - seq
-          use_rc: seq_only
+    variant_effects:
+      seq_input:
+        - seq
+      use_rc: seq_only

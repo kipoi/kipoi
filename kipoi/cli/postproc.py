@@ -13,7 +13,8 @@ import deepdish
 import logging
 import pybedtools as pb
 import copy
-from kipoi.components import PostProcType, default_kwargs, VarEffectFuncType
+from kipoi.components import default_kwargs
+from kipoi.postprocessing.components import VarEffectFuncType
 from kipoi.utils import load_module, getargs
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -36,22 +37,17 @@ scoring_names = {
     VarEffectFuncType.deepsea_scr: "deepsea_scr",
 }
 
-builtin_default_kwargs = {"rc_merging":"mean"}
+builtin_default_kwargs = {"rc_merging": "mean"}
 
 
 def _get_avail_scoring_methods(model):
-    pp_instructions = None
-    for pp_obj in model.postprocessing:
-        if pp_obj.type == PostProcType.VAR_EFFECT_PREDICTION:
-            pp_instructions = pp_obj.args
-            break
-    if pp_instructions is None:
+    if model.postprocessing.variant_effects is None:
         raise Exception("Model deosn't support variant effect prediction according model yaml file.")
-    avail_scoring_fns = [] # contains callables
+    avail_scoring_fns = []  # contains callables
     avail_scoring_fn_def_args = []  # default kwargs for every callable
-    avail_scoring_fn_names = [] # contains the labels
-    default_scoring_fns = [] # contains the labels of the defaults
-    for sf in pp_instructions.scoring_functions:
+    avail_scoring_fn_names = []  # contains the labels
+    default_scoring_fns = []  # contains the labels of the defaults
+    for sf in model.postprocessing.variant_effects.scoring_functions:
         if sf.type is not VarEffectFuncType.custom:
             sn = scoring_names[sf.type]
             sf_obj = scoring_options[sn]
@@ -82,10 +78,10 @@ def _get_avail_scoring_methods(model):
             if all([(sf.args[k].default is not None) or (sf.args[k].optional) for k in sf.args]):
                 def_kwargs = default_kwargs(sf.args)
             if len(sf.args) == 0:
-                def_kwargs = {} # indicates that this callable doesn't accept any arguments for initialisation.
+                def_kwargs = {}  # indicates that this callable doesn't accept any arguments for initialisation.
 
         if s_label in avail_scoring_fn_names:
-            raise Exception("Mulitple scoring functions defined with name '%s' in the model yaml file!"%s_label)
+            raise Exception("Mulitple scoring functions defined with name '%s' in the model yaml file!" % s_label)
 
         avail_scoring_fn_def_args.append(def_kwargs)
         avail_scoring_fns.append(sf_obj)
@@ -101,9 +97,9 @@ def _get_avail_scoring_methods(model):
         avail_scoring_fns.append(scoring_options["diff"])
         s_label = "diff"
         if s_label in avail_scoring_fn_names:
-            s_label = "default_"+s_label
+            s_label = "default_" + s_label
         avail_scoring_fn_names.append(s_label)
-        if len(default_scoring_fns)==0:
+        if len(default_scoring_fns) == 0:
             default_scoring_fns.append(s_label)
 
     return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
@@ -111,7 +107,7 @@ def _get_avail_scoring_methods(model):
 def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
     # get the scoring methods according to the model definition
     avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, \
-    default_scoring_fns = _get_avail_scoring_methods(model)
+        default_scoring_fns = _get_avail_scoring_methods(model)
 
     errmsg_scoring_kwargs = "When defining `--scoring_kwargs` a JSON representation of arguments (or the path of a" \
                             " file containing them) must be given for every `--scoring` function."
@@ -144,7 +140,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
                 dts[k] = avail_scoring_fns[si](**kwargs)
             else:
                 raise ValueError("Cannot choose scoring function %s. "
-                                 "Model only supports: %s." % (k,str(avail_scoring_fn_names)))
+                                 "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
     # if -s not set use all defaults
     elif len(default_scoring_fns) != 0:
         for arg_iter, k in enumerate(default_scoring_fns):
@@ -195,7 +191,6 @@ def cli_score_variants(command, raw_args):
                              "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
                              "scoring method.")
 
-
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
@@ -225,7 +220,6 @@ def cli_score_variants(command, raw_args):
 
     if not isinstance(args.scoring, list):
         args.scoring = [args.scoring]
-
 
     dts = _get_scoring_fns(model, args.scoring, args.scoring_kwargs)
 

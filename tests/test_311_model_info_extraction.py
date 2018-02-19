@@ -48,9 +48,8 @@ output_schema:
             type: GenomicRanges
             doc: Ranges describing inputs.seq_c
 postprocessing:
-    - type: variant_effects
-      args:
-          bed_input:
+    variant_effects:
+        bed_input:
             - intervals_file
 """
 
@@ -87,8 +86,7 @@ schema:
         shape: (1, )
         doc: Predicted
 postprocessing:
-    - type: variant_effects
-      args:
+    variant_effects:
           seq_input:
             - seq_a
             - seq_b
@@ -97,9 +95,10 @@ postprocessing:
 """
 
 
-
 supports_simple_rc_str = """use_rc: seq_only
 """
+
+
 def test_ModelDescription():
     for rc_support in [True, False]:
         seq_string_shape = ""
@@ -107,9 +106,9 @@ def test_ModelDescription():
             ssrs = supports_simple_rc_str
         else:
             ssrs = ""
-        model = ModelDescription.from_config(from_yaml(model_yaml%(seq_string_shape, ssrs)))
-        dataloader = DataLoaderDescription.from_config(from_yaml(dataloader_yaml%(seq_string_shape)))
-        mi = ModelInfoExtractor(model,dataloader)
+        model = ModelDescription.from_config(from_yaml(model_yaml % (seq_string_shape, ssrs)))
+        dataloader = DataLoaderDescription.from_config(from_yaml(dataloader_yaml % (seq_string_shape)))
+        mi = ModelInfoExtractor(model, dataloader)
         assert mi.use_seq_only_rc == rc_support
         assert all([isinstance(mi.seq_input_mutator[sl], OneHotSequenceMutator) for sl in ["seq_a", "seq_c"]])
         assert all([isinstance(mi.seq_input_mutator[sl], DNAStringSequenceMutator) for sl in ["seq_b"]])
