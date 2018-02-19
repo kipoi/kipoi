@@ -135,6 +135,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
     The reference cyvcf2 object here has to be the one from which the records are taken. INFO tags of this reference
     object will be modified in the process! Hence use carefully!
     """
+
     def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen):
         super(VcfWriterCyvcf2, self).__init__(model)
         # self.vcf_reader = cyvcf2.Reader(reference_vcf_path, "r")
@@ -225,6 +226,7 @@ class VcfWriter(SyncPredictonsWriter):
     """
 
     def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen):
+        import vcf
         super(VcfWriter, self).__init__(model)
         compressed = reference_vcf_path.endswith(".gz")
         self.vcf_reader = vcf.Reader(filename=reference_vcf_path, compressed=compressed)

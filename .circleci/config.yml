@@ -56,7 +56,7 @@ jobs:
       - run:
           name: install the kipoi package
           command: |
-            pip install '.[develop]'
+            pip install '.[develop,vep]'
 
       - run:
           name: list models
