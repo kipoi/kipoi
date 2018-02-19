@@ -12,7 +12,6 @@ import logging
 
 import kipoi
 from kipoi.postprocessing.variant_effects import _modify_bases, _modify_single_string_base, rc_str
-from kipoi.postprocessing.components import VarEffectRCTypes
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -514,7 +513,7 @@ def _get_model_use_seq_only_rc(model):
     if model.postprocessing.variant_effects is None:
         return False
     else:
-        return model.postprocessing.variant_effects.use_rc == VarEffectRCTypes.seq_only
+        return model.postprocessing.variant_effects.use_rc
 
 
 def _get_seq_shape(dataloader, seq_field):

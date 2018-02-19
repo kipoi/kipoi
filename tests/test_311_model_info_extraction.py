@@ -95,7 +95,7 @@ postprocessing:
 """
 
 
-supports_simple_rc_str = """use_rc: seq_only
+supports_simple_rc_str = """use_rc: True
 """
 
 

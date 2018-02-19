@@ -12,10 +12,10 @@ class VarEffectFuncType(enum.Enum):
     custom = "custom"
 
 
-@enum.unique
-class VarEffectRCTypes(enum.Enum):
-    seq_only = "seq_only"
-    none = "none"
+# @enum.unique
+# class VarEffectRCTypes(enum.Enum):
+#     seq_only = "seq_only"
+#     none = "none"
 
 
 @related.immutable(strict=True)
@@ -47,5 +47,6 @@ class VarEffectDataLoaderArgs(RelatedConfigMixin):
 @related.immutable(strict=True)
 class VarEffectModelArgs(RelatedConfigMixin):
     seq_input = related.SequenceField(str)
-    use_rc = related.ChildField(VarEffectRCTypes, default=VarEffectRCTypes.none)
-    scoring_functions = related.SequenceField(VarEffectScoringFunctions, default=[], required=False)
+    use_rc = related.ChildField(bool, default=False, required=False)
+    scoring_functions = related.SequenceField(VarEffectScoringFunctions,
+                                              default=[], required=False)

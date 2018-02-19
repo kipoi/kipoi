@@ -24,14 +24,14 @@ def test_minimal_info():
     pps = PostProcModelStruct.from_config(from_yaml(yaml_in_simple))
     assert pps.variant_effects is not None
     assert pps.variant_effects.seq_input == ["seq"]  # should always be there and is always a list of strings
-    assert pps.variant_effects.use_rc == VarEffectRCTypes.none
+    assert not pps.variant_effects.use_rc
 
 
 yaml_in_simple_rc = """
 variant_effects:
   seq_input:
     - seq
-  use_rc: seq_only
+  use_rc: True
 """
 
 
@@ -39,7 +39,7 @@ def test_use_rc():
     pps = PostProcModelStruct.from_config(from_yaml(yaml_in_simple_rc))
     assert pps.variant_effects is not None
     assert pps.variant_effects.seq_input == ["seq"]  # should always be there and is always a list of strings
-    assert pps.variant_effects.use_rc == VarEffectRCTypes.seq_only
+    assert pps.variant_effects.use_rc
 
 
 yaml_in_bed = """

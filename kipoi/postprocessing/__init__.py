@@ -3,4 +3,4 @@ from .utils.io import VcfWriter
 from .snv_predict import predict_snvs
 from .utils.io import SyncHdf5SeqWriter
 
-# from . import components
+from . import components
