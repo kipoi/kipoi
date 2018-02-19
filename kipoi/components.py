@@ -26,6 +26,7 @@ logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 # Common components (model and dataloader)
 
+
 @related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()

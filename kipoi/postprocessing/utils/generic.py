@@ -7,7 +7,6 @@ import numpy as np
 from collections import OrderedDict
 import re
 import kipoi
-from kipoi.components import PostProcType
 import logging
 
 import kipoi
