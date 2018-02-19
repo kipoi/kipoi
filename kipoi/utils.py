@@ -197,15 +197,19 @@ def lfs_installed(raise_exception=False):
     return ce
 
 
-def get_file_path(file_dir, basename, extensions=[".yml", ".yaml"]):
+def get_file_path(file_dir, basename, extensions=[".yml", ".yaml"],
+                  raise_err=True):
     """Get the file path allowing for multiple file extensions
     """
     for ext in extensions:
         path = os.path.join(file_dir, basename + ext)
         if os.path.exists(path):
             return path
-    raise ValueError("File path doesn't exists: {0}/{1}{2}".
-                     format(file_dir, basename, set(extensions)))
+    if raise_err:
+        raise ValueError("File path doesn't exists: {0}/{1}{2}".
+                         format(file_dir, basename, set(extensions)))
+    else:
+        return None
 
 
 def du(path):

@@ -120,7 +120,13 @@ def env_exists(env):
     return env in [os.path.basename(x) for x in get_envs()]
 
 
-def _call_command(cmd, extra_args, use_stdout=False):
+def _call_command(cmd, extra_args, use_stdout=False,
+                  return_logs_with_stdout=False):
+    """
+    Args:
+      return_logs_with_stdout (bool): If True, return also the logged lines
+          (it only takes an effect with use_stdout)
+    """
     # call conda with the list of extra arguments, and return the tuple
     # stdout, stderr
     cmd_list = [cmd]  # just use whatever conda is on the path
@@ -131,13 +137,20 @@ def _call_command(cmd, extra_args, use_stdout=False):
         if use_stdout:
             p = Popen(cmd_list, stdout=PIPE, universal_newlines=True)
             # Poll process for new output until finished
+            if return_logs_with_stdout:
+                out = []
             for stdout_line in iter(p.stdout.readline, ""):
                 print(stdout_line, end='')
+                if return_logs_with_stdout:
+                    out.append(stdout_line.rstrip())
             p.stdout.close()
             return_code = p.wait()
             if return_code:
                 raise subprocess.CalledProcessError(return_code, cmd_list)
-            return return_code
+            if return_logs_with_stdout:
+                return return_code, out
+            else:
+                return return_code
         else:
             p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     except OSError:

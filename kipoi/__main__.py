@@ -33,7 +33,9 @@ command_functions = {
     'env': cli.env.cli_main,
     # Contribuing
     'test': cli.main.cli_test,
+    'test-source': cli.source_test.cli_test_source,
     'init': cli.main.cli_init,
+
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -53,6 +55,7 @@ parser = argparse.ArgumentParser(
     # - contribuing models:
     init             Initialize a new Kipoi model
     test             Runs a set of unit-tests for the model
+    test-source      Runs a set of unit-tests for many/all models in a source
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
