@@ -30,7 +30,7 @@ jobs:
           name: run tests
           command: |
             mkdir test-reports
-            py.test --cov=kipoi/ tests/ -n 4 --junitxml=test-reports/junit.xml
+            py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
 
       - store_test_results:
           path: test-reports
@@ -68,7 +68,7 @@ jobs:
           name: run tests
           command: |
             mkdir test-reports
-            py.test --cov=kipoi/ tests/ -n 4 --junitxml=test-reports/junit.xml
+            py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
 
       - store_test_results:
           path: test-reports
