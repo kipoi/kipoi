@@ -22,17 +22,17 @@ pages:
   - Python API: tutorials/python-sdk.md
   - R API: tutorials/R-sdk.md
   - Variant effect prediction: tutorials/variant_effect_prediction.md
-- Contribuing:
+- Using:
+  - Getting started: using/01_Getting_started.md
+  - Variant effect predictions: using/02_Variant_effect_prediction.md
+  - Private and public model sources: using/03_Model_sources.md
+- Contributing:
   - Getting started: contributing/01_Getting_started.md
   - Writing model.yaml: contributing/02_Writing_model.yaml.md
   - Writing dataloader.yaml: contributing/03_Writing_dataloader.yaml.md
   - Writing dataloader.py: contributing/04_Writing_dataloader.py.md
   - Writing model.py: contributing/05_Writing_model.py.md
   - Dumping models programatically: contributing/06_dumping_models_programatically.md
-- Using:
-  - Getting started: using/01_Getting_started.md
-  - Variant effect predictions: using/02_Variant_effect_prediction.md
-  - Private and public model sources: using/03_Model_sources.md
 - Api:
   - Model: api/model.md
   - Dataloader: api/dataloader.md
