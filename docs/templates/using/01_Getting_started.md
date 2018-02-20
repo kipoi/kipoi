@@ -1,0 +1,11 @@
+## TODO - avsecz
+  - Install Kipoi, 
+  - go to website, 
+  - choose a model, 
+  - check the required files,
+  - copy the snippet, 
+  - (install dependencies) 
+  - run the prediction
+- [ ] 02_Variant_effect_prediction.md - @krrome
+  - detailed description of variant effect prediction
+  - using the CLI

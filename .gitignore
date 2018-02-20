@@ -71,3 +71,5 @@ target/
 .idea
 .ipynb_checkpoints
 logfile.txt
+
+examples/rbp/example_files/variants.vcf.gz.tbi

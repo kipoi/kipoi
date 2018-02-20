@@ -1,4 +1,6 @@
-## Writing dataloaders
+## TODO - krrome
+
+## Writing dataloaders - old text
 
 ### Possible classess
 
@@ -84,3 +86,4 @@ Note that for the dictionary of numpy arrays we don't need to specify `name: seq
 
 See [tests/test_12_dataloader_classes.py](../tests/test_12_dataloader_classes.py) for implementation examples of each
 dataloader type.
+

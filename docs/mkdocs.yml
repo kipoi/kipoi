@@ -1,0 +1,45 @@
+site_name: Kipoi Documentation
+theme:
+  name: readthedocs
+  custom: theme_dir
+# theme: readthedocs
+# theme_dir: theme_dir
+extra_css: [css/extra.css]
+docs_dir: sources
+repo_url: http://github.com/kipoi/kipoi
+site_url: http://kipoi.org/docs/
+site_description: 'Documentation of Kipoi, model zoo for genomics.'
+
+dev_addr: '0.0.0.0:8000'
+# TODO
+google_analytics: ["TODO", "TODO"]
+
+pages:
+- Home: index.md
+- Tutorials:
+  # ipynb's
+  - Contributing models: tutorials/contributing_models.md
+  - Python API: tutorials/python-sdk.md
+  - R API: tutorials/R-sdk.md
+  - Variant effect prediction: tutorials/variant_effect_prediction.md
+- Contribuing:
+  - Getting started: contributing/01_Getting_started.md
+  - Writing model.yaml: contributing/02_Writing_model.yaml.md
+  - Writing dataloader.yaml: contributing/03_Writing_dataloader.yaml.md
+  - Writing dataloader.py: contributing/04_Writing_dataloader.py.md
+  - Writing model.py: contributing/05_Writing_model.py.md
+  - Dumping models programatically: contributing/06_dumping_models_programatically.md
+- Using:
+  - Getting started: using/01_Getting_started.md
+  - Variant effect predictions: using/02_Variant_effect_prediction.md
+  - Private and public model sources: using/03_Model_sources.md
+- Api:
+  - Model: api/model.md
+  - Dataloader: api/dataloader.md
+  - Pipeline: api/pipeline.md
+  - Metadata: api/metadata.md
+  - Remotes: api/remote.md
+  - Postprocessing:
+    - Variant effect prediction: api/postprocessing/variant_effects.md
+    - Variant effect scores: api/postprocessing/variant_effect_scores.md
+# - Contributing: contributing.md

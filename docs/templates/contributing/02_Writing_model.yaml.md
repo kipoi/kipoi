@@ -1,4 +1,6 @@
-## Other possible models
+## TODO - krrome
+
+## Other possible models - old
 
 As seen in [../nbs/contributing_models.ipynb](../nbs/contributing_models.ipynb), we need to provide the serialized model 
 and write the `model.yaml` file. This document describes all the supported model types.
@@ -50,3 +52,4 @@ The defined class `Model` in `model.py` needs to implement the following methods
 
 - `def predict_on_batch(self, x)` - takes a batch of samples from extractor's returned `['inputs']`
 field and predicts the target variable.
+

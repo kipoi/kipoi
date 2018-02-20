@@ -1,0 +1,73 @@
+/* From Keras theme_extrac css file: */
+
+/*
+ * Long navigations run off the bottom of the screen as the nav
+ * area doesn't scroll.
+ *
+ * https://github.com/mkdocs/mkdocs/pull/202
+ */
+.wy-nav-side {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.wy-nav-content {
+  max-width: 900px;
+}
+
+/*
+ * readthedocs theme hides nav items when the window height is
+ * too small to contain them.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/#348
+ */
+.wy-menu-vertical ul {
+  margin-bottom: 2em;
+}
+
+/*
+ * Fix wrapping in the code highlighting
+ *
+ * https://github.com/mkdocs/mkdocs/issues/233
+ */
+code {
+  white-space: pre;
+  font-size: 90%;
+  color: #9E0F00;
+  background: #FFFAFA;
+}
+
+/*
+ * Wrap inline code samples otherwise they shoot of the side and
+ * can't be read at all.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/313
+ */
+p code {
+  word-wrap: break-word;
+}
+
+/*
+ * The CSS classes from highlight.js seem to clash with the
+ * ReadTheDocs theme causing some code to be incorrectly made
+ * bold and italic.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/411
+ */
+code.cs, code.c {
+  font-weight: inherit;
+  font-style: inherit;
+}
+
+/*
+ * Fix some issues with the theme and non-highlighted code
+ * samples. Without and highlighting styles attached the
+ * formatting is broken.
+ *
+ * https://github.com/mkdocs/mkdocs/issues/319
+ */
+.no-highlight {
+  display: block;
+  padding: 0.5em;
+  color: #333;
+}
