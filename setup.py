@@ -74,7 +74,7 @@ setup(
     keywords=["model zoo", "deep learning",
               "computational biology", "bioinformatics", "genomics"],
     test_suite='tests',
-    package_data={'kipoi': ['logging.conf']},
+    # package_data={'kipoi': ['logging.conf']},
     include_package_data=True,
     tests_require=test_requirements
 )

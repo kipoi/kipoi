@@ -52,18 +52,19 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
     """
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, append_path=True):
         """Loads model from a yaml file
         """
         original_yaml = open(path).read().strip()
         parsed_dict = related.from_yaml(original_yaml)
-        if "path" not in parsed_dict:
+        if append_path and "path" not in parsed_dict:
             parsed_dict["path"] = path
         try:
             return cls.from_config(parsed_dict)
         except Exception as e:
             print(str(e))
-            print("Unable to load file {0} into class {1}".format(os.path.abspath(path), cls))
+            print("Unable to load file {0} into class {1}".
+                  format(os.path.abspath(path), cls))
 
     def dump(self, path):
         """Dump the object to a yaml file

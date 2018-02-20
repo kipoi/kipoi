@@ -3,7 +3,7 @@ include requirements.txt
 
 include README.md
 include LICENSE
-
+include kipoi/logging.conf
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
