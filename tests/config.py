@@ -1,1 +1,1 @@
-install_req = True
+install_req = False

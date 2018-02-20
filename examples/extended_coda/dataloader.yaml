@@ -17,17 +17,17 @@ args:
         doc: "batch size. Default = 128"
         example: 4
         optional: True
-info: 
+info:
     authors:
         - name: Johnny Israeli
           github: jisraeli
     name: extended CODA
     version: 0.1
     doc: DataLoader for single bp resolution ChIP-seq denoising
-# TODO - enable later
-# dependencies:
-#     pip:
-#         - git+git://github.com/kundajelab/genomelake.git#egg=genomelake
+dependencies:
+    pip:
+        - cython
+        - genomelake
 output_schema:
     inputs:
         H3K27AC_subsampled:

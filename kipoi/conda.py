@@ -54,6 +54,25 @@ def create_env(env_name, conda_deps):
     return create_env_from_file(tmp_file_path)
 
 
+def get_env_path(env_name):
+    for env in get_envs():
+        if env.endswith(env_name):
+            return env
+    return None
+
+
+def get_kipoi_bin(env_name):
+    """Returns the path to the kipoi executable in {env_name} environment
+    """
+    env_root = get_env_path(env_name)
+    if env_root is None:
+        raise ValueError("Conda environment {0} doesn't exist".format(env_name))
+    out_path = os.path.join(env_root, "bin", "kipoi")
+    if not os.path.exists(out_path):
+        raise ValueError("kipoi is not installed in conda environment: {0}".format(env_name))
+    return out_path
+
+
 def create_env_from_file(env_file):
     cmd_list = ["env", "create", "--file", env_file]
     return _call_conda(cmd_list, use_stdout=True)
@@ -101,7 +120,13 @@ def env_exists(env):
     return env in [os.path.basename(x) for x in get_envs()]
 
 
-def _call_command(cmd, extra_args, use_stdout=False):
+def _call_command(cmd, extra_args, use_stdout=False,
+                  return_logs_with_stdout=False):
+    """
+    Args:
+      return_logs_with_stdout (bool): If True, return also the logged lines
+          (it only takes an effect with use_stdout)
+    """
     # call conda with the list of extra arguments, and return the tuple
     # stdout, stderr
     cmd_list = [cmd]  # just use whatever conda is on the path
@@ -112,13 +137,20 @@ def _call_command(cmd, extra_args, use_stdout=False):
         if use_stdout:
             p = Popen(cmd_list, stdout=PIPE, universal_newlines=True)
             # Poll process for new output until finished
+            if return_logs_with_stdout:
+                out = []
             for stdout_line in iter(p.stdout.readline, ""):
                 print(stdout_line, end='')
+                if return_logs_with_stdout:
+                    out.append(stdout_line.rstrip())
             p.stdout.close()
             return_code = p.wait()
             if return_code:
                 raise subprocess.CalledProcessError(return_code, cmd_list)
-            return return_code
+            if return_logs_with_stdout:
+                return return_code, out
+            else:
+                return return_code
         else:
             p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     except OSError:

@@ -113,6 +113,7 @@ def cli_preproc(command, raw_args):
     # arr_inputs = {k: inputs.create_dataset(k, (n, ) + np.asarray(v)) for k, v in six.iteritems(sample["metadata"])}
 
 
+# TODO - store the predictions/metadata to parquet - ?
 def cli_predict(command, raw_args):
     """CLI interface to predict
     """
@@ -191,7 +192,7 @@ def cli_predict(command, raw_args):
     if args.file_format == "hdf5":
         deepdish.io.save(args.output, numpy_collate_concat(obj_list))
 
-    logger.info('Successfully predictde samples')
+    logger.info('Done! Predictions stored in {0}'.format(args.output))
 
 
 def io_batch2df(batch, pred_batch):

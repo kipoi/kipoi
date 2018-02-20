@@ -1,8 +1,8 @@
 import pytest
 from related import from_yaml
 
-from kipoi.components import *
-from kipoi.postprocessing.components import *
+from kipoi.components import PostProcModelStruct, PostProcDataLoaderStruct
+from kipoi.postprocessing.components import VarEffectFuncType
 
 yaml_in_no_args = """
 variant_effects:
@@ -99,4 +99,3 @@ def test_complex_example():
     for k in expected_args:
         for k2 in expected_args[k]:
             assert getattr(custom_fn_args[k], k2) == expected_args[k][k2]
-

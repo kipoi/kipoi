@@ -57,4 +57,3 @@ def test_dataloader_model(example):
         batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])
-

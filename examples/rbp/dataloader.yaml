@@ -27,10 +27,11 @@ info:
     doc: RBP binding prediction
 dependencies:
     pip:
-        # - git+git://github.com/kundajelab/genomelake.git#egg=genomelake
         - concise>=0.6.5
         - pybedtools
         - pysam
+        - cython
+        - genomelake
 output_schema:
     inputs:
         seq:

@@ -8,6 +8,7 @@ import argparse
 import subprocess
 import kipoi
 from kipoi.cli.parser_utils import add_model, add_dataloader
+from kipoi.components import Dependencies
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -20,17 +21,18 @@ def replace_slash(s, replace_with="__"):
     return s.replace("/", replace_with)
 
 
-def conda_env_name(model_name, dataloader_name):
+def conda_env_name(model_name, dataloader_name, source):
     """Create a conda env name
     """
     model_name = os.path.normpath(model_name)
     dataloader_name = os.path.normpath(dataloader_name)
 
     if dataloader_name == model_name:
-        return "kipoi-{0}".format(replace_slash(model_name))
+        return "{0}-{1}".format(source, replace_slash(model_name))
     else:
-        return "kipoi-{0}-{1}".format(replace_slash(model_name),
-                                      replace_slash(dataloader_name))
+        return "{0}-{1}-{2}".format(source,
+                                    replace_slash(model_name),
+                                    replace_slash(dataloader_name))
 
 
 def export_env(model, source, dataloader=None, dataloader_source="kipoi",
@@ -65,7 +67,7 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
 
     # specify the default environment
     if env is None:
-        env = conda_env_name(model, dataloader)
+        env = conda_env_name(model, dataloader, source)
 
     if env_file is None:
         env_file = os.path.join(env_dir, "{env}.yaml".format(env=env))
@@ -76,8 +78,14 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
     dataloader_descr = kipoi.get_dataloader_descr(dataloader, dataloader_source)
 
     deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
-    if os.path.dirname(env_file):
-        os.makedirs(os.path.dirname(env_file), exist_ok=True)
+
+    # add Kipoi to the dependencies
+    deps = Dependencies(pip=["kipoi"]).merge(deps)
+
+    # TODO - if we should do VEP - add vep dependencies
+
+    if not os.path.exists(os.path.dirname(env_file)):
+        os.makedirs(os.path.dirname(env_file))
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
     return env, env_file
@@ -121,7 +129,8 @@ def cli_create(cmd, raw_args):
 
     # create the tmp dir
     tmpdir = "/tmp/kipoi/envfiles"
-    os.makedirs(tmpdir, exist_ok=True)
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))

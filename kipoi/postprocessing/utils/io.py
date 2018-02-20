@@ -1,14 +1,8 @@
-
-# simple class to save a bed file sequentially
 from abc import abstractmethod
-
 import numpy as np
-import cyvcf2
-import vcf
 from tqdm import tqdm
 from kipoi.postprocessing.utils.generic import prep_str, convert_record, default_vcf_id_gen
 import os
-import h5py
 import six
 import gzip
 import logging
@@ -44,6 +38,10 @@ def recursive_h5_writer(objs, handle, create):
 
 
 class BedWriter:
+    """
+    simple class to save a bed file sequentially
+    """
+
     # At the moment
     def __init__(self, output_fname):
         self.output_fname = output_fname
@@ -87,6 +85,7 @@ class SyncHdf5SeqWriter(SeqWriter):
     """
 
     def __init__(self, ouput_fn):
+        import h5py
         try:
             os.unlink(ouput_fn)
         except:
@@ -149,6 +148,8 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
 
     def __call__(self, predictions, records, line_ids=None):
         # First itertation: the output file has to be created and the headers defined
+        import cyvcf2
+
         if len(predictions) == 0:
             return None
 
@@ -225,6 +226,7 @@ class VcfWriter(SyncPredictonsWriter):
     """
 
     def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen):
+        import vcf
         super(VcfWriter, self).__init__(model)
         compressed = reference_vcf_path.endswith(".gz")
         self.vcf_reader = vcf.Reader(filename=reference_vcf_path, compressed=compressed)
@@ -237,12 +239,14 @@ class VcfWriter(SyncPredictonsWriter):
 
     @staticmethod
     def _generate_info_field(id, num, info_type, desc, source, version):
+        import vcf
         return vcf.parser._Info(id, num,
                                 info_type, desc,
                                 source, version)
 
     def __call__(self, predictions, records, line_ids=None):
         # First itertation: the output file has to be created and the headers defined
+        import vcf
         if len(predictions) == 0:
             return None
 
@@ -309,5 +313,3 @@ class VcfWriter(SyncPredictonsWriter):
 
     def close(self):
         self.vcf_writer.close()
-
-

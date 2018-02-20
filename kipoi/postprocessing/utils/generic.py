@@ -4,10 +4,9 @@ from __future__ import print_function
 from abc import abstractmethod
 
 import numpy as np
-import pybedtools
 from collections import OrderedDict
 import re
-import vcf
+import kipoi
 import logging
 
 import kipoi
@@ -18,6 +17,7 @@ logger.addHandler(logging.NullHandler())
 
 
 def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
+    import pybedtools
     pbh = pybedtools.BedTool(input_fn)
     fn = input_fn
     if not pbh._tabixed():
@@ -285,6 +285,8 @@ def convert_record(input_record, pyvcf_reader):
     Convert a cyvcf2 record into a pyvcf record. The source files should at least be similar in terms of INFO tags.
     FILTER and FORMAT tags might not be handeled correctly at the moment!
     """
+    import vcf
+
     def revert_to_info(info_obj):
         out_str_elms = []
         for el in list(info_obj):

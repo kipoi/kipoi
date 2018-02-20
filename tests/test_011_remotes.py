@@ -5,15 +5,13 @@ import os
 import pandas as pd
 
 
-# TODO - add installation dependencies?
-
 def test_load_models_kipoi():
     k = kipoi.config.get_source("kipoi")
 
     l = k.list_models()  # all the available models
 
-    assert "extended_coda" in list(l.model)
-    model = "extended_coda"
+    assert "HAL" in list(l.model)
+    model = "HAL"
     mpath = k.pull_model(model)
     m_dir = os.path.dirname(mpath)
 
@@ -25,7 +23,7 @@ def test_load_models_kipoi():
 
 
 def test_load_models_local():
-    model = "examples/extended_coda"
+    model = "examples/iris_model_template"
     kipoi.get_model(model, source="dir")
     kipoi.get_dataloader_factory(model, source="dir")
 

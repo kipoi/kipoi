@@ -9,9 +9,7 @@ import argparse
 import kipoi
 from kipoi.cli.parser_utils import add_model, add_dataloader, file_exists, dir_exists
 from kipoi.utils import parse_json_file_str, cd
-import deepdish
 import logging
-import pybedtools as pb
 import copy
 from kipoi.components import default_kwargs
 from kipoi.postprocessing.components import VarEffectFuncType
@@ -157,6 +155,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
+    import pybedtools
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
@@ -198,6 +197,10 @@ def cli_score_variants(command, raw_args):
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
+    if args.file_format == "hdf5":
+        # only if hdf5 output is used, import deepdish
+        import deepdish
+
     # Check that all the folders exist
     file_exists(args.vcf_path, logger)
     dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
@@ -229,7 +232,7 @@ def cli_score_variants(command, raw_args):
     # Select the appropriate region generator
     if args.restriction_bed is not None:
         # Select the restricted SNV-centered region generator
-        pbd = pb.BedTool(args.restriction_bed)
+        pbd = pybedtools.BedTool(args.restriction_bed)
         vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
         logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
                     'Only defined regions will be tested.')

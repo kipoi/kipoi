@@ -23,7 +23,6 @@ from kipoi import postprocessing
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-
 # --------------------------------------------
 # Common components (model and dataloader)
 
@@ -467,6 +466,7 @@ class PostProcDataLoaderStruct(RelatedConfigMixin):
     variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
 
 
+
 @related.immutable(strict=True)
 class PostProcModelStruct(RelatedConfigMixin):
     variant_effects = related.ChildField(postprocessing.components.VarEffectModelArgs, required=False)
@@ -555,6 +555,11 @@ class Dependencies(RelatedConfigMixin):
 
     def to_env_dict(self, env_name):
         channels, packages = self._get_channels_packages()
+        if isinstance(packages, related.types.TypedSequence):
+            packages = packages.list
+        if isinstance(channels, related.types.TypedSequence):
+            channels = channels.list
+
         env_dict = OrderedDict(
             name=env_name,
             channels=channels,
@@ -566,7 +571,25 @@ class Dependencies(RelatedConfigMixin):
         """Dump the dependencies to a file
         """
         with open(path, 'w') as f:
-            f.write(yaml_ordered_dump(self.to_env_dict(env_name),
+            d = self.to_env_dict(env_name)
+
+            # add python if not present
+            add_py = True
+            for dep in d['dependencies']:
+                if isinstance(dep, str) and dep.startswith("python"):
+                    add_py = False
+
+            if add_py:
+                d['dependencies'] = ["python"] + d['dependencies']
+            # -----
+            # remove fields that are empty
+            out = []
+            for k in d:
+                if not (isinstance(d[k], list) and len(d[k]) == 0):
+                    out.append((k, d[k]))
+            # -----
+
+            f.write(yaml_ordered_dump(OrderedDict(out),
                                       indent=2,
                                       default_flow_style=False))
 
@@ -626,6 +649,27 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     def get_example_kwargs(self):
         return example_kwargs(self.args)
 
+
+# ---------------------
+# Global source config
+
+# TODO - write a unit-test for these three
+@related.immutable
+class TestModelConfig(RelatedConfigMixin):
+    batch_size = related.IntegerField(default=None, required=False)
+
+
+@related.immutable
+class TestConfig(RelatedConfigMixin):
+    """Models config.yaml in the model root
+    """
+    constraints = related.MappingField(TestModelConfig, "name", required=False,
+                                       repr=True)
+
+
+@related.immutable
+class SourceConfig(RelatedLoadSaveMixin):
+    test = related.ChildField(TestConfig, required=False)
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)

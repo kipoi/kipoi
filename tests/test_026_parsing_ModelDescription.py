@@ -104,7 +104,6 @@ def test_model_loading_on_examples(example):
     # check all the fields exists
     md.type == "keras"
 
-    md.args["arch"]
     md.args["weights"]
     # md.args["custom_objects"]  # doesn't have to be defined
 

@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import pickle
+import glob
 import os
 import sys
 import subprocess
@@ -195,22 +197,26 @@ def lfs_installed(raise_exception=False):
     return ce
 
 
-def get_file_path(file_dir, basename, extensions=[".yml", ".yaml"]):
+def get_file_path(file_dir, basename, extensions=[".yml", ".yaml"],
+                  raise_err=True):
     """Get the file path allowing for multiple file extensions
     """
     for ext in extensions:
         path = os.path.join(file_dir, basename + ext)
         if os.path.exists(path):
             return path
-    raise ValueError("File path doesn't exists: {0}/{1}{2}".
-                     format(file_dir, basename, set(extensions)))
+    if raise_err:
+        raise ValueError("File path doesn't exists: {0}/{1}{2}".
+                         format(file_dir, basename, set(extensions)))
+    else:
+        return None
 
 
 def du(path):
     """disk usage in human readable format (e.g. '2,1GB')"""
     try:
         return subprocess.check_output(['du', '-sh', path]).split()[0].decode('utf-8')
-    except:
+    except Exception:
         return "NA"
 
 
@@ -240,9 +246,27 @@ def read_txt(file_path, comment_str="#"):
     return out
 
 
+def read_pickle(f):
+    with open(f, "rb") as f:
+        return pickle.load(f)
+
+
 def merge_dicts(x, y):
     """https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
     """
     z = x.copy()   # start with x's keys and values
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
+
+
+def list_files_recursively(root_dir, basename, suffix='y?ml'):
+    """search for filenames matching the pattern: {root_dir}/**/{basename}.{suffix}
+    """
+    if sys.version_info >= (3, 5):
+        return [filename[len(root_dir):] for filename in
+                glob.iglob(root_dir + '**/{0}.{1}'.format(basename, suffix), recursive=True)]
+    else:
+        import fnmatch
+        return [os.path.join(root, filename)[len(root_dir):]
+                for root, dirnames, filenames in os.walk(root_dir)
+                for filename in fnmatch.filter(filenames, '{0}.{1}'.format(basename, suffix))]

@@ -2,7 +2,6 @@
 """
 import kipoi
 import os
-import config
 
 
 def test_config_file_exists():

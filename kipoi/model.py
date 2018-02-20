@@ -4,7 +4,7 @@ from __future__ import print_function
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd, merge_dicts
+from .utils import load_module, cd, merge_dicts, read_pickle
 import abc
 import six
 import numpy as np
@@ -250,20 +250,10 @@ class KerasModel(BaseModel, GradientMixin):
         return self._input_grad(x, -1, output_slice)
 
 
-# def PyTorchModel(BaseModel):
-# TODO - implement and test
-#     def __init__(self, path):
-#         import torch
-#         self.model = torch.load(path)
-
-#     def predict_on_batch(self, x):
-#         return self.model(x)
-
 class PyTorchModel(BaseModel):
     """Loads a pytorch model. 
 
     """
-    #(file=None, build_fn=None, weights=None)
 
     def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """
@@ -474,8 +464,7 @@ class TensorFlowModel(BaseModel):
         self.const_feed_dict_pkl = const_feed_dict_pkl
         if self.const_feed_dict_pkl is not None:
             # Load the feed dictionary from the pickle file
-            from sklearn.externals import joblib
-            const_feed_dict = joblib.load(self.const_feed_dict_pkl)
+            const_feed_dict = read_pickle(self.const_feed_dict_pkl)
             self.const_feed_dict = {self.graph.get_operation_by_name(k).outputs[0]: v
                                     for k, v in six.iteritems(const_feed_dict)}
         else:

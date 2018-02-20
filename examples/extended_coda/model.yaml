@@ -1,9 +1,6 @@
 type: keras
 args:
-    weights: model_files/weights.h5
-    arch: model_files/model.json
-# default_dataloader: dataloader.yaml # shall we call it just dataloader?
-# dataloader.yaml is used by default
+    weights: model_files/keras2/model.h5
 info:
     authors:
         - name: Johnny Israeli
@@ -13,8 +10,8 @@ info:
     doc: Single bp resolution ChIP-seq denoising
 dependencies:
     pip:
-      - tensorflow==1.0.0
-      - keras==1.2.2
+      - tensorflow>=1.0.0
+      - keras>2.0.4
 schema:
     inputs:
         H3K27AC_subsampled:

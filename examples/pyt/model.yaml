@@ -12,8 +12,6 @@ info:
 dependencies:
     conda:
         - pytorch::pytorch>=0.2.0
-        - pytorch::torchvision
-
 schema:
     inputs:
         name: input

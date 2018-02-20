@@ -2,13 +2,13 @@
 """
 import pytest
 import os
-import tensorflow as tf
 import numpy as np
 from kipoi.model import TensorFlowModel
 # fixture
 
 
 def test_loading():
+    import tensorflow as tf
     checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
     const_feed_dict_pkl = "examples/iris_tensorflow/model_files/const_feed_dict.pkl"
 
