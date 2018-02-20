@@ -8,6 +8,7 @@ extra_css: [css/extra.css]
 docs_dir: sources
 repo_url: http://github.com/kipoi/kipoi
 site_url: http://kipoi.org/docs/
+edit_uri: edit/master/docs/templates/
 site_description: 'Documentation of Kipoi, model zoo for genomics.'
 
 dev_addr: '0.0.0.0:8000'
