@@ -14,9 +14,12 @@ for file in $(cat ipynb_pages.txt); do
     file_out=sources/${DIR}/${file}.md
     dir_out=sources/${DIR}/${file}_files
 
+    # fix the paths for the original images
+    replace '![img](../docs/theme_dir/img/' '![img](/img/' -- $file_out
+
     if [ -d "${dir_out}" ]; then
 
-	# move the additional files <file>_files to theme_dir/img/ipynb/
+	# move the additional files <file>_files to theme_dir/img/ipynb/ (inline plots in ipynb)
 	rm -r theme_dir/img/ipynb/${file}_files
 	mv -f ${dir_out} theme_dir/img/ipynb/
 

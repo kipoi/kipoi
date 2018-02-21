@@ -38,7 +38,7 @@ conda install -c conda-forge git-lfs
 
 Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
-```
+```bash
 git clone https://github.com/kipoi/kipoi.git
 pip install kipoi/
 ```
@@ -47,7 +47,7 @@ pip install kipoi/
 
 If you wish to develop `kipoi`, run instead:
 
-```
+```bash
 conda install pytorch-cpu
 pip install -e '.[develop]'
 ```

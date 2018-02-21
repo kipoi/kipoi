@@ -1,10 +1,25 @@
 site_name: Kipoi Documentation
+
+# ------- readthedocs ---------
 theme:
   name: readthedocs
-  custom: theme_dir
-# theme: readthedocs
-# theme_dir: theme_dir
+  custom_dir: theme_dir
 extra_css: [css/extra.css]
+# --- material design  
+# theme:
+#   name: material
+#   custom_dir: theme_dir
+#   palette:
+#     primary: 'Green'
+#     accent: 'Indigo'
+    
+# markdown_extensions:
+#   - admonition
+#   - codehilite:
+#       guess_lang: false
+#   - toc:
+#       permalink: true
+# --------------------------
 docs_dir: sources
 repo_url: http://github.com/kipoi/kipoi
 site_url: http://kipoi.org/docs/
