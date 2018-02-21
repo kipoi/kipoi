@@ -1,6 +1,6 @@
 ## Using Kipoi - Getting started
 
-### Setup
+### Steps
 
 #### 1. Install Kipoi
 
@@ -13,12 +13,23 @@
 #### 2. Choose the model from <http://kipoi.org/models>
 
 1. Navigate to <http://kipoi.org/models> and select a model of your interest
-2. Open the model page: <http://kipoi.org/models/DeepSEAKeras/>
-3. In the Dataloader section, check the required arguments
+2. On model's page (`http://kipoi.org/models/<model>`), check the required arguments in the dataloader section
 
-### Python
+#### 3. Use the model
 
-Here are the most useful python commands
+You can use the model from:
+
+- Python
+- Crommand-line interface
+- R (via the [reticulate](https://github.com/rstudio/reticulate) package)
+
+
+-----------------------------------------
+
+
+### Python - quick start
+
+See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for additional information. Here is a list of most useful python commands
 
 ```python
 import kipoi
@@ -39,7 +50,6 @@ model = kipoi.get_model("rbp_eclip/UPF1")
 #### Access information about the model
 
 ```python
-
 model.info # Information about the author:
 
 model.default_dataloader # Access the default dataloader
@@ -89,7 +99,9 @@ it_train = dl.batch_train_iter(batch_size=32)  # will yield tuples (inputs, targ
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 
-### Command-line interface
+-----------------------------------------
+
+### Command-line interface - quick start
 
 #### Show help
 

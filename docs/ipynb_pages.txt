@@ -1,4 +1,4 @@
 contributing_models
-python-sdk
-R-sdk
+python-api
+R-api
 variant_effect_prediction

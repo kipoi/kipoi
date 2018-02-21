@@ -2,15 +2,15 @@ site_name: Kipoi Documentation
 
 # ------- readthedocs ---------
 theme:
-  name: readthedocs
-  custom_dir: theme_dir
+ name: readthedocs
+ custom_dir: theme_dir
 extra_css: [css/extra.css]
 # --- material design  
 # theme:
 #   name: material
 #   custom_dir: theme_dir
 #   palette:
-#     primary: 'Green'
+#     primary: 'Indigo'
 #     accent: 'Indigo'
     
 # markdown_extensions:
@@ -35,8 +35,8 @@ pages:
 - Tutorials:
   # ipynb's
   - Contributing models: tutorials/contributing_models.md
-  - Python API: tutorials/python-sdk.md
-  - R API: tutorials/R-sdk.md
+  - Python API: tutorials/python-api.md
+  - R API: tutorials/R-api.md
   - Variant effect prediction: tutorials/variant_effect_prediction.md
 - Using:
   - Getting started: using/01_Getting_started.md

@@ -120,15 +120,18 @@ $ kipoi
 usage: kipoi <command> [-h] ...
 
     # Kipoi model-zoo command line tool. Available sub-commands:
+    # - using models:
     ls               List all the available models
-    predict          Run the model prediction.
-    pull             Downloads the directory associated with the model
-    preproc          Returns an hdf5 array.
-    test             Runs a set of unit-tests for the model
-
-    # Further sub-commands:
+    predict          Run the model prediction
+    pull             Download the directory associated with the model
+    preproc          Run the dataloader and save the results to an hdf5 array
     postproc         Tools for model postprocessing like variant effect prediction
-    env              Tools to work with kipoi conda environments
+    env              Tools for managing Kipoi conda environments
+
+    # - contribuing models:
+    init             Initialize a new Kipoi model
+    test             Runs a set of unit-tests for the model
+    test-source      Runs a set of unit-tests for many/all models in a source
 ```
 
 Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/cli.md](docs/cli.md) for more information.
