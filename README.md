@@ -38,7 +38,7 @@ conda install -c conda-forge git-lfs
 
 Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
-```
+```bash
 git clone https://github.com/kipoi/kipoi.git
 pip install kipoi/
 ```
@@ -47,7 +47,7 @@ pip install kipoi/
 
 If you wish to develop `kipoi`, run instead:
 
-```
+```bash
 conda install pytorch-cpu
 pip install -e '.[develop]'
 ```
@@ -64,11 +64,11 @@ If you wish to run tests in parallel, run `py.test -n 6`.
 import kipoi
 
 # list all the available models
-kipoi.list_models()  
+kipoi.list_models()
 
 # Model ----------------------
 # Load the model from github.com/kipoi/models/rbp
-model = kipoi.get_model("rbp", source="kipoi") # source="kipoi" is the default
+model = kipoi.get_model("rbp_eclip/UPF1", source="kipoi") # source="kipoi" is the default
 
 # Load the model from a local directory
 model = kipoi.get_model("~/mymodels/rbp", source="dir")  
@@ -92,7 +92,7 @@ model.predict_on_batch(x)
 model.pipeline.predict({"dataloader_arg1": "inputs.csv"})
 
 # Dataloader -------------------
-Dl = kipoi.get_dataloader_factory("rbp") # returns a class that needs to be instantiated
+Dl = kipoi.get_dataloader_factory("rbp_eclip/UPF1") # returns a class that needs to be instantiated
 dl = Dl(dataloader_arg1="inputs.csv")  # Create/instantiate an object
 
 # batch_iter - common to all dataloaders
