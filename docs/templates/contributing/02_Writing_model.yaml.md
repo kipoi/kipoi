@@ -207,7 +207,7 @@ schema:
          shape: (10)
 ```
 
-* A list of numpy arrays as inputs or targets:
+* A dictionary of numpy arrays as inputs or targets:
 
 ```yaml
 schema:
