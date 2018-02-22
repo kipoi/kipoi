@@ -10,7 +10,7 @@ The easiest way to run variant effect prediction is the following:
 
 ```python
 import kipoi.postprocessing.snv_predict as sp
-from kipoi kipoi.postprocessing import kipoi VcfWriter
+from kipoi.postprocessing import kipoi VcfWriter
 from kipoi.postprocessing.variant_effects import Diff
 
 model = kipoi.get_model("my_model_name")
@@ -24,7 +24,7 @@ out_vcf_fpath = "path/to/my_annotated_vcf.vcf"
 
 writer = VcfWriter(model, vcf_path, out_vcf_fpath)
 
-sp.predict_snvs(model, Dataloader, vcf_path, batch_size = 32
+sp.predict_snvs(model, Dataloader, vcf_path, batch_size = 32,
                       dataloader_args=dataloader_arguments,
                       evaluation_function_kwargs={'diff_types': {'diff': Diff()}},
                       sync_pred_writer=writer)
