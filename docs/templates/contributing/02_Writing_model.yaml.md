@@ -274,10 +274,6 @@ The `targets` fields of `schema` may be lists, dictionaries or single occurences
 
 
 
-
-
-
-
 ### How model types handle schemas
 The different model types handle those three different encapsulations of numpy arrays differently:
 

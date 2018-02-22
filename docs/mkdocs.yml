@@ -38,6 +38,7 @@ pages:
   - Python API: tutorials/python-api.md
   - R API: tutorials/R-api.md
   - Variant effect prediction: tutorials/variant_effect_prediction.md
+  - Composing models: tutorials/composing_models.md
 - Using:
   - Getting started: using/01_Getting_started.md
   - Variant effect predictions: using/02_Variant_effect_prediction.md
