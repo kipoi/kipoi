@@ -2,3 +2,4 @@ contributing_models
 python-api
 R-api
 variant_effect_prediction
+composing_models

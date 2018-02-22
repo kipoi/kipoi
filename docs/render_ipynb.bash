@@ -26,11 +26,14 @@ for file in $(cat ipynb_pages.txt); do
     if [ -d "${dir_out}" ]; then
 
 	# move the additional files <file>_files to theme_dir/img/ipynb/ (inline plots in ipynb)
-	rm -r theme_dir/img/ipynb/${file}_files
+	if [ -d "theme_dir/img/ipynb/${file}_files" ]; then
+	    rm -r theme_dir/img/ipynb/${file}_files
+	fi
 	mv -f ${dir_out} theme_dir/img/ipynb/
 
 	# fix the path in the .md file
 	replace '![png]('${file}'_files' '![png](/img/ipynb/'${file}'_files' -- $file_out
+	replace '![svg]('${file}'_files' '![svg](/img/ipynb/'${file}'_files' -- $file_out
     fi
 done    
 

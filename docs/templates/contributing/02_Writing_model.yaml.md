@@ -1,7 +1,44 @@
 # model.yaml
+
 The model.yaml file describes the individual model in the model zoo. It defines its dependencies, framework, architecture, input / output schema, general information and more. Correct defintions in the model.yaml enable to make full use of Kipoi features and make sure that a model can be executed at any point in future.
 
 To help understand the synthax of YAML please take a look at: [YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
+
+Here is an example `model.yaml`:
+
+```yaml
+type: keras  # use `kipoi.model.KerasModel`
+args:  # arguments of `kipoi.model.KerasModel`
+    arch: model_files/model.json
+    weights: model_files/weights.h5
+default_dataloader: . # path to the dataloader directory. Here it's defined in the same directory
+info: # General information about the model
+    authors: 
+        - name: Your Name
+          github: your_github_username
+          email: your_email@host.org
+    doc: Model predicting the Iris species
+    version: 0.1  # optional 
+    cite_as: https://doi.org:/... # preferably a doi url to the paper
+    trained_on: Iris species dataset (http://archive.ics.uci.edu/ml/datasets/Iris) # short dataset description
+    license: MIT # Software License - defaults to MIT
+dependencies:
+    conda: # install via conda
+      - python=3.5
+      - h5py
+      # - soumith::pytorch  # specify packages from other channels via <channel>::<package>      
+    pip:   # install via pip
+      - keras>=2.0.4
+      - tensorflow>=1.0
+schema:  # Model schema
+    inputs:
+        features:
+            shape: (4,)  # array shape of a single sample (omitting the batch dimension)
+            doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+    targets:
+        shape: (3,)
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+```
 
 The model.yaml file has the following mandatory fields:
 
@@ -234,10 +271,6 @@ The `targets` fields of `schema` may be lists, dictionaries or single occurences
 * `doc`: A free text description of the model input
 * `name`: Name of model  target, not required if target is a dictionary.
 * `column_labels`: Labels for the tasks of a multitask matrix output. Can be the file name of a text file containing the task labels (one label per line).
-
-
-
-
 
 
 
