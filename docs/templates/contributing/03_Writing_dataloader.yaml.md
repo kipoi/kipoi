@@ -1,65 +1,81 @@
-#dataloader.yaml
+# dataloader.yaml
 
-The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the dataloader.yaml is essential for the use of a model in the zoo.
-
-The main aim of a dataloader is to generate data with which a model can be run. It therefore has to return a dictionary with three keys: `inputs`, `targets`, `metadata`. The `inputs` and `targets` have to be compatible with the model, more details see below (definition of `output_schema`).
-
-
-A dataloader has to be a subclass of the following classes which are defined in `kipoi.data`:
-
-- `PreloadedDataset` - Function that returns the whole dataset as a nested dictionary/list of numpy arrays
-  - **useful when:** the dataset is expected to load quickly and fit into the memory
-
-- `Dataset` - Class that inherits from `kipoi.data.Dataset` and implements `__len__` and `__getitem__` methods. `__getitem__` returns a single sample from the dataset.
-  - **useful when:** dataset length is easy to infer, there are no significant performance gain when reading data of the disk in batches
-
-- `BatchDataset` - Class that inherits from `kipoi.data.BatchDataset` and implements `__len__` and `__getitem__` methods. `__getitem__` returns a single batch of samples from the dataset.
-  - **useful when:** dataset length is easy to infer, and there is a significant performance gain when reading data of the disk in batches
-
-- `SampleIterator` - Class that inherits from `kipoi.data.SampleIterator` and implements `__iter__` and `__next__` (`next` in python 2). `__next__` returns a single sample from the dataset or raises `StopIteration` if all the samples were already returned.
-  - **useful when:** the dataset length is not know in advance or is difficult to infer, and there are no significant performance gain when reading data of the disk in batches
-
-- `BatchIterator` - Class that inherits from `kipoi.data.BatchIterator` and implements `__iter__` and `__next__` (`next` in python 2). `__next__` returns a single batch of samples sample from the dataset or raises `StopIteration` if all the samples were already returned.
-  - **useful when:** the dataset length is not know in advance or is difficult to infer, and there is a significant performance gain when reading data of the disk in batches
-
-- `SampleGenerator` - A generator function that yields a single sample from the dataset and returns when all the samples were yielded.
-  - **useful when:** same as for `SampleIterator`, but can be typically implemented in fewer lines of code
-
-- `BatchGenerator` - A generator function that yields a single batch of samples from the dataset and returns when all the samples were yielded.
-  - **useful when:** same as for `BatchIterator`, but can be typically implemented in fewer lines of code
-
-
-Here is a table showing the (recommended) requirements for each dataloader type:
-
-| Dataloader type   	| Length known? 	| Significant benefit from loading data in batches? 	| Fits into memory and loads quickly? 	|
-|-------------------	|---------------	|---------------------------------------------------	|-------------------------------------	|
-| PreloadedDataset  	| yes           	| yes                                               	| yes                                 	|
-| Dataset           	| yes           	| no                                                	| no                                  	|
-| BatchDataset      	| yes           	| yes                                               	| no                                  	|
-| SampleIterator    	| no            	| no                                                	| no                                  	|
-| BatchIterator     	| no            	| yes                                               	| no                                  	|
-| SampleGenerator   	| no            	| no                                                	| no                                  	|
-| BatchGenerator    	| no            	| yes                                               	| no                                  	|
+The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read [Writing dataloader.py](../04_Writing_dataloader.py).
 
 To help understand the synthax of YAML please take a look at: [YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 
+Here is an example `dataloader.yaml`:
 
+```yaml
+type: Dataset
+defined_as: dataloader.py::MyDataset  # We need to implement MyDataset class inheriting from kipoi.data.Dataset in dataloader.py
+args:
+    features_file:
+        # descr: > allows multi-line fields
+        doc: >
+          Csv file of the Iris Plants Database from
+          http://archive.ics.uci.edu/ml/datasets/Iris features.
+        type: str
+        example: example_files/features.csv  # example files
+    targets_file:
+        doc: >
+          Csv file of the Iris Plants Database targets.
+          Not required for making the prediction.
+        type: str
+        example: example_files/targets.csv
+        optional: True  # if not present, the `targets` field will not be present in the dataloader output
+info:
+    authors: 
+        - name: Your Name
+          github: your_github_account
+          email: your_email@host.org
+    version: 0.1
+    doc: Model predicting the Iris species
+dependencies:
+    conda:
+      - python=3.5
+      - pandas
+      - numpy
+      - sklearn
+output_schema:
+    inputs:
+        features:
+            shape: (4,)
+            doc: Features in cm: sepal length, sepal width, petal length, petal width.
+    targets:
+        shape: (3, )
+        doc: One-hot encoded array of classes: setosa, versicolor, virginica.
+    metadata:  # field providing additional information to the samples (not directly required by the model)
+        example_row_number:
+            shape: int
+            doc: Just an example metadata column
+```			
 
-##type
-The type of the dataloader indicates from which class the dataloader is inherits. It has to be one of the following values: `PreloadedDataset`, `Dataset`, `BatchDataset`, `SampleIterator`, `SampleGenerator`, `BatchIterator`, `BatchGenerator`.
+## type
 
+The type of the dataloader indicates from which class the dataloader is inherits. It has to be one of the following values:
+
+- `PreloadedDataset`
+- `Dataset`
+- `BatchDataset`
+- `SampleIterator`
+- `SampleGenerator`
+- `BatchIterator`
+- `BatchGenerator`
 
 ## defined_as
+
 `defined_as` indicates where the dataloader class can be found. It is a string value of `path/to/file.py::class_name` with a the relative path from where the dataloader.yaml lies. E.g.: `model_files/dataloader.py::MyDataLoader`.
 
 This class will then be instantiated by Kipoi with keyword arguments that have to be mentioned explicitely in `args` (see below).
 
-##args
+## args
+
 A dataloader will always require arguments, they might for example be a path to the reference genome fasta file, a bed file that defines which regions should be investigated, etc. Dataloader arguments are given defined as a yaml dictionary with argument names as keys, e.g.:
 
 ```yaml
 args:
-   refernce_fasta:
+   reference_fasta:
        example: example_files/chr22.fa
    argument_2:
        example: example_files/example_input.txt
@@ -73,6 +89,7 @@ An argument has the following fields:
 * `optional`: Optional: Boolean flag (`true` / `false`) for an argument if it is optional.
 
 ## info
+
 The `info` field of a dataloader.yaml file contains general information about the model.
 
 * `authors`: a list of authors with the field: `name`, and the optional fields: `github` and `email`. Where the `github` name is the github user id of the respective author
@@ -96,9 +113,6 @@ info:
     - TFBS
     - tag2
 ```
-
-
-
 
 ## output_schema
 
@@ -191,12 +205,13 @@ Both can either be defined as a list of packages or as a text file (ending in `.
 
 Conda as well as pip dependencies can and should be defined with exact versions of the required packages, as defining a package version using e.g.: `package>=1.0` is very likely to break at some point in future.
 
-###conda
+### conda
 Conda dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text must be given (ending in `.txt`).
 
 If conda packages need to be loaded from a channel then the nomenclature `channel_name::package_name` can be used.
 
-###pip
+### pip
+
 Pip dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text must be given (ending in `.txt`).
 
 ## postprocessing
