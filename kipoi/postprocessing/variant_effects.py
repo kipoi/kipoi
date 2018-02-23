@@ -22,7 +22,7 @@ class Rc_merging_pred_analysis(Pred_analysis):
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
     #
 
-    def __init__(self, rc_merging="max"):
+    def __init__(self, rc_merging="mean"):
         if isinstance(rc_merging, str):
             if rc_merging == "absmax":
                 self.rc_merging = self.absmax

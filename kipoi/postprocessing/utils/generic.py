@@ -18,13 +18,16 @@ logger.addHandler(logging.NullHandler())
 
 def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
     import pybedtools
+    import pysam
     pbh = pybedtools.BedTool(input_fn)
     fn = input_fn
     if not pbh._tabixed():
-        tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
-        fn = tbxd.fn
+        # pybedtools bug.
+        fn = pbh.bgzip(in_place=True, force=force_tabix)
+        pysam.tabix_index(fn, force=force_tabix, preset="vcf")
+        #tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
+        #fn = tbxd.fn
     return fn
-
 
 def prep_str(s):
     # https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
@@ -227,6 +230,15 @@ class OutputReshaper(object):
             flat_labels = self.anno
         return flat_labels
 
+    @staticmethod
+    def ensure_2dim(arr):
+        # These are fixes to when the model output definition is not strictly fulfilled by the model
+        if len(arr.shape) == 1:
+            arr = arr[:, None]
+        elif (len(arr.shape) == 3) and (arr.shape[2] == 1):
+            arr = arr[...,0]
+        return arr
+
     def flatten(self, ds):
         if isinstance(ds, dict):
             if not isinstance(self.anno, dict):
@@ -235,8 +247,9 @@ class OutputReshaper(object):
             outputs = []
             labels = []
             for k in self.standard_dict_order:
-                assert(ds[k].shape[1] == self.anno[k].shape[0])
-                outputs.append(ds[k])
+                arr = self.ensure_2dim(ds[k])
+                assert(arr.shape[1] == self.anno[k].shape[0])
+                outputs.append(arr)
                 labels.append(self.anno[k])
             flat = np.concatenate(outputs, axis=1)
             flat_labels = np.concatenate(labels, axis=0)
@@ -245,10 +258,11 @@ class OutputReshaper(object):
                 raise Exception("Error in model output defintion: Model definition is"
                                 "of type %s but predictions are of type %s!" % (str(type(ds)), str(type(self.anno))))
             assert len(ds) == len(self.anno)
+            ds = [self.ensure_2dim(el) for el in ds]
             flat = np.concatenate(ds, axis=1)
             flat_labels = np.concatenate(self.anno, axis=0)
         else:
-            flat = ds
+            flat = self.ensure_2dim(ds)
             flat_labels = self.anno
         assert flat.shape[1] == flat_labels.shape[0]
         return flat, flat_labels
@@ -328,6 +342,8 @@ class SnvCenteredRg(RegionGenerator):
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
+        #self.centered_l_offset = seq_length_half
+        #self.centered_r_offset = seq_length_half + self.seq_length % 2 -1
 
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
@@ -670,7 +686,7 @@ class DNAStringSequenceMutator(SequenceMutator):
                     vstr = input_set[l]
                     if is_rc:
                         vstr = rc_str(input_set[l])
-                    if vstr[int(preproc_conv["varpos_rel"].values[pcl])] != base:
+                    if vstr[int(preproc_conv["varpos_rel"].values[pcl])].upper() != base.upper():
                         logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
                                     "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), str(input_set[l])))
             else:
