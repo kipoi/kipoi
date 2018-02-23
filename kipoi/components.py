@@ -26,6 +26,7 @@ logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 # Common components (model and dataloader)
 
+
 @related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
@@ -138,7 +139,7 @@ class ArraySchema(RelatedConfigMixin):
         """
         def print_msg(msg):
             if verbose:
-                print("ArraySchema missmatch")
+                print("ArraySchema mismatch")
                 print(msg)
 
         # type = np.ndarray
@@ -164,7 +165,7 @@ class ArraySchema(RelatedConfigMixin):
         """
         def print_msg(msg):
             if verbose:
-                # print("ArraySchema missmatch")
+                # print("ArraySchema mismatch")
                 print(msg)
 
         if not isinstance(schema, ArraySchema):
@@ -173,7 +174,7 @@ class ArraySchema(RelatedConfigMixin):
             return False
 
         def print_msg_template():
-            print("ArraySchema missmatch")
+            print("ArraySchema mismatch")
             print("Array shapes don't match for the fields:")
             print("--")
             print(name_self)

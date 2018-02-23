@@ -20,10 +20,10 @@ GOOD_ARR_SCHEMA_PAIRS = [
 ]
 
 BAD_ARR_SCHEMA_PAIRS = [
-    # dim missmatch
+    # dim mismatch
     (ArraySchema(shape=(11,), doc=""), np.arange(20).reshape((2, 10))),
     (ArraySchema(shape=(2, None), doc=""), np.arange(20).reshape((2, 1, 10))),
-    # len missmatch
+    # len mismatch
     (ArraySchema(shape=(1, 10, 12), doc=""), np.arange(20).reshape((2, 1, 10))),
     (ArraySchema(shape=(1, 10, None), doc=""), np.arange(20).reshape((2, 1, 10))),
 ]
