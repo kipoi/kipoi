@@ -57,6 +57,7 @@ class Info(RelatedConfigMixin):
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
+    contributors = related.SequenceField(Author, default=[], repr=True, required=False)
     cite_as = related.StringField(required=False)  # a link or a description how to cite the paper (say a doi link)
     trained_on = related.StringField(required=False)  # a link or a description of the training dataset
     training_procedure = related.StringField(required=False)  # brief description about the training procedure for the trained_on dataset.
@@ -464,7 +465,6 @@ class DataLoaderSchema(RelatedConfigMixin):
 @related.immutable(strict=True)
 class PostProcDataLoaderStruct(RelatedConfigMixin):
     variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
-
 
 
 @related.immutable(strict=True)
