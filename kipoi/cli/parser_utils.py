@@ -49,6 +49,13 @@ def add_dataloader(parser, with_args=True):
                             "'{\"arg1\": 1} or as a file path to a json file")
 
 
+def add_vep(parser):
+    """Add --vep for installing vep dependencies
+    """
+    parser.add_argument("--vep", action="store_true",
+                        help="Include also the dependencies for variant effect prediction")
+
+
 # other utils
 def file_exists(fpath, logger):
     if not os.path.exists(fpath):
