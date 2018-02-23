@@ -142,6 +142,7 @@ class Source(object):
                 # ("name", d.info.name),
                 ("version", d.info.version),
                 ("authors", d.info.authors),
+                ("contributors", d.info.contributors),
                 ("doc", d.info.doc),
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
@@ -196,6 +197,7 @@ class Source(object):
             - N_models
             - is_group
             - authors
+            - contributors
             - doc - ?
             - type (list of types)
             - tags - sum
@@ -230,6 +232,8 @@ class Source(object):
                 ("is_group", x.is_group.any()),
                 ("authors", {author for authors in x.authors
                              for author in authors}),
+                ("contributors", {contributor for contributors in x.contributors
+                                  for contributor in contributors}),
                 ("type", {t for t in x.type}),
                 ("license", {l for l in x.license}),
                 ("cite_as", {c for c in x.cite_as if c is not None}),
