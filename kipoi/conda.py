@@ -89,7 +89,7 @@ def install_conda(conda_deps, channels=["defaults"]):
     if conda_deps_wo_python:
         cmd_list = ["install", "-y"]
         if channels:
-            cmd_list += ["-c", ",".join(channels), "--override-channels"]
+            cmd_list += ["--channel={0}".format(c) for c in channels] + ["--override-channels"]
             # `--override-channels` is here in order to increase reproducibility
             # on different computers with different ~/.condarc file
         cmd_list += conda_deps_wo_python
