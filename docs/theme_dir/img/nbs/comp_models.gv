@@ -1,0 +1,11 @@
+digraph "composed models" {
+	node [color=lightblue2 style=filled]
+	size="6,6"
+	"Raw data" -> "Model 1"
+	"Raw data" -> "Model 2"
+	"Raw data" -> "Model 3"
+	"Model 1" -> "Model 2"
+	"Model 2" -> "Model 4"
+	"Model 3" -> "Model 4"
+	"Model 4" -> Output
+}
