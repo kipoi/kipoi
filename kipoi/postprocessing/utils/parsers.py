@@ -60,19 +60,28 @@ def parse_kipoi_info(elem, colnames, prefix="", add_index=True):
         elems = [np.nan] * len(colnames)
     else:
         elems = list(elem.split("|"))
-        assert len(elems) == len(colnames)
+        if colnames is None:
+            colnames =[ "unnamed_%d"%i for i in range(len(elems))]
+        else:
+            assert len(elems) == len(colnames)
 
     if add_index:
-        return OrderedDict([(prefix + c + "_" + str(i), float(elems[i]))
+        return OrderedDict([(prefix + c + "_" + str(i), soft_to_float(elems[i]))
                             for i, c in enumerate(colnames)])
     else:
-        return OrderedDict([(prefix + c, float(elems[i]))
+        return OrderedDict([(prefix + c, soft_to_float(elems[i]))
                             for i, c in enumerate(colnames)])
 
 # TODO - convert all info tags to a nice dictionary or pandas data-frame
 #         - TODO ?- should I convert it to a dictionary or a pandas.DataFrame?
 #         - TODO ?- which columns do we need in the final table
 #         - TODO ?- how to handle nested column names?
+
+def soft_to_float(x):
+    try:
+        return float(x)
+    except:
+        return x
 
 
 class KipoiVCFParser(object):
