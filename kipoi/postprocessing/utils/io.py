@@ -23,7 +23,7 @@ def recursive_h5_writer(objs, handle, create):
             if create:
                 g = handle.create_group(key)
             else:
-                g = handle['key']
+                g = handle[key]
             recursive_h5_writer(objs[key], g, create)
         else:
             if create:
@@ -96,7 +96,7 @@ class SyncHdf5SeqWriter(SeqWriter):
     def __call__(self, model_input_sets):
         model_input_sets_reduced = {}
         for k in ["ref", "alt", "ref_rc", "alt_rc"]:
-            if model_input_sets[k] is not None:
+            if (k in model_input_sets) and (model_input_sets[k] is not None):
                 model_input_sets_reduced[k] = model_input_sets[k]
         recursive_h5_writer(model_input_sets_reduced, self.ofh, not self._initialised)
         if not self._initialised:

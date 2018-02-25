@@ -645,9 +645,9 @@ def test_enhanced_analysis_effects():
     counts = np.array([10, 23, -2])
     preds_prob = {"ref": probs_a, "ref_rc": probs_r, "alt": probs_a, "alt_rc": probs_a}
     preds_arb = {"ref": probs_a, "ref_rc": probs_r, "alt": counts, "alt_rc": counts}
-    assert np.all((Logit()(**preds_prob) == logit(probs_a) - logit(probs_r)))
-    assert np.all((Diff()(**preds_prob) == probs_a - probs_r))
-    assert np.all(DeepSEA_effect()(**preds_prob) == np.abs(logit(probs_a) - logit(probs_r)) * np.abs(probs_a - probs_r))
+    assert np.all((Logit("max")(**preds_prob) == logit(probs_a) - logit(probs_r)))
+    assert np.all((Diff("max")(**preds_prob) == probs_a - probs_r))
+    assert np.all(DeepSEA_effect("max")(**preds_prob) == np.abs(logit(probs_a) - logit(probs_r)) * np.abs(probs_a - probs_r))
     # now with values that contain values outside [0,1].
     with pytest.warns(UserWarning):
         x = (Logit()(**preds_arb))
@@ -655,11 +655,11 @@ def test_enhanced_analysis_effects():
     with pytest.warns(UserWarning):
         x = (DeepSEA_effect()(**preds_arb))
     #
-    assert np.all((Diff()(**preds_arb) == counts - probs_r))
+    assert np.all((Diff("max")(**preds_arb) == counts - probs_r))
     #
     preds_prob_r = {"ref": probs_r, "ref_rc": probs_r, "alt": probs_a, "alt_rc": probs_a}
-    assert np.all((ve.LogitAlt()(**preds_prob_r) == logit(probs_a)))
-    assert np.all((ve.LogitRef()(**preds_prob_r) == logit(probs_r)))
+    assert np.all((ve.LogitAlt("max")(**preds_prob_r) == logit(probs_a)))
+    assert np.all((ve.LogitRef("max")(**preds_prob_r) == logit(probs_r)))
 
 
 def test_output_reshaper():
