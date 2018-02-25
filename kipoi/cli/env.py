@@ -7,7 +7,7 @@ import os
 import argparse
 import subprocess
 import kipoi
-from kipoi.cli.parser_utils import add_model, add_dataloader
+from kipoi.cli.parser_utils import add_model, add_dataloader, add_vep
 from kipoi.components import Dependencies
 import logging
 logger = logging.getLogger(__name__)
@@ -35,10 +35,20 @@ def conda_env_name(model_name, dataloader_name, source):
                                     replace_slash(dataloader_name))
 
 
+KIPOI_DEPS = Dependencies(pip=["kipoi"])
+VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
+                               "bioconda::cyvcf2",
+                               "bioconda::pybedtools",
+                               "bioconda::pysam"],
+                        pip=["intervaltree"]
+                        )
+
+
 def export_env(model, source, dataloader=None, dataloader_source="kipoi",
                env_file=None,
                env_dir=".",
-               env=None):
+               env=None,
+               vep=False):
     """Write a conda environment file. Helper function for the cli_export and cli_create.
 
     Args:
@@ -50,6 +60,7 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
       env_dir: Becomes relevant when env_file is None. Then the env_file is inferred
         from env and env_dir
       env: env name for the environment. If None, it will be automatically inferred.
+      vep: Add variant effect prediction dependencies
 
     Returns:
       env name.
@@ -80,9 +91,11 @@ def export_env(model, source, dataloader=None, dataloader_source="kipoi",
     deps = model_descr.dependencies.merge(dataloader_descr.dependencies)
 
     # add Kipoi to the dependencies
-    deps = Dependencies(pip=["kipoi"]).merge(deps)
+    deps = KIPOI_DEPS.merge(deps)
 
-    # TODO - if we should do VEP - add vep dependencies
+    if vep:
+        # add vep dependencies
+        deps = VEP_DEPS.merge(deps)
 
     if not os.path.exists(os.path.dirname(env_file)):
         os.makedirs(os.path.dirname(env_file))
@@ -98,6 +111,7 @@ def cli_export(cmd, raw_args):
     )
     add_model(parser)
     add_dataloader(parser, with_args=False)
+    add_vep(parser)
     parser.add_argument('-o', '--output', default='environment.yaml', required=True,
                         help="Output file name")
     parser.add_argument('-e', '--env', default=None,
@@ -108,7 +122,8 @@ def cli_export(cmd, raw_args):
                                args.dataloader,
                                args.dataloader_source,
                                env_file=args.output,
-                               env=args.env)
+                               env=args.env,
+                               vep=args.vep)
 
     print("Create the environment with:")
     print("conda env create --file {0}".format(env_file))
@@ -123,6 +138,7 @@ def cli_create(cmd, raw_args):
     )
     add_model(parser)
     add_dataloader(parser, with_args=False)
+    add_vep(parser)
     parser.add_argument('-e', '--env', default=None,
                         help="Special environment name. default: kipoi-<model>[-<dataloader>]")
     args = parser.parse_args(raw_args)
@@ -140,7 +156,8 @@ def cli_create(cmd, raw_args):
                                args.dataloader_source,
                                env_file=None,
                                env_dir=tmpdir,
-                               env=args.env)
+                               env=args.env,
+                               vep=args.vep)
 
     # setup the conda env from file
     logger.info("Creating conda env from file: {0}".format(env_file))
@@ -166,6 +183,7 @@ def cli_install(cmd, raw_args):
     )
     add_model(parser)
     add_dataloader(parser, with_args=False)
+    add_vep(parser)
     args = parser.parse_args(raw_args)
 
     if args.dataloader is None:
@@ -177,6 +195,9 @@ def cli_install(cmd, raw_args):
                                                   args.source,
                                                   and_dataloaders=False)
         kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
+    if args.vep:
+        # install also the vep dependencies
+        VEP_DEPS.install()
     logger.info("Done!")
 
 

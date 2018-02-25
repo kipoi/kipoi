@@ -26,6 +26,7 @@ logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 # Common components (model and dataloader)
 
+
 @related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
@@ -57,6 +58,7 @@ class Info(RelatedConfigMixin):
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
+    contributors = related.SequenceField(Author, default=[], repr=True, required=False)
     cite_as = related.StringField(required=False)  # a link or a description how to cite the paper (say a doi link)
     trained_on = related.StringField(required=False)  # a link or a description of the training dataset
     training_procedure = related.StringField(required=False)  # brief description about the training procedure for the trained_on dataset.
@@ -137,7 +139,7 @@ class ArraySchema(RelatedConfigMixin):
         """
         def print_msg(msg):
             if verbose:
-                print("ArraySchema missmatch")
+                print("ArraySchema mismatch")
                 print(msg)
 
         # type = np.ndarray
@@ -163,7 +165,7 @@ class ArraySchema(RelatedConfigMixin):
         """
         def print_msg(msg):
             if verbose:
-                # print("ArraySchema missmatch")
+                # print("ArraySchema mismatch")
                 print(msg)
 
         if not isinstance(schema, ArraySchema):
@@ -172,7 +174,7 @@ class ArraySchema(RelatedConfigMixin):
             return False
 
         def print_msg_template():
-            print("ArraySchema missmatch")
+            print("ArraySchema mismatch")
             print("Array shapes don't match for the fields:")
             print("--")
             print(name_self)
@@ -464,7 +466,6 @@ class DataLoaderSchema(RelatedConfigMixin):
 @related.immutable(strict=True)
 class PostProcDataLoaderStruct(RelatedConfigMixin):
     variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
-
 
 
 @related.immutable(strict=True)
