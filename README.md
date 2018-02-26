@@ -4,7 +4,7 @@
 
 Kipoi defines a common 'model-zoo' API for predictive models. This repository implements a 
 command-line interface (CLI) and a python SDK to query (and use) the Kipoi models. The Kipoi models can be hosted in 
-public models sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
+public model sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
 model sources.
 
 <img src="http://ec2-54-87-147-83.compute-1.amazonaws.com/static/img/fig1.svg" width=600>
@@ -168,7 +168,7 @@ See [docs/contributing getting started](http://ec2-54-87-147-83.compute-1.amazon
 ### SNV effect prediction
 
 Functionality to predict the effect of SNVs is available in the API as well as in the command line interface. The input
-is a VCF which can then be and returned in the process. For more details on the requirements for the models and
+is a VCF which can then be annotated with effect predictions and returned in the process. For more details on the requirements for the models and
  dataloaders please check [docs/using/02_Variant_effect_prediction](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/02_Variant_effect_prediction/)
 
 
