@@ -147,6 +147,7 @@ class Source(object):
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
+                ("postproc_score_variants", d.postprocessing.variant_effects is not None),
                 ("license", d.info.license),
                 ("cite_as", d.info.cite_as),
                 ("trained_on", d.info.trained_on),
@@ -234,6 +235,7 @@ class Source(object):
                              for author in authors}),
                 ("contributors", {contributor for contributors in x.contributors
                                   for contributor in contributors}),
+                ("postproc_score_variants", x.postproc_score_variants.any()),
                 ("type", {t for t in x.type}),
                 ("license", {l for l in x.license}),
                 ("cite_as", {c for c in x.cite_as if c is not None}),
