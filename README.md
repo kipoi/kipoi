@@ -174,4 +174,4 @@ is a VCF which can then be and returned in the process. For more details on the 
 
 ## Documentation
 
-Documentation can be found here: [kipo.org/docs](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs)
+Documentation can be found here: [kipoi.org/docs](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs)
