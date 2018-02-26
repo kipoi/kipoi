@@ -59,7 +59,7 @@ If you wish to run tests in parallel, run `py.test -n 6`.
 <img src="docs/theme_dir/img/kipoi-workflow.png" height=400>
 
 
-### Using Kipoi models from python
+### Python
 
 List available models
 ```python
@@ -130,7 +130,7 @@ model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 
 For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb) and [docs/using getting started](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/01_Getting_started/)
 
-### Using Kipoi models from the command-line
+### Command-line
 
 ```
 $ kipoi
