@@ -7,7 +7,7 @@ command-line interface (CLI) and a python SDK to query (and use) the Kipoi model
 public models sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
 model sources.
 
-![img](docs/img/kipoi-workflow.png)
+<img src="http://ec2-54-87-147-83.compute-1.amazonaws.com/static/img/fig1.svg" width=600>
 
 ## Installation
 
@@ -33,17 +33,15 @@ Alternatively, install it through conda:
 conda install -c conda-forge git-lfs 
 ```
 
-
 ### 3. Install Kipoi
 
 Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
-git clone https://github.com/kipoi/kipoi.git
-pip install kipoi/
+pip install kipoi
 ```
 
-## Development
+#### Development
 
 If you wish to develop `kipoi`, run instead:
 
@@ -58,22 +56,30 @@ If you wish to run tests in parallel, run `py.test -n 6`.
 
 ## Quick start
 
+<img src="docs/theme_dir/img/kipoi-workflow.png" height=400>
+
+
 ### Using Kipoi models from python
 
+List available models
 ```python
 import kipoi
 
-# list all the available models
 kipoi.list_models()
+```
 
-# Model ----------------------
+Load the model from model source or local directory
+```python
 # Load the model from github.com/kipoi/models/rbp
 model = kipoi.get_model("rbp_eclip/UPF1", source="kipoi") # source="kipoi" is the default
 
 # Load the model from a local directory
 model = kipoi.get_model("~/mymodels/rbp", source="dir")  
 # Note: Custom model sources are defined in ~/.kipoi/config.yaml
+```
 
+Main model attributes and methods
+```python
 # See the information about the author:
 model.info
 
@@ -90,20 +96,31 @@ model.predict_on_batch(x)
 # Get predictions for the raw files
 # Kipoi runs: raw files -[dataloader]-> numpy arrays -[model]-> predictions 
 model.pipeline.predict({"dataloader_arg1": "inputs.csv"})
+```
 
-# Dataloader -------------------
+Load the dataloader
+```python
 Dl = kipoi.get_dataloader_factory("rbp_eclip/UPF1") # returns a class that needs to be instantiated
 dl = Dl(dataloader_arg1="inputs.csv")  # Create/instantiate an object
+```
 
+Dataloader attributes and methods
+```python
 # batch_iter - common to all dataloaders
 # Returns an iterator generating batches of model-ready numpy.arrays
 it = dl.batch_iter(batch_size=32)
 out = next(it)  # {"inputs": np.array, (optional) "targets": np.arrays.., "metadata": np.arrays...}
 
+# To get predictions, run
+model.predict_on_batch(out['inputs'])
+
 # load the whole dataset into memory
 dl.load_all()
+```
 
-# re-train the Keras model
+Re-train the model
+```python
+# re-train example for Keras
 dl = Dl(dataloader_arg1="inputs.csv", targets_file="mytargets.csv")
 it_train = dl.batch_train_iter(batch_size=32)  
 # batch_train_iter is a convenience wrapper of batch_iter
@@ -111,7 +128,7 @@ it_train = dl.batch_train_iter(batch_size=32)
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 
-For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
+For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb) and [docs/using getting started](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/01_Getting_started/)
 
 ### Using Kipoi models from the command-line
 
@@ -134,17 +151,17 @@ usage: kipoi <command> [-h] ...
     test-source      Runs a set of unit-tests for many/all models in a source
 ```
 
-Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/cli.md](docs/cli.md) for more information.
+Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
 Setup your preference in: `.kipoi/config.yaml`
 
-You can add your own model sources. See [docs/model_sources.md](docs/model_sources.md) for more information.
+You can add your own model sources. See [docs/using/03_Model_sources/](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/03_Model_sources/) for more information.
 
 ### Contributing models
 
-See [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb).
+See [docs/contributing getting started](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/contributing/01_Getting_started/) and [docs/tutorials/contributing/models](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/tutorials/contributing_models/) for more information.
 
 ## Postprocessing
 
@@ -152,20 +169,9 @@ See [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb).
 
 Functionality to predict the effect of SNVs is available in the API as well as in the command line interface. The input
 is a VCF which can then be and returned in the process. For more details on the requirements for the models and
- dataloaders please check the documentation mentioned below.
+ dataloaders please check [docs/using/02_Variant_effect_prediction](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/02_Variant_effect_prediction/)
 
 
 ## Documentation
 
-To get started, please read the following ipynb's:
-
-- [nbs/contributing_models.ipynb](nbs/contributing_models.ipynb)
-- [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb)
-- [nbs/variant_effect_prediction.ipynb](nbs/variant_effect_prediction.ipynb)
-
-This will provide pointers to the rest of the documentation in [docs/](docs/):
-
-- [docs/cli.md](docs/cli.md) - command-line interface
-- [docs/writing_dataloaders.md](docs/writing_dataloaders.md)- describes all supported dataloader types
-- [docs/writing_models.md](docs/writing_models.md) - describes all supported model types
-- [docs/model_sources.md](docs/model_sources.md) - describes how to setup your own model zoo
+Documentation can be found here: [kipo.org/docs](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs)
