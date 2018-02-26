@@ -32,13 +32,6 @@ google_analytics: ["TODO", "TODO"]
 
 pages:
 - Home: index.md
-- Tutorials:
-  # ipynb's
-  - Contributing models: tutorials/contributing_models.md
-  - Python API: tutorials/python-api.md
-  - R API: tutorials/R-api.md
-  - Variant effect prediction: tutorials/variant_effect_prediction.md
-  - Composing models: tutorials/composing_models.md
 - Using:
   - Getting started: using/01_Getting_started.md
   - Variant effect predictions: using/02_Variant_effect_prediction.md
@@ -52,6 +45,13 @@ pages:
   - dataloader.yaml: contributing/03_Writing_dataloader.yaml.md
   - model.py: contributing/05_Writing_model.py.md
   - Multiple very similar models: contributing/06_dumping_models_programatically.md
+- Tutorials:
+  # ipynb's
+  - Contributing models: tutorials/contributing_models.md
+  - Python API: tutorials/python-api.md
+  - R API: tutorials/R-api.md
+  - Variant effect prediction: tutorials/variant_effect_prediction.md
+  - Composing models: tutorials/composing_models.md
 - Api:
   - Model: api/model.md
   - Dataloader: api/dataloader.md
