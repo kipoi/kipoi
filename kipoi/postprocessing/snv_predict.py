@@ -502,6 +502,14 @@ def predict_snvs(model,
 
     sample_counter = SampleCounter()
 
+    # open the writers if possible:
+    if sync_pred_writer is not None:
+        [el.open() for el in  sync_pred_writer if hasattr(el, "open")]
+
+    # open seq writers if possible:
+    if generated_seq_writer is not None:
+        [el.open() for el in  generated_seq_writer if hasattr(el, "open")]
+
     for i, batch in enumerate(tqdm(it)):
         # For debugging
         # if i >= 10:
@@ -542,6 +550,14 @@ def predict_snvs(model,
             res.append(res_here)
 
     vcf_fh.close()
+
+    # open the writers if possible:
+    if sync_pred_writer is not None:
+        [el.close() for el in sync_pred_writer if hasattr(el, "close")]
+
+    # open seq writers if possible:
+    if generated_seq_writer is not None:
+        [el.close() for el in generated_seq_writer if hasattr(el, "close")]
 
     try:
         if temp_bed3_file is not None:

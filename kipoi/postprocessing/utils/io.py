@@ -1,6 +1,5 @@
 from abc import abstractmethod
 import numpy as np
-from tqdm import tqdm
 from kipoi.postprocessing.utils.generic import prep_str, convert_record, default_vcf_id_gen
 import os
 import six
@@ -200,7 +199,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
                 raise Exception("number of line_ids does not match number of VCF records")
 
         # Actually write the vcf entries.
-        for pred_line, record in tqdm(enumerate(records)):
+        for pred_line, record in enumerate(records):
             if self.vcf_id_generator is not None:
                 record.ID = self.vcf_id_generator(record)
             for k in predictions:
@@ -296,7 +295,7 @@ class VcfWriter(SyncPredictonsWriter):
                 raise Exception("number of line_ids does not match number of VCF records")
 
         # Actually write the vcf entries.
-        for pred_line, record in tqdm(enumerate(records)):
+        for pred_line, record in enumerate(records):
             record_vcf = convert_record(record, self.vcf_reader)
             if self.vcf_id_generator is not None:
                 record_vcf.ID = self.vcf_id_generator(record)

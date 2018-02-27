@@ -32,6 +32,8 @@ scoring_options = {
 scoring_names = {
     VarEffectFuncType.diff: "diff",
     VarEffectFuncType.logit: "logit",
+    VarEffectFuncType.logit_ref: "logit_ref",
+    VarEffectFuncType.logit_alt: "logit_alt",
     VarEffectFuncType.deepsea_scr: "deepsea_scr",
 }
 
