@@ -8,6 +8,8 @@ from kipoi.external.related.fields import StrSequenceField, NestedMappingField, 
 class VarEffectFuncType(enum.Enum):
     logit = "logit"
     diff = "diff"
+    logit_ref = "logit_ref"
+    logit_alt = "logit_alt"
     deepsea_scr = "deepsea_scr"
     custom = "custom"
 

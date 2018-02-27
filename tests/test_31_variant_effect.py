@@ -1007,6 +1007,7 @@ def test_rc_str():
     assert rc_str(input) == output
     assert rc_str(input.lower()) == output.lower()
 
+
 def test_modify_single_string_base():
     input = "ACTGG"
     pos = 3
@@ -1014,3 +1015,11 @@ def test_modify_single_string_base():
     ret = "ACTNG"
     assert _modify_single_string_base(input, pos, allele, False) == ret
     assert _modify_single_string_base(rc_str(input), pos, allele, True) == rc_str(ret)
+
+
+def test_all_scoring_options_available():
+    from kipoi.cli.postproc import scoring_options
+    from kipoi.postprocessing.components import VarEffectFuncType
+
+    assert {x.value for x in list(VarEffectFuncType)} == \
+        set(list(scoring_options.keys()) + ["custom"])
