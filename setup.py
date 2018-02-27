@@ -37,7 +37,7 @@ test_requirements = [
     "pytest-cov",
     "scikit-learn",
     "cython",
-    "genomelake",
+    # "genomelake",
     "keras",
     "tensorflow"
 ]
