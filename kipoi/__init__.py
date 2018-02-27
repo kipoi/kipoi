@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
 __author__ = 'Kipoi team'
-__version__ = '0.0.1'
+__email__ = 'avsec@in.tum.de'
+__version__ = '0.2.0'
 
 
 # available modules

@@ -3,11 +3,13 @@
 
 from setuptools import setup, find_packages
 
-with open('README.md') as readme_file:
-    # TODO?
-    # Convert .md -> .rst for nicer display on pypi
-    # https://stackoverflow.com/questions/26737222/pypi-description-markdown-doesnt-work
-    readme = readme_file.read()
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+except(IOError, ImportError):
+    print("Unable to convert REAMDE.md to rst using pypandoc")
+    long_description = open('README.md').read()
+
 
 requirements = [
     "pyyaml",
@@ -25,48 +27,40 @@ requirements = [
 ]
 
 test_requirements = [
+    "bumpversion",
+    "wheel",
+    "jedi",
+    "epc",
     "pytest>=3.3.1",
-    "virtualenv",
-    # model requirements
+    "pytest-xdist",  # running tests in parallel
+    "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
+    "pytest-cov",
     "scikit-learn",
     "cython",
-    # "genomelake",  # TODO - add
+    # "genomelake",
     "keras",
-    "tensorflow",
+    "tensorflow"
 ]
 
 setup(
     name='kipoi',
-    version='0.0.1',
-    description="Kipoi model-zoo command-line tool",
-    author="Kipoi team",  # whom to put here?
-    author_email='...',
-    url='https://github.com/kipoi/model-zoo',
-    long_description=readme,
+    version='0.2.0',
+    description="Kipoi",  # TODO - update the description
+    author="Kipoi team",
+    author_email='avsec@in.tum.de',
+    url='https://github.com/kipoi/kipoi',
+    long_description="Kipoi",  # TODO - update the description
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
-        "develop": ["bumpversion",
-                    "wheel",
-                    "jedi",
-                    "epc",
-                    "pytest>=3.3.1",
-                    "pytest-xdist",  # running tests in parallel
-                    "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
-                    "pytest-cov",
-                    "scikit-learn",
-                    "cython",
-                    # "genomelake",
-                    "keras",
-                    "tensorflow",
-                    ],
-         # variant effect prediction
-         "vep": ["pyvcf",
-                 "cyvcf2",
-                 "pybedtools",
-                 "pysam",  # required by pybedtools
-                 "intervaltree",
-                 ],
+        "develop": test_requirements,
+        # variant effect prediction
+        "vep": ["pyvcf",
+                "cyvcf2",
+                "pybedtools",
+                "pysam",  # required by pybedtools
+                "intervaltree",
+                ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
