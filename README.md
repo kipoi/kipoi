@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
 
 Kipoi defines a common 'model-zoo' API for predictive models. This repository implements a 
-command-line interface (CLI) and a python SDK to query (and use) the Kipoi models. The Kipoi models can be hosted in 
+command-line interface (CLI) and a python API to query (and use) the Kipoi models. The Kipoi models can be hosted in 
 public model sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
 model sources.
 
@@ -128,7 +128,7 @@ it_train = dl.batch_train_iter(batch_size=32)
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 
-For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
+For more information see: [nbs/python-api.ipynb](nbs/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
 
 ### Command-line
 
