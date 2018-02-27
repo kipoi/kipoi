@@ -3,7 +3,6 @@ Kipoi VCF parser
 
 by Ziga Avsec
 """
-from cyvcf2 import VCF
 import numpy as np
 import re
 from collections import OrderedDict
@@ -61,7 +60,7 @@ def parse_kipoi_info(elem, colnames, prefix="", add_index=True):
     else:
         elems = list(elem.split("|"))
         if colnames is None:
-            colnames =[ "unnamed_%d"%i for i in range(len(elems))]
+            colnames = ["unnamed_%d" % i for i in range(len(elems))]
         else:
             assert len(elems) == len(colnames)
 
@@ -76,6 +75,7 @@ def parse_kipoi_info(elem, colnames, prefix="", add_index=True):
 #         - TODO ?- should I convert it to a dictionary or a pandas.DataFrame?
 #         - TODO ?- which columns do we need in the final table
 #         - TODO ?- how to handle nested column names?
+
 
 def soft_to_float(x):
     try:
@@ -109,6 +109,7 @@ class KipoiVCFParser(object):
                    - feature1...
                    - feature2...
         """
+        from cyvcf2 import VCF
         self.vcf_file = vcf_file
         self.vcf = VCF(vcf_file)
         self.info_tags = get_info_tags(self.vcf)
