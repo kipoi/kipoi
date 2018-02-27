@@ -10,8 +10,6 @@ class VarEffectFuncType(enum.Enum):
     logit_ref = "logit_ref"
     logit_alt = "logit_alt"
     diff = "diff"
-    logit_ref = "logit_ref"
-    logit_alt = "logit_alt"
     deepsea_scr = "deepsea_scr"
     custom = "custom"
 
