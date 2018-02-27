@@ -7,7 +7,7 @@ command-line interface (CLI) and a python SDK to query (and use) the Kipoi model
 public model sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
 model sources.
 
-<img src="http://ec2-54-87-147-83.compute-1.amazonaws.com/static/img/fig1.svg" width=600>
+<img src="http://kipoi.org/static/img/fig1.svg" width=600>
 
 ## Installation
 
@@ -128,7 +128,7 @@ it_train = dl.batch_train_iter(batch_size=32)
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 
-For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb) and [docs/using getting started](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/01_Getting_started/)
+For more information see: [nbs/python-sdk.ipynb](nbs/python-sdk.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
 
 ### Command-line
 
@@ -151,17 +151,17 @@ usage: kipoi <command> [-h] ...
     test-source      Runs a set of unit-tests for many/all models in a source
 ```
 
-Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
+Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://kipoi.org/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
 Setup your preference in: `.kipoi/config.yaml`
 
-You can add your own model sources. See [docs/using/03_Model_sources/](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/03_Model_sources/) for more information.
+You can add your own model sources. See [docs/using/03_Model_sources/](http://kipoi.org/docs/using/03_Model_sources/) for more information.
 
 ### Contributing models
 
-See [docs/contributing getting started](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/contributing/01_Getting_started/) and [docs/tutorials/contributing/models](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/tutorials/contributing_models/) for more information.
+See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started/) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models/) for more information.
 
 ## Postprocessing
 
@@ -169,9 +169,9 @@ See [docs/contributing getting started](http://ec2-54-87-147-83.compute-1.amazon
 
 Functionality to predict the effect of SNVs is available in the API as well as in the command line interface. The input
 is a VCF which can then be annotated with effect predictions and returned in the process. For more details on the requirements for the models and
- dataloaders please check [docs/using/02_Variant_effect_prediction](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs/using/02_Variant_effect_prediction/)
+ dataloaders please check [docs/using/02_Variant_effect_prediction](http://kipoi.org/docs/using/02_Variant_effect_prediction/)
 
 
 ## Documentation
 
-Documentation can be found here: [kipoi.org/docs](http://ec2-54-87-147-83.compute-1.amazonaws.com/docs)
+Documentation can be found here: [kipoi.org/docs](http://kipoi.org/docs)
