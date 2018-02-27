@@ -48,7 +48,7 @@ setup(
     description="Kipoi",  # TODO - update the description
     author="Kipoi team",
     author_email='avsec@in.tum.de',
-    url='https://github.com/kipoi/model-zoo',
+    url='https://github.com/kipoi/kipoi',
     long_description="Kipoi",  # TODO - update the description
     packages=find_packages(),
     install_requires=requirements,
