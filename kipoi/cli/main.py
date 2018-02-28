@@ -18,6 +18,7 @@ from tqdm import tqdm
 import deepdish
 from collections import OrderedDict
 import logging
+from kipoi import writers
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -132,8 +133,7 @@ def cli_predict(command, raw_args):
     parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
-                        help="Keep the inputs in the output file. " +
-                        "Only compatible with hdf5 file format")
+                        help="Keep the inputs in the output file. ")
     parser.add_argument('-o', '--output', required=True,
                         help="Output hdf5 file")
     args = parser.parse_args(raw_args)
@@ -144,6 +144,15 @@ def cli_predict(command, raw_args):
         raise ValueError("--keep_inputs flag is only compatible with --file_format=hdf5")
 
     dir_exists(os.path.dirname(args.output), logger)
+
+    def prepare_batch(dl_batch, pred_batch,
+                      keep_inputs=False):
+        dl_batch["preds"] = pred_batch
+
+        if not keep_inputs:
+            dl_batch.pop("inputs", None)
+            dl_batch.pop("targets", None)
+        return dl_batch
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -164,19 +173,23 @@ def cli_predict(command, raw_args):
     it = dl.batch_iter(batch_size=args.batch_size,
                        num_workers=args.num_workers)
 
+    if args.file_format in ["tsv", "bed"]:
+        writer = writers.TsvBatchWriter(file_path=args.output,
+                                        nested_sep="/",
+                                        add_inputs=args.keep_inputs,
+                                        add_targets=args.keep_inputs,
+                                        add_metadata=True)
+
     obj_list = []
     for i, batch in enumerate(tqdm(it)):
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
         pred_batch = model.predict_on_batch(batch['inputs'])
 
+        output_batch = prepare_batch(batch, pred_batch)
         # tabular files
         if args.file_format in ["tsv", "bed"]:
-            df = io_batch2df(batch, pred_batch)
-            if i == 0:
-                df.to_csv(args.output, sep="\t", index=False)
-            else:
-                df.to_csv(args.output, sep="\t", index=False, header=None, mode="a")
+            writer.batch_write(batch, pred_batch)
 
         # binary nested arrays
         elif args.file_format == "hdf5":

@@ -49,7 +49,15 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     writer.batch_write(dl_batch, pred_batch_array)
     writer.batch_write(dl_batch, pred_batch_array)
     writer.close()
-    # TODO - read in the produced file
     df = pd.read_csv(tmpfile, sep="\t")
 
-    pass
+    assert list(df.columns) == ['metadata/gene_id',
+                                'metadata/ranges/chr',
+                                'metadata/ranges/end',
+                                'metadata/ranges/id',
+                                'metadata/ranges/start',
+                                'metadata/ranges/strand',
+                                'preds/0',
+                                'preds/1',
+                                'preds/2']
+    assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]

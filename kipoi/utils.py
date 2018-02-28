@@ -9,11 +9,11 @@ import sys
 import subprocess
 import numpy as np
 import yaml
-import six
 from collections import OrderedDict
 from contextlib import contextmanager
 import inspect
 import logging
+import collections
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -273,7 +273,7 @@ def list_files_recursively(root_dir, basename, suffix='y?ml'):
                 for filename in fnmatch.filter(filenames, '{0}.{1}'.format(basename, suffix))]
 
 
-def flatten_nested(dd, separator='_', prefix='', is_list_fn=lambda x: isinstance(x, list)):
+def flatten_nested(dd, separator='_', prefix='', is_list_fn=lambda x: isinstance(x, collections.Sequence)):
     """Flatten a nested dictionary/list
 
     Args:
@@ -282,7 +282,7 @@ def flatten_nested(dd, separator='_', prefix='', is_list_fn=lambda x: isinstance
       is_list_fn: function to determine whether to split the list/numpy.array into indvidual classes or
         to include the element as value.
     """
-    if isinstance(dd, dict):
+    if isinstance(dd, collections.Mapping):
         return {prefix + separator + k if prefix else k: v
                 for kk, vv in six.iteritems(dd)
                 for k, v in six.iteritems(flatten_nested(vv, separator, kk, is_list_fn))
@@ -294,3 +294,34 @@ def flatten_nested(dd, separator='_', prefix='', is_list_fn=lambda x: isinstance
                 }
     else:
         return {prefix: dd}
+
+
+def map_nested(dd, fn):
+    """Map a function to a nested data structure (containing lists or dictionaries
+
+    Args:
+      dd: nested data structure
+      fn: function to apply to each leaf
+    """
+    if isinstance(dd, collections.Mapping):
+        return {key: map_nested(dd[key], fn) for key in dd}
+    elif isinstance(dd, collections.Sequence):
+        return [map_nested(x, fn) for x in dd]
+    else:
+        return fn(dd)
+
+
+def take_first_nested(dd):
+    """Get a single element from the nested list/dictionary
+
+    Args:
+      dd: nested data structure
+
+    Example: take_first_nested({"a": [1,2,3], "b": 4}) == 1
+    """
+    if isinstance(dd, collections.Mapping):
+        return take_first_nested(six.next(six.itervalues(dd)))
+    elif isinstance(dd, collections.Sequence):
+        return take_first_nested(dd[0])
+    else:
+        return dd

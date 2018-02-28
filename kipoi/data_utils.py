@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import collections
+from kipoi.utils import flatten_nested, map_nested
 # string_classes
 if sys.version_info[0] == 2:
     string_classes = basestring
@@ -86,3 +87,34 @@ def iter_cycle(it):
         it, it_to_use = tee(it, 2)
         for x in it_to_use:
             yield x
+
+
+def flatten_batch(batch, nested_sep="/"):
+    """Convert the nested batch of numpy arrays into a dictionary of 1-dimensional numpy arrays
+
+    Args:
+      batch: batch of data
+      nested_sep: What separator to use for flattening the nested dictionary structure
+          into a single key
+
+    Returns:
+      A dictionary of 1-dimensional numpy arrays.
+    """
+    def array2array_dict(arr):
+        """Convert a numpy array into a dictionary of numpy arrays
+
+        >>> arr = np.arange(9).reshape((1, 3, 3))
+        >>> assert array2array_dict(arr)["0"]["1"][0] == arr[:, 0, 1][0]
+        """
+        assert isinstance(arr, np.ndarray)
+        if arr.ndim <= 1:
+            return arr
+        else:
+            return {str(i): array2array_dict(arr[:, i])
+                    for i in range(arr.shape[1])}
+
+    def is_list(x):
+        return isinstance(x, list)
+    return flatten_nested(map_nested(batch, array2array_dict),
+                          separator=nested_sep,
+                          is_list_fn=is_list)

@@ -1,8 +1,7 @@
 """Test kipoi.utils
 """
-
-
-from kipoi.utils import flatten_nested
+import numpy as np
+from kipoi.utils import flatten_nested, take_first_nested, map_nested
 from pytest import fixture
 
 
@@ -18,7 +17,20 @@ def nested_dict():
             }}
 
 
-# nested_dict = nested_dict()
+@fixture
+def nested_dict2():
+    return {"a": np.arange(3),
+            "b": {
+                "c": 3,
+                "d": [1, 2, 3],
+                "e": [
+                    {"f": 1},
+                    {"g": 4}]
+    }}
+
+
+nested_dict = nested_dict()
+nested_dict2 = nested_dict2()
 
 
 def test_flatten_dict(nested_dict):
@@ -39,3 +51,14 @@ def test_flatten_dict_no_list(nested_dict):
                   'b_d': [1, 2, 3],
                   'b_e': [{'f': 1},
                           {'g': 4}]}
+
+
+def test_take_first_nested(nested_dict, nested_dict2):
+    assert take_first_nested(nested_dict) == 1
+    assert np.all(take_first_nested(nested_dict2) == np.arange(3))
+
+
+def test_map_nested(nested_dict, nested_dict2):
+    assert map_nested(nested_dict, str)['b']['c'] == "3"
+    assert map_nested(nested_dict2, lambda x: isinstance(x, np.ndarray))['a']
+    assert not map_nested(nested_dict2, lambda x: isinstance(x, np.ndarray))['b']['c']
