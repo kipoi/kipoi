@@ -195,32 +195,6 @@ def cli_predict(command, raw_args):
     logger.info('Done! Predictions stored in {0}'.format(args.output))
 
 
-def io_batch2df(batch, pred_batch):
-    """Convert the batch + prediction batch to a pd.DataFrame
-    """
-    if not isinstance(pred_batch, np.ndarray) or pred_batch.ndim > 2:
-        raise ValueError("Model's output is not a 1D or 2D np.ndarray")
-
-    # TODO - generalize to multiple arrays (list of arrays)
-
-    if pred_batch.ndim == 1:
-        pred_batch = pred_batch[:, np.newaxis]
-    df = pd.DataFrame(pred_batch,
-                      columns=["y_{0}".format(i)
-                               for i in range(pred_batch.shape[1])])
-
-    if "metadata" in batch and "ranges" in batch["metadata"]:
-        rng = batch["metadata"]["ranges"]
-        df_ranges = pd.DataFrame(OrderedDict([("chr", rng.get("chr")),
-                                              ("start", rng.get("start")),
-                                              ("end", rng.get("end")),
-                                              ("name", rng.get("id", None)),
-                                              ("score", rng.get("score", None)),
-                                              ("strand", rng.get("strand", None))]))
-        df = pd.concat([df_ranges, df], axis=1)
-    return df
-
-
 def cli_pull(command, raw_args):
     """Pull the repository
     """
