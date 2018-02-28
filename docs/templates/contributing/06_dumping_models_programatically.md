@@ -28,6 +28,7 @@ template
 │   └── intervals.bed
 └── model.yaml
 Makefile
+test_subset.txt
 ```
 
 ## `template/` folder
@@ -153,6 +154,25 @@ class SpecificModel(TemplateModel):
         super(SpecificModel, self).__init__(arg1="value")
 ```
 
+
+## `test_subset.txt` - Testing only some models
+
+Since many models are essentially the same, the automatic tests should only test one or few models. To specify which models to test,
+write the `test_subset.txt` file in the same directory level as the `template/` folder and list the models you want to test.
+
+Examples:
+
+`CpGenie/test_subset.txt`: 
+```
+GM19239_ENCSR000DGH
+merged
+
+```
+
+`rbp_eclip/test_subset.txt`: 
+```
+AARS
+```
 
 ## Reproducible script
 
