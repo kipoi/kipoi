@@ -15,7 +15,6 @@ from ..data import numpy_collate_concat
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import deepdish
 from collections import OrderedDict
 import logging
 from kipoi import writers
@@ -25,6 +24,16 @@ logger.addHandler(logging.NullHandler())
 # TODO - write out the hdf5 file in batches:
 #        - need a recursive function for creating groups ...
 #           - infer the right data-type + shape
+
+
+def prepare_batch(dl_batch, pred_batch,
+                  keep_inputs=False):
+    dl_batch["preds"] = pred_batch
+
+    if not keep_inputs:
+        dl_batch.pop("inputs", None)
+        dl_batch.pop("targets", None)
+    return dl_batch
 
 
 def cli_test(command, raw_args):
@@ -87,31 +96,19 @@ def cli_preproc(command, raw_args):
 
     dataloader = Dataloader(**dataloader_kwargs)
 
-    logger.info("Loading all the points into memory")
-    # TODO - check that the first batch was indeed correct
-    obj = dataloader.load_all(batch_size=args.batch_size, num_workers=args.num_workers)
+    it = dataloader.batch_iter(batch_size=args.batch_size, num_workers=args.num_workers)
 
-    logger.info("Writing everything to the hdf5 array at {0}".format(args.output))
-    deepdish.io.save(args.output, obj)
+    logger.info("Writing to the hdf5 file: {0}".format(args.output))
+    writer = writers.HDF5BatchWriter(file_path=args.output)
+
+    for i, batch in enumerate(tqdm(it)):
+        # check that the first batch was indeed correct
+        if i == 0 and not Dataloader.output_schema.compatible_with_batch(batch):
+            logger.warn("First batch of data is not compatible with the dataloader schema.")
+        writer.batch_write(batch)
+
+    writer.close()
     logger.info("Done!")
-
-    # TODO - hack - read the whole dataset into memory at first...
-
-    # sample = dataloader[0]
-    # n = len(dataloader)
-
-    # f = h5py.File(args.output, "w")
-    # inputs = f.create_group("inputs")
-    # arr_inputs = {k: inputs.create_dataset(k, (n, ) + v.shape) for k, v in six.iteritems(sample["inputs"])}
-    # targets = f.create_group("targets")
-
-    # if "targets" in sample and isinstance(sample["targets"], dict):
-    #     arr_inputs = {k: inputs.create_dataset(k, (n, ) + v.shape) for k, v in six.iteritems(sample["targets"])}
-    # else:
-    #     arr_targets = None
-
-    # metadata = f.create_group("metadata")
-    # arr_inputs = {k: inputs.create_dataset(k, (n, ) + np.asarray(v)) for k, v in six.iteritems(sample["metadata"])}
 
 
 # TODO - store the predictions/metadata to parquet - ?
@@ -145,14 +142,6 @@ def cli_predict(command, raw_args):
 
     dir_exists(os.path.dirname(args.output), logger)
 
-    def prepare_batch(dl_batch, pred_batch,
-                      keep_inputs=False):
-        dl_batch["preds"] = pred_batch
-
-        if not keep_inputs:
-            dl_batch.pop("inputs", None)
-            dl_batch.pop("targets", None)
-        return dl_batch
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -173,38 +162,27 @@ def cli_predict(command, raw_args):
     it = dl.batch_iter(batch_size=args.batch_size,
                        num_workers=args.num_workers)
 
-    if args.file_format in ["tsv", "bed"]:
+    if args.file_format == "tsv":
         writer = writers.TsvBatchWriter(file_path=args.output,
-                                        nested_sep="/",
-                                        add_inputs=args.keep_inputs,
-                                        add_targets=args.keep_inputs,
-                                        add_metadata=True)
+                                        nested_sep="/")
+    elif args.file_format == "bed":
+        writer = writers.BedBatchWriter(file_path=args.output,
+                                        dataloader_schema=dl.output_schema.metadata,
+                                        header=True)
+    elif args.file_format == "hdf5":
+        writer = writers.HDF5BatchWriter(file_path=args.output)
+    else:
+        raise ValueError("Unknown file format: {0}".format(args.file_format))
 
-    obj_list = []
     for i, batch in enumerate(tqdm(it)):
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
         pred_batch = model.predict_on_batch(batch['inputs'])
 
         output_batch = prepare_batch(batch, pred_batch)
-        # tabular files
-        if args.file_format in ["tsv", "bed"]:
-            writer.batch_write(batch, pred_batch)
+        writer.batch_write(output_batch)
 
-        # binary nested arrays
-        elif args.file_format == "hdf5":
-            batch["predictions"] = pred_batch
-            if not args.keep_inputs:
-                del batch["inputs"]
-            # TODO - implement the batching version of it
-            obj_list.append(batch)
-        else:
-            raise ValueError("Unknown file format: {0}".format(args.file_format))
-
-    # Write hdf5 file in bulk
-    if args.file_format == "hdf5":
-        deepdish.io.save(args.output, numpy_collate_concat(obj_list))
-
+    writer.close()
     logger.info('Done! Predictions stored in {0}'.format(args.output))
 
 
@@ -220,7 +198,6 @@ def cli_pull(command, raw_args):
     parser.add_argument('-e', '--env_file', default=None,
                         help='If set, export the conda environment to a file.' +
                         'Example: kipoi pull mymodel -e mymodel.yaml')
-    # TODO add the conda functionality
     args = parser.parse_args(raw_args)
 
     kipoi.config.get_source(args.source).pull_model(args.model)

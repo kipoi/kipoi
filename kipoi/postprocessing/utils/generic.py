@@ -236,7 +236,7 @@ class OutputReshaper(object):
         if len(arr.shape) == 1:
             arr = arr[:, None]
         elif (len(arr.shape) == 3) and (arr.shape[2] == 1):
-            arr = arr[...,0]
+            arr = arr[..., 0]
         return arr
 
     def flatten(self, ds):

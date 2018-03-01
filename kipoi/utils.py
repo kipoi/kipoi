@@ -273,29 +273,6 @@ def list_files_recursively(root_dir, basename, suffix='y?ml'):
                 for filename in fnmatch.filter(filenames, '{0}.{1}'.format(basename, suffix))]
 
 
-def flatten_nested(dd, separator='_', prefix='', is_list_fn=lambda x: isinstance(x, collections.Sequence)):
-    """Flatten a nested dictionary/list
-
-    Args:
-      separator: how to separate different hirearchical levels
-      prefix: what to pre-append to the function
-      is_list_fn: function to determine whether to split the list/numpy.array into indvidual classes or
-        to include the element as value.
-    """
-    if isinstance(dd, collections.Mapping):
-        return {prefix + separator + k if prefix else k: v
-                for kk, vv in six.iteritems(dd)
-                for k, v in six.iteritems(flatten_nested(vv, separator, kk, is_list_fn))
-                }
-    elif is_list_fn(dd):
-        return {prefix + separator + k if prefix else k: v
-                for kk, vv in enumerate(dd)
-                for k, v in six.iteritems(flatten_nested(vv, separator, str(kk), is_list_fn))
-                }
-    else:
-        return {prefix: dd}
-
-
 def map_nested(dd, fn):
     """Map a function to a nested data structure (containing lists or dictionaries
 

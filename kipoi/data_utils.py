@@ -1,7 +1,10 @@
 import numpy as np
 import sys
 import collections
-from kipoi.utils import flatten_nested, map_nested
+from kipoi.utils import map_nested
+import pandas as pd
+import six
+from kipoi.external.flatten_json import flatten
 # string_classes
 if sys.version_info[0] == 2:
     string_classes = basestring
@@ -106,15 +109,16 @@ def flatten_batch(batch, nested_sep="/"):
         >>> arr = np.arange(9).reshape((1, 3, 3))
         >>> assert array2array_dict(arr)["0"]["1"][0] == arr[:, 0, 1][0]
         """
-        assert isinstance(arr, np.ndarray)
-        if arr.ndim <= 1:
-            return arr
+        if isinstance(arr, np.ndarray):
+            if arr.ndim <= 1:
+                return arr
+            else:
+                return collections.OrderedDict([(str(i), array2array_dict(arr[:, i]))
+                                                for i in range(arr.shape[1])])
+        elif isinstance(arr, pd.DataFrame):
+            return {k: v.values for k, v in six.iteritems(arr.to_dict("records"))}
         else:
-            return {str(i): array2array_dict(arr[:, i])
-                    for i in range(arr.shape[1])}
+            raise ValueError("Unknown data type")
 
-    def is_list(x):
-        return isinstance(x, list)
-    return flatten_nested(map_nested(batch, array2array_dict),
-                          separator=nested_sep,
-                          is_list_fn=is_list)
+    return flatten(map_nested(batch, array2array_dict),
+                   separator=nested_sep)
