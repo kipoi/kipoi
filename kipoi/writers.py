@@ -99,7 +99,7 @@ class BedBatchWriter(BatchWriter):
     def batch_write(self, batch):
         fbatch = flatten_batch(batch, nested_sep="/")
 
-        # if 'score' is not defined, use 0
+        # since 'score' is not defined in GenomicRanges, use "."
         if os.path.join(self.ranges_key, "score") not in fbatch:
             fbatch[os.path.join(self.ranges_key, "score")] = "."
 
