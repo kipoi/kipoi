@@ -101,7 +101,7 @@ class BedBatchWriter(BatchWriter):
 
         # if 'score' is not defined, use 0
         if os.path.join(self.ranges_key, "score") not in fbatch:
-            fbatch[os.path.join(self.ranges_key, "score")] = 0
+            fbatch[os.path.join(self.ranges_key, "score")] = "."
 
         bed_cols = ["chr", "start", "end", "id", "score", "strand"]
         cols = [os.path.join(self.ranges_key, x) for x in bed_cols] + \
