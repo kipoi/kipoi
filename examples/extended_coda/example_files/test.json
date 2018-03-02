@@ -1,4 +1,4 @@
-pp{
+{
     "intervals_file": "intervals.tsv",
     "input_data_sources": {
         "H3K27AC_subsampled": "H3K27AC_subsampled.bw"
