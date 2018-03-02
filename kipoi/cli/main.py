@@ -111,7 +111,6 @@ def cli_preproc(command, raw_args):
     logger.info("Done!")
 
 
-# TODO - store the predictions/metadata to parquet - ?
 def cli_predict(command, raw_args):
     """CLI interface to predict
     """
@@ -120,9 +119,9 @@ def cli_predict(command, raw_args):
                                      description='Run the model prediction.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
-    parser.add_argument('-f', '--file_format', default="tsv",
+    parser.add_argument('-f', '--file_format', default="tsv", nargs="+",
                         choices=["tsv", "bed", "hdf5"],
-                        help='File format.')
+                        help='Output file formats to use (can contain multiple).')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
@@ -132,7 +131,8 @@ def cli_predict(command, raw_args):
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
     parser.add_argument('-o', '--output', required=True,
-                        help="Output hdf5 file")
+                        help="Output file(s). In case multiple file_formats are specified, the" +
+                        "output file name for each file_format is then: '{output}.{file_format}'")
     args = parser.parse_args(raw_args)
 
     dataloader_kwargs = parse_json_file_str(args.dataloader_args)
@@ -142,6 +142,14 @@ def cli_predict(command, raw_args):
 
     dir_exists(os.path.dirname(args.output), logger)
 
+    if not isinstance(args.file_format, list):
+        args.file_format = [args.file_format]
+        args.output = [args.output]
+    elif len(args.file_format) == 1:
+        args.output = [args.output]
+    else:
+        # multiple file_formats present
+        args.output = ["{0}.{1}".format(args.output, f) for f in args.file_format]
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -162,17 +170,19 @@ def cli_predict(command, raw_args):
     it = dl.batch_iter(batch_size=args.batch_size,
                        num_workers=args.num_workers)
 
-    if args.file_format == "tsv":
-        writer = writers.TsvBatchWriter(file_path=args.output,
-                                        nested_sep="/")
-    elif args.file_format == "bed":
-        writer = writers.BedBatchWriter(file_path=args.output,
-                                        dataloader_schema=dl.output_schema.metadata,
-                                        header=True)
-    elif args.file_format == "hdf5":
-        writer = writers.HDF5BatchWriter(file_path=args.output)
-    else:
-        raise ValueError("Unknown file format: {0}".format(args.file_format))
+    use_writers = []
+    for f, output in zip(args.file_format, args.output):
+        if f == "tsv":
+            use_writers.append(writers.TsvBatchWriter(file_path=output,
+                                                      nested_sep="/"))
+        elif f == "bed":
+            use_writers.append(writers.BedBatchWriter(file_path=output,
+                                                      dataloader_schema=dl.output_schema.metadata,
+                                                      header=True))
+        elif f == "hdf5":
+            use_writers.append(writers.HDF5BatchWriter(file_path=output))
+        else:
+            raise ValueError("Unknown file format: {0}".format(f))
 
     for i, batch in enumerate(tqdm(it)):
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
@@ -180,9 +190,13 @@ def cli_predict(command, raw_args):
         pred_batch = model.predict_on_batch(batch['inputs'])
 
         output_batch = prepare_batch(batch, pred_batch)
-        writer.batch_write(output_batch)
 
-    writer.close()
+        # write out the predictions
+        for writer in use_writers:
+            writer.batch_write(output_batch)
+
+    for writer in use_writers:
+        writer.close()
     logger.info('Done! Predictions stored in {0}'.format(args.output))
 
 

@@ -285,7 +285,7 @@ def cli_score_variants(command, raw_args):
                 if i == 0:
                     try:
                         os.unlink(args.output)
-                    except:
+                    except Exception:
                         pass
                 with open(args.output, "w") as ofh:
                     ofh.write("KPVEP_%s\n" % k.upper())
