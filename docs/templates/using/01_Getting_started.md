@@ -29,7 +29,7 @@ You can use the model from:
 
 ### Python - quick start
 
-See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for additional information. Here is a list of most useful python commands
+See the ipython notebook [tutorials/python-api](../tutorials/python-api/) for additional information. Here is a list of most useful python commands
 
 ```python
 import kipoi
@@ -167,4 +167,4 @@ kipoi postproc score_variant rbp_eclip/UPF1 \
 
 ### R - quick start
 
-See [tutorials/R-api](../../tutorials/R-api/).
+See [tutorials/R-api](../tutorials/R-api/).
