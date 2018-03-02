@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import six
 import pickle
 import glob
 import os
@@ -8,11 +9,11 @@ import sys
 import subprocess
 import numpy as np
 import yaml
-import six
 from collections import OrderedDict
 from contextlib import contextmanager
 import inspect
 import logging
+import collections
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -270,3 +271,34 @@ def list_files_recursively(root_dir, basename, suffix='y?ml'):
         return [os.path.join(root, filename)[len(root_dir):]
                 for root, dirnames, filenames in os.walk(root_dir)
                 for filename in fnmatch.filter(filenames, '{0}.{1}'.format(basename, suffix))]
+
+
+def map_nested(dd, fn):
+    """Map a function to a nested data structure (containing lists or dictionaries
+
+    Args:
+      dd: nested data structure
+      fn: function to apply to each leaf
+    """
+    if isinstance(dd, collections.Mapping):
+        return {key: map_nested(dd[key], fn) for key in dd}
+    elif isinstance(dd, collections.Sequence):
+        return [map_nested(x, fn) for x in dd]
+    else:
+        return fn(dd)
+
+
+def take_first_nested(dd):
+    """Get a single element from the nested list/dictionary
+
+    Args:
+      dd: nested data structure
+
+    Example: take_first_nested({"a": [1,2,3], "b": 4}) == 1
+    """
+    if isinstance(dd, collections.Mapping):
+        return take_first_nested(six.next(six.itervalues(dd)))
+    elif isinstance(dd, collections.Sequence):
+        return take_first_nested(dd[0])
+    else:
+        return dd

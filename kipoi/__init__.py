@@ -16,6 +16,7 @@ from . import data_utils
 from . import data
 from . import conda
 from . import components
+from . import writers
 
 # shortcuts
 from .model import get_model
