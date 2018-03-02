@@ -47,11 +47,15 @@ class Info(RelatedConfigMixin):
       version: 0.1
     """
     authors = related.SequenceField(Author, repr=True)
-    doc = related.StringField()  # free-text description of the model
+    doc = related.StringField("", required=False)  # free-text description of the model
     name = related.StringField(required=False)  # TODO - deprecate
     version = related.StringField(default="0.1", required=False)
     license = related.StringField(default="MIT", required=False)  # license of the model/dataloader - defaults to MIT
     tags = StrSequenceField(str, default=[], required=False)
+
+    def __attrs_post_init__(self):
+        if self.doc == "":
+            logger.warn("doc empty for the `info:` field")
 
 
 @related.immutable(strict=True)
@@ -85,7 +89,7 @@ class ArraySchema(RelatedConfigMixin):
     """
     verbose = True
     shape = TupleIntField()
-    doc = related.StringField()
+    doc = related.StringField("", required=False)
     # MAYBE - allow a list of strings?
     #         - could be useful when a single array can have multiple 'attributes'
     name = related.StringField(required=False)
@@ -476,12 +480,16 @@ class PostProcModelStruct(RelatedConfigMixin):
 @related.immutable(strict=True)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
-    doc = related.StringField()
+    doc = related.StringField("", required=False)
     example = AnyField(required=False)
     name = related.StringField(required=False)
     type = related.StringField(default='str', required=False)
     optional = related.BooleanField(default=False, required=False)
     tags = StrSequenceField(str, default=[], required=False)  # TODO - restrict the tags
+
+    def __attrs_post_init__(self):
+        if self.doc == "":
+            logger.warn("doc empty for one of the dataloader `args` fields")
 
 
 @related.immutable(strict=True)
