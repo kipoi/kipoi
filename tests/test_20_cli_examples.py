@@ -112,7 +112,6 @@ def test_predict_example(example, tmpdir):
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args=test.json",
-            "--file_format", file_format,
             "--output", tmpfile]
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
@@ -167,7 +166,6 @@ def test_predict_variants_example(example, tmpdir):
                     "dataloader_files/encodeSplines.pkl,gtf_file: example_files/gencode_v25_chr22.gtf.pkl.gz,"
                     "intervals_file: example_files/variant_intervals.tsv}'",
                     "--vcf_path", "example_files/variants.vcf",
-                    "--file_format", file_format,
                     "--out_vcf_fpath", vcf_tmpfile,
                     "--output", tmpfile]
             # run the

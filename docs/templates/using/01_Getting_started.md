@@ -10,9 +10,9 @@
     - `pip install kipoi`
 	  - if you wish to use variant effect prediction, run `pip install kipoi[vep]`
 
-#### 2. Choose the model from <http://kipoi.org/models>
+#### 2. Choose the model from [http://kipoi.org/models](http://kipoi.org/groups)
 
-1. Navigate to <http://kipoi.org/models> and select a model of your interest
+1. Navigate to [http://kipoi.org/models](http://kipoi.org/groups) and select a model of your interest
 2. On model's page (`http://kipoi.org/models/<model>`), check the required arguments in the dataloader section
 
 #### 3. Use the model

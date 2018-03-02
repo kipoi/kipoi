@@ -157,6 +157,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
 def cli_score_variants(command, raw_args):
     """CLI interface to predict
     """
+    AVAILABLE_FORMATS = ["tsv", "hdf5", "h5"]
     import pybedtools
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
@@ -174,13 +175,11 @@ def cli_score_variants(command, raw_args):
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
-    parser.add_argument('-f', '--file_format', default="tsv",
-                        choices=["tsv", "hdf5"],
-                        help='File format.')
     parser.add_argument('-r', '--restriction_bed', default=None,
                         help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=False,
-                        help="Output hdf5 file")
+                        help="Additional output file. File format is inferred from the file path ending" +
+                        ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
     parser.add_argument('-s', "--scoring", default="diff", nargs="+",
                         help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
                              "available except for `diff` which is always available. Select scoring function by the"
@@ -199,8 +198,15 @@ def cli_score_variants(command, raw_args):
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
-    if args.file_format == "hdf5":
-        # only if hdf5 output is used, import deepdish
+    # infer the file format
+    args.file_format = args.output.split(".")[-1]
+    if args.file_format not in AVAILABLE_FORMATS:
+        logger.error("File ending: {0} for file {1} not from {2}".
+                     format(args.file_format, args.output, AVAILABLE_FORMATS))
+        sys.exit(1)
+
+    if args.file_format in ["hdf5", "h5"]:
+        # only if hdf5 output is used
         import deepdish
 
     # Check that all the folders exist
@@ -291,7 +297,7 @@ def cli_score_variants(command, raw_args):
                     ofh.write("KPVEP_%s\n" % k.upper())
                     res[k].to_csv(args.output, sep="\t", mode="a")
 
-        if args.file_format == "hdf5":
+        if args.file_format in ["hdf5", "h5"]:
             deepdish.io.save(args.output, res)
 
     logger.info('Successfully predicted samples')

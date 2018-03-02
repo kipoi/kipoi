@@ -21,10 +21,6 @@ from kipoi import writers
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-# TODO - write out the hdf5 file in batches:
-#        - need a recursive function for creating groups ...
-#           - infer the right data-type + shape
-
 
 def prepare_batch(dl_batch, pred_batch,
                   keep_inputs=False):
@@ -119,9 +115,6 @@ def cli_predict(command, raw_args):
                                      description='Run the model prediction.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
-    parser.add_argument('-f', '--file_format', default="tsv", nargs="+",
-                        choices=["tsv", "bed", "hdf5"],
-                        help='Output file formats to use (can contain multiple).')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
@@ -130,26 +123,23 @@ def cli_predict(command, raw_args):
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
-    parser.add_argument('-o', '--output', required=True,
-                        help="Output file(s). In case multiple file_formats are specified, the" +
-                        "output file name for each file_format is then: '{output}.{file_format}'")
+    parser.add_argument('-o', '--output', required=True, nargs="+",
+                        help="Output files. File format is inferred from the file path ending. Available file formats are: " +
+                        ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
     args = parser.parse_args(raw_args)
 
     dataloader_kwargs = parse_json_file_str(args.dataloader_args)
 
-    if args.keep_inputs and args.file_format != "hdf5":
-        raise ValueError("--keep_inputs flag is only compatible with --file_format=hdf5")
-
-    dir_exists(os.path.dirname(args.output), logger)
-
-    if not isinstance(args.file_format, list):
-        args.file_format = [args.file_format]
+    # setup the files
+    if not isinstance(args.output, list):
         args.output = [args.output]
-    elif len(args.file_format) == 1:
-        args.output = [args.output]
-    else:
-        # multiple file_formats present
-        args.output = ["{0}.{1}".format(args.output, f) for f in args.file_format]
+    for o in args.output:
+        ending = o.split('.')[-1]
+        if ending not in writers.FILE_SUFFIX_MAP:
+            logger.error("File ending: {0} for file {1} not from {2}".
+                         format(ending, o, writers.FILE_SUFFIX_MAP))
+            sys.exit(1)
+        dir_exists(os.path.dirname(o), logger)
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -170,34 +160,44 @@ def cli_predict(command, raw_args):
     it = dl.batch_iter(batch_size=args.batch_size,
                        num_workers=args.num_workers)
 
+    # Setup the writers
     use_writers = []
-    for f, output in zip(args.file_format, args.output):
-        if f == "tsv":
-            use_writers.append(writers.TsvBatchWriter(file_path=output,
-                                                      nested_sep="/"))
-        elif f == "bed":
+    for output in args.output:
+        ending = output.split('.')[-1]
+        W = writers.FILE_SUFFIX_MAP[ending]
+        logger.info("Using {0} for file {1}".format(W.__name__, output))
+        if ending == "tsv":
+            assert W == writers.TsvBatchWriter
+            use_writers.append(writers.TsvBatchWriter(file_path=output, nested_sep="/"))
+        elif ending == "bed":
+            assert W == writers.BedBatchWriter
             use_writers.append(writers.BedBatchWriter(file_path=output,
                                                       dataloader_schema=dl.output_schema.metadata,
                                                       header=True))
-        elif f == "hdf5":
+        elif ending in ["hdf5", "h5"]:
+            assert W == writers.HDF5BatchWriter
             use_writers.append(writers.HDF5BatchWriter(file_path=output))
         else:
-            raise ValueError("Unknown file format: {0}".format(f))
+            logger.error("Unknown file format: {0}".format(ending))
+            sys.exit(1)
 
+    # Loop through the data, make predictions, save the output
     for i, batch in enumerate(tqdm(it)):
+        # validate the data schema in the first iteration
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
+
+        # make the prediction
         pred_batch = model.predict_on_batch(batch['inputs'])
 
+        # write out the predictions, metadata (, inputs, targets)
         output_batch = prepare_batch(batch, pred_batch)
-
-        # write out the predictions
         for writer in use_writers:
             writer.batch_write(output_batch)
 
     for writer in use_writers:
         writer.close()
-    logger.info('Done! Predictions stored in {0}'.format(args.output))
+    logger.info('Done! Predictions stored in {0}'.format(",".join(args.output)))
 
 
 def cli_pull(command, raw_args):
@@ -230,8 +230,9 @@ def cli_init(command, raw_args, **kwargs):
 
     print("\nPlease answer the questions bellow. Defaults are shown in square brackets.\n")
     print("You might find the following links useful: ")
-    print("- (model_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_models.md")
-    print("- (dataloader_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_dataloaders.md")
+    print("- getting started: http://www.kipoi.org/docs/contributing/01_Getting_started/")
+    print("- model_type: http://www.kipoi.org/docs/contributing/02_Writing_model.yaml/#type")
+    print("- dataloader_type: http://www.kipoi.org/docs/contributing/04_Writing_dataloader.py/#dataloader-types")
     print("--------------------------------------------\n")
 
     from cookiecutter.main import cookiecutter

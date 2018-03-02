@@ -207,3 +207,9 @@ class HDF5BatchWriter(BatchWriter):
 # Nice-to-have writers:
 # - parquet
 # - zarr, bcolz <-> xarray
+
+
+FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
+                   "hdf5": HDF5BatchWriter,
+                   "tsv": TsvBatchWriter,
+                   "bed": BedBatchWriter}
