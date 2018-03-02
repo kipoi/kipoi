@@ -147,6 +147,15 @@ kipoi env create rbp_eclip/UPF1
 source activate kipoi-rbp_eclip__UPF
 ```
 
+#### List all Kipoi environments
+
+```bash
+kipoi env list
+```
+
+Use `source activate <env>` or `conda activate <env>` to activate the environment.
+
+
 #### Score variants
 
 ```bash
@@ -155,3 +164,7 @@ kipoi postproc score_variant rbp_eclip/UPF1 \
 	-v input.vcf \
 	-o output.vcf
 ```
+
+### R - quick start
+
+See [tutorials/R-api](../../tutorials/R-api/).
