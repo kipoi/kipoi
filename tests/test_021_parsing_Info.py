@@ -16,7 +16,7 @@ authors:
     - name: Ziga Avsec
 name: rbp_eclip
 version: 0.1
-doc: RBP binding prediction
+# doc: RBP binding prediction
 tags: ['var_interpretation']
 """]
 
@@ -29,9 +29,6 @@ version: 0.1
 doc: RBP binding prediction
 extra_field: asd
 """, """
-authors:
-    - name: Ziga Avsec
-name: rbp_eclip
 version: 0.1
 """]
 
