@@ -33,6 +33,8 @@ STAGING=/tmp/${GITHUB_USERNAME}-docs
 # Build docs only if ci-runner is testing this branch:
 BUILD_DOCS_FROM_BRANCH="master"
 
+# TODO - to build the core webpage, modify which folder do get removed
+
 # ----------------------------------------------------------------------------
 #
 # END repository-specific configuration. The code below is generic; to use for

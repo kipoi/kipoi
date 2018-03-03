@@ -71,22 +71,22 @@ jobs:
       # - image: continuumio/miniconda3:4.3.14
       - image: continuumio/anaconda3:5.0.1
       # - image: circleci/python:3.5
-    working_directory: ~/repo/docs
+    working_directory: ~/repo
     steps:
       - add_ssh_keys:
           fingerprints:
             - 60:0f:05:31:12:3d:bc:8b:df:9d:08:da:71:a5:43:b6
-      - checkout:
-          path: ~/repo
+      - checkout
       - run:
           name: Install pip - Kipoi
-          command: pip install -e ..
+          command: pip install -e .
       - run:
           name: Install build deps
           command: pip install nbconvert mkdocs
       - run:
           name: Build docs
           command: |
+            cd docs/
             python autogen.py
             ./render_ipynb.bash
             mkdocs build
@@ -110,4 +110,12 @@ workflows:
             branches:
               only:
                 - master
+              ignore:
+                - test_deployment_script
+  test-n-deploy:
+    jobs:
+      - build-deploy-docs:
+          filters:
+            branches:
+              only:
                 - test_deployment_script
