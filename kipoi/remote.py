@@ -303,11 +303,17 @@ class GitLFSSource(Source):
                     format(remote=self.remote_url,
                            local=self.local_path))
 
-        subprocess.call(["git-lfs",
+        # subprocess.call(["git-lfs",
+        #                  "clone",
+        #                  "-I /",
+        #                  self.remote_url,
+        #                  self.local_path],
+        #                 env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+        subprocess.call(["git",
                          "clone",
-                         "-I /",
                          self.remote_url,
-                         self.local_path])
+                         self.local_path],
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
     def pull_source(self):
@@ -320,11 +326,14 @@ class GitLFSSource(Source):
                     format(self.local_path))
         subprocess.call(["git",
                          "pull"],
-                        cwd=self.local_path)
-        subprocess.call(["git-lfs",
-                         "pull",
-                         "-I /"],
-                        cwd=self.local_path)
+                        cwd=self.local_path,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+        # I think the following git-lfs pull is redundant
+        # subprocess.call(["git-lfs",
+        #                  "pull",
+        #                  "-I /"],
+        #                 cwd=self.local_path,
+        #                 env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
     def _pull_component(self, component, which="model"):
@@ -347,7 +356,8 @@ class GitLFSSource(Source):
                    "-I {0}/**".format(pull_dir)]
             logger.info(" ".join(cmd))
             subprocess.call(cmd,
-                            cwd=self.local_path)
+                            cwd=self.local_path,
+                            env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
