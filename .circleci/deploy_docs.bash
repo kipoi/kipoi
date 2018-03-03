@@ -17,7 +17,7 @@ set -eou pipefail
 # repo) need to be updated.
 BRANCH="master"
 ORIGIN="kipoi.github.io"
-GITHUB_USERNAME="kipoi-bot"
+GITHUB_USERNAME="kipoi"
 TARGET_FOLDER="docs"
 
 # DOCSOURCE is directory containing the Makefile, relative to the directory
