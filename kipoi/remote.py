@@ -282,7 +282,7 @@ class GitLFSSource(Source):
     def __init__(self, remote_url, local_path):
         """GitLFS Source
         """
-        lfs_installed(raise_exception=True)
+        lfs_installed(raise_exception=False)
         self.remote_url = remote_url
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
@@ -295,6 +295,7 @@ class GitLFSSource(Source):
     def clone(self):
         """Clone the self.remote_url into self.local_path
         """
+        lfs_installed(raise_exception=True)
         if os.path.exists(self.local_path) and os.listdir(self.local_path):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
@@ -312,6 +313,7 @@ class GitLFSSource(Source):
     def pull_source(self):
         """Pull/update the source
         """
+        lfs_installed(raise_exception=True)
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
@@ -324,6 +326,7 @@ class GitLFSSource(Source):
         self._pulled = True
 
     def _pull_component(self, component, which="model"):
+        lfs_installed(raise_exception=True)
         if not self._pulled:
             self.pull_source()
 

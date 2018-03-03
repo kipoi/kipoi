@@ -192,9 +192,11 @@ def lfs_installed(raise_exception=False):
     """Check if git lfs is installed localls
     """
     ce = cmd_exists("git-lfs")
-    if raise_exception:
-        if not ce:
+    if not ce:
+        if raise_exception:
             raise OSError("git-lfs not installed")
+        else:
+            logger.warn("git-lfs not installed")
     return ce
 
 
