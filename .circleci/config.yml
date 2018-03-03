@@ -12,7 +12,7 @@ variables:
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
-      command: pip install genomelake
+      command: pip install genomelake --no-deps
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -101,7 +101,7 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36
-      - test-py27
+      # - test-py27
       - build-deploy-docs:
           requires:
             - test-py36
