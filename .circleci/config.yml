@@ -1,93 +1,113 @@
 version: 2
+
+variables:
+  update_conda: &update_conda
+    run:
+      name: Update conda
+      command: conda update --yes conda
+  install_git_lfs: &install_git_lfs
+    run:
+      name: Update conda
+      command: conda install --yes -c conda-forge git-lfs
+  install_pip_deps: &install_pip_deps
+    run:
+      name: Install pip dependencies
+      command: pip install genomelake
+  install_kipoi: &install_kipoi
+    run:
+      name: Install Kipoi
+      command: pip install '.[develop,vep]'
+  kipoi_ls: &kipoi_ls
+    run:
+      name: List kipoi packages
+      command: kipoi ls
+  run_tests: &run_tests
+    run:
+      name: Run tests
+      command: |
+        mkdir test-reports
+        py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+  store_test_results: &store_test_results
+    store_test_results:
+      path: test-reports
+  store_test_artifacts: &store_test_artifacts
+    store_artifacts:
+      path: test-reports
+      destination: test-reports
+
+
 jobs:
 
   test-py36:
     docker:
       - image: kipoi/miniconda3:4.3.14
-
     working_directory: ~/repo
-
     steps:
       - checkout
-
-      - run:
-          name: Update conda
-          command: conda update --yes conda
-
-      - run:
-          name: install genomelake
-          command: |
-            pip install git+ssh://git@github.com/avsecz/genomelake.git --no-deps
-
-      - run:
-          name: install the kipoi package
-          command: |
-            pip install '.[develop,vep]'
-
-      - run:
-          name: list models
-          command: |
-            kipoi ls
-
-      # run tests!
-      - run:
-          name: run tests
-          command: |
-            mkdir test-reports
-            py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
-
-      - store_test_results:
-          path: test-reports
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+      - *update_conda
+      - *install_pip_deps
+      - *install_kipoi
+      - *kipoi_ls
+      - *run_tests
+      - *store_test_results
+      - *store_test_artifacts
 
   test-py27:
     docker:
       - image: kipoi/miniconda:4.3.14
-
     working_directory: ~/repo
-
     steps:
       - checkout
-
-      - run:
-          name: Update conda
-          command: conda update --yes conda
-
-      - run:
-          name: install genomelake
-          command: |
-            pip install git+ssh://git@github.com/avsecz/genomelake.git --no-deps
-
-      - run:
-          name: install the kipoi package
-          command: |
-            pip install '.[develop,vep]'
-
-      - run:
-          name: list models
-          command: |
-            kipoi ls
-
-      # run tests!
-      - run:
-          name: run tests
-          command: |
-            mkdir test-reports
-            py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
-
-      - store_test_results:
-          path: test-reports
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+      - *update_conda
+      - *install_pip_deps
+      - *install_kipoi
+      - *kipoi_ls
+      - *run_tests
+      - *store_test_results
+      - *store_test_artifacts
           
+  build-deploy-docs:
+    docker:
+      # - image: continuumio/miniconda3:4.3.14
+      # - image: continuumio/anaconda3:5.0.1
+      - image: circleci/python:3.5
+    working_directory: ~/repo/docs
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - 60:0f:05:31:12:3d:bc:8b:df:9d:08:da:71:a5:43:b6
+      - checkout:
+          path: ~/repo
+      - run:
+          name: Install pip - Kipoi
+          command: pip install -e ..
+      - run:
+          name: Install build deps
+          command: pip install nbconvert mkdocs
+      - run:
+          name: Build docs
+          command: |
+            python autogen.py
+            ./render_ipynb.bash
+            mkdocs build
+      - run:
+          name: Deploy docs
+          command: .circleci/deploy_docs.sh
 workflows:
   version: 2
-  test_py27_py36:
+
+  # TODO - consider running the deploy only on
+  # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
+  test-n-deploy:
     jobs:
       - test-py36
       - test-py27
+      - build-deploy-docs
+          requires:
+            - test-py36
+            - test-py27
+          filters:
+            branches:
+              only:
+                - master
+                - test_deployment_script
