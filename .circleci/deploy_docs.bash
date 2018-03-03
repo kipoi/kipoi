@@ -17,7 +17,7 @@ set -eou pipefail
 # repo) need to be updated.
 BRANCH="master"
 ORIGIN="kipoi.github.io"
-GITHUB_USERNAME="kipoi"
+GITHUB_USERNAME="kipoi-bot"
 TARGET_FOLDER="docs"
 
 # DOCSOURCE is directory containing the Makefile, relative to the directory
@@ -75,10 +75,11 @@ if git diff --quiet; then
     exit 0
 fi
 
-if [[ $CIRCLE_BRANCH != master ]]; then
-    echo "Not pushing docs because not on branch '$BUILD_DOCS_FROM_BRANCH'"
-    exit 0
-fi
+# Ignore branch
+# if [[ $CIRCLE_BRANCH != master ]]; then
+#     echo "Not pushing docs because not on branch '$BUILD_DOCS_FROM_BRANCH'"
+#     exit 0
+# fi
 
 
 # Add, commit, and push
