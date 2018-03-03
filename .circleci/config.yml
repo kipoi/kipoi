@@ -69,8 +69,8 @@ jobs:
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.3.14
-      # - image: continuumio/anaconda3:5.0.1
-      - image: circleci/python:3.5
+      - image: continuumio/anaconda3:5.0.1
+      # - image: circleci/python:3.5
     working_directory: ~/repo/docs
     steps:
       - add_ssh_keys:
