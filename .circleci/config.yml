@@ -112,7 +112,7 @@ workflows:
                 - master
               ignore:
                 - test_deployment_script
-  test-n-deploy:
+  test-deployment:
     jobs:
       - build-deploy-docs:
           filters:
