@@ -58,7 +58,7 @@ git clone $REPO $STAGING
 cd $STAGING
 git checkout $BRANCH || git checkout --orphan $BRANCH
 # remove the existing target folder
-rm -r ${TARGET_FOLDER}
+rm -rf ${TARGET_FOLDER}
 
 # copy over the docs to tmpdir
 cd ${DOCSOURCE}
