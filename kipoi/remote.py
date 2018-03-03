@@ -302,13 +302,6 @@ class GitLFSSource(Source):
         logger.info("Cloning {remote} into {local}".
                     format(remote=self.remote_url,
                            local=self.local_path))
-
-        # subprocess.call(["git-lfs",
-        #                  "clone",
-        #                  "-I /",
-        #                  self.remote_url,
-        #                  self.local_path],
-        #                 env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         subprocess.call(["git",
                          "clone",
                          self.remote_url,
@@ -328,12 +321,6 @@ class GitLFSSource(Source):
                          "pull"],
                         cwd=self.local_path,
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
-        # I think the following git-lfs pull is redundant
-        # subprocess.call(["git-lfs",
-        #                  "pull",
-        #                  "-I /"],
-        #                 cwd=self.local_path,
-        #                 env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
     def _pull_component(self, component, which="model"):
