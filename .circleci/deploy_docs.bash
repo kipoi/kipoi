@@ -33,8 +33,6 @@ STAGING=/tmp/${GITHUB_USERNAME}-docs
 # Build docs only if ci-runner is testing this branch:
 BUILD_DOCS_FROM_BRANCH="master"
 
-# TODO - to build the core webpage, modify which folder do get removed
-
 # ----------------------------------------------------------------------------
 #
 # END repository-specific configuration. The code below is generic; to use for
@@ -66,8 +64,6 @@ cp -r ${DOCHTML} $STAGING/${TARGET_FOLDER}
 
 # commit and push
 cd $STAGING
-touch .nojekyll
-git add .nojekyll
 
 # committing with no changes results in exit 1, so check for that case first.
 if git diff --quiet; then
@@ -84,7 +80,7 @@ fi
 
 # Add, commit, and push
 echo ".*" >> .gitignore
-git config user.name "Circle-CI"
+git config user.name "Circle-CI-kipoi"
 git config user.email "${GITHUB_USERNAME}@users.noreply.github.com"
 git add -A .
 git commit --all -m "Updated docs to commit ${SHA}."

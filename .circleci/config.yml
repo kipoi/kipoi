@@ -7,7 +7,7 @@ variables:
       command: conda update --yes conda
   install_git_lfs: &install_git_lfs
     run:
-      name: Update conda
+      name: Install git-lfs
       command: conda install --yes -c conda-forge git-lfs
   install_pip_deps: &install_pip_deps
     run:
@@ -110,12 +110,4 @@ workflows:
             branches:
               only:
                 - master
-              ignore:
-                - test_deployment_script
-  test-deployment:
-    jobs:
-      - build-deploy-docs:
-          filters:
-            branches:
-              only:
                 - test_deployment_script
