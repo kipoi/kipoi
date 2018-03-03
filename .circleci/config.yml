@@ -92,7 +92,7 @@ jobs:
             mkdocs build
       - run:
           name: Deploy docs
-          command: .circleci/deploy_docs.sh
+          command: .circleci/deploy_docs.bash
 workflows:
   version: 2
 
