@@ -101,7 +101,7 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36
-      # - test-py27
+      - test-py27
       - build-deploy-docs:
           requires:
             - test-py36
