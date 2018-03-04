@@ -12,6 +12,9 @@ import pandas as pd
 import six
 from .remote import load_source, GitLFSSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 # --------------------------------------------
 
 
@@ -47,9 +50,9 @@ def get_source(source):
     if source in model_sources():
         return model_sources()[source]
     else:
-        raise ValueError("source={0} needs to be in model_sources()" +
-                         "available sources: {1}".
-                         format(source, list(model_sources().keys())))
+        raise ValueError("source={0} needs to be in model_sources()\n".format(source) +
+                         "available sources: {0}".
+                         format(", ".join(list(model_sources().keys()))))
 
 
 def add_source(name, obj):
@@ -128,25 +131,23 @@ sources: list of model sources to use. If None, use all
     return pd.concat(pd_list)[pd_list[0].columns]
 
 
-
 # Attempt to read Kipoi config file.
 _config_path = os.path.expanduser(os.path.join(_kipoi_dir, 'config.yaml'))
 if os.path.exists(_config_path):
     try:
         _config = yaml_ordered_load(open(_config_path))
     except ValueError:
-        _config = {}
-    _model_sources = _config.get('model_sources', None)
-    if _model_sources is None:
+        logger.warn("Unable to parse the config file: {0}. Using default config".format(_config_path))
         _model_sources = model_sources()
     else:
-        # dict  -> Source class
-        if "dir" in _model_sources:
-            raise ValueError("'dir' is a protected key name in model_sources" +
-                             " and hence can't be used")
+        _model_sources = _config['model_sources']
+    # dict  -> Source class
+    if "dir" in _model_sources:
+        raise ValueError("'dir' is a protected key name in model_sources" +
+                         " and hence can't be used")
 
-        _model_sources = OrderedDict([(k, load_source(v))
-                                      for k, v in six.iteritems(_model_sources)])
+    _model_sources = OrderedDict([(k, load_source(v))
+                                  for k, v in six.iteritems(_model_sources)])
     assert isinstance(_model_sources, OrderedDict)
     set_model_sources(_model_sources)
 
@@ -162,6 +163,7 @@ if not os.path.exists(_kipoi_dir):
 
 # Writing the file
 if not os.path.exists(_config_path):
+    logger.info("{0} doesn't exist. Creating the config file".format(_config_path))
     _config = {
         'model_sources': model_sources_dict(),
     }
