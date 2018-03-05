@@ -28,6 +28,7 @@ command_functions = {
     'predict': cli.main.cli_predict,
     'pull': cli.main.cli_pull,
     'ls': cli.ls.cli_ls,
+    'info': cli.main.cli_info,
     # further sub-commands
     'postproc': cli.postproc.cli_main,
     'env': cli.env.cli_main,
@@ -46,6 +47,7 @@ parser = argparse.ArgumentParser(
     # Kipoi model-zoo command line tool. Available sub-commands:
     # - using models:
     ls               List all the available models
+    info             Print dataloader keyword argument info
     predict          Run the model prediction
     pull             Download the directory associated with the model
     preproc          Run the dataloader and save the results to an hdf5 array

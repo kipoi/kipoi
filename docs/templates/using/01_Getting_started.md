@@ -65,6 +65,15 @@ pred = model.pipeline.predict_example()
 
 #### Get predictions for the raw files
 
+For any generation of the model output the dataloader has to be executed first A dataloader will most likely require input arguments in which the input files are defined, for example input fasta files or bed files, based on which the model input is generated. One way to display the keyword arguments a dataloader accepts is the following:
+
+```python
+kipoi.print_dl_kwargs(model.default_dataloader)
+```
+
+The output of the function above will tell you which arguments you can use when running the following command. Let's assume that `kipoi.print_dl_kwargs` has informed us that the dataloader accepts the arguments `dataloader_arg1` and `targets_file`. 
+
+
 ```python
 model.pipeline.predict({"dataloader_arg1": "inputs.csv"})
 ```
@@ -113,6 +122,10 @@ kipoi -h
 
 ```bash
 kipoi ls
+```
+#### Get information on how the required dataloader keyword arguments
+```bash
+kipoi info -i --source kipoi rbp_eclip/UPF1
 ```
 
 #### Run model prediction

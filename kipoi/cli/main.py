@@ -259,3 +259,38 @@ def cli_init(command, raw_args, **kwargs):
         sys.exit(1)
     print("--------------------------------------------")
     logger.info("Done!\nCreated the following folder into the current working directory: {0}".format(os.path.basename(out_dir)))
+
+def cli_info(command, raw_args):
+    """CLI interface to predict
+    """
+    assert command == "info"
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description="Prints dataloader" +
+                                                 " keyword arguments.")
+    parser.add_argument("-i", "--install_req", action='store_true',
+                        help="Install required packages from requirements.txt")
+    add_model(parser)
+    add_dataloader(parser, with_args=False)
+    args = parser.parse_args(raw_args)
+
+
+    # --------------------------------------------
+    # install args
+    if args.install_req:
+        kipoi.pipeline.install_model_requirements(args.model,
+                                                  args.source,
+                                                  and_dataloaders=True)
+    # load model & dataloader
+    model = kipoi.get_model(args.model, args.source)
+
+    if args.dataloader is not None:
+        dl_info = "dataloader '{0}' from source '{1}'".format(str(args.dataloader), str(args.dataloader_source))
+        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
+    else:
+        dl_info = "default dataloader for model '{0}' from source '{1}'".format(str(model.name), str(args.source))
+        Dl = model.default_dataloader
+
+    print("-"*80)
+    print("Displaying keyword arguments for {0}".format(dl_info))
+    print(kipoi.print_dl_kwargs(Dl))
+    print("-" * 80)
