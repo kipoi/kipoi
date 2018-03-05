@@ -43,8 +43,8 @@ def get_kipoi_colnames(info_tags):
 def parse_kipoi_colname(colname):
     """Parse kipoi column name into:
     (model, version, type)
-    input: "KPVEP_DeepSEA:0.1_DEEPSEA_SCR"
-    output: ("DeepSEA", "0.1", "DEEPSEA_SCR")
+    input: "KPVEP_DeepSEA:0.1_DEEPSEA_EFFECT"
+    output: ("DeepSEA", "0.1", "DEEPSEA_EFFECT")
     """
     colname = colname.replace("KPVEP_", "")
     model, version_diff = colname.split(":", 1)

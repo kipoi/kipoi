@@ -16,7 +16,6 @@ from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_
 from pysam import FastaFile
 from concise.preprocessing.splines import encodeSplines
 from concise.utils.position import extract_landmarks, ALL_LANDMARKS
-from gtfparse import read_gtf_as_dataframe
 from kipoi.metadata import GenomicRanges
 import linecache
 from kipoi.data import Dataset

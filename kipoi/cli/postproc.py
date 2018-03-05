@@ -20,27 +20,35 @@ logger.addHandler(logging.NullHandler())
 scoring_options = {
     # deepsea_scr diff logit_diff logit_ref logit_alt
     # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
-    "logit": kipoi.variant_effects.Logit,
+    "ref": kipoi.variant_effects.Ref,
+    "alt": kipoi.variant_effects.Alt,
     "diff": kipoi.variant_effects.Diff,
     "logit_ref": kipoi.variant_effects.LogitRef,
     "logit_alt": kipoi.variant_effects.LogitAlt,
-    # TODO - function name and string options should be the same
-    # i.e. I'd use DeepSEA_effect...
-    "deepsea_scr": kipoi.variant_effects.DeepSEA_effect
+    "logit": kipoi.variant_effects.Logit,
+    "deepsea_effect": kipoi.variant_effects.DeepSEA_effect
 }
 
 scoring_names = {
     VarEffectFuncType.diff: "diff",
+    VarEffectFuncType.ref: "ref",
+    VarEffectFuncType.alt: "alt",
     VarEffectFuncType.logit: "logit",
     VarEffectFuncType.logit_ref: "logit_ref",
     VarEffectFuncType.logit_alt: "logit_alt",
-    VarEffectFuncType.deepsea_scr: "deepsea_scr",
+    VarEffectFuncType.deepsea_effect: "deepsea_effect",
+}
+
+# if e.g. 'logit' is allowed then also 'logit_alt' is allowed, etc. values here refer to 'scoring_options' keys.
+categorical_enable = {
+    "__any__": ["diff", "ref", "alt"],
+    "logit": ["logit", "logit_ref", "logit_alt", "deepsea_effect"]
 }
 
 builtin_default_kwargs = {"rc_merging": "mean"}
 
 
-def _get_avail_scoring_methods(model):
+def get_avail_scoring_methods(model):
     if model.postprocessing.variant_effects is None:
         raise Exception("Model deosn't support variant effect prediction according model yaml file.")
     avail_scoring_fns = []  # contains callables
@@ -89,25 +97,57 @@ def _get_avail_scoring_methods(model):
         if sf.default:
             default_scoring_fns.append(s_label)
 
+    # if no default scoring functions have been set then take all of the above.
     if len(default_scoring_fns) == 0:
         default_scoring_fns = copy.copy(avail_scoring_fn_names)
 
-    if scoring_options["diff"] not in avail_scoring_fns:
-        avail_scoring_fn_def_args.append(builtin_default_kwargs)
-        avail_scoring_fns.append(scoring_options["diff"])
-        s_label = "diff"
-        if s_label in avail_scoring_fn_names:
-            s_label = "default_" + s_label
-        avail_scoring_fn_names.append(s_label)
-        if len(default_scoring_fns) == 0:
-            default_scoring_fns.append(s_label)
+    # try to complete the set of functions if needed. None of the additional ones will become part of the defaults
+    additional_scoring_fn_def_args =[]
+    additional_scoring_fns = []
+    additional_scoring_fn_names = []
+    for scoring_fn, def_args in zip(avail_scoring_fns, avail_scoring_fn_def_args):
+        scoring_name = None
+        for sn in scoring_options:
+            if scoring_fn is scoring_options[sn]:
+                scoring_name = sn
+                break
+        if scoring_name is None:
+            continue
+        categories = [cat for cat in categorical_enable if scoring_name in categorical_enable[cat]]
+        for cat in categories:
+            for scoring_name in categorical_enable[cat]:
+                if (scoring_options[scoring_name] not in avail_scoring_fns) and \
+                        (scoring_options[scoring_name] not in additional_scoring_fns):
+                    additional_scoring_fn_def_args.append(def_args)
+                    additional_scoring_fns.append(scoring_options[scoring_name])
+                    s_label = scoring_name
+                    if s_label in avail_scoring_fn_names:
+                        s_label = "default_" + s_label
+                    additional_scoring_fn_names.append(s_label)
+
+    avail_scoring_fns += additional_scoring_fns
+    avail_scoring_fn_def_args += additional_scoring_fn_def_args
+    avail_scoring_fn_names += additional_scoring_fn_names
+
+
+    # add the default scoring functions if not already in there
+    for scoring_name in categorical_enable["__any__"]:
+        if scoring_options[scoring_name] not in avail_scoring_fns:
+            avail_scoring_fn_def_args.append(builtin_default_kwargs)
+            avail_scoring_fns.append(scoring_options[scoring_name])
+            s_label = scoring_name
+            if s_label in avail_scoring_fn_names:
+                s_label = "default_" + s_label
+            avail_scoring_fn_names.append(s_label)
+            if len(default_scoring_fns) == 0:
+                default_scoring_fns.append(s_label)
 
     return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
 
 def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
     # get the scoring methods according to the model definition
     avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, \
-        default_scoring_fns = _get_avail_scoring_methods(model)
+        default_scoring_fns = get_avail_scoring_methods(model)
 
     errmsg_scoring_kwargs = "When defining `--scoring_kwargs` a JSON representation of arguments (or the path of a" \
                             " file containing them) must be given for every `--scoring` function."
@@ -118,7 +158,6 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
         if len(sel_scoring_kwargs) >= 1:
             if not len(sel_scoring_labels) == len(sel_scoring_kwargs):
                 raise ValueError(errmsg_scoring_kwargs)
-        dts = {}
         for arg_iter, k in enumerate(sel_scoring_labels):
             # if -s set check is available for model
             if k in avail_scoring_fn_names:
@@ -139,7 +178,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
                 # instantiate the scoring fn
                 dts[k] = avail_scoring_fns[si](**kwargs)
             else:
-                raise ValueError("Cannot choose scoring function %s. "
+                logger.warn("Cannot choose scoring function %s. "
                                  "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
     # if -s not set use all defaults
     elif len(default_scoring_fns) != 0:
@@ -147,7 +186,8 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
             si = avail_scoring_fn_names.index(k)
             kwargs = avail_scoring_fn_def_args[si]
             dts[k] = avail_scoring_fns[si](**kwargs)
-    else:
+
+    if len(dts) == 0:
         raise Exception("No scoring method was chosen!")
 
     return dts

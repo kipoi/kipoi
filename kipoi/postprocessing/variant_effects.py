@@ -84,6 +84,21 @@ class LogitRef(Rc_merging_pred_analysis):
         else:
             return logits
 
+class Alt(Rc_merging_pred_analysis):
+    def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
+        alt_out = alt
+        if alt_rc is not None:
+            alt_out = self.rc_merging(alt, alt_rc)
+        return alt_out
+
+class Ref(Rc_merging_pred_analysis):
+    def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
+        ref_out = ref
+        if ref_rc is not None:
+            ref_out = self.rc_merging(ref, ref_rc)
+        return ref_out
+
+
 
 class Diff(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
