@@ -8,17 +8,21 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import abc
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
 class Pred_analysis(object):
+    __metaclass__ = abc.ABCMeta
+    @abc.abstractmethod
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         raise NotImplementedError("Analysis routine has to be implemented")
 
 
 class Rc_merging_pred_analysis(Pred_analysis):
+    __metaclass__ = abc.ABCMeta
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
     #
 

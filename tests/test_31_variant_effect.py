@@ -314,34 +314,37 @@ def test_dna_reshaper():
     for n_seqs in [1, 3, 500]:
         for seq_len in [101, 1000, 1001]:
             for in_shape in [(n_seqs, 4, 1, 1, seq_len), (n_seqs, 4, 1, seq_len), (n_seqs, seq_len, 4)]:
-                content = np.arange(n_seqs * seq_len * 4)
-                start = np.reshape(content, in_shape)
-                input_shape = start.shape[1:]
-                reshaper_obj = kipoi.postprocessing.utils.generic.ReshapeDna(input_shape)
-                reshaped = reshaper_obj.to_standard(start)
-                reshaped_2 = reshaper_obj.from_standard(reshaped)
-                assert (np.all(start == reshaped_2))
-                assert (reshaped.shape[1:] == (seq_len, 4))
-                # check the transformed array:
-                seq_dim = np.where(np.array(in_shape) == seq_len)[0][0]
-                one_hot_dim = np.where(np.array(in_shape) == 4)[0][0]
-                swap = seq_dim > one_hot_dim
-                # is the transformation performed correctly?
-                for n in range(n_seqs):
-                    itm = np.squeeze(start[n, ...])
-                    if swap:
-                        itm = np.swapaxes(itm, 1, 0)
-                    assert np.all(itm == reshaped[n, ...])
-                # make sure it fails if there is spmething wrong:
-                for expa in range(len(in_shape)):
-                    with pytest.raises(Exception):
-                        reshaped = reshaper_obj.to_standard(np.expand_dims(start, expa))
-                # check if it also works for a single sample with missing batch axis
-                with pytest.warns(None):
-                    reshaped = reshaper_obj.to_standard(start[0, ...])
-                    assert (reshaped.shape[1:] == (seq_len, 4))
+                for undef_seqlen_schema in [True, False]:
+                    content = np.arange(n_seqs * seq_len * 4)
+                    start = np.reshape(content, in_shape)
+                    input_shape = start.shape[1:]
+                    seq_dim = np.where(np.array(in_shape) == seq_len)[0][0]
+                    if undef_seqlen_schema:
+                        input_shape = tuple([el if el != seq_len else None for el in list(input_shape)])
+                    reshaper_obj = kipoi.postprocessing.utils.generic.ReshapeDna(input_shape)
+                    reshaped = reshaper_obj.to_standard(start)
                     reshaped_2 = reshaper_obj.from_standard(reshaped)
-                    assert reshaped_2.shape == start.shape[1:]
+                    assert (np.all(start == reshaped_2))
+                    assert (reshaped.shape[1:] == (seq_len, 4))
+                    # check the transformed array:
+                    one_hot_dim = np.where(np.array(in_shape) == 4)[0][0]
+                    swap = seq_dim > one_hot_dim
+                    # is the transformation performed correctly?
+                    for n in range(n_seqs):
+                        itm = np.squeeze(start[n, ...])
+                        if swap:
+                            itm = np.swapaxes(itm, 1, 0)
+                        assert np.all(itm == reshaped[n, ...])
+                    # make sure it fails if there is spmething wrong:
+                    for expa in range(len(in_shape)):
+                        with pytest.raises(Exception):
+                            reshaped = reshaper_obj.to_standard(np.expand_dims(start, expa))
+                    # check if it also works for a single sample with missing batch axis
+                    with pytest.warns(None):
+                        reshaped = reshaper_obj.to_standard(start[0, ...])
+                        assert (reshaped.shape[1:] == (seq_len, 4))
+                        reshaped_2 = reshaper_obj.from_standard(reshaped)
+                        assert reshaped_2.shape == start.shape[1:]
 
 
 def test_DNAStringArrayConverter():
@@ -534,6 +537,48 @@ def test_OneHotSequenceMutator():
         mut_set = [one_hot2string(mut_set_onehot[i, ...]) for i in range(mut_set_onehot.shape[0])]
         ref_mut_set = ["AGTGTCGT", "AGTGTCGT", "AGTGCCGT"]
         assert mut_set == ref_mut_set
+
+def test_var_eff_pred_varseq():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    model_dir = "examples/var_seqlen_model/"
+    if INSTALL_REQ:
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
+    #
+    model = kipoi.get_model(model_dir, source="dir")
+    # The preprocessor
+    Dataloader = kipoi.get_dataloader_factory(model_dir, source="dir")
+    #
+    dataloader_arguments = {
+        "fasta_file": "example_files/hg38_chr22.fa",
+        "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+        "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+        "intervals_file": "example_files/variant_centered_intervals.tsv"
+    }
+    vcf_path = "example_files/variants.vcf"
+    out_vcf_fpath = "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    #
+    with cd(model.source_dir):
+        vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
+        model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dataloader)
+        writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
+        vcf_to_region = None
+        with pytest.raises(Exception):
+            # This has to raise an exception as the sequence length is None.
+            vcf_to_region = kipoi.postprocessing.SnvCenteredRg(model_info)
+        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                              evaluation_function=analyse_model_preds, batch_size=32,
+                              vcf_to_region=vcf_to_region,
+                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                              sync_pred_writer=writer)
+        writer.close()
+        # pass
+        # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)
+
+
 
 
 def test_var_eff_pred():

@@ -441,25 +441,27 @@ def predict_snvs(model,
 
     # If there is a field for putting the a postprocessing bed file, then generate the bed file.
     if exec_files_bed_keys is not None:
-        vcf_search_regions = False
-        if vcf_to_region is None:
-            raise Exception("vcf_to_region parameter has to be set if regions should be generated from a VCF."
-                            "(Requested by defining: postprocessing > variant_effects > bed_input in: dataloader.yaml)")
+        if vcf_to_region is not None:
+            vcf_search_regions = False
 
-        temp_bed3_file = tempfile.mktemp()  # file path of the temp file
+            temp_bed3_file = tempfile.mktemp()  # file path of the temp file
 
-        vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
+            vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
 
-        with BedWriter(temp_bed3_file) as ofh:
-            for record in vcf_fh:
-                if not record.is_indel:
-                    region = vcf_to_region(record)
-                    id = vcf_id_generator_fn(record)
-                    for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
-                        ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
+            with BedWriter(temp_bed3_file) as ofh:
+                for record in vcf_fh:
+                    if not record.is_indel:
+                        region = vcf_to_region(record)
+                        id = vcf_id_generator_fn(record)
+                        for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
+                            ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
 
-        vcf_fh.close()
-
+            vcf_fh.close()
+    else:
+        if vcf_to_region is not None:
+            logger.warn("`vcf_to_region` will be ignored as it was set, but the dataloader does not define "
+                        "a bed_input in dataloader.yaml: "
+                        "postprocessing > variant_effects > bed_input.")
     # Assemble the paths for executing the dataloader
     if dataloader_args is None:
         dataloader_args = {}
@@ -471,7 +473,7 @@ def predict_snvs(model,
                 dataloader_args[k] = dataloader.example_kwargs[k]
 
     # If there was a field for dumping the region definition bed file, then use it.
-    if exec_files_bed_keys is not None:
+    if (exec_files_bed_keys is not None) and (not vcf_search_regions):
         for k in exec_files_bed_keys:
             dataloader_args[k] = temp_bed3_file
 

@@ -8,7 +8,8 @@ from collections import OrderedDict
 import re
 import kipoi
 import logging
-
+import copy
+import abc
 import kipoi
 from kipoi.postprocessing.variant_effects import _modify_bases, _modify_single_string_base, rc_str
 
@@ -66,11 +67,15 @@ def select_from_dl_batch(obj, rows, nrows_expected=None):
 class ReshapeDna(object):
     def __init__(self, in_shape):
         in_shape = np.array(in_shape)
+        # None can only occur once and then it can only be the seqlen
         none_pos = np.in1d(in_shape, None)
-        if np.any(none_pos) and (np.where(none_pos)[0][0] != 0):
-            raise Exception("Unexpected 'None' shape in other dimension than the first!")
-        else:
-            in_shape = in_shape[~none_pos]
+        if np.sum(none_pos) > 1:
+            raise Exception("At maximum one occurence of 'None' is allowed in the model input shape!"
+                            "This dimension is then automatically assumed to be the 'seq_len' dimension.")
+        #if np.any(none_pos) and (np.where(none_pos)[0][0] != 0):
+        #    raise Exception("Unexpected 'None' shape in other dimension than the first!")
+        #else:
+        #    in_shape = in_shape[~none_pos]
         #
         self.in_shape = in_shape
         dummy_dimensions = in_shape == 1
@@ -126,9 +131,19 @@ class ReshapeDna(object):
 
         #  is there an actual sequence sample axis?
         additional_axis = len(in_array.shape) - len(self.in_shape)
-        if (additional_axis != 1) or (in_array.shape[1:] != tuple(self.in_shape)):
+        in_shape = self.in_shape
+
+        # replace the None with the sequence length here:
+        if (additional_axis == 1):
+            if self.seq_len is None:
+                in_shape = copy.deepcopy(in_shape)
+                none_dim = [i for i, el in enumerate(self.in_shape) if el is None][0]
+                in_shape[none_dim] = in_array.shape[none_dim+1]
+
+        # Raise an exception if the input array does not agree with the specifications in the model input schema
+        if (additional_axis != 1) or (in_array.shape[1:] != tuple(in_shape)):
             raise Exception("General array mismatch! Given: %s Expecting: %s" % (str(in_array.shape),
-                                                                                 "([N]," + str(self.in_shape)[1:]))
+                                                                                 "([N], %s)" + ", ".join(in_shape.astype(str).tolist())))
         #
         if not self.reshape_needed:
             return in_array
@@ -143,7 +158,7 @@ class ReshapeDna(object):
         if squeezed.shape[one_hot_dim_here] != 4:
             raise Exception("Input array does not follow the input definition!")
         #
-        if squeezed.shape[seq_len_dim_here] != self.seq_len:
+        if (self.seq_len is not None) and (squeezed.shape[seq_len_dim_here] != self.seq_len):
             raise Exception("Input array sequence length does not follow the input definition!")
         #
         if self.one_hot_dim != 1:
@@ -159,7 +174,12 @@ class ReshapeDna(object):
         #
         assumed_additional_axis = 1
         #
-        if in_array.shape[1:] != (self.seq_len, 4):
+        seq_len = self.seq_len
+        # Infer sequence length from the standardised array if not specified in the first place
+        if seq_len is None:
+            seq_len = in_array.shape[1]
+
+        if in_array.shape[1:] != (seq_len, 4):
             raise Exception("Input array doesn't agree with standard format (n_samples, seq_len, 4)!")
         #
         one_hot_dim_here = assumed_additional_axis + self.one_hot_dim
@@ -322,6 +342,7 @@ def default_vcf_id_gen(vcf_record, id_delim=":"):
 
 
 class RegionGenerator(object):
+    __metaclass__ = abc.ABCMeta
     def __init__(self, model_info_extractor):
         self.seq_length = None
         self.centered_l_offset = None
@@ -339,6 +360,8 @@ class SnvCenteredRg(RegionGenerator):
     def __init__(self, model_info_extractor):
         super(SnvCenteredRg, self).__init__(model_info_extractor)
         self.seq_length = model_info_extractor.get_seq_len()
+        if self.seq_length is None:
+            raise Exception("SnvCenteredRg cannot be used when model input sequence length is not defined!")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -359,6 +382,8 @@ class SnvPosRestrictedRg(RegionGenerator):
         super(SnvPosRestrictedRg, self).__init__(model_info_extractor)
         self.tabixed = pybed_def.tabix(in_place=False)
         self.seq_length = model_info_extractor.get_seq_len()
+        if self.seq_length is None:
+            raise Exception("SnvPosRestrictedRg cannot be used when model input sequence length is not defined!")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -433,11 +458,11 @@ class ModelInfoExtractor(object):
         if (self.exec_files_bed_keys is not None) and (len(self.exec_files_bed_keys) != 0):
             self.requires_region_definition = True
 
-        self.seq_length = None
+        self.seq_length = None # None means either not requires_region_definition or undefined sequence length
         if self.requires_region_definition:
             # seems to require a bed file definition, so try to assign a sequence length:
             seq_lens = [self.seq_input_array_trafo[seq_field].get_seq_len() for seq_field in self.seq_input_array_trafo]
-            seq_len = list(set([el for el in seq_lens if el is not None]))
+            seq_len = list(set([el for el in seq_lens]))
             if len(seq_len) == 0:
                 raise Exception("dataloader.yaml defines postprocessing > args > bed_input, but in model.yaml none of "
                                 "the postprocessing > args > seq_input entries defines a sequence length within their "
@@ -561,6 +586,7 @@ class ReshapeDnaString(object):
             self.seq_len = None
         elif len(input_shape) == 1 and (input_shape[0] > 1):
             self.format_style = "string_as_vect"
+            # Can either be a numerical value or None
             self.seq_len = input_shape[0]
         else:
             raise Exception("String output definition not recognized in array string converter!")
@@ -597,6 +623,9 @@ class ReshapeDnaString(object):
 
 
 class SequenceMutator(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abstractmethod
     def __call__(self, input_set, preproc_conv, allele, s_dir):
         """
         Process sequence object `input_set` according to information given in the `preproc_conv` dataframe of which
@@ -664,12 +693,10 @@ class DNAStringSequenceMutator(SequenceMutator):
         # input_set has to be <list(<str>)> which is achieved by the `array_trafo`.
         if self.array_trafo is not None:
             input_set = self.array_trafo.to_standard(input_set)
-        seq_lens = np.unique([len(el) for el in input_set])
-        exp_seq_lens = (preproc_conv["end"] - preproc_conv["start"] + 1).unique()
-        exp_seq_lens = exp_seq_lens[~np.isnan(exp_seq_lens)]
-        assert seq_lens.shape[0] == 1
-        assert exp_seq_lens.shape[0] == 1
-        assert seq_lens[0] == exp_seq_lens[0]
+        # Every input sequence may have different length, check that ranges defition matches the input.
+        seq_lens = np.array([len(el) for el in input_set])
+        exp_seq_lens = np.array(preproc_conv["end"] - preproc_conv["start"] + 1)
+        assert np.all(seq_lens == exp_seq_lens)
         strands = preproc_conv.query("do_mutate")["strand"]
         assert strands.isin(["+", "-", "*", "."]).all()
         # Modify bases according to allele.
