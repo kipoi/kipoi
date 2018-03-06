@@ -34,6 +34,9 @@ class Rc_merging_pred_analysis(Pred_analysis):
             raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
     #
 
+    def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
+        raise NotImplementedError("Analysis routine has to be implemented")
+
     @staticmethod
     def absmax(x, y, inplace=True):
         if not inplace:
