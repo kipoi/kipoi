@@ -34,4 +34,4 @@ postprocessing:
     variant_effects:
       seq_input:
         - seq
-      use_rc: seq_only
+      use_rc: true

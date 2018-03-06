@@ -159,16 +159,23 @@ def test_predict_variants_example(example, tmpdir):
             tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
             vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
+            dataloader_kwargs = {"fasta_file": example_dir + "/example_files/hg38_chr22.fa",
+                                 "preproc_transformer": example_dir + "/dataloader_files/encodeSplines.pkl",
+                                 "gtf_file": example_dir + "/example_files/gencode_v25_chr22.gtf.pkl.gz",
+                                 "intervals_file": example_dir + "/example_files/variant_intervals.tsv"}
+            import json
+            dataloader_kwargs_str = json.dumps(dataloader_kwargs)
+
             args = ["python", os.path.abspath("./kipoi/__main__.py"),
                     "postproc",
                     "score_variants",
-                    "./",  # directory
+                    #"./",  # directory
+                    example_dir,
                     "--source=dir",
                     "--batch_size=4",
-                    "--dataloader_args='{fasta_file: example_files/hg38_chr22.fa,preproc_transformer: "
-                    "dataloader_files/encodeSplines.pkl,gtf_file: example_files/gencode_v25_chr22.gtf.pkl.gz,"
-                    "intervals_file: example_files/variant_intervals.tsv}'",
-                    "--vcf_path", "example_files/variants.vcf",
+                    "--dataloader_args='%s'" % dataloader_kwargs_str,
+                    "--vcf_path", example_dir + "/" + "example_files/variants.vcf",
+                    # this one was now gone in the master?!
                     "--out_vcf_fpath", vcf_tmpfile,
                     "--output", tmpfile]
             # run the
@@ -176,10 +183,10 @@ def test_predict_variants_example(example, tmpdir):
                 args.append(INSTALL_FLAG)
 
             if restricted_bed:
-                args += ["--restriction_bed", "example_files/restricted_regions.bed"]
+                args += ["--restriction_bed", example_dir + "/" +"example_files/restricted_regions.bed"]
 
             returncode = subprocess.call(args=args,
-                                         cwd=os.path.realpath(example_dir))
+                                         cwd=os.path.realpath(example_dir) + "/../../")
             assert returncode == 0
 
             assert os.path.exists(tmpfile)

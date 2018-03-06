@@ -1,8 +1,7 @@
-import pytest
 from related import from_yaml
 
 from kipoi.components import PostProcModelStruct, PostProcDataLoaderStruct
-from kipoi.postprocessing.components import VarEffectFuncType
+from kipoi.postprocessing.variant_effects.components import VarEffectFuncType
 
 yaml_in_no_args = """
 variant_effects:
@@ -63,7 +62,7 @@ variant_effects:
     - name: diff
       type: diff
     - type: logit
-    - type: deepsea_scr
+    - type: deepsea_effect
       default: True
     - name: mydiff
       type: custom
@@ -84,7 +83,7 @@ def test_complex_example():
     assert ppsv.seq_input == ["seq"]  # should always be there and is always a list of strings
     scoring_fns = [{"name": "diff", "type": VarEffectFuncType.diff, "default": False},
                    {"type": VarEffectFuncType.logit, "default": False},
-                   {"default": True, "type": VarEffectFuncType.deepsea_scr},
+                   {"default": True, "type": VarEffectFuncType.deepsea_effect},
                    {"name": "mydiff", "type": VarEffectFuncType.custom, "defined_as": "postproc.py::myfun", "default": False}]
 
     for in_obj, fn in zip(ppsv.scoring_functions, scoring_fns):
