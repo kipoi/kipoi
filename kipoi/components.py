@@ -497,7 +497,8 @@ class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
     # not really required
-    conda_channels = related.SequenceField(str, default=[], required=False, repr=True)
+    conda_channels = related.SequenceField(str, default=["defaults"],
+                                           required=False, repr=True)
 
     def __attrs_post_init__(self):
         """
@@ -558,7 +559,7 @@ class Dependencies(RelatedConfigMixin):
         if len(self.conda) == 0:
             return self.conda_channels, self.conda
         channels, packages = list(zip(*map(kconda.parse_conda_package, self.conda)))
-        channels = unique_list(list(self.conda_channels) + list(channels))
+        channels = unique_list(list(channels) + list(self.conda_channels))
         packages = unique_list(list(packages))
         return channels, packages
 

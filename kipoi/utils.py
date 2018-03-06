@@ -230,7 +230,10 @@ class Slice_conv:
 
 
 def unique_list(seq):
-    """Modified version of Dave Kirby solution"""
+    """Make a list unique and preserve the elements order
+
+    Modified version of Dave Kirby solution
+    """
     seen = set()
     return [x for x in seq if x not in seen and not seen.add(x)]
 
@@ -305,7 +308,7 @@ def take_first_nested(dd):
     else:
         return dd
 
-def print_dl_kwargs(dataloader_class, format_examples_json = False):
+def print_dl_kwargs(dataloader_class, format_examples_json=False):
     from .external.related.fields import UNSPECIFIED
     if hasattr(dataloader_class, "args"):
         args = dataloader_class.args
@@ -323,4 +326,4 @@ def print_dl_kwargs(dataloader_class, format_examples_json = False):
                 example_kwargs = json.dumps(example_kwargs)
             print("Example keyword arguments are: {0}".format(str(example_kwargs)))
     else:
-        print ("No keyword arguments defined for the given dataloader.")
+        print("No keyword arguments defined for the given dataloader.")
