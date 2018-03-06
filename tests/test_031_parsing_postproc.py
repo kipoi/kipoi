@@ -1,8 +1,7 @@
-import pytest
 from related import from_yaml
 
 from kipoi.components import PostProcModelStruct, PostProcDataLoaderStruct
-from kipoi.postprocessing.components import VarEffectFuncType
+from kipoi.postprocessing.variant_effects.components import VarEffectFuncType
 
 yaml_in_no_args = """
 variant_effects:

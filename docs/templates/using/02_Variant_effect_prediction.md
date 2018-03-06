@@ -9,8 +9,8 @@ Using variant effect prediction within python allows more flexibility in the fin
 The easiest way to run variant effect prediction is the following:
 
 ```python
-import kipoi.postprocessing.snv_predict as sp
-from kipoi.postprocessing import kipoi VcfWriter
+import kipoi.postprocessing.variant_effects.snv_predict as sp
+from kipoi.postprocessing.variant_effects import VcfWriter
 from kipoi.postprocessing.variant_effects import Diff
 
 model = kipoi.get_model("my_model_name")
@@ -38,7 +38,7 @@ The above code will run the dataloader based with `dataloader_arguments` and try
 The model info extractor class which will be used for further fine-grain control of variant effect prediction. It encapsulates functionality to extract model configuration and setup, such as input sequence length of the model, ability to handle reverse complement sequences and much more. It is instaciated as follows and its objects are then used as arguments to other functions and classes:
 
 ```
-from kipoi.postprocessing import ModelInfoExtractor
+from kipoi.postprocessing.variant_effects import ModelInfoExtractor
 model_info = ModelInfoExtractor(model, Dataloader)
 ```
 
@@ -46,7 +46,7 @@ model_info = ModelInfoExtractor(model, Dataloader)
 In the above example the regions were defined by the dataloader arguments, but if the dataloader supports bed file input (see dataloader.yaml definition for variant effect prediction) then the `SnvCenteredRg` class can generate a temporary bed file using a VCF and information on the required input sequence length from the model.yaml which is extracted by the `ModelInfoExtractor` instance `model_info`:
 
 ```python
-from kipoi.postprocessing import SnvCenteredRg
+from kipoi.postprocessing.variant_effects import SnvCenteredRg
 vcf_to_region = SnvCenteredRg(model_info)
 ```
 
@@ -57,7 +57,7 @@ The resulting `vcf_to_region` object can then be used as the `vcf_to_region` arg
 This funcionality is similar to variant-centered effect prediction - the only difference is that this function is designed for models that can't predict on arbitrary regions of the genome, but only in certain regions of the genome. If those regions can be defined in a bed file (further on called 'restriction-bed' file) then this approach can be used. Variant effect prediction will then intersect the VCF with the restriction-bed and generate another bed file that is then passed on to the dataloader. Regions in the restriction-bed file may be larger than the input sequence lenght, in that case the generated seuqence will be centered on the variant position as much as possible - restricted by what is defined in the restrictions-bed file. The `SnvPosRestrictedRg` class can generate a temporary bed file using a VCF, the restrictions-bed file (`restricted_regions_fpath` in the example below) and information on the required input sequence length from the model.yaml which is extracted by the `ModelInfoExtractor` instance `model_info`:
 
 ```python
-from kipoi.postprocessing import SnvPosRestrictedRg
+from kipoi.postprocessing.variant_effects import SnvPosRestrictedRg
 import pybedtools as pb
 
 pbd = pb.BedTool(restricted_regions_fpath)
@@ -96,6 +96,8 @@ kipoi postproc score_variants my_model_name \
 ```
 
 Exceptions are that if the dataloader of the model allows the definition of a bed input file, then the respective field in the `--dataloader_args` JSON will be replaced by a bad file that consists in regions that are centered on the variant position. That is, if in the dataloader.yaml file of the respective model the `bed_input` flag is set then the respective argument in the `--dataloader_args` will be overwritten.
+
+When using variant effect prediction from the command line and using `--source dir`, keep in mind that whatever the path is that you put where `my_model_name` stands in the above command is treated as your model name. Since the annotated VCF INFO tags contain the model name as an identifier, executing `kipoi postproc score_variants ./ --source dir ...` will result in an annotated VCF with the model name ".", which is most probably not desired. For those cases `kipoi postproc score_variants ...` should be executed in at least one directory level higher than the one where the model.yaml file lies. Then the command will look similar to this `kipoi postproc score_variants ./my_model --source dir ...` and the annotated VCF INFO tags will contain './my_model'.
 
 ### Scoring functions
 

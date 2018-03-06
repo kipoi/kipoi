@@ -17,11 +17,12 @@ Index
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import re
 import inspect
 import os
+import re
 import shutil
 import sys
+
 if sys.version[0] == '2':
     reload(sys)
     sys.setdefaultencoding('utf8')
@@ -73,7 +74,7 @@ PAGES = [
     },
     {
         'page': 'api/postprocessing/variant_effects.md',
-        'functions': [kipoi.postprocessing.snv_predict.predict_snvs],
+        'functions': [kipoi.postprocessing.variant_effects.snv_predict.predict_snvs],
     },
     {
         'page': 'api/postprocessing/variant_effect_scores.md',

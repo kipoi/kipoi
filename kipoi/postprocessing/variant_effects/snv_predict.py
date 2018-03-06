@@ -1,20 +1,59 @@
 import copy
 import itertools
+import logging
 import os
 import tempfile
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import six
+from tqdm import tqdm
 
-from kipoi.postprocessing.utils.generic import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, ModelInfoExtractor
-from kipoi.postprocessing.utils.io import BedWriter
-from kipoi.postprocessing.variant_effects import analyse_model_preds, Logit
+from kipoi.postprocessing.variant_effects.utils.scoring_fns import Logit
+from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
+    ModelInfoExtractor, BedWriter, VariantLocalisation
 
-import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+def analyse_model_preds(model, ref, alt, diff_types,
+                        output_reshaper, output_filter=None, ref_rc=None, alt_rc=None, **kwargs):
+    seqs = {"ref": ref, "alt": alt}
+    if ref_rc is not None:
+        seqs["ref_rc"] = ref_rc
+    if alt_rc is not None:
+        seqs["alt_rc"] = alt_rc
+    if not isinstance(diff_types, dict):
+        raise Exception("diff_types has to be a dictionary of callables. Keys will be used to annotate output.")
+    # This is deprecated as no simple deduction of sequence length is possible anymore
+    #assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
+
+    # Make predictions
+    preds = {}
+    out_annotation = None
+    for k in seqs:
+        # Flatten the model output
+        preds_out, pred_labels = output_reshaper.flatten(model.predict_on_batch(seqs[k]))
+        if out_annotation is None:
+            out_annotation = pred_labels
+            output_filter = np.zeros(pred_labels.shape[0]) == 0
+            # determine which outputs should be selected
+            if output_filter is None:
+                if output_filter.dtype == bool:
+                    assert(output_filter.shape == out_annotation.shape)
+                else:
+                    assert np.all(np.in1d(output_filter, out_annotation))
+                    output_filter = np.in1d(out_annotation, output_filter)
+        # Filter outputs if required
+        preds[k] = np.array(preds_out[..., output_filter])
+
+    # Run the analysis callables
+    outputs = {}
+    for k in diff_types:
+        outputs[k] = pd.DataFrame(diff_types[k](**preds), columns=out_annotation[output_filter])
+
+    return outputs
+
 
 
 def _overlap_vcf_region(vcf_obj, regions, exclude_indels=True):
@@ -250,7 +289,6 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
     return preproc_conv_df
 
 
-
 class SampleCounter():
     def __init__(self):
         self.sample_it_counter = 0
@@ -340,7 +378,11 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
         ranges_input_obj = dl_batch['metadata'][seq_to_meta[seq_key]]
         #
         # Assemble variant modification information
-        variants_df = get_variants_df(seq_key, ranges_input_obj, vcf_records,
+        #variants_df = get_variants_df(seq_key, ranges_input_obj, vcf_records,
+        #                              process_lines, process_ids, process_seq_fields)
+
+        vl = VariantLocalisation()
+        vl.append_multi(seq_key, ranges_input_obj, vcf_records,
                                       process_lines, process_ids, process_seq_fields)
 
         # for the individual sequence input key get the correct sequence mutator callable
@@ -353,17 +395,17 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
             if isinstance(dl_ouput_schema.inputs, dict):
                 if seq_key not in input_set[k]:
                     raise Exception("Sequence field %s is missing in DataLoader output!" % seq_key)
-                input_set[k][seq_key] = dna_mutator(input_set[k][seq_key], variants_df, allele, s_dir)
+                input_set[k][seq_key] = dna_mutator(input_set[k][seq_key], vl, allele, s_dir)
             elif isinstance(dl_ouput_schema.inputs, list):
                 modified_set = []
                 for seq_el, input_schema_el in zip(input_set[k], dl_ouput_schema.inputs):
                     if input_schema_el.name == seq_key:
-                        modified_set.append(dna_mutator(seq_el, variants_df, allele, s_dir))
+                        modified_set.append(dna_mutator(seq_el, vl, allele, s_dir))
                     else:
                         modified_set.append(seq_el)
                 input_set[k] = modified_set
             else:
-                input_set[k] = dna_mutator(input_set[k], variants_df, allele, s_dir)
+                input_set[k] = dna_mutator(input_set[k], vl, allele, s_dir)
 
     #
     # Reformat so that effect prediction function will get its required inputs
@@ -371,7 +413,6 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
     if generate_rc:
         pred_set["ref_rc"] = input_set["rc_ref"]
         pred_set["alt_rc"] = input_set["rc_alt"]
-    pred_set["mutation_positions"] = variants_df["varpos_rel"].values
     pred_set["line_id"] = np.array(process_ids).astype(str)
     pred_set["vcf_records"] = vcf_records
     return pred_set

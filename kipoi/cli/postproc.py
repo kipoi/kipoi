@@ -3,22 +3,23 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import sys
-import os
 import argparse
+import copy
+import logging
+import os
+
 import kipoi
 from kipoi.cli.parser_utils import add_model, add_dataloader, file_exists, dir_exists
-from kipoi.utils import parse_json_file_str, cd
-import logging
-import copy
 from kipoi.components import default_kwargs
-from kipoi.postprocessing.components import VarEffectFuncType
+from kipoi.postprocessing.variant_effects.components import VarEffectFuncType
 from kipoi.utils import load_module, getargs
+from kipoi.utils import parse_json_file_str
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 scoring_options = {
-    # deepsea_scr diff logit_diff logit_ref logit_alt
+    # deepsea_effect diff logit_diff logit_ref logit_alt
     # TODO - we should add more options to it: ref, alt, ref_rc, alt_rc
     "ref": kipoi.variant_effects.Ref,
     "alt": kipoi.variant_effects.Alt,
@@ -154,32 +155,47 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
 
     dts = {}
     if len(sel_scoring_labels) >= 1:
-        # if -k set check that length matches with -s
-        if len(sel_scoring_kwargs) >= 1:
-            if not len(sel_scoring_labels) == len(sel_scoring_kwargs):
-                raise ValueError(errmsg_scoring_kwargs)
-        for arg_iter, k in enumerate(sel_scoring_labels):
-            # if -s set check is available for model
-            if k in avail_scoring_fn_names:
+        # Check if all scoring functions should be used:
+        if sel_scoring_labels == ["all"]:
+            if len(sel_scoring_kwargs) >= 1:
+                raise ValueError("`--scoring_kwargs` cannot be defined in combination will `--scoring all`!")
+            for arg_iter, k in enumerate(avail_scoring_fn_names):
                 si = avail_scoring_fn_names.index(k)
                 # get the default kwargs
                 kwargs = avail_scoring_fn_def_args[si]
-                # if the user has set scoring function kwargs then load them here.
-                if len(sel_scoring_kwargs) >= 1:
-                    # all the {}s in -k replace by their defaults, if the default is None
-                    # raise exception with the corrsponding scoring function label etc.
-                    defined_kwargs = parse_json_file_str(sel_scoring_kwargs[si])
-                    if len(defined_kwargs) != 0:
-                        kwargs = defined_kwargs
                 if kwargs is None:
-                    raise ValueError("No kwargs were given for scoring function %s"
-                                     " with no defaults but required argmuents. "
+                    raise ValueError("No default kwargs for scoring function: %s"
+                                     " `--scoring all` cannot be used. "
                                      "Please also define `--scoring_kwargs`." % (k))
                 # instantiate the scoring fn
                 dts[k] = avail_scoring_fns[si](**kwargs)
-            else:
-                logger.warn("Cannot choose scoring function %s. "
-                                 "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
+        else:
+            # if -k set check that length matches with -s
+            if len(sel_scoring_kwargs) >= 1:
+                if not len(sel_scoring_labels) == len(sel_scoring_kwargs):
+                    raise ValueError(errmsg_scoring_kwargs)
+            for arg_iter, k in enumerate(sel_scoring_labels):
+                # if -s set check is available for model
+                if k in avail_scoring_fn_names:
+                    si = avail_scoring_fn_names.index(k)
+                    # get the default kwargs
+                    kwargs = avail_scoring_fn_def_args[si]
+                    # if the user has set scoring function kwargs then load them here.
+                    if len(sel_scoring_kwargs) >= 1:
+                        # all the {}s in -k replace by their defaults, if the default is None
+                        # raise exception with the corrsponding scoring function label etc.
+                        defined_kwargs = parse_json_file_str(sel_scoring_kwargs[si])
+                        if len(defined_kwargs) != 0:
+                            kwargs = defined_kwargs
+                    if kwargs is None:
+                        raise ValueError("No kwargs were given for scoring function %s"
+                                         " with no defaults but required argmuents. "
+                                         "Please also define `--scoring_kwargs`." % (k))
+                    # instantiate the scoring fn
+                    dts[k] = avail_scoring_fns[si](**kwargs)
+                else:
+                    logger.warn("Cannot choose scoring function %s. "
+                                     "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
     # if -s not set use all defaults
     elif len(default_scoring_fns) != 0:
         for arg_iter, k in enumerate(default_scoring_fns):
@@ -269,24 +285,24 @@ def cli_score_variants(command, raw_args):
     dts = _get_scoring_fns(model, args.scoring, args.scoring_kwargs)
 
     # Load effect prediction related model info
-    model_info = kipoi.postprocessing.ModelInfoExtractor(model, Dl)
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
 
     # Select the appropriate region generator
     if args.restriction_bed is not None:
         # Select the restricted SNV-centered region generator
         pbd = pybedtools.BedTool(args.restriction_bed)
-        vcf_to_region = kipoi.postprocessing.SnvPosRestrictedRg(model_info, pbd)
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
         logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
                     'Only defined regions will be tested.')
     elif model_info.requires_region_definition:
         # Select the SNV-centered region generator
-        vcf_to_region = kipoi.postprocessing.SnvCenteredRg(model_info)
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
         logger.info('Using variant-centered sequence generation.')
     else:
         # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
         vcf_to_region = None
         # Make sure that the vcf is tabixed
-        vcf_path = kipoi.postprocessing.ensure_tabixed_vcf(vcf_path)
+        vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
         logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
                     'produced regions can be predicted')
 
@@ -298,13 +314,13 @@ def cli_score_variants(command, raw_args):
     # Get a vcf output writer if needed
     if out_vcf_fpath is not None:
         logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
-        vcf_writer = kipoi.postprocessing.VcfWriter(model, vcf_path, out_vcf_fpath)
+        vcf_writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
     else:
         vcf_writer = None
 
     keep_predictions = args.output is not None
 
-    res = kipoi.postprocessing.predict_snvs(
+    res = kipoi.postprocessing.variant_effects.predict_snvs(
         model,
         Dl,
         vcf_path,

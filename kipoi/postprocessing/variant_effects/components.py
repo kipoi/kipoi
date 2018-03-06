@@ -1,7 +1,7 @@
 import related
 import enum
 from kipoi.external.related.mixins import RelatedConfigMixin
-from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi.external.related.fields import StrSequenceField
 
 
 @enum.unique

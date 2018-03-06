@@ -12,14 +12,14 @@ import enum
 import numpy as np
 import related
 import six
-from attr._make import fields
 
 import kipoi.conda as kconda
-from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
 from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
-from kipoi import postprocessing
+from kipoi.postprocessing.variant_effects.components import VarEffectDataLoaderArgs, VarEffectModelArgs
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -465,12 +465,12 @@ class DataLoaderSchema(RelatedConfigMixin):
 
 @related.immutable(strict=True)
 class PostProcDataLoaderStruct(RelatedConfigMixin):
-    variant_effects = related.ChildField(postprocessing.components.VarEffectDataLoaderArgs, required=False)
+    variant_effects = related.ChildField(VarEffectDataLoaderArgs, required=False)
 
 
 @related.immutable(strict=True)
 class PostProcModelStruct(RelatedConfigMixin):
-    variant_effects = related.ChildField(postprocessing.components.VarEffectModelArgs, required=False)
+    variant_effects = related.ChildField(VarEffectModelArgs, required=False)
 
 
 @related.immutable(strict=True)

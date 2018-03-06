@@ -1,6 +1,6 @@
 from abc import abstractmethod
 import numpy as np
-from kipoi.postprocessing.utils.generic import prep_str, convert_record, default_vcf_id_gen
+from kipoi.postprocessing.variant_effects.utils.generic import prep_str, convert_record, default_vcf_id_gen
 import os
 import six
 import gzip
@@ -114,14 +114,18 @@ class SyncPredictonsWriter(object):
     """
 
     def __init__(self, model):
-        self.info_tag_prefix = "KPVEP"
-        if (model.info.name is None) or (model.info.name == ""):
-            self.model_name = model.info.doc[:15] + ":" + model.info.version
+        self.info_tag_prefix = "KV"
+        if (model.name is None) or (model.name == ""):
+            self.model_name = model.source_name + ":" +  model.info.doc[:15] #+ ":" + model.info.version
         else:
-            self.model_name = model.info.name + ":" + str(model.info.version)
+            self.model_name = model.source_name + ":" + model.name.rstrip("/") #+ ":" + str(model.info.version)
+            if model.name in [".", "./", "../"]:
+                logger.warn("Please consider executing variant effect prediction from a higher directory level "
+                            "as your current model name is %s. The model name is used to generate the output"
+                            "VCF annotation INFO tag, which will then not be informative."%(model.name))
 
         if (self.model_name is not None) or (self.model_name != ""):
-            self.info_tag_prefix += "_%s" % prep_str(self.model_name)
+            self.info_tag_prefix += ":%s" % prep_str(self.model_name).lstrip("_").rstrip("_")
 
     @abstractmethod
     def __call__(self, predictions, records):
@@ -155,7 +159,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
         if len(predictions) == 0:
             return None
 
-        metdata_id_infotag = self.info_tag_prefix + "_rID"
+        metdata_id_infotag = self.info_tag_prefix + ":rID"
 
         if self.prediction_labels is None:
             # setup the header
@@ -171,7 +175,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
                             "Prediction columns are not identical for methods %s and %s" % (predictions.keys()[0], k))
                 # Add the tag to the vcf file
                 #"##INFO=<ID={ID},Number={Number},Type={Type},Description=\"{Description}\">".format(**adict)
-                info_tag = {"ID": self.info_tag_prefix + "_%s" % k.upper(),
+                info_tag = {"ID": self.info_tag_prefix + ":%s" % k.upper(),
                             "Number": None, "Type": "String",
                             "Description": "%s SNV effect prediction. Prediction from model outputs: %s" % (
                                 k.upper(), "|".join(self.column_labels))}
@@ -208,7 +212,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
-                info_tag = self.info_tag_prefix + "_{0}".format(k.upper())
+                info_tag = self.info_tag_prefix + ":{0}".format(k.upper())
                 record.INFO[info_tag] = "|".join([str(pred) for pred in preds])
             line_id = ""
             if line_ids is not None:
@@ -252,7 +256,7 @@ class VcfWriter(SyncPredictonsWriter):
         if len(predictions) == 0:
             return None
 
-        metdata_id_infotag = self.info_tag_prefix + "_rID"
+        metdata_id_infotag = self.info_tag_prefix + ":rID"
 
         if self.prediction_labels is None:
             # setup the header
@@ -267,7 +271,7 @@ class VcfWriter(SyncPredictonsWriter):
                         raise Exception(
                             "Prediction columns are not identical for methods %s and %s" % (predictions.keys()[0], k))
                 # Add the tag to the vcf file
-                info_tag = self.info_tag_prefix + "_%s" % k.upper()
+                info_tag = self.info_tag_prefix + ":%s" % k.upper()
                 self.vcf_reader.infos[info_tag] = self._generate_info_field(info_tag, None, 'String',
                                                                             "%s SNV effect prediction. Prediction from model outputs: %s" % (
                                                                                 k.upper(), "|".join(self.column_labels)),
@@ -305,7 +309,7 @@ class VcfWriter(SyncPredictonsWriter):
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
                 preds = predictions[k].iloc[pred_line, :]
-                info_tag = self.info_tag_prefix + "_{0}".format(k.upper())
+                info_tag = self.info_tag_prefix + ":{0}".format(k.upper())
                 record_vcf.INFO[info_tag] = "|".join([str("%.8f" % pred) for pred in preds])
             line_id = ""
             if line_ids is not None:

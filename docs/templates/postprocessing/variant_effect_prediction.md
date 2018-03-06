@@ -155,7 +155,7 @@ postprocessing:
 	      default: true
 ```
 
-The scoring function is identified by the `type` field in `scoring_functions` which is the only mandatory field. Allowed values for the `type` field are: `diff`, `logit`, `deepsea_scr` and `custom`.
+The scoring function is identified by the `type` field in `scoring_functions` which is the only mandatory field. Allowed values for the `type` field are: `diff`, `logit`, `deepsea_effect` and `custom`.
 
 Setting `default:true` for a scoring function indicates that that respective scoring function is executed by variant effect prediction if none is selected by the used on execution time. If multiple scoring functions have set `default:true` then all of those will be run by default. If `default:true` is not set for any scoring function defined in `scoring_functions` then all entries in `scoring_functions` will be run by default.
 
@@ -178,7 +178,7 @@ Returns the logits transformed predictions for the sequences carrying the altern
 Returns the logits transformed predictions for the sequences carrying the reference allele:
 `logit(prediction(ref))`. This scoring method only makes sense if the model output can be interpreted as probabilities. In a wider sense, it will only produce valid values if the predictions are in the range [0,1].
 
-####Deepsea_scr
+####Deepsea_effect
 Calculates the variant scores as defined in the publication of the DeepSEA model (Troyanskaya et al., 2015) by using the absolute value of the logit difference and diff values multiplied together: `abs(Logit * Diff)` with `Logit` and `Diff` defined as above.
 
 ####Custom

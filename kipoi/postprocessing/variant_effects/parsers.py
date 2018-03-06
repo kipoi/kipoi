@@ -37,19 +37,17 @@ def get_kipoi_colnames(info_tags):
             return None
 
     return OrderedDict([(x["ID"], parse_kpvep_descr(x["Description"]))
-                        for x in info_tags if x["ID"].startswith("KPVEP")])
+                        for x in info_tags if x["ID"].startswith("KV")])
 
 
 def parse_kipoi_colname(colname):
     """Parse kipoi column name into:
     (model, version, type)
-    input: "KPVEP_DeepSEA:0.1_DEEPSEA_EFFECT"
-    output: ("DeepSEA", "0.1", "DEEPSEA_EFFECT")
+    input: "KV:dir:examples/rbp:DIFF"
+    output: ("dir", "examples/rbp", "DIFF")
     """
-    colname = colname.replace("KPVEP_", "")
-    model, version_diff = colname.split(":", 1)
-    version, diff_type = colname.split("_", 1)
-    return model, version, diff_type
+    _, source_type, model, diff_type = colname.split(":", 3)
+    return source_type, model, diff_type
 
 
 def parse_kipoi_info(elem, colnames, prefix="", add_index=True):
@@ -138,8 +136,8 @@ class KipoiVCFParser(object):
             out['other_' + k] = variant.INFO.get(k)
         # out['kipoi'] = OrderedDict()
         for i, k in enumerate(self.kipoi_columns):
-            model, version, diff_type = self.kipoi_parsed_colnames[k]
-            prefix = 'kipoi_{model}_{diff_type}_'.format(model=model,
+            source_name, model, diff_type = self.kipoi_parsed_colnames[k]
+            prefix = 'KV_{model}_{diff_type}_'.format(model=model,
                                                          i=i,
                                                          diff_type=diff_type)
             out.update(
