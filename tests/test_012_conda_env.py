@@ -44,7 +44,7 @@ def test_Dependencies_merge():
     assert dep_merged.pip == ['pip_pkg1>=1.1,>=1.0',
                               'pip_pkg2==3.3']
 
-    assert dep_merged.conda_channels == []
+    assert dep_merged.conda_channels == ["defaults"]
 
 
 def test_channels():
