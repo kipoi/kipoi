@@ -1,0 +1,52 @@
+type: Dataset
+defined_as: dataloader.py::SeqDistDataset
+args:
+  # TODO - should we use some special file-names?
+    # if any of the arguments is numeric, the type specification is mandatory
+    intervals_file:
+        doc: tsv file with `chrom start end id score strand`
+        type: str
+        example: example_files/intervals.tsv
+    fasta_file:
+        doc: Reference genome sequence
+        example: example_files/hg38_chr22.fa
+    gtf_file:
+        doc: file path; Genome annotation GTF file pickled using pandas.
+        example: example_files/gencode_v25_chr22.gtf.pkl.gz
+    preproc_transformer:
+        doc: path to the serialized tranformer used for pre-processing.
+        example: dataloader_files/encodeSplines.pkl
+    target_file:
+        doc: path to the targets (txt) file
+        optional: True # use the same semantics as for the CLI interface?
+        example: example_files/targets.tsv
+info:
+    authors:
+        - name: Ziga Avsec
+          github: avsecz
+    doc: RBP binding prediction
+dependencies:
+    pip:
+        - concise>=0.6.3
+        - pybedtools
+        - pysam
+        - cython
+        - genomelake
+output_schema:
+    inputs:
+        seq:
+            shape: (101, 4)
+            special_type: DNASeq
+            doc: One-hot encoded RNA sequence
+            associated_metadata: ranges
+        dist_polya_st:
+            shape: (1, 10)
+            doc: Distance to poly-a site transformed with B-splines
+    targets:
+        shape: (1, )
+        doc: Measured binding strength
+    metadata:
+        ranges:
+            type: GenomicRanges
+            doc: Ranges describing inputs.seq
+

@@ -23,7 +23,6 @@ requirements = [
     "cookiecutter",
     # sometimes required
     "h5py",
-    "deepdish",
 ]
 
 test_requirements = [
@@ -44,7 +43,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.2.3',
+    version='0.2.5',
     description="Kipoi",  # TODO - update the description
     author="Kipoi team",
     author_email='avsec@in.tum.de',
@@ -60,6 +59,7 @@ setup(
                 "pybedtools",
                 "pysam",  # required by pybedtools
                 "intervaltree",
+                "deepdish",
                 ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},

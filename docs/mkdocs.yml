@@ -27,8 +27,8 @@ edit_uri: edit/master/docs/templates/
 site_description: 'Documentation of Kipoi, model zoo for genomics.'
 
 dev_addr: '0.0.0.0:8000'
-# TODO
-google_analytics: ["TODO", "TODO"]
+
+google_analytics: ["UA-115025493-1", "kipoi.org"]
 
 pages:
 - Home: index.md

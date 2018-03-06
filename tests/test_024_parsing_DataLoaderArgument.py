@@ -25,7 +25,7 @@ type: str
 """, """
 doc: some description
 """, """
-doc: some description
+# doc: some description
 example: 10
 optional: True
 name: specified name
@@ -44,9 +44,6 @@ tags: tag1
 
 
 BAD_EXAMPLES = ["""
-# missing description
-type: str
-""", """
 doc: some description
 optional: maybe # not bool
 """, """

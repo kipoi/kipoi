@@ -5,6 +5,13 @@
 # Names of ipynb files to convert (from /nbs) are specified in ipynb_pages.txt
 set -e
 
+function sed_replace {
+  # https://stackoverflow.com/a/10467453/7529152
+  # sed_replace <from> <to> <file>"
+  sed -i "s/$(echo $1 | sed -e 's/\([[\/.*]\|\]\)/\\&/g')/$(echo $2 | sed -e 's/[\/&]/\\&/g')/g" $3
+}
+
+
 DIR=tutorials
 for file in $(cat ipynb_pages.txt); do
 
@@ -16,13 +23,10 @@ for file in $(cat ipynb_pages.txt); do
     dir_out=sources/${DIR}/${file}_files
 
     # fix the paths for the original images
-    replace '![img](../docs/theme_dir/img/' '![img](/img/' -- $file_out
-
+    sed_replace '![img](../docs/theme_dir/img/' '![img](/img/' $file_out
     # TODO - prepend the original ipython notebook link
     echo -e "Generated from [nbs/${file}.ipynb](https://github.com/kipoi/kipoi/blob/master/nbs/${file}.ipynb)\n$(cat ${file_out})" > ${file_out}
 
-    # echo "Replace ![img](..."
-    #sed -i -e 's|![img](../docs/theme_dir/img/|![img](/img/|g' $file_out
     if [ -d "${dir_out}" ]; then
 
 	# move the additional files <file>_files to theme_dir/img/ipynb/ (inline plots in ipynb)
@@ -32,8 +36,7 @@ for file in $(cat ipynb_pages.txt); do
 	mv -f ${dir_out} theme_dir/img/ipynb/
 
 	# fix the path in the .md file
-	replace '![png]('${file}'_files' '![png](/img/ipynb/'${file}'_files' -- $file_out
-	replace '![svg]('${file}'_files' '![svg](/img/ipynb/'${file}'_files' -- $file_out
+	sed_replace '![png]('${file}'_files' '![png](/img/ipynb/'${file}'_files' $file_out
+	sed_replace '![svg]('${file}'_files' '![svg](/img/ipynb/'${file}'_files' $file_out
     fi
-done    
-
+done

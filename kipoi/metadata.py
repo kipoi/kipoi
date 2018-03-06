@@ -66,4 +66,4 @@ class GenomicRanges(Mapping):
                              name=self.id[i],
                              strand=self.strand[i])
                     for i in range(len(self.chr))]
-                
+

@@ -41,7 +41,7 @@ Rest of this document will go more into the details about steps writing the mode
 
 ### How to write the model
 
-Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../../tutorials/contributing_models) for a step-by-step procedure for contributing models.
+Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../tutorials/contributing_models) for a step-by-step procedure for contributing models.
 
 #### Option #1: Copy existing model
 

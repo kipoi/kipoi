@@ -35,7 +35,7 @@ def install_dataloader_requirements(dataloader, source="kipoi"):
 
 
 class Pipeline(object):
-    """Provides the test_predict, predict and predict_generator to the kipoi.Model
+    """Provides the predict_example, predict and predict_generator to the kipoi.Model
     """
 
     def __init__(self, model, dataloader_cls):
@@ -76,28 +76,31 @@ class Pipeline(object):
         logger.info('predict_example done!')
         return numpy_collate_concat(pred_list)
 
-    def predict(self, dataloader_kwargs, batch_size=32):
+    def predict(self, dataloader_kwargs, batch_size=32, **kwargs):
         """
         # Arguments
             preproc_kwargs: Keyword arguments passed to the pre-processor
+            **kwargs: Further arguments passed to batch_iter
 
         :return: Predict the whole array
         """
-        return numpy_collate_concat(list(self.predict_generator(dataloader_kwargs,
-                                                                batch_size)))
+        pred_list = [batch for batch in tqdm(self.predict_generator(dataloader_kwargs,
+                                                                    batch_size, **kwargs))]
+        return numpy_collate_concat(numpy_collate_concat(pred_list))
 
-    def predict_generator(self, dataloader_kwargs, batch_size=32):
+    def predict_generator(self, dataloader_kwargs, batch_size=32, **kwargs):
         """Prediction generator
 
         # Arguments
             preproc_kwargs: Keyword arguments passed to the pre-processor
+            **kwargs: Further arguments passed to batch_iter
 
         # Yields
             model batch prediction
         """
         logger.info('Initialized data generator. Running batches...')
 
-        it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size)
+        it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size, **kwargs)
 
         for i, batch in enumerate(it):
             if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):

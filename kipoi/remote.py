@@ -282,7 +282,7 @@ class GitLFSSource(Source):
     def __init__(self, remote_url, local_path):
         """GitLFS Source
         """
-        lfs_installed(raise_exception=True)
+        lfs_installed(raise_exception=False)
         self.remote_url = remote_url
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
@@ -295,6 +295,7 @@ class GitLFSSource(Source):
     def clone(self):
         """Clone the self.remote_url into self.local_path
         """
+        lfs_installed(raise_exception=True)
         if os.path.exists(self.local_path) and os.listdir(self.local_path):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
@@ -302,17 +303,17 @@ class GitLFSSource(Source):
         logger.info("Cloning {remote} into {local}".
                     format(remote=self.remote_url,
                            local=self.local_path))
-
-        subprocess.call(["git-lfs",
+        subprocess.call(["git",
                          "clone",
-                         "-I /",
                          self.remote_url,
-                         self.local_path])
+                         self.local_path],
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
     def pull_source(self):
         """Pull/update the source
         """
+        lfs_installed(raise_exception=True)
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
 
@@ -320,14 +321,12 @@ class GitLFSSource(Source):
                     format(self.local_path))
         subprocess.call(["git",
                          "pull"],
-                        cwd=self.local_path)
-        subprocess.call(["git-lfs",
-                         "pull",
-                         "-I /"],
-                        cwd=self.local_path)
+                        cwd=self.local_path,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
     def _pull_component(self, component, which="model"):
+        lfs_installed(raise_exception=True)
         if not self._pulled:
             self.pull_source()
 
@@ -347,7 +346,8 @@ class GitLFSSource(Source):
                    "-I {0}/**".format(pull_dir)]
             logger.info(" ".join(cmd))
             subprocess.call(cmd,
-                            cwd=self.local_path)
+                            cwd=self.local_path,
+                            env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
 

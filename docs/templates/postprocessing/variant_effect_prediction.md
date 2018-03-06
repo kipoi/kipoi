@@ -1,21 +1,21 @@
-#Variant effect prediction
+# Variant effect prediction
 Variant effect prediction offers a simple way predict effects of SNVs using any model that uses DNA sequence as an input. Many different scoring methods can be chosen but the principle relies on in-silico mutagenesis (see below). The default input is a VCF and the default output again is a VCF annotated with predictions of variant effects.
 
 
-##How it works
+## How it works
 This sketch highlights the overall functionality of variant effect prediction. More details are given in the chapters below.
 
-![variant effect prediction sketch](../../img/postprocessing/vep.png)
+<img alt='variant effect prediction sketch' src='../../img/postprocessing/vep.png'>
 
 Dataloader output and a VCF are overlapped and the input DNA sequence is mutated as defined in the VCF. The reference and the alternative set of model inputs is predicted using the model and the differences are evaluated using a scoring function. The results are then stored in an annotated VCF.
 
-##In-silico mutagenesis
+## In-silico mutagenesis
 The principle relies on generating model predictions twice, once with DNA sequence that contains the reference and once with the alternative allele of a variant. Those predictions can then be compared in different ways to generate an effect prediction.
 
 ### Scoring methods
 Scoring methods that come with Kipoi are `Diff` which simply calculates the difference between the two predictions, `Logit` which calculates the difference of `logit(prediction)` of the two predictions and a few more. Those scoring methods can also be user-defined in which case they can be submitted with the model. Not all scoring functions are compatible with all model possible model outputs - for example the logit transformation can only be performed on values [0,1].
 
-##Model and dataloader requirements
+## Model and dataloader requirements
 The model has to produce predictions at least partly based on DNA sequence and the DNA sequence either has to be as a string (e.g. `actgACTG`) or in a 1-hot encoded way in which A = `[1,0,0,0]`, C = `[0,1,0,0]`, T= `[0,0,1,0]`, G= `[0,0,0,1]`. Please note that any letter/base that is not in `actgACTG` will be regarded and treated as `N` (in one-hot: `[0,0,0,0]`)!
 
 Requirements for the dataloader are that apart from producing the model input it also has to output information which region of the genome this generated sequence corresponds. On a side note: This region is only used to calculate an overlap with the query VCF, hence as long the dataloader output refers to the same sequence assembly as the VCF file variant scoring will return the desired results.
@@ -95,11 +95,10 @@ Here the `associated_metadata` flag in the input field `seq` is set to `ranges`,
 
 The following sketch gives an overview how the different tags play together and how they are used with variant effect prediction.
 
-![variant effect prediction sketch with dataloader details](../../img/postprocessing/variant_effect_prediction_intro.png)
+<img alt='variant effect prediction sketch with dataloader details' src='../../img/postprocessing/variant_effect_prediction_intro.png'>
 
 
-
-##Use-cases
+## Use-cases
 This section describes a set of functions which cover most of the common queries for variant effect. All of the functions described below require that the model.yaml and dataloader.yaml files are set up in the way defined above.
 
 In literature in-silico mutagenesis-based variant effect predcition is performed in a variant centric way: Starting from a VCF for every variant a sequence centered on said variant is generated. That sequence is then mutated by modifying the central base and setting it to what is defined as reference or alternative allele, generating two sets of sequences. For both the set with the reference allele in the center and the alternative allele in the center the model prediction is run and model outputs are compared.
@@ -110,7 +109,7 @@ Variant effect prediction will try to use variant-centered approaches whenever t
 
 For all the methods described below it is essential that genomic coordinates in the VCF and the coordinates used by the dataloader are for the same genome / assembly /etc.
 
-###Variant centered effect prediction
+### Variant centered effect prediction
 In order to use variant centered effect prediction the dataloader must accept an input bed file based on which it will produce model input. Furthermore the dataloader is required to return the name values (fourth column) of the input bed file in the `id` field of `model_input['metadata']['ranges']`. Additionally the order of samples has to be identical with the order of regions in the input bed file, but regions may be skipped.
 
 In order for the variant effect prediction to know which input argument of the dataloader is accepts a bed file three additional lines in dataloader.yaml are necessary, e.g:
@@ -124,23 +123,23 @@ postprocessing:
 
 This section indicates that the dataloader function has an argument `intervals_file` which accepts a bed file path as input which may be used.
 
-![variant effect prediction sketch](../../img/postprocessing/vep_centered.png)
+<img alt='variant effect prediction sketch' src='../../img/postprocessing/vep_centered.png'>
 
 
-###Restricted-variant centered effect prediction
+### Restricted-variant centered effect prediction
 Requirements for the dataloader and dataloader.yaml here are identical to the variant centered effect prediction. The only difference is that this function is designed for models that can't predict on arbitrary regions of the genome, but only in certain regions of the genome. If those regions can be defined in a bed file (further on called 'restriction-bed' file) then this approach can be used. Variant effect prediction will then intersect the VCF with the restriction-bed and generate another bed file that is then passed on to the dataloader.
 
 Regions in the restriction-bed file may be larger than the input sequence lenght, in that case the generated seuqence will be centered on the variant position as much as possible - restricted by what is defined in the restrictions-bed file.
-![variant effect prediction sketch](../../img/postprocessing/vep_restr_bed.png)
+<img alt='variant effect prediction sketch' src='../../img/postprocessing/vep_restr_bed.png'>
 
-###Overlap-based effect prediction
+### Overlap-based effect prediction
 If the dataloader does not support bed input files then variant effect predictions can be run by the overlap of a VCF with the regions defined in the metdata output of the dataloader.
 
 If multiple variants overlap with a region then the effect will be predicted inpendently for those variants. If multiple (e.g.: two) model input samples overlap with one variant then the output will contain as many predictions as there were independent overlaps of metadata ranges and variants (e.g.: two).
-![variant effect prediction sketch](../../img/postprocessing/vep.png)
+<img alt='variant effect prediction sketch' src='../../img/postprocessing/vep.png'>
 
 
-##Scoring functions
+## Scoring functions
 After mutating the model input DNA sequences predictions are created using the models and those predictions then have to compared by scoring methods. Not all scoring methods are compatible with all models depending on the output data range of the model (see below). The compatibility of a scoring function with a given model can be indicated by setting `scoring_functions` in model.yaml:
 
 ```yaml
@@ -163,25 +162,25 @@ Setting `default:true` for a scoring function indicates that that respective sco
 Scoring functions can be assigned a different name with the `name` flag by which they are then selected using the command line interface. In general it is not advisable to rename the scoring functions that come with Kipoi.
 
 
-####Diff
+#### Diff
 The simplest scoring method is to calculate the difference between predictions for the reference and the alternative allele: `prediction(alt) - prediction(ref)`. This scoring method is available for all models no matter if it is defined in `scoring_functions` or not.
 
-####Logit
+#### Logit
 Calculates the difference of logit-transformed values of the predictions:
 `logit(prediction(alt)) - logit(prediction(ref))`. This scoring method only makes sense if the model output can be interpreted as probabilities. In a wider sense, it will only produce valid values if the predictions are in the range [0,1].
 
-####LogitAlt
+#### LogitAlt
 Returns the logits transformed predictions for the sequences carrying the alternative allele:
 `logit(prediction(alt))`. This scoring method only makes sense if the model output can be interpreted as probabilities. In a wider sense, it will only produce valid values if the predictions are in the range [0,1].
 
-####LogitRef
+#### LogitRef
 Returns the logits transformed predictions for the sequences carrying the reference allele:
 `logit(prediction(ref))`. This scoring method only makes sense if the model output can be interpreted as probabilities. In a wider sense, it will only produce valid values if the predictions are in the range [0,1].
 
-####Deepsea_effect
+#### Deepsea_effect
 Calculates the variant scores as defined in the publication of the DeepSEA model (Troyanskaya et al., 2015) by using the absolute value of the logit difference and diff values multiplied together: `abs(Logit * Diff)` with `Logit` and `Diff` defined as above.
 
-####Custom
+#### Custom
 Custom scoring methods can be defined and shipped with the models. In that case the model.yaml will look similar to this:
 
 ```yaml
@@ -204,7 +203,7 @@ Notice that the selection of `type: custom` requires that `defined_as` is set. T
 All scoring functions are subclasses of `Rc_merging_pred_analysis` this means that also a custom scoring function must inherit from it.
 
 
-##Output
+## Output
 The output of variant effect prediction is by default stored in a VCF that is derived from the input VCF. The output VCF only contains variants for which a effect prediction could be generated (e.g. if no model input sample overlapped a variant no prediction could be made for it). The predictions themselves are stored in the INFO field of the VCF, with the ID starting with `KPVEP` and containing the name of the model. Additional to the predictions themselves a also a region ID will be stored in a second INFO field. The region IDs are the values stored in `model_input['metadata']['ranges']['id']` given to a sequence sample generated by the dataloader. This way it is possible to trace back which sequence was mutated by which variant in order to produce a certain effect prediction
 
 Since multiple seqeunces generated by the dataloader may overlap one variant - especially when using the overlap-based effect prediction - it is possible that the generated VCF output will contain a variant multiple times, but the different predictions will be destinguishable by their region ID.
@@ -212,10 +211,10 @@ Since multiple seqeunces generated by the dataloader may overlap one variant - e
 If variant effect prediction is run programmatically in python then the results are returned as a dictionary of pandas DataFrames.
 
 
-##More complex models
+## More complex models
 More complex models may have more than only one DNA sequence input, it may even be that models have DNA sequence inputs taken from different regions of the genome within one sample in a batch. See this sketch for an illustration of the scenario:
 
-![variant effect prediction sketch](../../img/postprocessing/variant_effect_prediction_intro_complex.png)
+<img alt='variant effect prediction sketch' src='../../img/postprocessing/variant_effect_prediction_intro_complex.png'>
 
 
 The dataloader has three sequence outputs which are linked to two metadata ranges. for both ranges objects the beginning of the ranges is displayed. In order to overlap the metadata ranges with variants the input batch is processed one sample at a time. The samples in a batch are displayed in green rectangular boxes: For every sample all the ranges are assembled and overlapped with variants in the VCF. Then the effect is predicted for every single variant in the VCF that overlaps at least one of the region defined in that sample. This means that for the first sample in the batch two variants are investigated: rs1 and rs2. rs1 can only affect seq1a and seq1b, hence those two sequences are mutated, seq2 is not. rs2 overlaps with both ranges in the first sample and hence two sequences are mutated with rs2 to predict its effect. This means that the first sample will be evaluated twice using variants rs1 and rs2, and the second sample only once using rs3.

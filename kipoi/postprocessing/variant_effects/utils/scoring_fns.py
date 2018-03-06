@@ -19,7 +19,6 @@ class Pred_analysis(object):
 
 
 class Rc_merging_pred_analysis(Pred_analysis):
-    __metaclass__ = abc.ABCMeta
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
     #
 

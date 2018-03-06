@@ -25,7 +25,7 @@ class VarEffectFuncType(enum.Enum):
 @related.immutable(strict=True)
 class VarEffectScoringFuncArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
-    doc = related.StringField(required=False)
+    doc = related.StringField("", required=False)
     name = related.StringField(required=False)
     type = related.StringField(default='str', required=False)
     optional = related.BooleanField(default=False, required=False)

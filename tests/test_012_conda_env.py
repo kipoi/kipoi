@@ -44,7 +44,19 @@ def test_Dependencies_merge():
     assert dep_merged.pip == ['pip_pkg1>=1.1,>=1.0',
                               'pip_pkg2==3.3']
 
-    assert dep_merged.conda_channels == []
+    assert dep_merged.conda_channels == ["defaults"]
+
+
+def test_channels():
+    dep1 = Dependencies(conda=["conda_pkg1", "bioconda::conda_pkg2"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["defaults", "bioconda"]
+
+    dep1 = Dependencies(conda=["bioconda::conda_pkg2"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["bioconda", "defaults"]
 
 
 def test_create_env():
