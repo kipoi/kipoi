@@ -43,7 +43,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.2.4',
+    version='0.2.5',
     description="Kipoi",  # TODO - update the description
     author="Kipoi team",
     author_email='avsec@in.tum.de',
