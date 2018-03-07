@@ -553,6 +553,20 @@ class Dependencies(RelatedConfigMixin):
             conda_channels=unique_list(list(self.conda_channels) + list(dependencies.conda_channels))
         )
 
+    def normalized(self):
+        """Normalize the list of dependencies
+        """
+        channels, packages = self._get_channels_packages()
+        if isinstance(packages, related.types.TypedSequence):
+            packages = packages.list
+        if isinstance(channels, related.types.TypedSequence):
+            channels = channels.list
+
+        return Dependencies(
+            conda=packages,
+            pip=kconda.normalize_pip(list(self.pip)),
+            conda_channels=channels)
+
     def _get_channels_packages(self):
         """Get conda channels and packages separated from each other (by '::')
         """
@@ -564,7 +578,8 @@ class Dependencies(RelatedConfigMixin):
         return channels, packages
 
     def to_env_dict(self, env_name):
-        channels, packages = self._get_channels_packages()
+        deps = self.normalized()
+        channels, packages = deps._get_channels_packages()
         if isinstance(packages, related.types.TypedSequence):
             packages = packages.list
         if isinstance(channels, related.types.TypedSequence):
@@ -573,7 +588,7 @@ class Dependencies(RelatedConfigMixin):
         env_dict = OrderedDict(
             name=env_name,
             channels=channels,
-            dependencies=packages + [OrderedDict(pip=kconda.normalize_pip(self.pip))]
+            dependencies=packages + [OrderedDict(pip=kconda.normalize_pip(deps.pip))]
         )
         return env_dict
 
@@ -602,6 +617,26 @@ class Dependencies(RelatedConfigMixin):
             f.write(yaml_ordered_dump(OrderedDict(out),
                                       indent=2,
                                       default_flow_style=False))
+
+    def gpu(self):
+        """Get the gpu-version of the dependencies
+        """
+        def replace_gpu(dep):
+            if dep.startswith("tensorflow") and "gpu" not in dep:
+                new_dep = dep.replace("tensorflow", "tensorflow-gpu")
+                logger.info("use gpu: Replacing the dependency {0} with {1}".format(dep, new_dep))
+                return new_dep
+            if dep.startswith("pytorch-cpu"):
+                new_dep = dep.replace("pytorch-cpu", "pytorch")
+                logger.info("use gpu: Replacing the dependency {0} with {1}".format(dep, new_dep))
+                return new_dep
+            return dep
+
+        deps = self.normalized()
+        return Dependencies(
+            conda=[replace_gpu(dep) for dep in deps.conda],
+            pip=[replace_gpu(dep) for dep in deps.pip],
+            conda_channels=deps.conda_channels)
 
     # @classmethod
     # def from_file(cls, path):

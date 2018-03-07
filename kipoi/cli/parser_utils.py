@@ -49,11 +49,19 @@ def add_dataloader(parser, with_args=True):
                             "'{\"arg1\": 1} or as a file path to a json file")
 
 
-def add_vep(parser):
-    """Add --vep for installing vep dependencies
-    """
+# Multiple models/dataloaders
+def add_env_args(parser, source="kipoi"):
+    parser.add_argument('model', nargs="+",
+                        help='Model name(s). You can use <source>::<model> to use models from different sources')
+    add_source(parser, default=source)
+    parser.add_argument('--dataloader', default=[], nargs="+",
+                        help="Dataloader name(s). If not specified, the model's default " +
+                        "Dataloader will be used. You can use <source>::<dataloader> to use dataloaders from different sources")
     parser.add_argument("--vep", action="store_true",
                         help="Include also the dependencies for variant effect prediction")
+    parser.add_argument("--gpu", action="store_true",
+                        help="Use gpu-compatible dependencies. Example: instead " +
+                        "of using 'tensorflow', 'tensorflow-gpu' will be used")
 
 
 # other utils
@@ -67,3 +75,24 @@ def dir_exists(dirname, logger):
     if not os.path.exists(os.path.abspath(dirname)):
         logger.error("Directory {0} doesn't exist".format(dirname))
         sys.exit(1)
+
+
+def parse_source_name(source, name):
+    """Parse strings in form: <special_source>::<name> into (<special_source>, <name>)
+
+    If :: is not present in the string, return (<source>, <name>)
+    """
+    if "::" in name:
+        try:
+            source, name = name.split("::")
+        except ValueError:
+            raise ValueError("The name: {0} couldn't be properly parsed. ".format(name) +
+                             "Use the following synthax: <source>::<model/dataloader> or <model/dataloader>")
+
+    # Check that the source is correctly specified
+    available_sources = list(kipoi.config.model_sources().keys())
+    if source not in available_sources:
+        raise ValueError("Source: {0} is not present in the available sources: {1}".
+                         format(source, available_sources))
+
+    return (source, name)

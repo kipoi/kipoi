@@ -20,11 +20,32 @@ logger.addHandler(logging.NullHandler())
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
 
+    MODEL_PACKAGE = None
+
     @abc.abstractmethod
     def predict_on_batch(self, x):
         raise NotImplementedError
 
-    # TODO - define the .model attribute?
+    @classmethod
+    def _sufficient_deps(cls, deps):
+        """Tests it the provided dependencies contain MODEL_PACKAGE
+
+        Args:
+          deps: instance of kipoi.components.Dependencies
+
+        Returns:
+          True if cls.MODEL_PACKAGE is listed in the depenencies and False otherwise
+        """
+        if cls.MODEL_PACKAGE is None:
+            return True
+        else:
+            for d in deps.conda:
+                if cls.MODEL_PACKAGE in d:
+                    return True
+            for d in deps.pip:
+                if cls.MODEL_PACKAGE in d:
+                    return True
+            return False
 
 
 def get_model(model, source="kipoi", with_dataloader=True):
@@ -144,6 +165,7 @@ class KerasModel(BaseModel, GradientMixin):
     assumed to speficy the whole model
         custom_objects: Python file defining the custom Keras objects
     in a `OBJECTS` dictionary
+        backend: Keras backend to use ('tensorflow', 'theano', ...)
 
 
     # `model.yml` entry
@@ -158,10 +180,20 @@ class KerasModel(BaseModel, GradientMixin):
         ```
     """
 
-    def __init__(self, weights, arch=None, custom_objects=None):
-        # TODO - check that Keras is indeed installed + specific requirements?
+    MODEL_PACKAGE = "keras"
 
+    def __init__(self, weights, arch=None, custom_objects=None, backend=None):
+        self.backend = backend
+        if self.backend is not None:
+            logger.info("Using Keras backend: {0}".format(self.backend))
+            os.environ['KERAS_BACKEND'] = self.backend
+        import keras
         from keras.models import model_from_json, load_model
+
+        if self.backend is not None:
+            if keras.backend.backend() != self.backend:
+                logger.warn("Keras backend is {0} instead of {1}".
+                            format(keras.backend.backend(), self.backend))
 
         if custom_objects is not None and os.path.exists(custom_objects):
             self.custom_objects = load_module(custom_objects).OBJECTS
@@ -254,6 +286,8 @@ class PyTorchModel(BaseModel):
     """Loads a pytorch model. 
 
     """
+
+    MODEL_PACKAGE = "pytorch"
 
     def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """
@@ -392,6 +426,8 @@ class SklearnModel(BaseModel):
         ```
     """
 
+    MODEL_PACKAGE = "scikit-learn"
+
     def __init__(self, pkl_file):
         self.pkl_file = pkl_file
 
@@ -425,6 +461,8 @@ def get_op_outputs(graph, node_names):
 
 
 class TensorFlowModel(BaseModel):
+
+    MODEL_PACKAGE = "tensorflow"
 
     def __init__(self,
                  input_nodes,
