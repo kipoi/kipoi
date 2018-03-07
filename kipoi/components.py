@@ -709,6 +709,25 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     def get_example_kwargs(self):
         return example_kwargs(self.args)
 
+    def print_kwargs(self, format_examples_json=False):
+        from kipoi.external.related.fields import UNSPECIFIED
+        if hasattr(self, "args"):
+            logger.warn("No keyword arguments defined for the given dataloader.")
+            return None
+
+        for k in self.args:
+            print("Keyword argument: `{0}`".format(k))
+            for elm in ["doc", "type", "optional", "example"]:
+                if hasattr(self.args[k], elm) and \
+                   (not isinstance(getattr(self.args[k], elm), UNSPECIFIED)):
+                    print("    {0}: {1}".format(elm, getattr(self.args[k], elm)))
+                    example_kwargs = self.example_kwargs
+                    print("-" * 80)
+        if hasattr(self, "example_kwargs"):
+            if format_examples_json:
+                import json
+                example_kwargs = json.dumps(example_kwargs)
+                print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
 # ---------------------
 # Global source config

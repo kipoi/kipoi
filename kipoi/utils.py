@@ -307,23 +307,3 @@ def take_first_nested(dd):
         return take_first_nested(dd[0])
     else:
         return dd
-
-def print_dl_kwargs(dataloader_class, format_examples_json=False):
-    from .external.related.fields import UNSPECIFIED
-    if hasattr(dataloader_class, "args"):
-        args = dataloader_class.args
-        for k in args:
-            print("Keyword argument: `{0}`".format(k))
-            for elm in ["doc", "type", "optional", "example"]:
-                if hasattr(args[k], elm) and \
-                        (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
-                    print("    {0}: {1}".format(elm, getattr(args[k], elm)))
-        example_kwargs = dataloader_class.example_kwargs
-        print("-" * 80)
-        if hasattr(dataloader_class, "example_kwargs"):
-            if format_examples_json:
-                import json
-                example_kwargs = json.dumps(example_kwargs)
-            print("Example keyword arguments are: {0}".format(str(example_kwargs)))
-    else:
-        print("No keyword arguments defined for the given dataloader.")

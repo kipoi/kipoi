@@ -31,3 +31,5 @@ def test_load_model(example):
     # datalaoder
     Dl.batch_iter
     Dl.load_all
+
+    Dl.print_args()
