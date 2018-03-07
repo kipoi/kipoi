@@ -261,6 +261,21 @@ class ModelSchema(RelatedConfigMixin):
                     print_msg("len(model): {0}".format(len(descr)))
                     return False
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
+            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                compatible = []
+                for i in range(len(descr)):
+                    if descr[i].name in dschema:
+                        compatible.append(compatible_nestedmapping(dschema[descr[i].name], descr[i], cls, verbose))
+                    else:
+                        print_msg("Model array name: {0} not found in dataloader keys: {1}".
+                                  format(descr[i].name, list(dschema.keys())))
+                        return False
+                return all(compatible)
 
             print_msg("Invalid types:")
             print_msg("type(Dataloader schema): {0}".format(type(dschema)))

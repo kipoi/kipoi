@@ -228,6 +228,33 @@ inputs:
 targets:
     shape: (1, )
     doc: "."
+"""), ("""
+inputs:
+    seq:
+        shape: (2, None)
+        doc: .
+    something_else:
+        shape: (22, 10)
+        doc: .
+targets:
+    shape: (1, )
+    doc: "."
+metadata:
+    ranges:
+        type: GenomicRanges
+        doc: "."
+    dist_polya_st:
+        - doc: "."
+        - doc: "."
+        - doc: "."
+""", """
+inputs:
+    - name: seq
+      shape: (2, 10)
+      doc: .
+targets:
+    shape: (1, )
+    doc: "."
 """)
 ]
 
