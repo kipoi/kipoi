@@ -41,3 +41,17 @@ def test_parse_correct_info(info_str, conda, pip):
 
     assert deps.conda == conda
     assert deps.pip == pip
+
+
+def test_gpu():
+    # tensorflow
+    deps = Dependencies(pip=["tensorflow==1.4"])
+    assert deps.gpu().pip == ["tensorflow-gpu==1.4"]
+
+    # pytorch
+    deps = Dependencies(conda=["pytorch::pytorch-cpu"])
+    assert deps.gpu().conda == ["pytorch"]
+
+    # nothing changed
+    deps = Dependencies(pip=["foo"], conda=["bar"])
+    assert deps.gpu() == deps.normalized()

@@ -1,6 +1,7 @@
 type: keras
 args:
     weights: model_files/keras2/model.h5
+    backend: tensorflow
 info:
     authors:
         - name: Johnny Israeli

@@ -1,4 +1,4 @@
-type: keras # TODO - use a class name?
+type: keras
 args:
     arch: model_files/model.json
     weights: model_files/weights.h5

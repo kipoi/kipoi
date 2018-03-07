@@ -1,8 +1,9 @@
-type: keras # TODO - use a class name?
+type: keras
 args:
     arch: model_files/model.json
     weights: model_files/weights.h5
     custom_objects: model/custom_keras_objects.py
+    backend: tensorflow
 default_dataloader: . # path to the directory
 info:
     authors:

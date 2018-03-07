@@ -4,6 +4,9 @@ import pytest
 import kipoi
 import sys
 import config
+import six
+import kipoi
+from kipoi.components import Dependencies
 from kipoi.pipeline import install_model_requirements
 
 # HACK - prevents ImportError: dlopen: cannot load any more object with static TLS
@@ -38,3 +41,27 @@ def test_load_model(example):
     m.default_dataloader
     m.model
     m.predict_on_batch
+
+
+DEPENDENCY_MODEL = [("no-dep", kipoi.model.BaseModel),
+                    ("keras", kipoi.model.KerasModel),
+                    ("pytorch", kipoi.model.PyTorchModel),
+                    ("scikit-learn", kipoi.model.SklearnModel),
+                    ("tensorflow", kipoi.model.TensorFlowModel)]
+
+
+@pytest.mark.parametrize("dependency,Model", DEPENDENCY_MODEL)
+def test_deps(dependency, Model):
+    contains = [Dependencies(pip=["bar", dependency]),
+                Dependencies(conda=[dependency, "foo"]),
+                Dependencies(conda=["asd::" + dependency])]
+
+    doesnt_contain = [Dependencies(pip=["bar"]),
+                      Dependencies(conda=["bar"])]
+
+    for deps in contains:
+        assert Model._sufficient_deps(deps)
+
+    if dependency != "no-dep":
+        for deps in doesnt_contain:
+            assert not Model._sufficient_deps(deps)

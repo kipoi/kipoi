@@ -51,7 +51,12 @@ def cli_test(command, raw_args):
                                                   args.source,
                                                   and_dataloaders=True)
     mh = kipoi.get_model(args.model, args.source)
-    # force the requirements to be installed
+
+
+    if not mh._sufficient_deps(mh.dependencies):
+        # model requirements should be installed
+        logger.warn("Required package '{0}' for model type: {1} is not listed in the dependencies".
+                    format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
     # with cd(mh.source_dir):
