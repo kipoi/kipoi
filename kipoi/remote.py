@@ -305,6 +305,7 @@ class GitLFSSource(Source):
                            local=self.local_path))
         subprocess.call(["git",
                          "clone",
+                         "--depth=1",
                          self.remote_url,
                          self.local_path],
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
@@ -396,6 +397,7 @@ class GitSource(Source):
 
         subprocess.call(["git",
                          "clone",
+                         "--depth=1",
                          self.remote_url,
                          self.local_path])
         self._pulled = True
