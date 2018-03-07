@@ -52,7 +52,6 @@ def cli_test(command, raw_args):
                                                   and_dataloaders=True)
     mh = kipoi.get_model(args.model, args.source)
 
-
     if not mh._sufficient_deps(mh.dependencies):
         # model requirements should be installed
         logger.warn("Required package '{0}' for model type: {1} is not listed in the dependencies".
@@ -95,6 +94,7 @@ def cli_preproc(command, raw_args):
         kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
     Dataloader = kipoi.get_dataloader_factory(args.dataloader, args.source)
 
+    kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
     dataloader = Dataloader(**dataloader_kwargs)
 
     it = dataloader.batch_iter(batch_size=args.batch_size, num_workers=args.num_workers)
@@ -159,6 +159,7 @@ def cli_predict(command, raw_args):
     else:
         Dl = model.default_dataloader
 
+    kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
     dl = Dl(**dataloader_kwargs)
 
     # setup batching
@@ -278,7 +279,6 @@ def cli_info(command, raw_args):
     add_dataloader(parser, with_args=False)
     args = parser.parse_args(raw_args)
 
-
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -295,7 +295,7 @@ def cli_info(command, raw_args):
         dl_info = "default dataloader for model '{0}' from source '{1}'".format(str(model.name), str(args.source))
         Dl = model.default_dataloader
 
-    print("-"*80)
+    print("-" * 80)
     print("Displaying keyword arguments for {0}".format(dl_info))
     print(kipoi.print_dl_kwargs(Dl))
     print("-" * 80)

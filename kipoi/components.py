@@ -691,6 +691,32 @@ def default_kwargs(args):
     return {k: v.default for k, v in six.iteritems(args) if v.default is not None}
 
 
+def print_dl_kwargs(dataloader_class, format_examples_json=False):
+    """
+    Args:
+      format_examples_json: format the results as json
+    """
+    from .external.related.fields import UNSPECIFIED
+    if not hasattr(dataloader_class, "args"):
+        logger.warn("No keyword arguments defined for the given dataloader.")
+        return None
+        print("No keyword arguments defined for the given dataloader.")
+    args = dataloader_class.args
+    for k in args:
+        print("{0}:".format(k))
+        for elm in ["doc", "type", "optional", "example"]:
+            if hasattr(args[k], elm) and \
+                    (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
+                print("    {0}: {1}".format(elm, getattr(args[k], elm)))
+    example_kwargs = dataloader_class.example_kwargs
+    print("-" * 80)
+    if hasattr(dataloader_class, "example_kwargs"):
+        if format_examples_json:
+            import json
+            example_kwargs = json.dumps(example_kwargs)
+        print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+
+
 @related.immutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
