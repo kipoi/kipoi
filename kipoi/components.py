@@ -261,6 +261,21 @@ class ModelSchema(RelatedConfigMixin):
                     print_msg("len(model): {0}".format(len(descr)))
                     return False
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
+            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                compatible = []
+                for i in range(len(descr)):
+                    if descr[i].name in dschema:
+                        compatible.append(compatible_nestedmapping(dschema[descr[i].name], descr[i], cls, verbose))
+                    else:
+                        print_msg("Model array name: {0} not found in dataloader keys: {1}".
+                                  format(descr[i].name, list(dschema.keys())))
+                        return False
+                return all(compatible)
 
             print_msg("Invalid types:")
             print_msg("type(Dataloader schema): {0}".format(type(dschema)))
@@ -676,6 +691,32 @@ def default_kwargs(args):
     return {k: v.default for k, v in six.iteritems(args) if v.default is not None}
 
 
+def print_dl_kwargs(dataloader_class, format_examples_json=False):
+    """
+    Args:
+      format_examples_json: format the results as json
+    """
+    from .external.related.fields import UNSPECIFIED
+    if not hasattr(dataloader_class, "args"):
+        logger.warn("No keyword arguments defined for the given dataloader.")
+        return None
+        print("No keyword arguments defined for the given dataloader.")
+    args = dataloader_class.args
+    for k in args:
+        print("{0}:".format(k))
+        for elm in ["doc", "type", "optional", "example"]:
+            if hasattr(args[k], elm) and \
+                    (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
+                print("    {0}: {1}".format(elm, getattr(args[k], elm)))
+    example_kwargs = dataloader_class.example_kwargs
+    print("-" * 80)
+    if hasattr(dataloader_class, "example_kwargs"):
+        if format_examples_json:
+            import json
+            example_kwargs = json.dumps(example_kwargs)
+        print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+
+
 @related.immutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
@@ -694,6 +735,25 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     def get_example_kwargs(self):
         return example_kwargs(self.args)
 
+    def print_kwargs(self, format_examples_json=False):
+        from kipoi.external.related.fields import UNSPECIFIED
+        if hasattr(self, "args"):
+            logger.warn("No keyword arguments defined for the given dataloader.")
+            return None
+
+        for k in self.args:
+            print("Keyword argument: `{0}`".format(k))
+            for elm in ["doc", "type", "optional", "example"]:
+                if hasattr(self.args[k], elm) and \
+                   (not isinstance(getattr(self.args[k], elm), UNSPECIFIED)):
+                    print("    {0}: {1}".format(elm, getattr(self.args[k], elm)))
+                    example_kwargs = self.example_kwargs
+                    print("-" * 80)
+        if hasattr(self, "example_kwargs"):
+            if format_examples_json:
+                import json
+                example_kwargs = json.dumps(example_kwargs)
+                print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
 # ---------------------
 # Global source config

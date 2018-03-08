@@ -34,6 +34,23 @@ def install_dataloader_requirements(dataloader, source="kipoi"):
     kipoi.get_source(source).get_model_descr(dataloader).dependencies.install()
 
 
+def validate_kwargs(dataloader, dataloader_kwargs):
+    # check that the dataloader_kwargs indeed match
+    if not isinstance(dataloader_kwargs, dict):
+        raise ValueError("Dataloader_kwargs need to be a dictionary")
+
+    missing_arg = []
+    req_args = {k for k in dataloader.args
+                if not dataloader.args[k].optional}
+    missing_arg = req_args - set(dataloader_kwargs.keys())
+    if len(missing_arg) > 0:
+        logger.warn("Required arguments for the dataloader: {0} were not specified".
+                    format(",".join(list(missing_arg))))
+    unused = set(dataloader_kwargs.keys()) - set(dataloader.args.keys())
+    if len(unused) > 0:
+        logger.warn("Some provided dataloader kwargs were not used: {0}".format(unused))
+
+
 class Pipeline(object):
     """Provides the predict_example, predict and predict_generator to the kipoi.Model
     """
@@ -100,6 +117,7 @@ class Pipeline(object):
         """
         logger.info('Initialized data generator. Running batches...')
 
+        validate_kwargs(self.dataloader_cls, dataloader_kwargs)
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size, **kwargs)
 
         for i, batch in enumerate(it):
