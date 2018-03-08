@@ -50,8 +50,10 @@ pages:
   - Contributing models: tutorials/contributing_models.md
   - Python API: tutorials/python-api.md
   - R API: tutorials/R-api.md
-  - Variant effect prediction: tutorials/variant_effect_prediction.md
+  - Comparing models: tutorials/tf_binding_models.md
   - Composing models: tutorials/composing_models.md
+  - Variant effect prediction: tutorials/variant_effect_prediction.md
+
 - Api:
   - Model: api/model.md
   - Dataloader: api/dataloader.md

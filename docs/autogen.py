@@ -74,7 +74,7 @@ PAGES = [
     },
     {
         'page': 'api/postprocessing/variant_effects.md',
-        'functions': [kipoi.postprocessing.variant_effects.snv_predict.predict_snvs],
+        'functions': [kipoi.postprocessing.variant_effects.predict_snvs],
     },
     {
         'page': 'api/postprocessing/variant_effect_scores.md',
