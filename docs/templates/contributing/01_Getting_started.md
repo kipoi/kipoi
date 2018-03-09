@@ -17,9 +17,9 @@ Here is a list of steps required to contribute a model to [kipoi/models](https:/
 #### 2. Add the model
 
 0. `cd ~/.kipoi/models`
-1. [Write the model](#how-to-write-the-model): Create a new folder `<my new model>` containing all the required files
-    - Option 1: Copy the existing model: `cp -R <existing model> <my new model>` & edit the copied files
-	- Option 2: Run `kipoi init`, answer the questions & edit the created files
+1. [Write the model](#how-to-write-the-model): Create a new folder `<my new model>` containing all the required files. The required files can be created by doing one of the following three options:
+    - Option 1: Copy the existing model: `cp -R <existing model> <my new model>`,  edit the copied files so that they fit your new model and copy your model files.
+	- Option 2: Run `kipoi init`, answer the questions & edit the created files so that they match your model and copy your model files.
 	- Option 3: `mkdir <my new model>` & write all the files from scratch
 2. [Test the model](#how-to-test-the-model)
     - Step 1: `kipoi test ~/.kipoi/models/my_new_model`
@@ -68,7 +68,7 @@ This will ask you a few questions and create a new model folder.
 $ kipoi init
 INFO [kipoi.cli.main] Initializing a new Kipoi model
 
-Please answer the questions bellow. Defaults are shown in square brackets.
+Please answer the questions below. Defaults are shown in square brackets.
 
 You might find the following links useful: 
 - (model_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_models.md
@@ -116,9 +116,10 @@ INFO [kipoi.cli.main] Done!
 Created the following folder into the current working directory: my_new_model
 ```
 
-The created folder contains a model and a dataloader for predicting the Iris species. You can check if the tests pass for this newly created folder by running the comands bellow.
+The created folder contains a model and a dataloader for predicting the Iris species. You will now have to [edit the model.yaml](./02_Writing_model.yaml) and to [edit the dataloader.yaml](./04_Writing_dataloader.yaml) files according to your model. Also you will have to copy you rmodel files into the model_files directory. You can check whether you have succeeded and your model is setup correctly with the commands below.
 
 ### How to test the model
+Be aware that the test functions will only check whether the definition side of things (model.yaml, dataloader.yaml, syntax errors, etc.) is setup correctly, you will have to validate yourself whether the outputs created by using the predict function produce the desired model output!
 
 #### Step 1: Run `kipoi test ~/.kipoi/models/my_new_model`
 

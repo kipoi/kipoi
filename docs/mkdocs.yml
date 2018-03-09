@@ -36,6 +36,7 @@ pages:
   - Getting started: using/01_Getting_started.md
   - Variant effect predictions: using/02_Variant_effect_prediction.md
   - Private and public model sources: using/03_Model_sources.md
+  - Installing on OSX: using/04_Installing_on_OSX.md
   - Postprocessing:
     - Variant effect prediction: postprocessing/variant_effect_prediction.md
 - Contributing:

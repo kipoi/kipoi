@@ -234,7 +234,7 @@ def cli_init(command, raw_args, **kwargs):
     assert command == "init"
     logger.info("Initializing a new Kipoi model")
 
-    print("\nPlease answer the questions bellow. Defaults are shown in square brackets.\n")
+    print("\nPlease answer the questions below. Defaults are shown in square brackets.\n")
     print("You might find the following links useful: ")
     print("- getting started: http://www.kipoi.org/docs/contributing/01_Getting_started/")
     print("- model_type: http://www.kipoi.org/docs/contributing/02_Writing_model.yaml/#type")

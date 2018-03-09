@@ -11,6 +11,8 @@ model sources.
 
 ## Installation
 
+OSX users, depending on the version of the OS, might have to check whether they have a functional version of python installed, see [Installing on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/).
+
 ### 1. Install miniconda/anaconda
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
@@ -67,6 +69,8 @@ import kipoi
 
 kipoi.list_models()
 ```
+
+Hint: For an overview over the available models also check the [model overview](http://kipoi.org/groups/) on our website, where you can see example commands for how to use the models on the CLI, python and R!
 
 Load the model from model source or local directory
 ```python
