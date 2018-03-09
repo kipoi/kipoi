@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def install_model_requirements(model, source="kipoi", and_dataloaders=False):
+def install_model_requirements(model, source="kipoi", and_dataloaders=True):
     md = kipoi.get_source(source).get_model_descr(model)
     md.dependencies.install()
     if and_dataloaders:

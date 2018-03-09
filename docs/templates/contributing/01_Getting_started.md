@@ -9,33 +9,59 @@ Here is a list of steps required to contribute a model to [kipoi/models](https:/
 #### 1. Install Kipoi
 
 1. Install git-lfs
-    - `conda install -c conda-forge git-lfs` (alternatively see <https://git-lfs.github.com/>)
-2. Install kipoi
+    - `conda install -c conda-forge git-lfs && git lfs install`
+	- For alternative installation options  see <https://git-lfs.github.com/>.
+3. Install kipoi
     - `pip install kipoi`
-3. Run `kipoi ls` (this will checkout the `kipoi/models` repo to `~/.kipoi/models`)
+4. Run `kipoi ls` (this will checkout the `kipoi/models` repo to `~/.kipoi/models`)
 
 #### 2. Add the model
 
 0. `cd ~/.kipoi/models`
 1. [Write the model](#how-to-write-the-model): Create a new folder `<my new model>` containing all the required files. The required files can be created by doing one of the following three options:
-    - Option 1: Copy the existing model: `cp -R <existing model> <my new model>`,  edit the copied files so that they fit your new model and copy your model files.
-	- Option 2: Run `kipoi init`, answer the questions & edit the created files so that they match your model and copy your model files.
+    - Option 1: Copy the existing model: `cp -R <existing model> <my new model>`, edit/replace/add the copied files until they fit your new model.
+	- Option 2: Run `kipoi init`, answer the questions, edit/replace the created files until they fit your new model.
 	- Option 3: `mkdir <my new model>` & write all the files from scratch
 2. [Test the model](#how-to-test-the-model)
     - Step 1: `kipoi test ~/.kipoi/models/my_new_model`
 	- Step 2: `kipoi test-source kipoi --all -k my_new_model`
-3. Commit your changes
-    - `cd ~/.kipoi/models && git commit -m "Added <my new model>"`
 
 #### 3. Submit the pull-request
 
-1. [Fork](https://guides.github.com/activities/forking/) the <https://github.com/kipoi/models> repo on github (click on the Fork button)
-2. Add your fork as a git remote to `~/.kipoi/models`
-    - `cd ~/.kipoi/models && git remote add fork https://github.com/<username>/models.git`
-3. Push to your fork
-    - `git push fork master`
-4. Submit a pull-request (click the [New pull request](https://help.github.com/articles/creating-a-pull-request/) button on your github fork - `https://github.com/<username>/models>`)
+##### Option 1: Fork the repository 
 
+0. Make sure you have all the recent changes locally
+    - `cd ~/.kipoi/models`
+    - `export GIT_LFS_SKIP_SMUDGE=1 && git pull` - pulls all the changes but doesn't download the files tracked by git-lfs.
+1. Commit your changes
+	- `git add my_new_model/`
+	- `git commit -m "Added <my new model>"`
+1. [Fork](https://guides.github.com/activities/forking/) the <https://github.com/kipoi/models> repo on github (click on the Fork button)
+1. Add your fork as a git remote to `~/.kipoi/models`
+    - `git remote add fork https://github.com/<username>/models.git`
+1. Push to your fork
+    - `git push fork master`
+1. Submit a pull-request
+    - click the [New pull request](https://help.github.com/articles/creating-a-pull-request/) button on your github fork - `https://github.com/<username>/models>`
+
+##### Option 2: Create a new branch on kipoi/models
+
+If you wish to contribute models more frequently, please [join the team](https://github.com/kipoi/models/issues/55). You will be added to the Kipoi organization. This will allow you to push to branches of the `kipoi/models` github repo directly.
+
+1. Make sure you have all the recent changes locally
+    - `cd ~/.kipoi/models`
+    - `export GIT_LFS_SKIP_SMUDGE=1 && git pull` - pulls all the changes but doesn't download the files tracked by git-lfs.
+1. Create a new branch in `~/.kipoi/models`
+    - `git stash` - this will store/stash all local changes in [git stash](https://git-scm.com/book/en/v1/Git-Tools-Stashing)
+    - `git checkout -b my_new_model` - create a new branch
+    - `git stash pop` - get the stashed files back
+2. Commit changes
+    - `git add my_new_model/`
+    - `git commit -m "Added <my new model>"`
+3. Push changes to `my_new_model` branch
+    - `git push -u origin my_new_model`
+4. Submit a pull-request
+    - click the [New pull request](https://help.github.com/articles/creating-a-pull-request/) button on `my_new_model` branch of repo <https://github.com/kipoi/models>.
 
 Rest of this document will go more into the details about steps writing the model and testing the model.
 
@@ -140,3 +166,7 @@ This checks the yaml files and runs `kipoi predict` for the example files (speci
 <!-- ``` -->
 
 This will run `kipoi test` in a new conda environment with dependencies specified in `model.yaml` and `dataloader.yaml`.
+
+### Removing or updating models
+
+To remove, rename or update an existing model, send a pull-request (as when contributing models, see [3. Submit the pull-request](#3-submit-the-pull-request)).

@@ -32,7 +32,7 @@ git-lfs install
 Alternatively, install it through conda:
 
 ```bash
-conda install -c conda-forge git-lfs 
+conda install -c conda-forge git-lfs && git lfs install
 ```
 
 ### 3. Install Kipoi
