@@ -140,3 +140,7 @@ This checks the yaml files and runs `kipoi predict` for the example files (speci
 <!-- ``` -->
 
 This will run `kipoi test` in a new conda environment with dependencies specified in `model.yaml` and `dataloader.yaml`.
+
+### Removing or updating models
+
+To remove, rename or update an existing model, send a pull-request as when contributing the model.
