@@ -61,3 +61,28 @@ def test_list_models_group():
     assert dfg_columns == list(dfg.columns)
     assert len(dfg) > 0
     assert dfg.group.str.contains("^CpGenie$").sum() == 1
+
+
+def test_github_permalink():
+    component = "https://github.com/Avsecz/testlfs/tree/25eee661e75555516b6a7e529857e9ceeecdb711/m1/"
+    dl_url = "https://minhaskamal.github.io/DownGit/#/home?url={0}".format(component)
+    from kipoi.remote import GithubPermalinkSource
+    local_path = "/tmp/kipoi/"
+
+    component_path = GithubPermalinkSource._url_to_dir(component)
+    from urllib.request import urlopen
+    from tempfile import NamedTemporaryFile
+    from shutil import unpack_archive
+    zipurl = 'http://stash.compjour.org/data/1800ssa.zip'
+    with urlopen(zipurl) as zipresp, NamedTemporaryFile() as tfile:
+        tfile.write(zipresp.read())
+        tfile.seek(0)
+        unpack_archive(tfile.name, '/tmp/mystuff3', format='zip')
+
+    cpath = get_file(fname="file.zip",
+                     origin=dl_url,
+                     extract=True,
+                     archive_format="zip",
+                     cache_subdir=component_path,
+                     cache_dir=local_path)
+    pass

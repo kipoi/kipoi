@@ -12,6 +12,7 @@ from .utils import lfs_installed, get_file_path, cd, list_files_recursively
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
+from kipoi.external.keras.data_utils import get_file
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -462,9 +463,62 @@ class LocalSource(Source):
                             ("local_path", self.local_path)])
 
 
+class GithubPermalinkSource(Source):
+
+    TYPE = "github-permalink"
+
+    def __init__(self, local_path):
+        """Local files
+        """
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
+
+    @classmethod
+    def _url_to_dir(cls, url):
+        """Map github url to local directory
+        """
+        github_url = "https://github.com/"
+        if not url.startswith(github_url):
+            raise ValueError("url of the permalink: {0} doesn't start with {1}".format(url, github_url))
+        url_dir = url[len(github_url):]
+        if "/tree/" not in url_dir:
+            raise ValueError("'/tree/' missing in the url {0}. Typical github format is github.com/<user>/<repo>/tree/<commit>/<directory>")
+        url_dir = url_dir.replace("/tree", "")
+        return url_dir
+
+    def _list_components(self, which="model"):
+        # Same as for local source
+        return list_yamls_recursively(self.local_path, which)
+
+    def _pull_component(self, component, which="model"):
+        # TODO - download file to ~/.kipoi/github-permalink/
+
+        component_path = self._url_to_dir(component)
+
+        dl_url = "https://minhaskamal.github.io/DownGit/#/home?url={0}".format(component)
+        # TODO - download and unzip the whole directory
+        cpath = get_file(fname=component,
+                         extract=True,
+                         archive_format="zip",
+                         cache_subdir=component_path,
+                         cache_dir=self.local_path)
+
+        # cpath = get_component_file(os.path.join(self.local_path, component), which)
+        if not os.path.exists(cpath):
+            raise ValueError("{0} {1} doesn't exist".
+                             format(which, component))
+        return cpath
+
+    def _get_component_descr(self, component, which="model"):
+        return load_component_descr(self._pull_component(component, which), which)
+
+    def get_config(self):
+        return OrderedDict([("type", self.TYPE),
+                            ("local_path", self.local_path)])
+
+
 # --------------------------------------------
 # all available models
-source_classes = [GitLFSSource, GitSource, LocalSource]
+source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource]
 
 
 def load_source(config):

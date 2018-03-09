@@ -307,3 +307,9 @@ def take_first_nested(dd):
         return take_first_nested(dd[0])
     else:
         return dd
+
+
+def download_github_permalink(url):
+    dl_url = "https://minhaskamal.github.io/DownGit/#/home?url={0}".format(url)
+    # TODO download file
+
