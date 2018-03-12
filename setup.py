@@ -3,12 +3,12 @@
 
 from setuptools import setup, find_packages
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError, OSError):
-    # print("Unable to convert REAMDE.md to rst using pypandoc")
-    long_description = open('README.md').read()
+# try:
+#     import pypandoc
+#     long_description = pypandoc.convert('README.md', 'rst')
+# except(IOError, ImportError, OSError):
+#     # print("Unable to convert REAMDE.md to rst using pypandoc")
+#     long_description = open('README.md').read()
 
 
 requirements = [
@@ -48,7 +48,7 @@ setup(
     author="Kipoi team",
     author_email='avsec@in.tum.de',
     url='https://github.com/kipoi/kipoi',
-    long_description=long_description,
+    long_description="Kipoi: model zoo for genomics. http://kipoi.org/",
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
