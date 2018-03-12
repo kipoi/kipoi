@@ -1,22 +1,24 @@
-# Kipoi
+# Kipoi: Model zoo for genomics
 
 [![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
 
-Kipoi defines a common 'model-zoo' API for predictive models. This repository implements a 
-command-line interface (CLI) and a python API to query (and use) the Kipoi models. The Kipoi models can be hosted in 
-public model sources like [github.com/kipoi/models](https://github.com/kipoi/models) or in your own private
-model sources.
+This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
 <img src="http://kipoi.org/static/img/fig1.svg" width=600>
 
-## Installation
 
-OSX users, depending on the version of the OS, might have to check whether they have a functional version of python installed, see [Installing on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/).
+## Links
+
+- [kipoi.org](https://kipoi.org) - Main website
+- [kipoi.org/docs](https://kipoi.org/docs) - Documentation
+- [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
+  
+## Installation
 
 ### 1. Install miniconda/anaconda
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://conda.io/miniconda.html)) or miniconda ([download page](https://www.anaconda.com/download/)) installed.
+Make sure you have either anaconda ([download page](https://conda.io/miniconda.html)) or miniconda ([download page](https://www.anaconda.com/download/)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/).
 
 ### 2. Install Git LFS
 
@@ -60,17 +62,17 @@ If you wish to run tests in parallel, run `py.test -n 6`.
 
 <img src="docs/theme_dir/img/kipoi-workflow.png" height=400>
 
-
 ### Python
 
 List available models
+
 ```python
 import kipoi
 
 kipoi.list_models()
 ```
 
-Hint: For an overview over the available models also check the [model overview](http://kipoi.org/groups/) on our website, where you can see example commands for how to use the models on the CLI, python and R!
+Hint: For an overview over the available models also check the [model overview](http://kipoi.org/groups/) on our website, where you can see example commands for how to use the models on the CLI, python and R.
 
 Load the model from model source or local directory
 ```python
@@ -159,9 +161,7 @@ Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/get
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
-Setup your preference in: `.kipoi/config.yaml`
-
-You can add your own model sources. See [docs/using/03_Model_sources/](http://kipoi.org/docs/using/03_Model_sources/) for more information.
+You can add your own (private) model sources. See [docs/using/03_Model_sources/](http://kipoi.org/docs/using/03_Model_sources/).
 
 ### Contributing models
 
