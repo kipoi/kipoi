@@ -9,8 +9,8 @@ This repository implements a python package and a command-line interface (CLI) t
 
 ## Links
 
-- [kipoi.org](https://kipoi.org) - Main website
-- [kipoi.org/docs](https://kipoi.org/docs) - Documentation
+- [kipoi.org](http://kipoi.org) - Main website
+- [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
   
 ## Installation
