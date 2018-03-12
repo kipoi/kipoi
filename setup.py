@@ -44,11 +44,11 @@ test_requirements = [
 setup(
     name='kipoi',
     version='0.2.5',
-    description="Kipoi",  # TODO - update the description
+    description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
     url='https://github.com/kipoi/kipoi',
-    long_description="Kipoi",  # TODO - update the description
+    long_description=long_description,
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
