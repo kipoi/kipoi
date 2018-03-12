@@ -126,7 +126,7 @@ def export_deps_to_env(deps, env_file=None, env_dir=".", env=None):
 
 
 def export_env(models,
-               dataloaders=[],
+               dataloaders=None,
                source='kipoi',
                env_file=None,
                env_dir=".",
@@ -170,7 +170,8 @@ def cli_export(cmd, raw_args):
         description='Export the environment.yaml file for a specific model.'
     )
     add_env_args(parser)
-    parser.add_argument('-o', '--output', default='environment.yaml', required=True,
+    parser.add_argument('-o', '--output', default='environment.yaml',
+                        required=True,
                         help="Output file name")
     parser.add_argument('-e', '--env', default=None,
                         help="Environment name")
