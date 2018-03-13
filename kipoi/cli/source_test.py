@@ -5,52 +5,14 @@ from colorlog import escape_codes, default_log_colors
 import re
 import sys
 import os
-import subprocess as sp
 import kipoi
 from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.cli.env import conda_env_name
 from kipoi.remote import list_softlink_dependencies
-from kipoi.utils import list_files_recursively, read_txt, get_file_path
+from kipoi.utils import list_files_recursively, read_txt, get_file_path, cd
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-def run(cmds, env=None, mask=None, **kwargs):
-    """
-    Wrapper around subprocess.run()
-    Explicitly decodes stdout to avoid UnicodeDecodeErrors that can occur when
-    using the `universal_newlines=True` argument in the standard
-    subprocess.run.
-    Also uses check=True and merges stderr with stdout. If a CalledProcessError
-    is raised, the output is decoded.
-    Returns the subprocess.CompletedProcess object.
-    """
-    try:
-        p = sp.run(cmds, stdout=sp.PIPE, stderr=sp.STDOUT, check=True, env=env,
-                   **kwargs)
-        p.stdout = p.stdout.decode(errors='replace')
-    except sp.CalledProcessError as e:
-        e.stdout = e.stdout.decode(errors='replace')
-        print(e)
-        # mask command arguments
-
-        def do_mask(arg):
-            if mask is None:
-                # caller has not considered masking, hide the entire command
-                # for security reasons
-                return '<hidden>'
-            elif mask is False:
-                # masking has been deactivated
-                return arg
-            for m in mask:
-                arg = arg.replace(m, '<hidden>')
-            return arg
-        e.cmd = [do_mask(c) for c in e.cmd]
-        logger.error('COMMAND FAILED: %s', ' '.join(e.cmd))
-        logger.error('STDOUT+STDERR:\n%s', do_mask(e.stdout))
-        raise e
-    return p
 
 
 def modified_files(git_range, source_folder, relative=True):
@@ -69,12 +31,15 @@ def modified_files(git_range, source_folder, relative=True):
       relative=True: return the relative path
     """
     assert isinstance(git_range, list)
-    cmds = ['git', 'diff', '--name-only'] + git_range
+    cmds = ['diff', '--name-only'] + git_range
 
-    p = run(cmds, cwd=source_folder)
+    with cd(source_folder):
+        code, lines = _call_command("git", cmds, use_stdout=True,
+                                    return_logs_with_stdout=True)
 
-    modified = [os.path.join(source_folder, m)
-                for m in p.stdout.strip().split('\n')]
+    assert code == 0
+    modified = [os.path.join(source_folder, line)
+                for line in lines]
 
     # exclude files that were deleted in the git-range
     existing = list(filter(os.path.exists, modified))
