@@ -1,5 +1,7 @@
 """Test $ kipoi env ... functions
 """
+import subprocess
+import os
 from kipoi.utils import read_yaml
 from kipoi.cli.env import get_env_name, export_env
 
@@ -64,6 +66,20 @@ def test_export(tmpdir):
     assert env_dict['channels'] == ['defaults', 'bioconda']
     assert [p for p in env_dict['dependencies'] if "cyvcf2" in p]
     assert env_dict['name'] == env
+
+
+def test_cli(tmpdir):
+    env_file = os.path.join(str(tmpdir), "env.yml")
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "export",
+            "rbp_eclip/UPF1",
+            "-o", env_file]
+    returncode = subprocess.call(args=args)
+    assert returncode == 0
+    env_dict = read_yaml(env_file)
+    env, env_file2 = export_env(["rbp_eclip/UPF1"],
+                                env_dir=str(tmpdir))
+    env_dict2 = read_yaml(env_file2)
+    assert env_dict == env_dict2
 
 
 def test_export_multiple(tmpdir):

@@ -83,7 +83,7 @@ def merge_deps(models,
 
         deps = deps.merge(model_descr.dependencies)
         # handle the dataloader=None case
-        if dataloaders is None:
+        if dataloaders is None or not dataloaders:
             dataloader = os.path.normpath(os.path.join(parsed_model,
                                                        model_descr.default_dataloader))
             logger.info("Inferred dataloader name: {0} from".format(dataloader) +
@@ -91,7 +91,7 @@ def merge_deps(models,
             dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
             deps = deps.merge(dataloader_descr.dependencies)
 
-    if dataloaders is not None:
+    if dataloaders is not None or dataloaders:
         for dataloader in dataloaders:
             parsed_source, parsed_dataloader = parse_source_name(source, dataloader)
             dataloader_descr = kipoi.get_dataloader_descr(parsed_dataloader, parsed_source)
@@ -118,7 +118,7 @@ def export_deps_to_env(deps, env_file=None, env_dir=".", env=None):
 
     logger.info("Environment name: {0}".format(env))
     logger.info("Output env file: {0}".format(env_file))
-    if not os.path.exists(os.path.dirname(env_file)):
+    if not os.path.exists(os.path.abspath(os.path.dirname(env_file))):
         os.makedirs(os.path.dirname(env_file))
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
