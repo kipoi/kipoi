@@ -184,7 +184,7 @@ class KerasModel(BaseModel, GradientMixin):
 
     def __init__(self, weights, arch=None, custom_objects=None, backend=None):
         self.backend = backend
-        if self.backend is not None:
+        if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
         import keras
