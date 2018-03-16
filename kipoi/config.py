@@ -26,7 +26,7 @@ _kipoi_dir = os.path.join(_kipoi_base_dir, '.kipoi')
 
 # default model_sources
 _MODEL_SOURCES = {
-    "kipoi": GitLFSSource(remote_url="git@github.com:kipoi/models.git",
+    "kipoi": GitLFSSource(remote_url="https://github.com/kipoi/models.git",
                           local_path=os.path.join(_kipoi_dir, "models/"))
 }
 
