@@ -95,6 +95,9 @@ def test_model(model_name, source_name, env_name, batch_size):
         logger.info("Environment {0} exists. Removing it.".format(env_name))
         remove_env(env_name)
 
+    # TODO - if the model is a Keras model, print the Keras config file
+    # and note which config file got used
+
     # create the model test environment
     cmd = "kipoi"
     args = ["env", "create",
@@ -238,6 +241,8 @@ def cli_test_source(command, raw_args):
         logger.info('{0}/{1} models modified according to git:\n- {2}'.
                     format(len(test_models), len(all_models),
                            '\n- '.join(test_models)))
+    # Sort the models alphabetically
+    test_models = sorted(test_models)
 
     # Parse the repo config
     cfg_path = get_file_path(source.local_path, "config",
@@ -252,6 +257,9 @@ def cli_test_source(command, raw_args):
     if args.dry_run:
         logger.info("-n/--dry_run enabled. Skipping model testing and exiting.")
         sys.exit(0)
+
+    # TODO - make sure the modes are always tested in the same order?
+    #        - make sure the keras config doesn't get cluttered
 
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
