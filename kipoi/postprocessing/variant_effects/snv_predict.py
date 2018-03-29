@@ -139,8 +139,10 @@ def merge_intervals(ranges_dict):
             chrom_trees[chr] = IntervalTree()
         # append new region to the interval tree
         chrom_trees[chr][start:end] = [k]
+
     # merge overlapping regions and append the metadata fields
     [chrom_trees[chr].merge_overlaps(lambda x, y: x + y) for chr in chrom_trees]
+
     # convert back to GenomicRanges-compliant dictionaries
     out_regions = {k: [] for k in ["chr", "start", "end"]}
     ranges_ks = []
@@ -150,6 +152,7 @@ def merge_intervals(ranges_dict):
             out_regions["start"].append(interval.begin)
             out_regions["end"].append(interval.end)
             ranges_ks.append(interval.data)
+
     out_regions["strand"] = ["*"] * len(out_regions["chr"])
     return out_regions, ranges_ks
 

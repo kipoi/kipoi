@@ -8,7 +8,7 @@ import re
 from abc import abstractmethod
 from collections import OrderedDict
 from .dna_reshapers import ReshapeDnaString, ReshapeDna
-from .mutators import OneHotSequenceMutator, DNAStringSequenceMutator
+from .mutators import OneHotSequenceMutator, DNAStringSequenceMutator, rc_str
 
 import numpy as np
 
@@ -208,6 +208,7 @@ class ModelInfoExtractor(object):
         # Collect the different sequence inputs and the corresponfing ranges objects:
         self.seq_input_metadata = {}
         self.seq_input_mutator = {}
+        self.seq_to_str_converter = {}
         self.seq_input_array_trafo = {}
         for seq_field in self.seq_fields:
             special_type = _get_specialtype(dataloader_obj, seq_field)
@@ -219,11 +220,13 @@ class ModelInfoExtractor(object):
             if (special_type is None) or (special_type == kipoi.components.ArraySpecialType.DNASeq):
                 dna_seq_trafo = ReshapeDna(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = OneHotSequenceMutator(dna_seq_trafo)
+                self.seq_to_str_converter[seq_field] = OneHotSeqExtractor(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
             if special_type == kipoi.components.ArraySpecialType.DNAStringSeq:
                 dna_seq_trafo = ReshapeDnaString(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = DNAStringSequenceMutator(dna_seq_trafo)
+                self.seq_to_str_converter[seq_field] = StrSeqExtractor(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
             self.seq_input_metadata[seq_field] = _get_metadata_name(dataloader_obj, seq_field)
@@ -356,6 +359,49 @@ def _get_dl_bed_fields(dataloader):
         return None
     else:
         return dataloader.postprocessing.variant_effects.bed_input
+
+class OneHotSeqExtractor(object):
+    alphabet = ['A', 'C', 'G', 'T']
+
+    def __init__(self, array_trafo=None):
+        self.array_trafo = array_trafo
+
+    def to_str(self, input_set, is_rc):
+        # input_set: the input sequence in one-hot encoded format
+        # is_rc: list of binary value indicating if samples are reverse-complemented
+        # returns the list of sequences in string representation, if it is_rc was True then the input sequence was rc'd
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        # input_set should now be [N_samples, seq_len, 4]
+        str_sets = []
+        for rcd, sample_i in zip(is_rc, range(len(input_set[0]))):
+            str_set = np.empty(input_set.shape[1], dtype=str)
+            str_set[:] = "N"
+            conv_seq = input_set[sample_i,...]
+            if rcd:
+                # If the sequence was in reverse complement then convert it to fwd.
+                conv_seq = conv_seq[::-1, ::-1]
+            for i, letter in enumerate(self.alphabet):
+                str_set[conv_seq[:,i]==1] = letter
+            str_sets.append("".join(str_set.tolist()))
+        return str_sets
+
+
+class StrSeqExtractor(object):
+    def __init__(self, array_trafo=None):
+        self.array_trafo = array_trafo
+
+    def to_str(self, input_set, is_rc):
+        # input_set: the input sequence in string sequence format
+        # is_rc: list of binary value indicating if samples are reverse-complemented
+        # returns the list of sequences in string representation
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        # convert all sequences to forward direction
+        if any(is_rc):
+            input_set = [rc_str(conv_seq) if rcd else conv_seq for rcd, conv_seq in zip(is_rc, input_set)]
+        return input_set
+
 
 
 class VariantLocalisation(object):
