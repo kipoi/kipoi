@@ -191,6 +191,7 @@ def cli_export(cmd, raw_args):
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
+    import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -201,7 +202,7 @@ def cli_create(cmd, raw_args):
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
-    tmpdir = "/tmp/kipoi/envfiles"
+    tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
 
