@@ -153,6 +153,26 @@ def load_model_custom(file, object):
 class GradientMixin():
 
     def input_grad(self, x, layer, filter_ind):
+        """
+        Calculate the input-layer gradient for filter `filter_ind` for layer `layer` with respect to `x`.
+        
+        # Arguments
+            x: model input
+            layer: layer from which backwards the gradient should be calculated
+            filter_ind: filter index of `layer` for which the gradient should be returned
+        """
+        raise NotImplementedError
+
+    def input_grad_avg(self, x, layer, avg_func):
+        """
+        Calculate the input-layer gradient for layer `layer` with respect to `x`, averaging over the filters with
+        the averaging function `avg_func`.
+        
+        # Arguments:
+            x: model input
+            layer: layer from which backwards the gradient should be calculated
+            avg_func: averaging function to be applied across filters in layer `layer`
+        """
         raise NotImplementedError
 
 
@@ -225,8 +245,25 @@ class KerasModel(BaseModel, GradientMixin):
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
 
-    def __generate_direct_saliency_functions__(self, layer, filter_slices=None,
-                                               filter_func=None, filter_func_kwargs=None):
+    def get_layer(self, layer):
+        if isinstance(layer, int):
+            ret_layer = self.model.get_layer(index = layer)
+        elif isinstance(layer, six.string_types):
+            ret_layer = self.model.get_layer(name = layer)
+        return ret_layer
+
+    def __get_direct_saliency_functions(self, layer, layer_output_node = None, filter_slices=None,
+                                        filter_func=None, filter_func_kwargs=None):
+        """
+        Get keras saliency functions according to argument specifications
+         
+        # Arguments:
+            layer: Layer with respect to which the input gradients should be returned
+            filter_slices: Selection of filters in `layer` that should be taken into consideration
+            filter_func: Function to be applied on *_all_* filters of `layer`. If both `filter_slices` and
+                `filter_func` are defined, then only `filter_func` will be used!
+        """
+
         import copy
         from keras import backend as K
         # Generate the gradient functions according to the layer / filter definition
@@ -238,8 +275,18 @@ class KerasModel(BaseModel, GradientMixin):
         if filter_id not in self.gradient_functions[layer]:
             # Copy input so that the model definition is not altered
             inp = copy.copy(self.model.inputs)
-            # Get selected layer outputs
-            filters = self.model.layers[layer].output
+            # Get selected layer outputs from the nodes if specified
+            if layer_output_node is None:
+                try:
+                    filters = self.get_layer(layer).output
+                except AttributeError:
+                    #all_filters = []
+                    #for i in range(len(self.get_layer(layer)._inbound_nodes)):
+                    #    all_filters.append(self.get_layer(layer).get_output_at(i))
+                    raise Exception("Layer %s has multiple input nodes, please specify `layer_output_node` to select"
+                                    "from which node data should be used.")
+            else:
+                filters = self.get_layer(layer).get_output_at(layer_output_node)
             if filter_slices is not None:
                 sel_filter = filters[filter_slices]
             elif filter_func is not None:
@@ -254,6 +301,15 @@ class KerasModel(BaseModel, GradientMixin):
                 inp.append(K.learning_phase())
             self.gradient_functions[layer][filter_id] = K.function(inp, saliency)
         return self.gradient_functions[layer][filter_id]
+
+
+    ### In order to select a model output prior to activation do:
+    """
+    x = model.output.owner.inputs[0] # Theano
+    func = K.function([model.input] + [K.learning_phase()], [x])
+    print func([test_input, 0.])
+    #For anyone using TensorFlow backend: use x = model.output.op.inputs[0] instead
+    """
 
     def _input_grad(self, x, layer, filter_slices=None, filter_func=None, filter_func_kwargs=None):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
@@ -272,7 +328,7 @@ class KerasModel(BaseModel, GradientMixin):
             ins = x + [0.]
         else:
             ins = x
-        gf = self.__generate_direct_saliency_functions__(layer, filter_slices, filter_func, filter_func_kwargs)
+        gf = self.__get_direct_saliency_functions(layer, filter_slices, filter_func, filter_func_kwargs)
         outputs = gf(ins)
         if len(outputs) == 1:
             return outputs[0]
