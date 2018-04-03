@@ -390,6 +390,10 @@ class MutationMapDataMerger(object):
                     for scoring_fn in predictions:
                         assert predictions[scoring_fn].shape[0] == predictions_rowfilt.shape[0]
                         metadata_mutmap[scoring_fn] = {}
+                        # check if output labels are not unique
+                        if len(set(predictions[scoring_fn].columns)) != predictions[scoring_fn].shape[1]:
+                            predictions[scoring_fn].columns = ["%s_%d"%(d, i) for i, d in enumerate(predictions[scoring_fn].columns)]
+                            logger.warn("Model output labels are not unique! appending the column number.")
                         for model_output in predictions[scoring_fn]:
                             mutmap_dict = {}
                             preds = predictions[scoring_fn][model_output].loc[predictions_rowfilt].loc[correct_order_ids].values
@@ -436,8 +440,8 @@ class MutationMapDrawer(object):
 
 
     def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale = False,
-                    cmap = plt.cm.bwr):
-        from concise.preprocessing.sequence import encodeDNA
+                    cmap = plt.cm.bwr, limit_region = None):
+        from .utils.seqplotting_deps import encodeDNA
         mm_obj = self.mutation_map[dl_entry][model_seq_key][scoring_key][model_output]
 
         # Derive letter heights from the mutation scores.
@@ -445,8 +449,8 @@ class MutationMapDrawer(object):
         # letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].sum(axis=0))[:,None]
         letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].mean(axis=0))[:, None]
 
-        return seqlogo_heatmap(letter_heights, mm_obj['mutation_map'], vocab="DNA", ax = ax,
-                               show_letter_scale = show_letter_scale, cmap=cmap)
+        return seqlogo_heatmap(letter_heights, mm_obj['mutation_map'], mm_obj['ovlp_var'], vocab="DNA", ax = ax,
+                               show_letter_scale = show_letter_scale, cmap=cmap, limit_region =limit_region)
 
 
 

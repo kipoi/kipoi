@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.collections import PatchCollection
-from concise.utils.plot import add_letter_to_axis, VOCABS, letter_polygons
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from .seqplotting_deps import add_letter_to_axis, VOCABS, letter_polygons
 
 
 
@@ -21,8 +20,8 @@ def center_cmap(cmap, vmax, vmin, center):
 
 
 
-def seqlogo_heatmap(letter_heights, heatmap_data, vocab="DNA", ax=None, show_letter_scale = False, cmap = plt.cm.bwr,
-                    cbar = True, cbar_kws = None, cbar_ax = None):
+def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var = None, vocab="DNA", ax=None, show_letter_scale = False,
+                    cmap = plt.cm.bwr, cbar = True, cbar_kws = None, cbar_ax = None, limit_region = None):
     """
     Plot heatmap and seqlogo plot together in one axis.
     
@@ -105,6 +104,30 @@ def seqlogo_heatmap(letter_heights, heatmap_data, vocab="DNA", ax=None, show_let
     ax.spines['top'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.autoscale_view()
+
+    if ovlp_var is not None:
+        # for every variant draw a rectangle
+        for rel_pos, var_id, ref, alt in zip(ovlp_var["varpos_rel"], ovlp_var["id"], ovlp_var["ref"], ovlp_var["alt"]):
+            # positions of ref and alt on the heatmap
+            y_ref_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(ref[0])
+            y_alt_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(alt[0])
+            # box drawing
+            box_width = len(ref)
+            y_lowlim = min(y_ref_lowlim, y_alt_lowlim)
+            box_height = np.abs(y_ref_lowlim - y_alt_lowlim) + 1
+            ax.add_patch(
+                mpatches.Rectangle((rel_pos + 0.5, y_lowlim), box_width, box_height, fill=False, lw=2, ec="black"))
+            # annotate the box
+            ax.annotate(var_id, xy=(rel_pos + box_width + 0.5, y_lowlim + box_height/2),
+                        xytext=(rel_pos + box_width + 0.5 + 2, -vocab_len / 2), arrowprops=dict(arrowstyle="->",
+                                                                                                connectionstyle="arc"),
+                        bbox=dict(boxstyle="round,pad=.5", fc="0.9", alpha=0.7))
+
+    if limit_region is not None:
+        if not isinstance(limit_region, tuple):
+            raise Exception("limit_region has to be tuple of (x_min, x_max)")
+        ax.set_xlim(limit_region)
+
     if cbar:
         ### Colorbar settings adapted from seaborn._HeatMapper implementation
         import matplotlib as mpl
