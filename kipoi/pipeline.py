@@ -103,7 +103,7 @@ class Pipeline(object):
         """
         pred_list = [batch for batch in tqdm(self.predict_generator(dataloader_kwargs,
                                                                     batch_size, **kwargs))]
-        return numpy_collate_concat(numpy_collate_concat(pred_list))
+        return numpy_collate_concat(pred_list)
 
     def predict_generator(self, dataloader_kwargs, batch_size=32, **kwargs):
         """Prediction generator
