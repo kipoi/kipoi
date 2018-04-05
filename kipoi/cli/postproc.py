@@ -246,6 +246,9 @@ def cli_score_variants(command, raw_args):
                              "individual JSONs are expected to be supplied in the same order as the labels defined in "
                              "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
                              "scoring method.")
+    parser.add_argument('-l', "--seq_length", type=int, default=None,
+                        help="Optional parameter: Model input sequence length - necessary if the model does not have a "
+                             "pre-defined input sequence length.")
 
     args = parser.parse_args(raw_args)
 
@@ -292,6 +295,7 @@ def cli_score_variants(command, raw_args):
 
     # Load effect prediction related model info
     model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
+    manual_seq_len = args.seq_length
 
     # Select the appropriate region generator
     if args.restriction_bed is not None:
@@ -302,7 +306,7 @@ def cli_score_variants(command, raw_args):
                     'Only defined regions will be tested.')
     elif model_info.requires_region_definition:
         # Select the SNV-centered region generator
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
         logger.info('Using variant-centered sequence generation.')
     else:
         # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary

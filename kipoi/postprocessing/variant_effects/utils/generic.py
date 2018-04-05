@@ -135,11 +135,19 @@ class RegionGenerator(object):
 
 
 class SnvCenteredRg(RegionGenerator):
-    def __init__(self, model_info_extractor):
+    def __init__(self, model_info_extractor, seq_length = None):
+        """
+        Arguments:
+            model_info_extractor: ModelInfoExtractor object.
+            seq_length: Not required parameter: Sequence length in case model has variable sequence length input
+        """
         super(SnvCenteredRg, self).__init__(model_info_extractor)
-        self.seq_length = model_info_extractor.get_seq_len()
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("SnvCenteredRg cannot be used when model input sequence length is not defined!")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -156,12 +164,15 @@ class SnvCenteredRg(RegionGenerator):
 
 
 class SnvPosRestrictedRg(RegionGenerator):
-    def __init__(self, model_info_extractor, pybed_def):
+    def __init__(self, model_info_extractor, pybed_def, seq_length = None):
         super(SnvPosRestrictedRg, self).__init__(model_info_extractor)
         self.tabixed = pybed_def.tabix(in_place=False)
-        self.seq_length = model_info_extractor.get_seq_len()
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("SnvPosRestrictedRg cannot be used when model input sequence length is not defined!")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
