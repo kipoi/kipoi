@@ -150,28 +150,22 @@ def load_model_custom(file, object):
     return getattr(load_module(file), object)
 
 
-class GradientMixin():
+class GradientMixin(object):
+    __metaclass__ = abc.ABCMeta
 
-    def input_grad(self, x, layer, filter_ind):
+    @abc.abstractmethod
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True):
         """
-        Calculate the input-layer gradient for filter `filter_ind` for layer `layer` with respect to `x`.
-        
+        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
+        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+
         # Arguments
             x: model input
-            layer: layer from which backwards the gradient should be calculated
             filter_ind: filter index of `layer` for which the gradient should be returned
-        """
-        raise NotImplementedError
-
-    def input_grad_avg(self, x, layer, avg_func):
-        """
-        Calculate the input-layer gradient for layer `layer` with respect to `x`, averaging over the filters with
-        the averaging function `avg_func`.
-        
-        # Arguments:
-            x: model input
-            layer: layer from which backwards the gradient should be calculated
-            avg_func: averaging function to be applied across filters in layer `layer`
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            wrt_layer: layer from which backwards the gradient should be calculated
+            wrt_final_layer: Use the final (classification) layer as `wrt_layer`
         """
         raise NotImplementedError
 
@@ -222,7 +216,7 @@ class KerasModel(BaseModel, GradientMixin):
 
         self.weights = weights
         self.arch = arch
-
+        self.final_layer_gradient_function = None
         self.gradient_functions = {}
         if arch is None:
             # load the whole model
@@ -245,73 +239,197 @@ class KerasModel(BaseModel, GradientMixin):
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
 
-    def get_layer(self, layer):
-        if isinstance(layer, int):
-            ret_layer = self.model.get_layer(index = layer)
-        elif isinstance(layer, six.string_types):
-            ret_layer = self.model.get_layer(name = layer)
-        return ret_layer
-
-    def __get_direct_saliency_functions(self, layer, layer_output_node = None, filter_slices=None,
-                                        filter_func=None, filter_func_kwargs=None):
+    def get_layers_and_outputs(self, layer = None, use_final_layer=False):
         """
-        Get keras saliency functions according to argument specifications
+        Get layers and outputs either by name / index or from the final layer(s).
+        If the final layer should be used it has an activation function that is not Linear, then the input to the
+        activation function is returned. This check is not performed when `use_final_layer` is False and `layer`
+        is being used.
+        
+        Arguments:
+            layer: layer index (int) or name (non-int)
+            use_final_layer:  instead of using `layer` return the final model layer(s) + outputs
+        """
+        import keras
+        sel_outputs = []
+        sel_output_dims = []
+
+        # If the final layer should be used:
+        if use_final_layer:
+            # Use outputs from the model output layer(s)
+            # If the last layer should be selected automatically then:
+            # get all outputs from the model output layers
+            if isinstance(self.model, keras.models.Sequential):
+                selected_layers = [self.model.layers[-1]]
+            else:
+                selected_layers = self.model.output_layers
+            for l in selected_layers:
+                for i in range(self.get_num_inbound_nodes(l)):
+                    layer_output = self.get_pre_activation_output(l, l.get_output_at(i))
+                    sel_output_dims.append(len(l.get_output_shape_at(i)))
+                    sel_outputs.extend(layer_output)
+        # If not the final layer then the get the layer by its name / index
+        elif layer is not None:
+            if isinstance(layer, int):
+                selected_layer = self.model.get_layer(index=layer)
+            elif isinstance(layer, six.string_types):
+                selected_layer = self.model.get_layer(name=layer)
+            selected_layers = [selected_layer]
+            # get the outputs from all nodes of the selected layer (selecting output from individual output nodes
+            # creates None entries when running K.gradients())
+            if self.get_num_inbound_nodes(selected_layer) > 1:
+                logger.warn("Layer %s has multiple input nodes. By default outputs from all nodes "
+                            "are concatenated" % selected_layer.name)
+                for i in range(self.get_num_inbound_nodes(selected_layer)):
+                    sel_output_dims.append(len(selected_layer.get_output_shape_at(i)))
+                    sel_outputs.append(selected_layer.get_output_at(i))
+            else:
+                sel_output_dims.append(len(selected_layer.output_shape))
+                sel_outputs.append(selected_layer.output)
+        else:
+            raise Exception("Either use_final_layer has to be set or a layer name has to be defined.")
+
+        return selected_layers, sel_outputs, sel_output_dims
+
+    @staticmethod
+    def get_pre_activation_output(layer, output):
+        import keras
+        # if the current layer uses an activation function then grab the input to the activation function rather
+        # than the output from the activation function.
+        # This can lead to confusion if the activation function translates to backend operations that are not a
+        # single operation. (Which would also be a misuse of the activation function itself.)
+        if not layer.activation == keras.activations.linear:
+            new_output_ois = []
+            if hasattr(output, "op"):
+                # TF
+                for inp_here in output.op.inputs:
+                    new_output_ois.append(inp_here)
+            else:
+                # TH
+                for inp_here in output.owner.inputs:
+                    new_output_ois.append(inp_here)
+            return new_output_ois
+        else:
+            return [output]
+
+    @staticmethod
+    def get_num_inbound_nodes(layer):
+        if hasattr(layer, "_inbound_nodes"):
+            # Keras 2.1.5
+            return len(layer._inbound_nodes)
+        elif hasattr(layer, "inbound_nodes"):
+            # Keras 2.0.4
+            return len(layer.inbound_nodes)
+        else:
+            raise Exception("No way to find out about number of inbound Nodes")
+
+
+    def _get_gradient_function(self, layer=None, use_final_layer = False, filter_slices=None,
+                               filter_func=None, filter_func_kwargs=None):
+        """
+        Get keras gradient function
          
         # Arguments:
-            layer: Layer with respect to which the input gradients should be returned
+            layer: Layer name or index with respect to which the input gradients should be returned
+            use_final_layer: Alternative to `layer`, if the final layer should be used. In this case `layer` can be None.
             filter_slices: Selection of filters in `layer` that should be taken into consideration
-            filter_func: Function to be applied on *_all_* filters of `layer`. If both `filter_slices` and
-                `filter_func` are defined, then only `filter_func` will be used!
+            filter_func: Function to be applied on all filters of the selected layer. If both `filter_slices` and
+                `filter_func` are defined, then `filter_slices` will be applied first and then `filter_func`.
+            filter_func_kwargs: keyword argument dict passed on to `filter_func`
         """
-
+        import keras
         import copy
-        from keras import backend as K
+        from keras.models import Model
         # Generate the gradient functions according to the layer / filter definition
-        if layer not in self.gradient_functions:
-            self.gradient_functions[layer] = {}
-        filter_id = str(filter_slices)
-        if filter_func is not None:
-            filter_id = str(filter_func) + ":" + str(filter_func_kwargs)
-        if filter_id not in self.gradient_functions[layer]:
-            # Copy input so that the model definition is not altered
+        gradient_function = None
+
+
+        # Try to use a previously generated gradient function
+        if use_final_layer:
+            if self.final_layer_gradient_function is not None:
+                gradient_function = self.final_layer_gradient_function
+        elif layer is None:
+            raise Exception("Either `layer` must be defined or `use_final_layer` set to True.")
+        else:
+            if layer not in self.gradient_functions:
+                self.gradient_functions[layer] = {}
+            filter_id = str(filter_slices)
+            if filter_func is not None:
+                filter_id = str(filter_func) + ":" + str(filter_func_kwargs)
+            if filter_id in self.gradient_functions[layer]:
+                gradient_function = self.gradient_functions[layer][filter_id]
+
+        if gradient_function is None:
+            # model layer outputs wrt which the gradient shall be calculated
+            selected_layers, sel_outputs, sel_output_dims = self.get_layers_and_outputs(layer = layer,
+                                                                                        use_final_layer=use_final_layer)
+
+            # copy the model input in case learning flag has to appended when using the gradient function.
             inp = copy.copy(self.model.inputs)
-            # Get selected layer outputs from the nodes if specified
-            if layer_output_node is None:
-                try:
-                    filters = self.get_layer(layer).output
-                except AttributeError:
-                    #all_filters = []
-                    #for i in range(len(self.get_layer(layer)._inbound_nodes)):
-                    #    all_filters.append(self.get_layer(layer).get_output_at(i))
-                    raise Exception("Layer %s has multiple input nodes, please specify `layer_output_node` to select"
-                                    "from which node data should be used.")
+
+            # Now check if layer outputs have to be concatenated (multiple input nodes in the respective layer)
+            has_concat_output = False
+            if len(sel_outputs) > 1:
+                has_concat_output = True
+                # Flatten layers in case dimensions don't match
+                all_filters_flat = [keras.layers.Flatten()(x) if dim > 2 else x for x, dim in
+                                    zip(sel_outputs, sel_output_dims)]
+                # A new model has to be generated in order for the concatenated layer output to have a defined layer output
+                if hasattr(keras.layers, "Concatenate"):
+                    # Keras 2
+                    all_filters_merged = keras.layers.Concatenate(axis=-1)(all_filters_flat)
+                    gradient_model = Model(inputs=inp, outputs=all_filters_merged)
+                else:
+                    # Keras 1
+                    all_filters_merged = keras.layers.merge(all_filters_flat, mode='concat')
+                    gradient_model = Model(input=inp, output=all_filters_merged)
+                # TODO: find a different way to get layer outputs...
+                #gradient_model.compile(optimizer=self.model.optimizer, loss=self.model.loss)
+                gradient_model.compile(optimizer='rmsprop', loss='binary_crossentropy')
+                # output of interest for a given gradient
+                output_oi = gradient_model.output
             else:
-                filters = self.get_layer(layer).get_output_at(layer_output_node)
+                output_oi = sel_outputs[0]
+
+            # Which subset of the selected layer outputs should be looked at?
             if filter_slices is not None:
-                sel_filter = filters[filter_slices]
-            elif filter_func is not None:
+                if has_concat_output:
+                    logger.warn("Filter slices have been defined for output selection from layers %s, but "
+                                "layer outputs of nodes had to be concatenated. This will potentially lead to undesired "
+                                "output - please take this concatenation into consideration when "
+                                "defining `filter_slices`." % str([l.name for l in selected_layers]))
+                output_oi = output_oi[filter_slices]
+
+            # Should a filter function be applied
+            if filter_func is not None:
                 if filter_func_kwargs is None:
                     filter_func_kwargs = {}
-                sel_filter = filter_func(filters, **filter_func_kwargs)
-            else:
+                output_oi = filter_func(output_oi, **filter_func_kwargs)
+
+            if (filter_slices is None) and (filter_func is None):
                 raise Exception("Either filter_slices or filter_func have to be set!")
-            # TODO: does Theano really require "sel_filter.sum()" instead of "sel_filter" here?
-            saliency = K.gradients(sel_filter, inp)
+
+            # generate the actual gradient function
+            from keras import backend as K
+            saliency = K.gradients(output_oi, inp)
+
             if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
                 inp.append(K.learning_phase())
-            self.gradient_functions[layer][filter_id] = K.function(inp, saliency)
-        return self.gradient_functions[layer][filter_id]
+
+            gradient_function = K.function(inp, saliency)
+
+            # store the generated gradient function:
+            if use_final_layer:
+                self.final_layer_gradient_function = gradient_function
+            else:
+                filter_id = str(filter_slices)
+                self.gradient_functions[layer][filter_id] = gradient_function
+
+        return gradient_function
 
 
-    ### In order to select a model output prior to activation do:
-    """
-    x = model.output.owner.inputs[0] # Theano
-    func = K.function([model.input] + [K.learning_phase()], [x])
-    print func([test_input, 0.])
-    #For anyone using TensorFlow backend: use x = model.output.op.inputs[0] instead
-    """
-
-    def _input_grad(self, x, layer, filter_slices=None, filter_func=None, filter_func_kwargs=None):
+    def _input_grad(self, x, layer=None, use_final_layer = False, filter_slices=None,
+                    filter_func=None, filter_func_kwargs=None):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
 
         # Arguments
@@ -328,17 +446,37 @@ class KerasModel(BaseModel, GradientMixin):
             ins = x + [0.]
         else:
             ins = x
-        gf = self.__get_direct_saliency_functions(layer, filter_slices, filter_func, filter_func_kwargs)
+        gf = self._get_gradient_function(layer, use_final_layer= use_final_layer, filter_slices=filter_slices,
+                                         filter_func=filter_func, filter_func_kwargs=filter_func_kwargs)
         outputs = gf(ins)
         if len(outputs) == 1:
             return outputs[0]
         return outputs
 
-    def pred_grad(self, x, output_slice):
-        return self._input_grad(x, -1, output_slice)
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True):
+        """
+        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
+        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+
+        # Arguments
+            x: model input
+            filter_ind: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            wrt_layer: layer from which backwards the gradient should be calculated
+            wrt_final_layer: Use the final (classification) layer as `wrt_layer`
+        """
+        import keras.backend as K
+        _avg_funcs = {"sum": K.sum, "min": K.min, "max": K.max, "absmax": lambda x: K.max(K.abs(x))}
+        if avg_func is not None:
+            assert avg_func in _avg_funcs
+            avg_func = _avg_funcs[avg_func]
+        return self._input_grad(x, layer=wrt_layer, filter_slices=filter_ind, use_final_layer = wrt_final_layer,
+                                filter_func=avg_func)
 
 
-class PyTorchModel(BaseModel):
+
+class PyTorchModel(BaseModel, GradientMixin):
     """Loads a pytorch model. 
 
     """
@@ -398,6 +536,9 @@ class PyTorchModel(BaseModel):
 
         # Assuming that model should be used for predictions only
         self.model.eval()
+
+        # Keep all gradient hooks in a list
+        self.grad_hooks = []
 
     @staticmethod
     def correct_neg_stride(x):
@@ -464,6 +605,209 @@ class PyTorchModel(BaseModel):
             raise Exception("Model output format not supported!")
 
         return pred_np
+
+    def get_layer(self, index):
+        """
+        Get layer (module) based on index: index for sequentials is e.g.: '1.5.1', for models defined as sublcasses of
+        nn.Module it's the class object variable names
+        """
+        # index for sequentials is e.g.: '1.5.1', for models defined as sublcasses of nn.Module it's the class object
+        # variable names
+        for idx, m in self.model.named_modules():
+            if idx == index:
+                return m
+
+    def get_layer_id(self, layer):
+        for idx, m in self.model.named_modules():
+            if m == layer:
+                return idx
+
+    @staticmethod
+    def extract_module_id(trace_node_obj):
+        import re
+        sqb_restr = r"\[([A-Za-z0-9_]+)\]"
+        scopeName = trace_node_obj.scopeName()
+        idx_name = ".".join([re.search(sqb_restr, grp).group(1) for grp in
+                             scopeName.split("/") if re.search(sqb_restr, grp) is not None])
+        return idx_name
+
+    @staticmethod
+    def _is_nonlinear_activation(layer):
+        import torch
+        import torch.nn.modules.activation as tact
+        import inspect
+        activation_modules = []
+        activation_module_names = []
+        for mod_name, mod in tact.__dict__.items():
+            if inspect.isclass(mod) and issubclass(mod, torch.nn.Module):
+                if mod != torch.nn.Module:
+                    activation_modules.append(mod)
+                    activation_module_names.append(mod_name)
+        # This will also catch instances of subclasses
+        return any([isinstance(layer, mod) for mod in activation_modules])
+
+    def _get_trace(self, x):
+        import torch
+        trace, _ = torch.jit.trace(self.model, args=x)
+        return trace
+
+    def get_last_layers(self, x):
+        """
+        Returns the model output layers
+        x must be a pytorch Variable compatible with the model input
+        """
+        trace= self._get_trace(x)
+        layer_idxs =  [self.extract_module_id(n) for n in trace.graph().outputs()]
+        return [self.get_layer(i) for i in layer_idxs]
+
+    def get_next_layers(self, x, layer_id):
+        layer_output_unames = []  # unique names of layer outputs (data streams)
+        trace = self._get_trace(x)
+        # Iterate over all modules in the graph and remember the module outputs (so that they can be checked later)
+        for mod in trace.graph().nodes():
+            if self.extract_module_id(mod) == layer_id:
+                layer_output_unames += [n.uniqueName() for n in mod.outputs()]
+        # get the model output stream names
+        model_output_unames = [n.uniqueName() for n in trace.graph().outputs()]
+        # get the layer ids that receive data from layer_id
+        next_layer_ids = []
+        for mod in trace.graph().nodes():
+            this_layer_inputs = [n.uniqueName() for n in mod.inputs()]
+            if any([iuname in layer_output_unames for iuname in this_layer_inputs]):
+                next_layer_ids.append(self.extract_module_id(mod))
+        # some values are fed back to the layer itself.
+        next_layer_ids = [lid for lid in next_layer_ids if lid != layer_id]
+        # layers receiving from the given layer, is the layer (also) an output leaf node
+        return next_layer_ids, [self.get_layer(i) for i in next_layer_ids], \
+               any([iuname in layer_output_unames for iuname in model_output_unames])
+
+
+    class GradSliceHook(object):
+        allowed_functions = ["sum", "max", "min", "absmax"]
+
+        def __init__(self, filter_slices=None, filter_func=None):
+            import six
+            if (filter_slices is None) and (filter_func is None):
+                raise Exception("Either filter slices or filter function have to be defined")
+            self.filter_slices = filter_slices
+            if filter_func is not None:
+                if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+                    raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
+            self.filter_func = filter_func
+            self.forward_values = None
+            self.requires_fwd_hook = self.filter_func in ["min", "max", "absmax"]
+            self.hooks = []
+
+        def self_register(self, layer):
+            if self.requires_fwd_hook:
+                self.hooks.append(layer.register_forward_hook(self.run_fwd_hook))
+            self.hooks.append(layer.register_backward_hook(self.run_backward_hook))
+
+        def run_fwd_hook(self, module, input, output):
+            """
+            Hook compatible with register_forward_hook(). Necessary to store layer output.
+            """
+            self.forward_values = output
+
+        def _get_grad_tens(self, grad_in):
+            import torch
+            grad_tens = torch.zeros(grad_in.size())
+            # perform given operations in numpy, simpler implementation...
+            pt_filt_slice = torch.ByteTensor(*grad_in.size())
+            filter_slices = self.filter_slices
+            filter_func = self.filter_func
+            if filter_slices is not None:
+                pt_filt_slice[:] = 0
+                pt_filt_slice[filter_slices] = 1
+            if filter_func == "sum":
+                # don't do anything and keep the filter mask
+                pass
+            else:
+                # TODO: proper type checking so that multiplication doesn't fail
+                float_mask = pt_filt_slice.float()
+                subset_dataset = self.forward_values * float_mask
+                pt_filt_slice_new = torch.ByteTensor(*pt_filt_slice.size()).zero_()
+                if self.filter_func == "max":
+                    # reset so that the masked values are the minimum
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.min()
+                    # Find the maximum output value among the selected
+                    for i in range(subset_dataset.shape[0]):
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].max()
+                elif self.filter_func == "min":
+                    # reset so that the masked values are the maximum
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.max()
+                    # Find the minimum value among the selected
+                    for i in range(subset_dataset.shape[0]):
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].min()
+                elif self.filter_func == "absmax":
+                    # Find the absmax value among the selected
+                    for i in range(subset_dataset.shape[0]):
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].abs().max()
+                pt_filt_slice = pt_filt_slice_new
+            # TODO: again type checking!
+            return pt_filt_slice.float()
+
+        def run_backward_hook(self, module, grad_input, grad_output):
+            """
+            Hook for register_backward_hook(). Pass the grad_output value on to reset gradient tensor with same shape
+            """
+            return self._get_grad_tens(grad_output)
+
+        def query_grad_tens(self, pred_value, grad_tens):
+            """
+            This method can be used for generating a gradient tensor for 
+            """
+            if self.requires_fwd_hook:
+                self.forward_values = pred_value
+            return self._get_grad_tens(grad_tens)
+
+        def remove_hooks(self):
+            for hook in self.hooks:
+                hook.remove()
+            self.hooks = []
+
+        def __del__(self):
+            self.remove_hooks()
+
+
+    def _input_grad(self, x, layer=None, use_final_layer = False, filter_slices=None,
+                    filter_func=None, filter_func_kwargs=None):
+        # When using final layer check if the respective layer is a non-linear activation function. If not use
+        # the gradient from the model output, otherwise reset the gradient of the activation function.
+        if use_final_layer:
+            selected_layers = self.get_last_layers(x)
+            if len(selected_layers) > 1:
+                # Concatenate
+                raise Exception("Concatenation needed or setting of specific value")
+            else:
+                # Generate a tensor of the right shape, or make an intelligent hook
+                if not self._is_nonlinear_activation(selected_layers[0]):
+                    #the model output can be used for gradient backprop
+                    pass
+                else:
+                    # a hook has to be used.
+                    layer_id = self.get_layer_id(layer)
+                    next_layer_ids, next_layers, is_model_output = self.get_next_layers(x, layer_id)
+                    # gradient hook: the backward hook has to be set one layer above, or can we run autograd on the layer
+                    # itself and thus spare us from treating output layers differently and not have to look for the parent
+
+
+
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True):
+        """
+        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
+        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+
+        # Arguments
+            x: model input
+            filter_ind: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            wrt_layer: layer from which backwards the gradient should be calculated
+            wrt_final_layer: Use the final (classification) layer as `wrt_layer`
+        """
+        return self._input_grad(x, layer=wrt_layer, filter_slices=filter_ind, use_final_layer = wrt_final_layer,
+                                filter_func=avg_func)
 
 
 class SklearnModel(BaseModel):
