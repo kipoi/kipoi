@@ -42,6 +42,9 @@ def _generate_records_for_all_regions(regions, ref_seq):
             fmt = None
             sample_indexes = None
             for alt in ["A", "C", "G", "T"]:
+                # skip REF/REF variants - they should always be 0 anyways.
+                if ref == alt:
+                    continue
                 ID = ":".join([chrom, str(pos), ref.upper(), alt])
                 record = _Record(chrom, pos, ID, ref.upper(), [_Substitution(alt)], qual, filt, info, fmt,
                                  sample_indexes)
@@ -378,14 +381,18 @@ class MutationMapDataMerger(object):
                         query_vcf_recs_rel["alt"].append(rec.ALT)
                         query_vcf_recs_rel["id"].append(rec.ID)
                         query_vcf_recs_rel["varpos_rel"].append(int(rec.POS) - metadata_start)
-                    # check that number of variants matches the number of bases *4
-                    assert predictions_rowfilt.sum() == metadata_seqlen *4
+                    # check that number of variants matches the number of bases *3
+                    assert predictions_rowfilt.sum() == metadata_seqlen *3
                     # generate the ids to get the right order of predictions:
                     correct_order_ids = []
+                    # REF/REF was not generated, so those can be appended to the results
+                    ref_ref_var_ids = []
                     for pos, ref in zip(range(metadata_start+1, metadata_end+1), ref_seq_here):
                         for alt in ["A", "C", "G", "T"]:
                             ID = ":".join([metadata_chrom, str(pos), ref.upper(), alt])
                             correct_order_ids.append(ID)
+                            if ref == alt:
+                                ref_ref_var_ids.append(ID)
                     metadata_mutmap = {}
                     for scoring_fn in predictions:
                         assert predictions[scoring_fn].shape[0] == predictions_rowfilt.shape[0]
@@ -396,7 +403,11 @@ class MutationMapDataMerger(object):
                             logger.warn("Model output labels are not unique! appending the column number.")
                         for model_output in predictions[scoring_fn]:
                             mutmap_dict = {}
-                            preds = predictions[scoring_fn][model_output].loc[predictions_rowfilt].loc[correct_order_ids].values
+                            preds = predictions[scoring_fn][model_output].loc[predictions_rowfilt]
+                            # append predictions for ref/ref variants:
+                            ref_ref_preds = pd.Series(0, name= preds.name, index=ref_ref_var_ids)
+                            preds = pd.concat([preds, ref_ref_preds])
+                            preds = preds.loc[correct_order_ids].values
                             mutmap_dict["mutation_map"] = np.reshape(preds, (metadata_seqlen, 4)).T
                             mutmap_dict["ovlp_var"] = query_vcf_recs_rel
                             mutmap_dict["ref_seq"] = ref_seq_here
@@ -415,15 +426,6 @@ class MutationMapDataMerger(object):
         ofh = h5py.File(fname, "w")
         recursive_h5_mutmap_writer(res, ofh)
         ofh.close()
-
-
-    def from_file(self, fname):
-        fh = h5py.File(fname, "r")
-        recovered = recursive_h5_mutmap_reader(fh)
-        recovered = [recovered["_list_%d"%i] for i in range(len(recovered))]
-        self.mutation_map = recovered
-        fh.close()
-
 
 
 class MutationMapDrawer(object):
@@ -492,18 +494,18 @@ def recursive_h5_mutmap_reader(handle):
 
 
 
-def mutation_map(model,
-                 dataloader,
-                 vcf_fpath,
-                 batch_size,
-                 num_workers=0,
-                 dataloader_args=None,
-                 vcf_to_region=None,
-                 vcf_id_generator_fn=default_vcf_id_gen,
-                 evaluation_function=analyse_model_preds,
-                 evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
-                 use_dataloader_example_data=False,
-                 ):
+def generate_mutation_map(model,
+                          dataloader,
+                          vcf_fpath,
+                          batch_size,
+                          num_workers=0,
+                          dataloader_args=None,
+                          vcf_to_region=None,
+                          vcf_id_generator_fn=default_vcf_id_gen,
+                          evaluation_function=analyse_model_preds,
+                          evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
+                          use_dataloader_example_data=False,
+                          ):
     """Predict the effect of SNVs
 
             Prediction of effects of SNV based on a VCF. If desired the VCF can be stored with the predicted values as

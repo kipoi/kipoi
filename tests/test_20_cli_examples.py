@@ -219,6 +219,70 @@ def test_predict_variants_example(example, tmpdir):
                     tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
 
 
+@pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
+def test_generate_mutation_maps_example(example, tmpdir):
+    """kipoi predict ...
+    """
+    if (example not in {"rbp"}) or (sys.version_info[0] == 2):
+        pytest.skip("Only rbp example testable at the moment, which only runs on py3")
+
+    example_dir = "examples/{0}".format(example)
+
+    tmpdir_here = tmpdir.mkdir("example")
+
+    restricted_bed = False
+    print(example)
+    print("tmpdir: {0}".format(tmpdir))
+    mm_tmpfile = str(tmpdir_here.join("out_mm.hdf5"))
+    plt_tmpfile = str(tmpdir_here.join("plot.png"))
+
+    dataloader_kwargs = {"fasta_file": example_dir + "/example_files/hg38_chr22.fa",
+                         "preproc_transformer": example_dir + "/dataloader_files/encodeSplines.pkl",
+                         "gtf_file": example_dir + "/example_files/gencode_v25_chr22.gtf.pkl.gz",
+                         "intervals_file": example_dir + "/example_files/variant_intervals.tsv"}
+    import json
+    dataloader_kwargs_str = json.dumps(dataloader_kwargs)
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"),
+            "postproc",
+            "create_mutation_map",
+            #"./",  # directory
+            example_dir,
+            "--source=dir",
+            "--batch_size=4",
+            "--dataloader_args='%s'" % dataloader_kwargs_str,
+            "--vcf_path", example_dir + "/" + "example_files/first_variant.vcf",
+            "--output", mm_tmpfile]
+    # run the
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir) + "/../../")
+    assert returncode == 0
+
+    assert os.path.exists(mm_tmpfile)
+
+    # make the plot
+    args = ["python", os.path.abspath("./kipoi/__main__.py"),
+            "postproc",
+            "plot_mutation_map",
+            # "./",  # directory
+            example_dir,
+            "--input_file="+mm_tmpfile,
+            "--input_line=0",
+            "--model_seq_input=seq",
+            "--scoring_key=diff",
+            "--model_output=rbp_prb",
+            "--output", plt_tmpfile]
+
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir) + "/../../")
+    assert returncode == 0
+
+    assert os.path.exists(plt_tmpfile)
+
+
 def test_pull_kipoi():
     """Test that pull indeed pulls the right model
     """
