@@ -125,7 +125,7 @@ def write_model_yaml(root_path, cell_line):
     """
 
 	render_template(os.path.join(root_path, "template", "template_model.yaml"),
-	                os.path.join(root_dir, cell_line, "model.yaml"),
+	                os.path.join(root_path, cell_line, "model.yaml"),
 					context={"cell_line": cell_line},
 					mkdir=True)
 ```
