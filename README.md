@@ -1,5 +1,7 @@
 # Kipoi: Model zoo for genomics
 
+[![Join the chat at https://gitter.im/kipoi/kipoi-contribute](https://badges.gitter.im/kipoi/kipoi-contribute.svg)](https://gitter.im/kipoi/kipoi-contribute?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
 [![Join the chat at https://gitter.im/kipoi/kipoi-feedback](https://badges.gitter.im/kipoi/kipoi-feedback.svg)](https://gitter.im/kipoi/kipoi-feedback?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
