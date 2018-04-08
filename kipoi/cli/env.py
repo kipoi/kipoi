@@ -53,6 +53,11 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
                                for d in dataloader_name]
 
             env_name += "-DL-{0}".format(",".join(dataloader_name))
+
+    # limit the env name to 110 characters
+    if len(env_name) > 110:
+        logger.info("Environment name exceeds 110 characters. Limiting it to 110 characters")
+        env_name = env_name[:110]
     return env_name
 
 

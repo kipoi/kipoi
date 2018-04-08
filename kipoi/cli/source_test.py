@@ -271,7 +271,7 @@ def cli_test_source(command, raw_args):
                                             m))
         print('-' * 20)
         try:
-            env_name = conda_env_name(m, m, args.source)
+            env_name = conda_env_name(m, source=args.source)
             env_name = "test-" + env_name  # prepend "test-"
             test_model(m, args.source, env_name,
                        get_batch_size(cfg, m, args.batch_size))
