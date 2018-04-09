@@ -13,7 +13,7 @@ from kipoi.data_utils import numpy_collate
 # string_classes
 if sys.version_info[0] == 2:
     string_classes = basestring
-else:    
+else:
     string_classes = (str, bytes)
 
 if sys.version_info[0] == 2:
