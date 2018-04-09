@@ -38,8 +38,14 @@ class HDF5Reader(Reader):
         self.f = None
 
     def ls(self):
+        self._file_open()
         return list(_h5py_dataset_iterator(self.f))
 
+    def _file_open(self):
+        if self.f is None:
+            raise ValueError("File not opened. Please run self.open() or use the context manager" + \
+                             ": with HDF5Reader('file') as f: ...")
+            
     def load_all(self, unflatten=True):
         d = dict()
         for k, v in self.ls():
