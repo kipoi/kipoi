@@ -13,12 +13,14 @@ from kipoi.data_utils import numpy_collate
 # string_classes
 if sys.version_info[0] == 2:
     string_classes = basestring
-else:
+else:    
     string_classes = (str, bytes)
 
 if sys.version_info[0] == 2:
     import Queue as queue
+    from multiprocessing.queues import SimpleQueue
 else:
+    from multiprocessing import SimpleQueue
     import queue
 
 # default collate
@@ -104,8 +106,8 @@ class DataLoaderIter(object):
         self.sample_iter = iter(self.batch_sampler)
 
         if self.num_workers > 0:
-            self.index_queue = multiprocessing.SimpleQueue()
-            self.data_queue = multiprocessing.SimpleQueue()
+            self.index_queue = SimpleQueue()
+            self.data_queue = SimpleQueue()
             self.batches_outstanding = 0
             self.shutdown = False
             self.send_idx = 0
