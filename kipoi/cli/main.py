@@ -94,7 +94,7 @@ def cli_preproc(command, raw_args):
         kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
     Dataloader = kipoi.get_dataloader_factory(args.dataloader, args.source)
 
-    kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
+    dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
     dataloader = Dataloader(**dataloader_kwargs)
 
     it = dataloader.batch_iter(batch_size=args.batch_size, num_workers=args.num_workers)
@@ -159,7 +159,7 @@ def cli_predict(command, raw_args):
     else:
         Dl = model.default_dataloader
 
-    kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
+    dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
     dl = Dl(**dataloader_kwargs)
 
     # setup batching
