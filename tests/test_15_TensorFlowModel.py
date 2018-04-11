@@ -71,3 +71,15 @@ def test_loading():
                         )
     o = a.predict_on_batch(np.ones((3, 4)))
     assert o.shape == (3, 3)
+
+def test_activation_on_batch():
+    checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
+    const_feed_dict_pkl = "examples/iris_tensorflow/model_files/const_feed_dict.pkl"
+
+    # dict of variables
+    # input = list
+    a = TensorFlowModel(input_nodes="inputs",
+                        target_nodes="probas",
+                        checkpoint_path=checkpoint_path
+                        )
+    a.predict_activation_on_batch(np.ones((3, 4)), layer="logits")
