@@ -197,7 +197,7 @@ def cli_predict(command, raw_args):
         pred_batch = model.predict_on_batch(batch['inputs'])
 
         # write out the predictions, metadata (, inputs, targets)
-        output_batch = prepare_batch(batch, pred_batch)
+        output_batch = prepare_batch(batch, pred_batch, keep_inputs=args.keep_inputs)
         for writer in use_writers:
             writer.batch_write(output_batch)
 
