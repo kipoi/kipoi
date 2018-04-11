@@ -156,7 +156,7 @@ class GradientMixin():
         raise NotImplementedError
 
 
-class LayerPredictionMixin():
+class LayerActivationMixin():
 
     @abc.abstractmethod
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
@@ -172,7 +172,7 @@ class LayerPredictionMixin():
         """
         raise NotImplementedError
 
-class KerasModel(BaseModel, GradientMixin, LayerPredictionMixin):
+class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads the serialized Keras model
 
     # Arguments
@@ -454,7 +454,7 @@ class PytorchFwdHook(object):
         self.forward_values.append(output)
 
 
-class PyTorchModel(BaseModel, LayerPredictionMixin):
+class PyTorchModel(BaseModel, LayerActivationMixin):
     """Loads a pytorch model. 
 
     """
@@ -804,7 +804,7 @@ def get_op_outputs(graph, node_names):
                          format(type(node_names)))
 
 
-class TensorFlowModel(BaseModel, LayerPredictionMixin):
+class TensorFlowModel(BaseModel, LayerActivationMixin):
 
     MODEL_PACKAGE = "tensorflow"
 
