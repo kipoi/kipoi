@@ -68,7 +68,6 @@ jobs:
       - *install_kipoi
       - *kipoi_ls
       - *run_tests
-      - *run_coveralls
       - *store_test_results
       - *store_test_artifacts
           
