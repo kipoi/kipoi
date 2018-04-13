@@ -60,7 +60,15 @@ Model arguments define where the files are files and functions are located to in
 
 ### `keras` models
 
-For Keras models the following args are available: `weights`, `arch`, `custom_objects`. The Keras framework offers different ways to store model architecture and weights:
+For Keras models the following args are available:
+
+- `weights`: File path to the hdf5 weights or the hdf5 Keras model.
+- `arch`: Architecture json model. If None, `weights` is assumed to speficy the whole model
+- `custom_objects`: Python file defining the custom Keras objects in a `OBJECTS` dictionary
+- `backend`: Keras backend to use ('tensorflow', 'theano', 'cntk')
+- `image_dim_ordering`: `'tf'` or `'th'`: Whether the model was trained with using 'tf' ('channels_last') or 'th' ('cannels_first') dimension ordering.
+
+The Keras framework offers different ways to store model architecture and weights:
 
 * Architecture and weights can be stored separately:
 
@@ -88,7 +96,6 @@ from concise.layers import SplineT
 OBJECTS = {"SplineT": SplineT}
 ```
 
-
 Example of the corresponding model.yaml entry:
 ```yaml
 type: keras
@@ -97,6 +104,7 @@ args:
     custom_objects: model_files/custom_keras_objects.py
 ```
 Here all the objects present in `model_files/custom_keras_objects.py` will be made available to Keras when loading the model.
+
 
 ### `pytorch` models
 
