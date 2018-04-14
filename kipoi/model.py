@@ -177,12 +177,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     # Arguments
         weights: File path to the hdf5 weights or the hdf5 Keras model
-        arhc: Architecture json model. If None, `weights` is
+        arch: Architecture json model. If None, `weights` is
     assumed to speficy the whole model
         custom_objects: Python file defining the custom Keras objects
     in a `OBJECTS` dictionary
         backend: Keras backend to use ('tensorflow', 'theano', ...)
-
+        image_dim_ordering: 'tf' or 'th': Whether to use 'tf' ('channels_last')
+            or 'th' ('cannels_first') dimension ordering.
 
     # `model.yml` entry
 
@@ -198,11 +199,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "keras"
 
-    def __init__(self, weights, arch=None, custom_objects=None, backend=None):
+    def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
+        self.image_dim_ordering = image_dim_ordering
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
+        if self.image_dim_ordering is not None:
+            import keras.backend as K
+            logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
+            K.set_image_dim_ordering(self.image_dim_ordering)
         import keras
         from keras.models import model_from_json, load_model
 
