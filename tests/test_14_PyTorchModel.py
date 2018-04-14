@@ -8,7 +8,6 @@ import kipoi
 import pytest
 
 
-
 def check_same_weights(dict1, dict2):
     for k in dict1:
         if dict1[k].is_cuda:
@@ -69,6 +68,7 @@ def test_prediction_io():
     import torch
 
     class checking_model(torch.nn.Module):
+
         def __init__(self, original_input):
             super(checking_model, self).__init__()
             self.original_input = original_input
@@ -108,8 +108,9 @@ def test_prediction_io():
             assert all([np.all(el == el2) for el, el2 in zip(pred, m_expected)])
 
 
-###########  Test layer activation 
+# Test layer activation
 class DummyModel(nn.Module):
+
     def __init__(self):
         super(DummyModel, self).__init__()
         self.first = nn.Linear(1, 1)
@@ -125,6 +126,7 @@ class DummyModel(nn.Module):
 
 class PyTConvNet(torch.nn.Module):
     # Taken from https://github.com/vinhkhuc/PyTorch-Mini-Tutorials/blob/master/5_convolutional_net.py
+
     def __init__(self, output_dim):
         super(PyTConvNet, self).__init__()
         self.conv = torch.nn.Sequential()
@@ -186,11 +188,12 @@ def dummy_model_bf():
     init_state["first.bias"] = b_1
     init_state["second.bias"] = b_2
     dummy_model.load_state_dict(init_state)
-    _ = dummy_model.eval()
+    dummy_model.eval()
     return dummy_model
 
 
 class PyTNet(nn.Module):
+
     def __init__(self):
         super(PyTNet, self).__init__()
         self.conv1 = nn.Conv1d(1, 16, kernel_size=5, padding=2)
@@ -217,22 +220,29 @@ def get_pyt_complex_model_input():
 def pyt_complex_model_bf():
     return PyTNet().double()
 
+
 def test_get_layer():
-    dummy_model = kipoi.model.PyTorchModel(build_fn = dummy_model_bf)
-    sequential_model = kipoi.model.PyTorchModel(build_fn = pyt_sequential_model_bf)
-    complex_model = kipoi.model.PyTorchModel(build_fn = pyt_complex_model_bf)
+    dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
+    sequential_model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
+    complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
     # test get layer
     assert dummy_model.get_layer("first") == dummy_model.model.first
     assert sequential_model.get_layer("0") == getattr(sequential_model.model, "0")
     assert complex_model.get_layer("fc1") == complex_model.model.fc1
 
+
 def test_predict_activation_on_batch():
+    dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
+    sequential_model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
     complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
+    acts_dummy = dummy_model.predict_activation_on_batch(get_dummy_model_input(), layer="first")
+    acts_sequential = sequential_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="0")
+
     acts = complex_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="conv1")
     assert isinstance(acts, list)
     assert isinstance(acts[0], list)
     assert isinstance(acts[0][0], np.ndarray)
     with pytest.raises(Exception):
-        # This has to raise an exception
-        acts = dummy_model.predict_activation_on_batch(get_dummy_model_input(), layer="final", pre_nonlinearity=True)
-
+        # This has to raise an exception - pre_nonlinearity not implemented
+        acts = dummy_model.predict_activation_on_batch(get_dummy_model_input(),
+                                                       layer="final", pre_nonlinearity=True)
