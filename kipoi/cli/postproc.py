@@ -372,8 +372,8 @@ def cli_create_mutation_map(command, raw_args):
                                      description='Predict effect of SNVs using ISM.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
-    parser.add_argument('-v', '--vcf_path',
-                        help='Input VCF.')
+    parser.add_argument('-r', '--regions_file',
+                        help='Region definition as VCF or bed file. Not a required input.')
     # TODO - rename path to fpath
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
@@ -381,8 +381,6 @@ def cli_create_mutation_map(command, raw_args):
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
-    parser.add_argument('-r', '--restriction_bed', default=None,
-                        help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=True,
                         help="Output HDF5 file. To be used as input for plotting.")
     parser.add_argument('-s', "--scoring", default="diff", nargs="+",
@@ -402,14 +400,16 @@ def cli_create_mutation_map(command, raw_args):
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
-    vcf_path = args.vcf_path
+    if not os.path.exists(args.regions_file):
+        raise Exception("Regions inputs file does not exist: %s" % args.regions_file)
+
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
     if args.output is None:
         raise Exception("Output file `--output` has to be set!")
 
     # Check that all the folders exist
-    file_exists(args.vcf_path, logger)
+    file_exists(args.regions_file, logger)
     dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
     # install args
@@ -423,9 +423,6 @@ def cli_create_mutation_map(command, raw_args):
     else:
         Dl = model.default_dataloader
 
-    if not os.path.exists(vcf_path):
-        raise Exception("VCF file does not exist: %s" % vcf_path)
-
     if not isinstance(args.scoring, list):
         args.scoring = [args.scoring]
 
@@ -435,40 +432,43 @@ def cli_create_mutation_map(command, raw_args):
     model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
     manual_seq_len = args.seq_length
 
-    # Select the appropriate region generator
-    if args.restriction_bed is not None:
-        # Select the restricted SNV-centered region generator
-        pbd = pybedtools.BedTool(args.restriction_bed)
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
-        logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
-                    'Only defined regions will be tested.')
-    elif model_info.requires_region_definition:
-        # Select the SNV-centered region generator
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
-        logger.info('Using variant-centered sequence generation.')
+    # Select the appropriate region generator and vcf or bed file input
+    args.file_format = args.regions_file.split(".")[-1]
+    bed_region_file = None
+    vcf_region_file = None
+    bed_to_region = None
+    vcf_to_region = None
+    if args.file_format == "vcf" or args.regions_file.endswith("vcf.gz"):
+        vcf_region_file = args.regions_file
+        if model_info.requires_region_definition:
+            # Select the SNV-centered region generator
+            vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
+            logger.info('Using variant-centered sequence generation.')
+    elif args.file_format == "bed":
+        if model_info.requires_region_definition:
+            # Select the SNV-centered region generator
+            bed_to_region = kipoi.postprocessing.variant_effects.BedOverlappingRg(model_info, seq_length=manual_seq_len)
+            logger.info('Using bed-file based sequence generation.')
+        bed_region_file = args.regions_file
     else:
-        # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
-        vcf_to_region = None
-        # Make sure that the vcf is tabixed
-        vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
-        logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
-                    'produced regions can be predicted')
+        raise Exception("")
 
     if model_info.use_seq_only_rc:
         logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
     else:
         logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
 
-    mdmm = kipoi.postprocessing.variant_effects.generate_mutation_map(
-        model,
-        Dl,
-        vcf_path,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        dataloader_args=dataloader_arguments,
-        vcf_to_region=vcf_to_region,
-        evaluation_function_kwargs={"diff_types": dts}
-    )
+    mdmm = kipoi.postprocessing.variant_effects._generate_mutation_map(model,
+                           Dl,
+                           vcf_fpath=vcf_region_file,
+                           bed_fpath=bed_region_file,
+                           batch_size=args.batch_size,
+                           num_workers=args.num_workers,
+                           dataloader_args=dataloader_arguments,
+                           vcf_to_region=vcf_to_region,
+                           bed_to_region=bed_to_region,
+                           evaluation_function_kwargs={'diff_types': dts},
+                           )
 
     mdmm.save_to_file(args.output)
 
@@ -503,7 +503,7 @@ def cli_plot_mutation_map(command, raw_args):
     dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
     # install args
-    import matplotlib
+    import matplotlib.pyplot
     matplotlib.pyplot.switch_backend('agg')
     import matplotlib.pylab as plt
     from kipoi.postprocessing.variant_effects.mutation_map import MutationMapDrawer

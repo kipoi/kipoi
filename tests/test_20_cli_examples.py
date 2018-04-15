@@ -251,7 +251,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args='%s'" % dataloader_kwargs_str,
-            "--vcf_path", example_dir + "/" + "example_files/first_variant.vcf",
+            "--regions_file", example_dir + "/" + "example_files/first_variant.vcf",
             "--output", mm_tmpfile]
     # run the
     if INSTALL_FLAG:

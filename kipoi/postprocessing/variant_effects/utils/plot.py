@@ -1,10 +1,5 @@
-import math
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.collections import PatchCollection
-from .seqplotting_deps import add_letter_to_axis, VOCABS, letter_polygons
-
+from kipoi.external.concise.seqplotting_deps import add_letter_to_axis, VOCABS, letter_polygons
 
 
 def center_cmap(cmap, vmax, vmin, center):
@@ -21,7 +16,7 @@ def center_cmap(cmap, vmax, vmin, center):
 
 
 def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var = None, vocab="DNA", ax=None, show_letter_scale = False,
-                    cmap = plt.cm.bwr, cbar = True, cbar_kws = None, cbar_ax = None, limit_region = None):
+                    cmap=None, cbar = True, cbar_kws = None, cbar_ax = None, limit_region = None):
     """
     Plot heatmap and seqlogo plot together in one axis.
     
@@ -32,6 +27,11 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var = None, vocab="DNA", 
         vocab: str, Vocabulary name. Can be: DNA, RNA, AA, RNAStruct.
         ax: matplotlib axis
     """
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.collections import PatchCollection
+    if cmap is None:
+        cmap = plt.cm.bwr
     assert heatmap_data.shape[1] == letter_heights.shape[0]
     seq_len = heatmap_data.shape[1]
     vocab_len = len(VOCABS[vocab])

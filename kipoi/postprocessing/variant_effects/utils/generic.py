@@ -121,7 +121,7 @@ def default_vcf_id_gen(vcf_record, id_delim=":"):
 
 class RegionGenerator(object):
     __metaclass__ = abc.ABCMeta
-    def __init__(self, model_info_extractor):
+    def __init__(self, model_info_extractor, seq_length = None):
         self.seq_length = None
         self.centered_l_offset = None
         self.centered_r_offset = None
@@ -161,6 +161,33 @@ class SnvCenteredRg(RegionGenerator):
                 "start": [variant_record.POS - self.centered_l_offset],
                 "end": [variant_record.POS + self.centered_r_offset],
                 }
+
+
+class BedOverlappingRg(RegionGenerator):
+    def __init__(self, model_info_extractor, seq_length = None):
+        super(BedOverlappingRg, self).__init__(model_info_extractor)
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
+        if self.seq_length is None:
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
+
+    def __call__(self, bed_entry):
+        """Generate regions based on a bed file entry. outputs consecutive regions of model sequence length starting
+        from bed_entry.start and reaching at least until bed_entry.end. Output regions are non-overlapping hence the
+         covered output regions may cover more genetic space than specified in bed_entry. (Overhanging tail)
+        """
+        chroms = []
+        starts = []
+        ends = []
+        region_len = bed_entry.end - bed_entry.start
+        num_intervals = region_len//self.seq_length + int((region_len % self.seq_length)!=0)
+        for i in range(num_intervals):
+            chroms.append(bed_entry.chrom)
+            starts.append(bed_entry.start + (i*self.seq_length))
+            ends.append(bed_entry.start + ((i+1)*self.seq_length))
+        return {"chrom": chroms, "start": starts, "end": ends}
 
 
 class SnvPosRestrictedRg(RegionGenerator):

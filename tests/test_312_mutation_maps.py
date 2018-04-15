@@ -60,6 +60,37 @@ def test_generate_records_for_all_regions():
             assert  (vcf_records[i2].POS >= start) and (vcf_records[i2].POS <= end)
 
 
+def test__overlap_bedtools_region():
+    from pybedtools import BedTool
+    bobj = BedTool("chr22 10 20" , from_string=True).tabix()
+    starts = np.array([10, 15, 20])
+    ends = starts+10
+    ins = [True, True, False]
+    for start, end, isin in zip(starts, ends, ins):
+        regions = dict(start=[start], end=[end], chr = ["chr22"])
+        bed_regions, contained_regions = kipoi.postprocessing.variant_effects.mutation_map._overlap_bedtools_region(bobj, regions)
+        if isin:
+            assert len(bed_regions) == 1
+            assert contained_regions == [0]
+        else:
+            assert len(bed_regions) == 0
+            assert len(bed_regions) == 0
+
+
+def test_get_overlapping_bed_regions():
+    from pybedtools import BedTool
+    bobj = BedTool("chr22 21541588 21541689\nchr22 30630220 30630702", from_string=True).tabix()
+    ints1 = {"chr": ["chr22"] * 2, "start": [21541589, 30630701], "end": [21541953, 36702138], "strand": ["*"] * 2}
+    ints2 = {"chr": ["chr22"] * 2, "start": [30630219, 30630220], "end": [30630222, 30630222], "strand": ["*"] * 2}
+    model_input = {"metadata": {"gr_a": ints1, "gr_b": ints1, "gr_c": ints2}}
+    seq_to_meta = {"seq_a": "gr_a", "seq_a2": "gr_a", "seq_b": "gr_b", "seq_c": "gr_c"}
+    bed_entries, process_lines, process_seq_fields = kipoi.postprocessing.variant_effects.mutation_map.get_overlapping_bed_regions(model_input, seq_to_meta, bobj)
+    assert process_lines == [0, 0, 0, 1]
+    expected = [['seq_b'], ['seq_a', 'seq_a2'], ['seq_c'], ['seq_c']]
+    for i, ind in enumerate(process_lines):
+        expected_subset = [el for ind2, el in zip(process_lines, expected) if ind2 == ind]
+        assert any([set(process_seq_fields[i]) == set(el2) for el2 in expected_subset])
+
 def test_get_variants_for_all_positions():
     ints1 = {"chr": ["chr22"] * 2, "start": [21541589, 30630701], "end": [21541953, 30631065], "strand": ["*"] * 2}
     ints2 = {"chr": ["chr22"] * 2, "start": [30630219, 30630820], "end": [30630222, 30630822], "strand": ["*"] * 2}
@@ -100,6 +131,7 @@ def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_
 # Check that batching works
 # check that query_vcf_records and query_process_lines is always the same for all batches and that it is complete
 def test__generate_seq_sets_mutmap_iter():
+    from pybedtools import BedTool
     model_dir = "examples/rbp/"
     vcf_sub_path = "example_files/variants.vcf"
     vcf_path = model_dir + vcf_sub_path
@@ -161,13 +193,16 @@ def test__generate_seq_sets_mutmap_iter():
                     vcf_fh = cyvcf2.VCF(vcf_path, "r")
                     # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
                     sample_counter = sp.SampleCounter()
-                    eval_kwargs_iter = mm._generate_seq_sets_mutmap_iter(dataloader.output_schema, model_input, vcf_fh,
-                                                                         vcf_id_generator_fn=kipoi.postprocessing.variant_effects.utils.generic.default_vcf_id_gen,
-                                                                         seq_to_mut=seq_to_mut, seq_to_meta=seq_to_meta,
-                                                                         sample_counter=sample_counter,
-                                                                         vcf_search_regions=vcf_search_regions,
-                                                                         generate_rc=True,
-                                                                         batch_size=batch_size, ref_sequences=ref_seqs)
+                    eval_kwargs_iter = mm._generate_seq_sets_mutmap_iter(dataloader.output_schema, model_input,
+                                                                      seq_to_mut=seq_to_mut,
+                                                                      seq_to_meta=seq_to_meta,
+                                                                      sample_counter=sample_counter,
+                                                                      ref_sequences=ref_seqs,
+                                                                      vcf_fh=vcf_fh,
+                                                                      vcf_id_generator_fn=kipoi.postprocessing.variant_effects.utils.generic.default_vcf_id_gen,
+                                                                      vcf_search_regions=vcf_search_regions,
+                                                                      generate_rc=True,
+                                                                      batch_size=batch_size)
                     for ss_batch in eval_kwargs_iter:
                         assert (len(ss_batch['vcf_records']) == batch_size // 4)
                         assert (len(ss_batch['query_vcf_records']) == num_seqs)
@@ -189,6 +224,49 @@ def test__generate_seq_sets_mutmap_iter():
                             for k2 in relv_seq_keys:
                                 assert np.all(ss_batch[k][k2] == ss_batch[k + "_rc"][k2][:, ::-1, ::-1])
                     vcf_fh.close()
+        ## now just also test whether things work for using bed file and using neither bed nor bed file inputs
+        dataloader = dummy_container()
+        dataloader.output_schema = dummy_container()
+        seq_container = dummy_container()
+        seq_container.associated_metadata = ["ranges"]
+        dataloader.output_schema.inputs = {"seq": seq_container, "other_input": None}
+        inputs = {"seq": copy.deepcopy(empty_seq_input[:n_qseq, ...]),
+                  "other_input": copy.deepcopy(empty_other_input[:n_qseq, ...])}
+        inputs_2nd_copy = copy.deepcopy(inputs)
+        #
+        model_input = {"inputs": inputs, "metadata": gr_meta}
+        vcf_fh = cyvcf2.VCF(vcf_path, "r")
+        # relv_seq_keys, dataloader, model_input, vcf_fh, vcf_id_generator_fn, array_trafo=None
+        sample_counter = sp.SampleCounter()
+        batch_size = 4
+        eval_kwargs_iter = mm._generate_seq_sets_mutmap_iter(dataloader.output_schema, model_input,
+                                                             seq_to_mut=seq_to_mut,
+                                                             seq_to_meta=seq_to_meta,
+                                                             sample_counter=sample_counter,
+                                                             ref_sequences=ref_seqs,
+                                                             generate_rc=True,
+                                                             batch_size=batch_size)
+        for ss_batch in eval_kwargs_iter:
+            assert (len(ss_batch['vcf_records']) == batch_size // 4)
+            assert ss_batch['query_vcf_records'] is None
+            req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
+            assert np.all(np.in1d(req_cols, list(ss_batch.keys())))
+        # using bed input
+        bed_obj = BedTool("chr22 %d %d" % (annotated_regions["start"].values[0] - 1, annotated_regions["end"].values[0]),
+                          from_string=True).tabix()
+        eval_kwargs_iter = mm._generate_seq_sets_mutmap_iter(dataloader.output_schema, model_input,
+                                                             seq_to_mut=seq_to_mut,
+                                                             seq_to_meta=seq_to_meta,
+                                                             bedtools_obj=bed_obj,
+                                                             sample_counter=sample_counter,
+                                                             ref_sequences=ref_seqs,
+                                                             generate_rc=True,
+                                                             batch_size=batch_size)
+        for ss_batch in eval_kwargs_iter:
+            assert (len(ss_batch['vcf_records']) == batch_size // 4)
+            assert ss_batch['query_vcf_records'] is None
+            assert all([el == 0 for el in ss_batch["process_line"]])
+
 
 def test_OneHotSeqExtractor():
     BASES = ["A", "C", "G", "T"]
@@ -333,10 +411,10 @@ def test_mutation_map():
     with cd(model.source_dir):
         model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
         vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        mdmm = mm.generate_mutation_map(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                               evaluation_function=analyse_model_preds, batch_size=32,
-                               vcf_to_region=vcf_to_region,
-                               evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}})
+        mdmm = mm._generate_mutation_map(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                                         evaluation_function=analyse_model_preds, batch_size=32,
+                                         vcf_to_region=vcf_to_region,
+                                         evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}})
         mdmm.save_to_file("example_files/first_variant_mm_totest.hdf5")
         fh = h5py.File("example_files/first_variant_mm.hdf5", "r")
         reference = mm.recursive_h5_mutmap_reader(fh)

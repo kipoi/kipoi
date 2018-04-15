@@ -731,6 +731,20 @@ def test__generate_pos_restricted_seqs():
         assert regions_df.shape[0] == 1
         assert np.all(regions_df[["start", "end"]].values == tpl[1])
 
+def test_BedOverlappingRg():
+    tuples = ([21541490, 21541591], [21541490, 21541592])
+    model_info_extractor = DummyModelInfo(101)
+    for i, tpl in enumerate(tuples):
+        qbf = pb.BedTool("chr22 %d %d" % tuple(tpl), from_string=True)
+        regions = Dummy_internval()
+        #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, qbf, regions.append_interval, seq_length)
+        region_generator = kipoi.postprocessing.variant_effects.BedOverlappingRg(model_info_extractor)
+        for entry in qbf:
+            ret_regions = region_generator(entry)
+            regions_df = pd.DataFrame(ret_regions)
+            assert regions_df.shape[0] == i+1
+            assert all([col in regions_df.columns.tolist() for col in ["chrom", "start", "end"]])
+
 
 def test__generate_snv_centered_seqs():
     model_dir = "examples/rbp/"

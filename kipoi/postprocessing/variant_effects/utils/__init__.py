@@ -1,4 +1,4 @@
 from .dna_reshapers import OutputReshaper, ReshapeDna, ReshapeDnaString
 from .generic import select_from_dl_batch, default_vcf_id_gen, ModelInfoExtractor, SnvCenteredRg, \
-    SnvPosRestrictedRg, ensure_tabixed_vcf, VariantLocalisation, OneHotSeqExtractor, StrSeqExtractor
+    SnvPosRestrictedRg, ensure_tabixed_vcf, VariantLocalisation, OneHotSeqExtractor, StrSeqExtractor, BedOverlappingRg
 from .io import VcfWriter, BedWriter, SyncHdf5SeqWriter

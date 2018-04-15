@@ -1,10 +1,11 @@
 import re
-import numpy as np
-from shapely.wkt import loads as load_wkt
-from .seqplotting_letters import all_letters
 from collections import OrderedDict
-from shapely import affinity
-from descartes.patch import Polygon, PolygonPath, PolygonPatch
+
+import numpy as np
+
+from kipoi.external.concise.seqplotting_letters import all_letters
+
+
 ###### Had to copy from concise due to requirements
 # -----------------------------------------------------------------------
 #
@@ -19,6 +20,7 @@ def standardize_polygons_str(data_str):
     """
     # find all of the polygons in the letter (for instance an A
     # needs to be constructed from 2 polygons)
+    from shapely.wkt import loads as load_wkt
     path_strs = re.findall("\(\(([^\)]+?)\)\)", data_str.strip())
 
     # convert the data into a numpy array
@@ -99,6 +101,8 @@ VOCABS["RNA"] = OrderedDict((k, VOCABS["RNA"][k]) for k in RNA)
 def add_letter_to_axis(ax, let, col, x, y, height):
     """Add 'let' with position x,y and height height to matplotlib axis 'ax'.
     """
+    from shapely import affinity
+    from descartes.patch import PolygonPatch
     if len(let) == 2:
         colors = [col, "white"]
     elif len(let) == 1:
