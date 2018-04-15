@@ -307,6 +307,8 @@ def test_merged_intervals_seq():
 
 
 def test_MutationMapDataMerger():
+    if sys.version_info[0] == 2:
+        pytest.skip("Skip")
     model_dir = "examples/rbp/"
     vcf_sub_path = "example_files/variants.vcf"
     vcf_path = model_dir + vcf_sub_path

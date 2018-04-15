@@ -458,7 +458,8 @@ def cli_create_mutation_map(command, raw_args):
     else:
         logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
 
-    mdmm = kipoi.postprocessing.variant_effects._generate_mutation_map(model,
+    from kipoi.postprocessing.variant_effects.mutation_map import _generate_mutation_map
+    mdmm = _generate_mutation_map(model,
                            Dl,
                            vcf_fpath=vcf_region_file,
                            bed_fpath=bed_region_file,
