@@ -428,6 +428,8 @@ class MutationMapDataMerger(object):
                             or isinstance(metadata_subset["strand"], np.ndarray)):
                         subset_keys = ["chr", "start", "end"]
                     metadata_subset_dict = {k: metadata_subset[k][0] for k in subset_keys}
+                    if "strand" not in metadata_subset_dict:
+                        metadata_subset_dict["strand"] = "*"
                     metadata_chrom = metadata_subset["chr"][0]
                     metadata_start = metadata_subset["start"][0]
                     metadata_end = metadata_subset["end"][0]
