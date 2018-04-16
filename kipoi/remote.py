@@ -106,6 +106,67 @@ def to_namelist(nested_dict):
         return nested_dict.name
 
 
+def list_models_by_group(df, group_filter=""):
+    """Get a list of models by a group
+
+    Args:
+      df: Dataframe returned by list_models()
+      group_filter, str: A relative path to the model group used to subset
+        model list.
+
+    Returns:
+      a pd.DataFrame with columns (or None in case no groups are found):
+        - group - name of the sub-group
+        - N_models
+        - is_group
+        - authors
+        - contributors
+        - doc - ?
+        - type (list of types)
+        - tags - sum
+    """
+    # df = self.list_models()
+    # add slashes
+    if group_filter == "":
+        group = "/"
+    else:
+        group = "/" + group_filter + "/"
+    df = df[df.model.str.contains("^" + group[1:])].copy()
+    # df['parent_group'] = group[1:]
+    df['model'] = df.model.str.replace("^" + group[1:], "")
+    df['is_group'] = df.model.str.contains("/")
+    if not df.is_group.any():
+        return None
+
+    df = df.join(df.model.str.split("/", n=1, expand=True).rename(columns={0: "group", 1: "child"}))
+
+    def n_subgroups(ch):
+        if ch.str.contains("/").sum() > 0:
+            return len(ch[ch.str.contains("/")].str.split("/", n=1, expand=True).iloc[:, 0].unique())
+        else:
+            return 0
+
+    def fn(x):
+        # remove the templates
+        return pd.Series(OrderedDict([
+            ("N_models", x.shape[0]),
+            ("N_subgroups", n_subgroups(x.child.fillna(""))),
+            ("is_group", x.is_group.any()),
+            ("authors", {author for authors in x.authors
+                         for author in authors}),
+            ("contributors", {contributor for contributors in x.contributors
+                              for contributor in contributors}),
+            ("postproc_score_variants", x.postproc_score_variants.any()),
+            ("type", {t for t in x.type}),
+            ("license", {l for l in x.license}),
+            ("cite_as", {c for c in x.cite_as if c is not None}),
+            ("tags", {tag for tags in x.tags
+                      for tag in tags}),
+        ]))
+
+    return df.groupby("group").apply(fn).reset_index()
+
+
 class Source(object):
 
     __metaclass__ = ABCMeta
@@ -203,47 +264,7 @@ class Source(object):
             - type (list of types)
             - tags - sum
         """
-        df = self.list_models()
-
-        # add slashes
-        if group_filter == "":
-            group = "/"
-        else:
-            group = "/" + group_filter + "/"
-        df = df[df.model.str.contains("^" + group[1:])].copy()
-        # df['parent_group'] = group[1:]
-        df['model'] = df.model.str.replace("^" + group[1:], "")
-        df['is_group'] = df.model.str.contains("/")
-        if not df.is_group.any():
-            return None
-
-        df = df.join(df.model.str.split("/", n=1, expand=True).rename(columns={0: "group", 1: "child"}))
-
-        def n_subgroups(ch):
-            if ch.str.contains("/").sum() > 0:
-                return len(ch[ch.str.contains("/")].str.split("/", n=1, expand=True).iloc[:, 0].unique())
-            else:
-                return 0
-
-        def fn(x):
-            # remove the templates
-            return pd.Series(OrderedDict([
-                ("N_models", x.shape[0]),
-                ("N_subgroups", n_subgroups(x.child.fillna(""))),
-                ("is_group", x.is_group.any()),
-                ("authors", {author for authors in x.authors
-                             for author in authors}),
-                ("contributors", {contributor for contributors in x.contributors
-                                  for contributor in contributors}),
-                ("postproc_score_variants", x.postproc_score_variants.any()),
-                ("type", {t for t in x.type}),
-                ("license", {l for l in x.license}),
-                ("cite_as", {c for c in x.cite_as if c is not None}),
-                ("tags", {tag for tags in x.tags
-                          for tag in tags}),
-            ]))
-
-        return df.groupby("group").apply(fn).reset_index()
+        return list_models_by_group(self.list_models(), group_filter)
 
     @abstractmethod
     def _get_component_descr(self, component, which="model"):
