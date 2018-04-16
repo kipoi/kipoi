@@ -48,10 +48,9 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
         # add also the dataloaders to the string
         if not isinstance(dataloader_name, list):
             dataloader_name = [dataloader_name]
+        dataloader_name = [_replace_slash(os.path.normpath(d))
+                           for d in dataloader_name]
         if len(dataloader_name) != 0 and dataloader_name != model_name:
-            dataloader_name = [_replace_slash(os.path.normpath(d))
-                               for d in dataloader_name]
-
             env_name += "-DL-{0}".format(",".join(dataloader_name))
 
     # limit the env name to 110 characters
