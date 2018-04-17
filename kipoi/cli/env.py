@@ -69,7 +69,7 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::cyvcf2",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
-                        pip=["intervaltree"]
+                        pip=["intervaltree", "deepdish"]
                         )
 
 
