@@ -159,10 +159,10 @@ def test_predict_variants_example(example, tmpdir):
             tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
             vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
-            dataloader_kwargs = {"fasta_file": example_dir + "/example_files/hg38_chr22.fa",
-                                 "preproc_transformer": example_dir + "/dataloader_files/encodeSplines.pkl",
-                                 "gtf_file": example_dir + "/example_files/gencode_v25_chr22.gtf.pkl.gz",
-                                 "intervals_file": example_dir + "/example_files/variant_intervals.tsv"}
+            dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa",
+                                 "preproc_transformer":  "dataloader_files/encodeSplines.pkl",
+                                 "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+                                 "intervals_file": "example_files/variant_intervals.tsv"}
             import json
             dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -174,7 +174,7 @@ def test_predict_variants_example(example, tmpdir):
                     "--source=dir",
                     "--batch_size=4",
                     "--dataloader_args='%s'" % dataloader_kwargs_str,
-                    "--vcf_path", example_dir + "/" + "example_files/variants.vcf",
+                    "--vcf_path", "example_files/variants.vcf",
                     # this one was now gone in the master?!
                     "--out_vcf_fpath", vcf_tmpfile,
                     "--output", tmpfile]
@@ -183,7 +183,7 @@ def test_predict_variants_example(example, tmpdir):
                 args.append(INSTALL_FLAG)
 
             if restricted_bed:
-                args += ["--restriction_bed", example_dir + "/" +"example_files/restricted_regions.bed"]
+                args += ["--restriction_bed", "example_files/restricted_regions.bed"]
 
             returncode = subprocess.call(args=args,
                                          cwd=os.path.realpath(example_dir) + "/../../")
@@ -236,10 +236,10 @@ def test_generate_mutation_maps_example(example, tmpdir):
     mm_tmpfile = str(tmpdir_here.join("out_mm.hdf5"))
     plt_tmpfile = str(tmpdir_here.join("plot.png"))
 
-    dataloader_kwargs = {"fasta_file": example_dir + "/example_files/hg38_chr22.fa",
-                         "preproc_transformer": example_dir + "/dataloader_files/encodeSplines.pkl",
-                         "gtf_file": example_dir + "/example_files/gencode_v25_chr22.gtf.pkl.gz",
-                         "intervals_file": example_dir + "/example_files/variant_intervals.tsv"}
+    dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa",
+                         "preproc_transformer":  "dataloader_files/encodeSplines.pkl",
+                         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+                         "intervals_file": "example_files/variant_intervals.tsv"}
     import json
     dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -251,7 +251,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args='%s'" % dataloader_kwargs_str,
-            "--regions_file", example_dir + "/" + "example_files/first_variant.vcf",
+            "--regions_file", "example_files/first_variant.vcf",
             "--output", mm_tmpfile]
     # run the
     if INSTALL_FLAG:

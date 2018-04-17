@@ -475,151 +475,151 @@ def predict_snvs(model,
                     for each model output (target) column VCF SNV line. If return_predictions == False, returns None.
             """
     import cyvcf2
-    model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
+    with cd(dataloader.source_dir):
+        model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
 
-    # If then where do I have to put my bed file in the command?
+        # If then where do I have to put my bed file in the command?
 
-    exec_files_bed_keys = model_info_extractor.get_exec_files_bed_keys()
-    temp_bed3_file = None
+        exec_files_bed_keys = model_info_extractor.get_exec_files_bed_keys()
+        temp_bed3_file = None
 
-    vcf_search_regions = True
+        vcf_search_regions = True
 
-    # If there is a field for putting the a postprocessing bed file, then generate the bed file.
-    if exec_files_bed_keys is not None:
-        if vcf_to_region is not None:
-            vcf_search_regions = False
+        # If there is a field for putting the a postprocessing bed file, then generate the bed file.
+        if exec_files_bed_keys is not None:
+            if vcf_to_region is not None:
+                vcf_search_regions = False
 
-            temp_bed3_file = tempfile.mktemp()  # file path of the temp file
+                temp_bed3_file = tempfile.mktemp()  # file path of the temp file
 
-            vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
+                vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
 
-            with BedWriter(temp_bed3_file) as ofh:
-                for record in vcf_fh:
-                    if not record.is_indel:
-                        region = vcf_to_region(record)
-                        id = vcf_id_generator_fn(record)
-                        for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
-                            ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
+                with BedWriter(temp_bed3_file) as ofh:
+                    for record in vcf_fh:
+                        if not record.is_indel:
+                            region = vcf_to_region(record)
+                            id = vcf_id_generator_fn(record)
+                            for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
+                                ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
 
-            vcf_fh.close()
-    else:
-        if vcf_to_region is not None:
-            logger.warn("`vcf_to_region` will be ignored as it was set, but the dataloader does not define "
-                        "a bed_input in dataloader.yaml: "
-                        "postprocessing > variant_effects > bed_input.")
-    # Assemble the paths for executing the dataloader
-    if dataloader_args is None:
-        dataloader_args = {}
+                vcf_fh.close()
+        else:
+            if vcf_to_region is not None:
+                logger.warn("`vcf_to_region` will be ignored as it was set, but the dataloader does not define "
+                            "a bed_input in dataloader.yaml: "
+                            "postprocessing > variant_effects > bed_input.")
+        # Assemble the paths for executing the dataloader
+        if dataloader_args is None:
+            dataloader_args = {}
 
-    # Copy the missing arguments from the example arguments.
-    if use_dataloader_example_data:
-        for k in dataloader.example_kwargs:
-            if k not in dataloader_args:
-                dataloader_args[k] = dataloader.example_kwargs[k]
+        # Copy the missing arguments from the example arguments.
+        if use_dataloader_example_data:
+            for k in dataloader.example_kwargs:
+                if k not in dataloader_args:
+                    dataloader_args[k] = dataloader.example_kwargs[k]
 
-    # If there was a field for dumping the region definition bed file, then use it.
-    if (exec_files_bed_keys is not None) and (not vcf_search_regions):
-        for k in exec_files_bed_keys:
-            dataloader_args[k] = temp_bed3_file
+        # If there was a field for dumping the region definition bed file, then use it.
+        if (exec_files_bed_keys is not None) and (not vcf_search_regions):
+            for k in exec_files_bed_keys:
+                dataloader_args[k] = temp_bed3_file
 
-    model_out_annotation = model_info_extractor.get_model_out_annotation()
+        model_out_annotation = model_info_extractor.get_model_out_annotation()
 
-    out_reshaper = OutputReshaper(model.schema.targets)
+        out_reshaper = OutputReshaper(model.schema.targets)
 
-    res = []
+        res = []
 
-    it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
-                                                  num_workers=num_workers)
+        it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
+                                                      num_workers=num_workers)
 
-    # organise the writers in a list
-    if sync_pred_writer is not None:
-        if not isinstance(sync_pred_writer, list):
-            sync_pred_writer = [sync_pred_writer]
-
-    # organise the prediction writers
-    if generated_seq_writer is not None:
-        if not isinstance(generated_seq_writer, list):
-            generated_seq_writer = [generated_seq_writer]
-
-    # Open vcf again
-    vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
-
-    # pre-process regions
-    keys = set()  # what is that?
-
-    sample_counter = SampleCounter()
-
-    # open the writers if possible:
-    if sync_pred_writer is not None:
-        [el.open() for el in  sync_pred_writer if hasattr(el, "open")]
-
-    # open seq writers if possible:
-    if generated_seq_writer is not None:
-        [el.open() for el in  generated_seq_writer if hasattr(el, "open")]
-
-    for i, batch in enumerate(tqdm(it)):
-        # For debugging
-        # if i >= 10:
-        #     break
-        # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
-        seq_to_mut = model_info_extractor.seq_input_mutator
-        seq_to_meta = model_info_extractor.seq_input_metadata
-        eval_kwargs = _generate_seq_sets(dataloader.output_schema, batch, vcf_fh, vcf_id_generator_fn,
-                                         seq_to_mut=seq_to_mut, seq_to_meta=seq_to_meta,
-                                         sample_counter=sample_counter, vcf_search_regions=vcf_search_regions,
-                                         generate_rc=model_info_extractor.use_seq_only_rc)
-        if eval_kwargs is None:
-            # No generated datapoint overlapped any VCF region
-            continue
-
-        if generated_seq_writer is not None:
-            for writer in generated_seq_writer:
-                writer(eval_kwargs)
-            # Assume that we don't actually want the predictions to be calculated...
-            continue
-
-        if evaluation_function_kwargs is not None:
-            assert isinstance(evaluation_function_kwargs, dict)
-            for k in evaluation_function_kwargs:
-                eval_kwargs[k] = evaluation_function_kwargs[k]
-
-        eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
-
-        with cd(dataloader.source_dir):
-            res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
-        for k in res_here:
-            keys.add(k)
-            res_here[k].index = eval_kwargs["line_id"]
-        # write the predictions synchronously
+        # organise the writers in a list
         if sync_pred_writer is not None:
-            for writer in sync_pred_writer:
-                writer(res_here, eval_kwargs["vcf_records"], eval_kwargs["line_id"])
+            if not isinstance(sync_pred_writer, list):
+                sync_pred_writer = [sync_pred_writer]
+
+        # organise the prediction writers
+        if generated_seq_writer is not None:
+            if not isinstance(generated_seq_writer, list):
+                generated_seq_writer = [generated_seq_writer]
+
+        # Open vcf again
+        vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
+
+        # pre-process regions
+        keys = set()  # what is that?
+
+        sample_counter = SampleCounter()
+
+        # open the writers if possible:
+        if sync_pred_writer is not None:
+            [el.open() for el in  sync_pred_writer if hasattr(el, "open")]
+
+        # open seq writers if possible:
+        if generated_seq_writer is not None:
+            [el.open() for el in  generated_seq_writer if hasattr(el, "open")]
+
+        for i, batch in enumerate(tqdm(it)):
+            # For debugging
+            # if i >= 10:
+            #     break
+            # becomes noticable for large vcf's. Is there a way to avoid it? (i.e. to exploit the iterative nature of dataloading)
+            seq_to_mut = model_info_extractor.seq_input_mutator
+            seq_to_meta = model_info_extractor.seq_input_metadata
+            eval_kwargs = _generate_seq_sets(dataloader.output_schema, batch, vcf_fh, vcf_id_generator_fn,
+                                             seq_to_mut=seq_to_mut, seq_to_meta=seq_to_meta,
+                                             sample_counter=sample_counter, vcf_search_regions=vcf_search_regions,
+                                             generate_rc=model_info_extractor.use_seq_only_rc)
+            if eval_kwargs is None:
+                # No generated datapoint overlapped any VCF region
+                continue
+
+            if generated_seq_writer is not None:
+                for writer in generated_seq_writer:
+                    writer(eval_kwargs)
+                # Assume that we don't actually want the predictions to be calculated...
+                continue
+
+            if evaluation_function_kwargs is not None:
+                assert isinstance(evaluation_function_kwargs, dict)
+                for k in evaluation_function_kwargs:
+                    eval_kwargs[k] = evaluation_function_kwargs[k]
+
+            eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
+
+            res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
+            for k in res_here:
+                keys.add(k)
+                res_here[k].index = eval_kwargs["line_id"]
+            # write the predictions synchronously
+            if sync_pred_writer is not None:
+                for writer in sync_pred_writer:
+                    writer(res_here, eval_kwargs["vcf_records"], eval_kwargs["line_id"])
+            if return_predictions:
+                res.append(res_here)
+
+        vcf_fh.close()
+
+        # open the writers if possible:
+        if sync_pred_writer is not None:
+            [el.close() for el in sync_pred_writer if hasattr(el, "close")]
+
+        # open seq writers if possible:
+        if generated_seq_writer is not None:
+            [el.close() for el in generated_seq_writer if hasattr(el, "close")]
+
+        try:
+            if temp_bed3_file is not None:
+                os.unlink(temp_bed3_file)
+        except:
+            pass
+
         if return_predictions:
-            res.append(res_here)
-
-    vcf_fh.close()
-
-    # open the writers if possible:
-    if sync_pred_writer is not None:
-        [el.close() for el in sync_pred_writer if hasattr(el, "close")]
-
-    # open seq writers if possible:
-    if generated_seq_writer is not None:
-        [el.close() for el in generated_seq_writer if hasattr(el, "close")]
-
-    try:
-        if temp_bed3_file is not None:
-            os.unlink(temp_bed3_file)
-    except:
-        pass
-
-    if return_predictions:
-        res_concatenated = {}
-        for k in keys:
-            res_concatenated[k] = pd.concat([batch[k]
-                                             for batch in res
-                                             if k in batch])
-        return res_concatenated
+            res_concatenated = {}
+            for k in keys:
+                res_concatenated[k] = pd.concat([batch[k]
+                                                 for batch in res
+                                                 if k in batch])
+            return res_concatenated
 
     return None
 

@@ -14,6 +14,7 @@ from kipoi.components import default_kwargs
 from kipoi.postprocessing.variant_effects.components import VarEffectFuncType
 from kipoi.utils import load_module, getargs
 from kipoi.utils import parse_json_file_str
+from kipoi.utils import cd
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -257,22 +258,6 @@ def cli_score_variants(command, raw_args):
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
 
-    # Check that all the folders exist
-    file_exists(args.vcf_path, logger)
-    dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
-    if args.output is not None:
-        dir_exists(os.path.dirname(args.output), logger)
-
-        # infer the file format
-        args.file_format = args.output.split(".")[-1]
-        if args.file_format not in AVAILABLE_FORMATS:
-            logger.error("File ending: {0} for file {1} not from {2}".
-                         format(args.file_format, args.output, AVAILABLE_FORMATS))
-            sys.exit(1)
-
-        if args.file_format in ["hdf5", "h5"]:
-            # only if hdf5 output is used
-            import deepdish
 
     # --------------------------------------------
     # install args
@@ -285,49 +270,65 @@ def cli_score_variants(command, raw_args):
         Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
     else:
         Dl = model.default_dataloader
+    with cd(model.source_dir):
 
-    if not os.path.exists(vcf_path):
-        raise Exception("VCF file does not exist: %s" % vcf_path)
+        # Check that all the folders exist
+        file_exists(args.vcf_path, logger)
+        dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
+        if args.output is not None:
+            dir_exists(os.path.dirname(args.output), logger)
 
-    if not isinstance(args.scoring, list):
-        args.scoring = [args.scoring]
+            # infer the file format
+            args.file_format = args.output.split(".")[-1]
+            if args.file_format not in AVAILABLE_FORMATS:
+                logger.error("File ending: {0} for file {1} not from {2}".
+                             format(args.file_format, args.output, AVAILABLE_FORMATS))
+                sys.exit(1)
 
-    dts = _get_scoring_fns(model, args.scoring, args.scoring_kwargs)
+            if args.file_format in ["hdf5", "h5"]:
+                # only if hdf5 output is used
+                import deepdish
 
-    # Load effect prediction related model info
-    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
-    manual_seq_len = args.seq_length
+        if not isinstance(args.scoring, list):
+            args.scoring = [args.scoring]
 
-    # Select the appropriate region generator
-    if args.restriction_bed is not None:
-        # Select the restricted SNV-centered region generator
-        pbd = pybedtools.BedTool(args.restriction_bed)
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
-        logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
-                    'Only defined regions will be tested.')
-    elif model_info.requires_region_definition:
-        # Select the SNV-centered region generator
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
-        logger.info('Using variant-centered sequence generation.')
-    else:
-        # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
-        vcf_to_region = None
-        # Make sure that the vcf is tabixed
-        vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
-        logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
-                    'produced regions can be predicted')
+        dts = _get_scoring_fns(model, args.scoring, args.scoring_kwargs)
+
+        # Load effect prediction related model info
+        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
+        manual_seq_len = args.seq_length
+
+        # Select the appropriate region generator
+        if args.restriction_bed is not None:
+            # Select the restricted SNV-centered region generator
+            pbd = pybedtools.BedTool(args.restriction_bed)
+            vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
+            logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
+                        'Only defined regions will be tested.')
+        elif model_info.requires_region_definition:
+            # Select the SNV-centered region generator
+            vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
+            logger.info('Using variant-centered sequence generation.')
+        else:
+            # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
+            vcf_to_region = None
+            # Make sure that the vcf is tabixed
+            vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
+            logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
+                        'produced regions can be predicted')
 
     if model_info.use_seq_only_rc:
         logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
     else:
         logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
 
-    # Get a vcf output writer if needed
-    if out_vcf_fpath is not None:
-        logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
-        vcf_writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
-    else:
-        vcf_writer = None
+    with cd(model.source_dir):
+        # Get a vcf output writer if needed
+        if out_vcf_fpath is not None:
+            logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
+            vcf_writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
+        else:
+            vcf_writer = None
 
     keep_predictions = args.output is not None
 
@@ -344,22 +345,23 @@ def cli_score_variants(command, raw_args):
         return_predictions=keep_predictions
     )
 
-    # tabular files
-    if args.output is not None:
-        if args.file_format in ["tsv"]:
-            for i, k in enumerate(res):
-                # Remove an old file if it is still there...
-                if i == 0:
-                    try:
-                        os.unlink(args.output)
-                    except Exception:
-                        pass
-                with open(args.output, "w") as ofh:
-                    ofh.write("KPVEP_%s\n" % k.upper())
-                    res[k].to_csv(args.output, sep="\t", mode="a")
+    with cd(model.source_dir):
+        # tabular files
+        if args.output is not None:
+            if args.file_format in ["tsv"]:
+                for i, k in enumerate(res):
+                    # Remove an old file if it is still there...
+                    if i == 0:
+                        try:
+                            os.unlink(args.output)
+                        except Exception:
+                            pass
+                    with open(args.output, "w") as ofh:
+                        ofh.write("KPVEP_%s\n" % k.upper())
+                        res[k].to_csv(args.output, sep="\t", mode="a")
 
-        if args.file_format in ["hdf5", "h5"]:
-            deepdish.io.save(args.output, res)
+            if args.file_format in ["hdf5", "h5"]:
+                deepdish.io.save(args.output, res)
 
     logger.info('Successfully predicted samples')
 
@@ -402,17 +404,12 @@ def cli_create_mutation_map(command, raw_args):
     args = parser.parse_args(raw_args)
 
     # extract args for kipoi.variant_effects.predict_snvs
-    if not os.path.exists(args.regions_file):
-        raise Exception("Regions inputs file does not exist: %s" % args.regions_file)
 
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
     if args.output is None:
         raise Exception("Output file `--output` has to be set!")
 
-    # Check that all the folders exist
-    file_exists(args.regions_file, logger)
-    dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
     # install args
     if args.install_req:
@@ -420,10 +417,18 @@ def cli_create_mutation_map(command, raw_args):
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 
-    if args.dataloader is not None:
-        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
-    else:
-        Dl = model.default_dataloader
+    with cd(model.source_dir):
+        if not os.path.exists(args.regions_file):
+            raise Exception("Regions inputs file does not exist: %s" % args.regions_file)
+
+        # Check that all the folders exist
+        file_exists(args.regions_file, logger)
+        dir_exists(os.path.dirname(args.output), logger)
+
+        if args.dataloader is not None:
+            Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
+        else:
+            Dl = model.default_dataloader
 
     if not isinstance(args.scoring, list):
         args.scoring = [args.scoring]
@@ -472,8 +477,8 @@ def cli_create_mutation_map(command, raw_args):
                            bed_to_region=bed_to_region,
                            evaluation_function_kwargs={'diff_types': dts},
                            )
-
-    mdmm.save_to_file(args.output)
+    with cd(model.source_dir):
+        mdmm.save_to_file(args.output)
 
     logger.info('Successfully generated mutation map data')
 

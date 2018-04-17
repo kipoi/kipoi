@@ -691,166 +691,163 @@ def _generate_mutation_map(model,
             """
     import cyvcf2
     from pybedtools import BedTool
-    model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
+    with cd(dataloader.source_dir):
+        model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
 
-    if (bed_fpath is not None) and (vcf_fpath is not None):
-        raise Exception("Can't use both `bed_fpath` and `vcf_fpath`.")
+        if (bed_fpath is not None) and (vcf_fpath is not None):
+            raise Exception("Can't use both `bed_fpath` and `vcf_fpath`.")
 
-    if (vcf_fpath is not None) and (vcf_id_generator_fn is None):
-        raise Exception("If `vcf_fpath` is set then also `vcf_id_generator_fn` has to be defined!")
+        if (vcf_fpath is not None) and (vcf_id_generator_fn is None):
+            raise Exception("If `vcf_fpath` is set then also `vcf_id_generator_fn` has to be defined!")
 
-    # If then where do I have to put my bed file in the command?
+        # If then where do I have to put my bed file in the command?
 
-    exec_files_bed_keys = model_info_extractor.get_exec_files_bed_keys()
-    temp_bed3_file = None
+        exec_files_bed_keys = model_info_extractor.get_exec_files_bed_keys()
+        temp_bed3_file = None
 
-    vcf_search_regions = True
+        vcf_search_regions = True
 
-    # If there is a field in the datalaoder arguments for putting the a postprocessing bed file,
-    # then generate the bed file.
-    if exec_files_bed_keys is not None:
-        temp_bed3_file = tempfile.mktemp()  # file path of the temp file
-        if (vcf_to_region is not None) and (vcf_fpath is not None):
-            logger.warn("Using VCF file %s to define the dataloader intervals."%vcf_fpath)
-            vcf_search_regions = False
+        # If there is a field in the datalaoder arguments for putting the a postprocessing bed file,
+        # then generate the bed file.
+        if exec_files_bed_keys is not None:
+            temp_bed3_file = tempfile.mktemp()  # file path of the temp file
+            if (vcf_to_region is not None) and (vcf_fpath is not None):
+                logger.warn("Using VCF file %s to define the dataloader intervals."%vcf_fpath)
+                vcf_search_regions = False
+                vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
+                with BedWriter(temp_bed3_file) as ofh:
+                    for record in vcf_fh:
+                        if not record.is_indel:
+                            region = vcf_to_region(record)
+                            id = vcf_id_generator_fn(record)
+                            for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
+                                ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
+
+                vcf_fh.close()
+            elif (bed_to_region is not None) and (bed_fpath is not None):
+                logger.warn("Using bed file %s to define the dataloader intervals." % bed_fpath)
+                bedtools_obj = BedTool(bed_fpath)
+                with BedWriter(temp_bed3_file) as ofh:
+                    for bed_entry in bedtools_obj:
+                        ofh.append_interval(**vcf_to_region(bed_entry))
+        else:
+            if vcf_to_region is not None:
+                logger.warn("`vcf_to_region` will be ignored as it was set, but the dataloader does not define "
+                            "a bed_input in dataloader.yaml: "
+                            "postprocessing > variant_effects > bed_input.")
+            if bed_to_region is not None:
+                logger.warn("`bed_to_region` will be ignored as it was set, but the dataloader does not define "
+                            "a bed_input in dataloader.yaml: "
+                            "postprocessing > variant_effects > bed_input.")
+
+        # Assemble the paths for executing the dataloader
+        if dataloader_args is None:
+            dataloader_args = {}
+
+        # Copy the missing arguments from the example arguments.
+        if use_dataloader_example_data:
+            for k in dataloader.example_kwargs:
+                if k not in dataloader_args:
+                    dataloader_args[k] = dataloader.example_kwargs[k]
+
+        # If there was a field for dumping the region definition bed file, then use it.
+        if (exec_files_bed_keys is not None) and (not vcf_search_regions):
+            for k in exec_files_bed_keys:
+                dataloader_args[k] = temp_bed3_file
+
+        model_out_annotation = model_info_extractor.get_model_out_annotation()
+
+        out_reshaper = OutputReshaper(model.schema.targets)
+
+
+        seq_to_mut = model_info_extractor.seq_input_mutator
+        seq_to_meta = model_info_extractor.seq_input_metadata
+        seq_to_str_converter = model_info_extractor.seq_to_str_converter
+
+        # Open vcf again
+        vcf_fh = None
+        bed_obj = None
+        if vcf_fpath is not None:
             vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
-            with BedWriter(temp_bed3_file) as ofh:
-                for record in vcf_fh:
-                    if not record.is_indel:
-                        region = vcf_to_region(record)
-                        id = vcf_id_generator_fn(record)
-                        for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
-                            ofh.append_interval(chrom=chrom, start=start, end=end, id=id)
+        if bed_fpath is not None:
+            bed_obj = BedTool(bed_fpath).tabix()
 
-            vcf_fh.close()
-        elif (bed_to_region is not None) and (bed_fpath is not None):
-            logger.warn("Using bed file %s to define the dataloader intervals." % bed_fpath)
-            bedtools_obj = BedTool(bed_fpath)
-            with BedWriter(temp_bed3_file) as ofh:
-                for bed_entry in bedtools_obj:
-                    ofh.append_interval(**vcf_to_region(bed_entry))
-    else:
-        if vcf_to_region is not None:
-            logger.warn("`vcf_to_region` will be ignored as it was set, but the dataloader does not define "
-                        "a bed_input in dataloader.yaml: "
-                        "postprocessing > variant_effects > bed_input.")
-        if bed_to_region is not None:
-            logger.warn("`bed_to_region` will be ignored as it was set, but the dataloader does not define "
-                        "a bed_input in dataloader.yaml: "
-                        "postprocessing > variant_effects > bed_input.")
+        # pre-process regions
+        keys = set()  # what is that?
 
-    # Assemble the paths for executing the dataloader
-    if dataloader_args is None:
-        dataloader_args = {}
+        sample_counter = SampleCounter()
 
-    # Copy the missing arguments from the example arguments.
-    if use_dataloader_example_data:
-        for k in dataloader.example_kwargs:
-            if k not in dataloader_args:
-                dataloader_args[k] = dataloader.example_kwargs[k]
+        mmdm = MutationMapDataMerger(seq_to_meta)
 
-    # If there was a field for dumping the region definition bed file, then use it.
-    if (exec_files_bed_keys is not None) and (not vcf_search_regions):
-        for k in exec_files_bed_keys:
-            dataloader_args[k] = temp_bed3_file
+        it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
+                                                      num_workers=num_workers)
+        for i, batch in enumerate(tqdm(it)):
 
-    model_out_annotation = model_info_extractor.get_model_out_annotation()
+            # get reference sequence for every line in the batch input
+            ref_seq_strs = get_ref_seq_from_seq_set(batch, seq_to_meta, seq_to_str_converter,
+                                                    dataloader.output_schema.inputs)
 
-    out_reshaper = OutputReshaper(model.schema.targets)
+            eval_kwargs_iter = _generate_seq_sets_mutmap_iter(dataloader.output_schema, batch, seq_to_mut=seq_to_mut,
+                                                              seq_to_meta=seq_to_meta,
+                                                              sample_counter=sample_counter, ref_sequences=ref_seq_strs,
+                                                              bedtools_obj=bed_obj,
+                                                              vcf_fh=vcf_fh,
+                                                              vcf_id_generator_fn=vcf_id_generator_fn,
+                                                              vcf_search_regions=vcf_search_regions,
+                                                              generate_rc=model_info_extractor.use_seq_only_rc,
+                                                              batch_size=batch_size)
 
+            dl_batch_res = []
+            # Keep the following metadata entries from the from the lines
+            eval_kwargs_noseq = {k:[] for k in ["line_id", "vcf_records", "process_line"]}
+            query_vcf_records = None
+            query_process_lines = None
 
-    it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
-                                                  num_workers=num_workers)
+            for eval_kwargs in eval_kwargs_iter:
+                if eval_kwargs is None:
+                    # No generated datapoint overlapped any VCF region
+                    continue
 
-    seq_to_mut = model_info_extractor.seq_input_mutator
-    seq_to_meta = model_info_extractor.seq_input_metadata
-    seq_to_str_converter = model_info_extractor.seq_to_str_converter
+                if evaluation_function_kwargs is not None:
+                    assert isinstance(evaluation_function_kwargs, dict)
+                    for k in evaluation_function_kwargs:
+                        eval_kwargs[k] = evaluation_function_kwargs[k]
 
-    # Open vcf again
-    vcf_fh = None
-    bed_obj = None
-    if vcf_fpath is not None:
-        vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
-    if bed_fpath is not None:
-        bed_obj = BedTool(bed_fpath).tabix()
-
-    # pre-process regions
-    keys = set()  # what is that?
-
-    sample_counter = SampleCounter()
-
-    mmdm = MutationMapDataMerger(seq_to_meta)
-
-
-    for i, batch in enumerate(tqdm(it)):
-
-        # get reference sequence for every line in the batch input
-        ref_seq_strs = get_ref_seq_from_seq_set(batch, seq_to_meta, seq_to_str_converter,
-                                                dataloader.output_schema.inputs)
-
-        eval_kwargs_iter = _generate_seq_sets_mutmap_iter(dataloader.output_schema, batch, seq_to_mut=seq_to_mut,
-                                                          seq_to_meta=seq_to_meta,
-                                                          sample_counter=sample_counter, ref_sequences=ref_seq_strs,
-                                                          bedtools_obj=bed_obj,
-                                                          vcf_fh=vcf_fh,
-                                                          vcf_id_generator_fn=vcf_id_generator_fn,
-                                                          vcf_search_regions=vcf_search_regions,
-                                                          generate_rc=model_info_extractor.use_seq_only_rc,
-                                                          batch_size=batch_size)
-
-        dl_batch_res = []
-        # Keep the following metadata entries from the from the lines
-        eval_kwargs_noseq = {k:[] for k in ["line_id", "vcf_records", "process_line"]}
-        query_vcf_records = None
-        query_process_lines = None
-
-        for eval_kwargs in eval_kwargs_iter:
-            if eval_kwargs is None:
-                # No generated datapoint overlapped any VCF region
-                continue
-
-            if evaluation_function_kwargs is not None:
-                assert isinstance(evaluation_function_kwargs, dict)
-                for k in evaluation_function_kwargs:
-                    eval_kwargs[k] = evaluation_function_kwargs[k]
-
-            eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
-
-            with cd(dataloader.source_dir):
+                eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
                 res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
-            for k in res_here:
-                keys.add(k)
-                res_here[k].index = eval_kwargs["line_id"]
+                for k in res_here:
+                    keys.add(k)
+                    res_here[k].index = eval_kwargs["line_id"]
 
-            # save predictions
-            dl_batch_res.append(res_here)
+                # save predictions
+                dl_batch_res.append(res_here)
 
-            # save metadata for creating mutation maps
-            [eval_kwargs_noseq[k].extend(eval_kwargs[k]) for k in eval_kwargs_noseq]
-            query_vcf_records = eval_kwargs["query_vcf_records"]
-            query_process_lines = eval_kwargs["query_process_lines"]
+                # save metadata for creating mutation maps
+                [eval_kwargs_noseq[k].extend(eval_kwargs[k]) for k in eval_kwargs_noseq]
+                query_vcf_records = eval_kwargs["query_vcf_records"]
+                query_process_lines = eval_kwargs["query_process_lines"]
 
-        # query vcf entries have to appended at the end of the batch again
-        eval_kwargs_noseq["query_vcf_records"] = query_vcf_records
-        eval_kwargs_noseq["query_process_lines"] = query_process_lines
-        # Concatenate results over batches
-        dl_batch_res_concatenated = {}
-        for k in keys:
-            dl_batch_res_concatenated[k] = pd.concat([inner_batch[k] for inner_batch in dl_batch_res if k in inner_batch])
+            # query vcf entries have to appended at the end of the batch again
+            eval_kwargs_noseq["query_vcf_records"] = query_vcf_records
+            eval_kwargs_noseq["query_process_lines"] = query_process_lines
+            # Concatenate results over batches
+            dl_batch_res_concatenated = {}
+            for k in keys:
+                dl_batch_res_concatenated[k] = pd.concat([inner_batch[k] for inner_batch in dl_batch_res if k in inner_batch])
 
-        # Append results and inputs to mutation map
-        mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
-
-
-    vcf_fh.close()
-
-    try:
-        if temp_bed3_file is not None:
-            os.unlink(temp_bed3_file)
-    except:
-        pass
+            # Append results and inputs to mutation map
+            mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
 
 
-    return mmdm
+        vcf_fh.close()
+
+        try:
+            if temp_bed3_file is not None:
+                os.unlink(temp_bed3_file)
+        except:
+            pass
+
+
+        return mmdm
 
 

@@ -382,7 +382,7 @@ def test_MutationMapDataMerger():
                     #retval = np.reshape(pred_proto[model_output].loc[np.array(process_line)==i], (seq_len, 4)).T
                     #assert np.all(mm_obj['mutation_map'] == retval)
                     assert mm_obj['ref_seq'] == rseq[i]
-                    assert mm_obj['ovlp_var']['varpos_rel'][0] == seq_len//2
+                    assert mm_obj['ovlp_var']['varpos_rel'][0] == seq_len//2 -1 
                     assert all([mm_obj['metadata_region'][k] == gr_meta["ranges"][k][i]
                                 for k in mm_obj['metadata_region']])
 
@@ -410,13 +410,13 @@ def test_mutation_map():
     # Run the actual predictions
     vcf_path = "example_files/first_variant.vcf"
     #
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
+    vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
+    mdmm = mm._generate_mutation_map(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                                     evaluation_function=analyse_model_preds, batch_size=32,
+                                     vcf_to_region=vcf_to_region,
+                                     evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}})
     with cd(model.source_dir):
-        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        mdmm = mm._generate_mutation_map(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                                         evaluation_function=analyse_model_preds, batch_size=32,
-                                         vcf_to_region=vcf_to_region,
-                                         evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}})
         mdmm.save_to_file("example_files/first_variant_mm_totest.hdf5")
         fh = h5py.File("example_files/first_variant_mm.hdf5", "r")
         reference = mm.recursive_h5_mutmap_reader(fh)
