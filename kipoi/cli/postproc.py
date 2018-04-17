@@ -256,22 +256,24 @@ def cli_score_variants(command, raw_args):
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
 
-    # infer the file format
-    args.file_format = args.output.split(".")[-1]
-    if args.file_format not in AVAILABLE_FORMATS:
-        logger.error("File ending: {0} for file {1} not from {2}".
-                     format(args.file_format, args.output, AVAILABLE_FORMATS))
-        sys.exit(1)
-
-    if args.file_format in ["hdf5", "h5"]:
-        # only if hdf5 output is used
-        import deepdish
 
     # Check that all the folders exist
     file_exists(args.vcf_path, logger)
     dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
     if args.output is not None:
         dir_exists(os.path.dirname(args.output), logger)
+
+        # infer the file format
+        args.file_format = args.output.split(".")[-1]
+        if args.file_format not in AVAILABLE_FORMATS:
+            logger.error("File ending: {0} for file {1} not from {2}".
+                         format(args.file_format, args.output, AVAILABLE_FORMATS))
+            sys.exit(1)
+
+        if args.file_format in ["hdf5", "h5"]:
+            # only if hdf5 output is used
+            import deepdish
+
     # --------------------------------------------
     # install args
     if args.install_req:

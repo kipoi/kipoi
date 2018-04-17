@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import six
 from tqdm import tqdm
+from kipoi.utils import cd
 
 from kipoi.postprocessing.variant_effects.utils.scoring_fns import Logit
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
@@ -584,7 +585,8 @@ def predict_snvs(model,
 
         eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
 
-        res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
+        with cd(dataloader.source_dir):
+            res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
         for k in res_here:
             keys.add(k)
             res_here[k].index = eval_kwargs["line_id"]

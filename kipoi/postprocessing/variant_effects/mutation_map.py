@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import six
 from tqdm import tqdm
+from kipoi.utils import cd
 
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
@@ -443,7 +444,8 @@ class MutationMapDataMerger(object):
                             query_vcf_recs_rel["ref"].append(rec.REF)
                             query_vcf_recs_rel["alt"].append(rec.ALT)
                             query_vcf_recs_rel["id"].append(rec.ID)
-                            query_vcf_recs_rel["varpos_rel"].append(int(rec.POS) - metadata_start)
+                            # pos is 1-based, metadata_start is 0 based and the relative position is 0-based, hence -1.
+                            query_vcf_recs_rel["varpos_rel"].append(int(rec.POS) - metadata_start -1)
                     # check that number of variants matches the number of bases *3
                     assert predictions_rowfilt.sum() == metadata_seqlen *3
                     # generate the ids to get the right order of predictions:
@@ -814,7 +816,8 @@ def _generate_mutation_map(model,
 
             eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
 
-            res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
+            with cd(dataloader.source_dir):
+                res_here = evaluation_function(model, output_reshaper=out_reshaper, **eval_kwargs)
             for k in res_here:
                 keys.add(k)
                 res_here[k].index = eval_kwargs["line_id"]
