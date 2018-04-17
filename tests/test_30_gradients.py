@@ -189,7 +189,7 @@ def test_keras_get_layers_and_outputs():
     assert selected_layers[0].name == "shared_lstm"
     assert len(sel_outputs) == 2
     assert len(sel_output_dims) == 2
-    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True)
+    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True, pre_nonlinearity = True)
     assert len(selected_layers) == 1
     assert selected_layers[0].name == "final_layer"
     assert len(sel_outputs) == 1
@@ -201,7 +201,7 @@ def test_keras_get_layers_and_outputs():
     assert selected_layers[0].name == "hidden"
     assert len(sel_outputs) == 1
     assert len(sel_output_dims) == 1
-    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True)
+    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True, pre_nonlinearity = True)
     assert len(selected_layers) == 1
     assert selected_layers[0].name == "final"
     assert len(sel_outputs) == 1

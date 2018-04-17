@@ -102,3 +102,154 @@ def test_prediction_io():
             m_expected = [m_in[k] for k in sorted(list(m_in))]
             assert all([np.all(el == el2) for el, el2 in zip(pred, m_expected)])
 
+# Test layer activation
+class DummyModel(nn.Module):
+
+    def __init__(self):
+        super(DummyModel, self).__init__()
+        self.first = nn.Linear(1, 1)
+        self.second = nn.Linear(1, 1)
+        self.final = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.first(x)
+        x = self.second(x)
+        x = self.final(x)
+        return x
+
+
+class PyTConvNet(torch.nn.Module):
+    # Taken from https://github.com/vinhkhuc/PyTorch-Mini-Tutorials/blob/master/5_convolutional_net.py
+
+    def __init__(self, output_dim):
+        super(PyTConvNet, self).__init__()
+        self.conv = torch.nn.Sequential()
+        self.conv.add_module("conv_1", torch.nn.Conv2d(1, 10, kernel_size=5))
+        self.conv.add_module("maxpool_1", torch.nn.MaxPool2d(kernel_size=2))
+        self.conv.add_module("relu_1", torch.nn.ReLU())
+        self.conv.add_module("conv_2", torch.nn.Conv2d(10, 20, kernel_size=5))
+        self.conv.add_module("dropout_2", torch.nn.Dropout())
+        self.conv.add_module("maxpool_2", torch.nn.MaxPool2d(kernel_size=2))
+        self.conv.add_module("relu_2", torch.nn.ReLU())
+        self.fc = torch.nn.Sequential()
+        self.fc.add_module("fc1", torch.nn.Linear(320, 50))
+        self.fc.add_module("relu_3", torch.nn.ReLU())
+        self.fc.add_module("dropout_3", torch.nn.Dropout())
+        self.fc.add_module("fc2", torch.nn.Linear(50, output_dim))
+
+    def forward(self, x):
+        x = self.conv.forward(x)
+        x = x.view(-1, 320)
+        return self.fc.forward(x)
+
+
+def get_pyt_sequential_model_input():
+    np.random.seed(1)
+    np.random.rand(3, 1, 10)
+
+
+def pyt_sequential_model_bf():
+    new_model = nn.Sequential(
+        nn.Conv1d(1, 16, kernel_size=5, padding=2),
+        nn.BatchNorm2d(16),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        nn.Linear(5, 24),
+        nn.ReLU()
+    ).double()
+    # new_model.load_state_dict(new_model.state_dict())
+    return new_model
+
+
+def get_dummy_model_input():
+    np.random.seed(1)
+    return np.random.rand(20, 1)
+
+
+def dummy_model_bf():
+    dummy_model = DummyModel().double()
+    init_state = dummy_model.state_dict()
+    wt_1 = torch.FloatTensor(1, 1)
+    wt_1[:] = 0.5
+    b_1 = torch.FloatTensor(1)
+    b_1[:] = 0.0
+    wt_2 = torch.FloatTensor(1, 1)
+    wt_2[:] = 0.25
+    b_2 = torch.FloatTensor(1)
+    b_2[:] = 0.0
+    init_state["first.weight"] = wt_1
+    init_state["second.weight"] = wt_2
+    init_state["first.bias"] = b_1
+    init_state["second.bias"] = b_2
+    dummy_model.load_state_dict(init_state)
+    dummy_model.eval()
+    return dummy_model
+
+
+class PyTNet(nn.Module):
+
+    def __init__(self):
+        super(PyTNet, self).__init__()
+        self.conv1 = nn.Conv1d(1, 16, kernel_size=5, padding=2)
+        self.pool = nn.MaxPool1d(2)
+        self.fc1 = nn.Linear(240, 2)
+        self.fc2 = nn.Linear(2, 1)
+
+    def forward(self, x):
+        x1 = self.pool(F.relu(self.conv1(x)))
+        x2 = self.pool(F.sigmoid(self.conv1(x)))
+        x1 = x1.view(-1, 240)
+        x2 = x2.view(-1, 240)
+        x = torch.cat((x1, x2), 0)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return x
+
+
+def get_pyt_complex_model_input():
+    np.random.seed(1)
+    return np.random.rand(3, 1, 10)
+
+
+def pyt_complex_model_bf():
+    return PyTNet().double()
+
+
+def test_get_layer():
+    dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
+    sequential_model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
+    complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
+    # test get layer
+    assert dummy_model.get_layer("first") == dummy_model.model.first
+    assert sequential_model.get_layer("0") == getattr(sequential_model.model, "0")
+    assert complex_model.get_layer("fc1") == complex_model.model.fc1
+
+
+def test_predict_activation_on_batch():
+    dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
+    sequential_model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
+    complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
+    acts_dummy = dummy_model.predict_activation_on_batch(get_dummy_model_input(), layer="first")
+    acts_sequential = sequential_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="0")
+
+    acts = complex_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="conv1")
+    assert isinstance(acts, list)
+    assert isinstance(acts[0], list)
+    assert isinstance(acts[0][0], np.ndarray)
+    with pytest.raises(Exception):
+        # This has to raise an exception - pre_nonlinearity not implemented
+        acts = dummy_model.predict_activation_on_batch(get_dummy_model_input(),
+                                                       layer="final", pre_nonlinearity=True)
+
+def test_gradients():
+    import kipoi
+    dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
+    assert dummy_model.input_grad(np.array([[1.0]]), avg_func="sum", wrt_layer="second")[0][0] == 0.125
+    complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
+
+    gT2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", wrt_layer="conv1",
+                                   selected_fwd_node=None)
+    gF2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", wrt_layer="conv1",
+                                   selected_fwd_node=1)
+
+    assert np.all(gF2 * 2 == gT2)
