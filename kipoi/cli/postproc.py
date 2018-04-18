@@ -510,11 +510,11 @@ def cli_plot_mutation_map(command, raw_args):
     import matplotlib.pyplot
     matplotlib.pyplot.switch_backend('agg')
     import matplotlib.pylab as plt
-    from kipoi.postprocessing.variant_effects.mutation_map import MutationMapDrawer
+    from kipoi.postprocessing.variant_effects.mutation_map import MutationMapPlotter
 
     logger.info('Loading mutation map file...')
 
-    mutmap = MutationMapDrawer(fname=args.input_file)
+    mutmap = MutationMapPlotter(fname=args.input_file)
 
     fig = plt.figure(figsize=(50, 5))
     ax = plt.subplot(1, 1, 1)

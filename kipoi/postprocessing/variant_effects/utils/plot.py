@@ -36,7 +36,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     # heatmap grid
     grid = np.mgrid[0.5:(seq_len + 0.5):1, -vocab_len:0:1].reshape(2, -1).T
-    y_hm_tickpos = np.arange(-vocab_len, 0, 1) + 0.5
+    y_hm_tickpos = (np.arange(-vocab_len, 0, 1) + 0.5)[::-1] # alphabet position with 0 on top
     y_seqlogo_tickpos = np.array([0, letter_rescaling])  # tuple of where the ticks for the seqlogo should be placed
 
     if ax is None:
@@ -48,8 +48,8 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
         rect = mpatches.Rectangle(pos_tuple, 1.0, 1.0, ec="none")
         patches.append(rect)
 
-    # Add colours to the heatmap
-    colors = heatmap_data.T.reshape((seq_len * 4))
+    # Add colours to the heatmap - flip the alphabet order so that "A" is on top.
+    colors = heatmap_data[::-1,:].T.reshape((seq_len * 4))
     # Centre the colours around 0
     cmap_centered = center_cmap(cmap, colors.max(), colors.min(), 0.0)
     collection = PatchCollection(patches, cmap=cmap_centered, alpha=1.0)
@@ -106,17 +106,25 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
         # for every variant draw a rectangle
         for rel_pos, var_id, ref, alt in zip(ovlp_var["varpos_rel"], ovlp_var["id"], ovlp_var["ref"], ovlp_var["alt"]):
             # positions of ref and alt on the heatmap
-            y_ref_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(ref[0])
-            y_alt_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(alt[0])
+            # This is for non-flipped alphabet
+            # y_ref_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(ref[0])
+            # y_alt_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(alt[0])
+            # This is for the flipped alphabet
+            y_ref_lowlim = list(VOCABS[vocab].keys()).index(ref[0])*(-1)-1
+            y_alt_lowlim = list(VOCABS[vocab].keys()).index(alt[0][0])*(-1)-1
             # box drawing
             box_width = len(ref)
-            y_lowlim = min(y_ref_lowlim, y_alt_lowlim)
-            box_height = np.abs(y_ref_lowlim - y_alt_lowlim) + 1
+            # Deprecated: draw bax around ref and alt.
+            # y_lowlim = min(y_ref_lowlim, y_alt_lowlim)
+            # box_height = np.abs(y_ref_lowlim - y_alt_lowlim) + 1
+            # only draw the box around the alternative allele.
+            y_lowlim = y_alt_lowlim
+            box_height = 1
             ax.add_patch(
                 mpatches.Rectangle((rel_pos + 0.5, y_lowlim), box_width, box_height, fill=False, lw=2, ec="black"))
             # annotate the box
             ax.annotate(var_id, xy=(rel_pos + box_width + 0.5, y_lowlim + box_height / 2),
-                        xytext=(rel_pos + box_width + 0.5 + 2, -vocab_len / 2), arrowprops=dict(arrowstyle="->",
+                        xytext=(rel_pos + box_width + 0.5 + 2, y_lowlim + box_height / 2), arrowprops=dict(arrowstyle="->",
                                                                                                 connectionstyle="arc"),
                         bbox=dict(boxstyle="round,pad=.5", fc="0.9", alpha=0.7))
 
