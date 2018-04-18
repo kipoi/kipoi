@@ -1,13 +1,13 @@
-import logging
 import numpy as np
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 from collections import OrderedDict
 import copy
-
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class ReshapeDnaString(object):
+
     def __init__(self, input_shape):
         if len(input_shape) == 0:
             self.format_style = "string"
@@ -53,8 +53,8 @@ class ReshapeDnaString(object):
         return arr
 
 
-
 class OutputReshaper(object):
+
     def __init__(self, model_target_schema, group_delim="."):
         self.model_target_schema = model_target_schema
         self.standard_dict_order = None  # This one is used to always produce the same order of outputs for a dict
@@ -102,7 +102,7 @@ class OutputReshaper(object):
         if len(arr.shape) == 1:
             arr = arr[:, None]
         elif (len(arr.shape) == 3) and (arr.shape[2] == 1):
-            arr = arr[...,0]
+            arr = arr[..., 0]
         return arr
 
     def flatten(self, ds):
@@ -148,8 +148,8 @@ class OutputReshaper(object):
         return ret
 
 
-
 class ReshapeDna(object):
+
     def __init__(self, in_shape):
         in_shape = np.array(in_shape)
         # None can only occur once and then it can only be the seqlen
@@ -157,9 +157,9 @@ class ReshapeDna(object):
         if np.sum(none_pos) > 1:
             raise Exception("At maximum one occurence of 'None' is allowed in the model input shape!"
                             "This dimension is then automatically assumed to be the 'seq_len' dimension.")
-        #if np.any(none_pos) and (np.where(none_pos)[0][0] != 0):
+        # if np.any(none_pos) and (np.where(none_pos)[0][0] != 0):
         #    raise Exception("Unexpected 'None' shape in other dimension than the first!")
-        #else:
+        # else:
         #    in_shape = in_shape[~none_pos]
         #
         self.in_shape = in_shape
@@ -223,7 +223,7 @@ class ReshapeDna(object):
             if self.seq_len is None:
                 in_shape = copy.deepcopy(in_shape)
                 none_dim = [i for i, el in enumerate(self.in_shape) if el is None][0]
-                in_shape[none_dim] = in_array.shape[none_dim+1]
+                in_shape[none_dim] = in_array.shape[none_dim + 1]
 
         # Raise an exception if the input array does not agree with the specifications in the model input schema
         if (additional_axis != 1) or (in_array.shape[1:] != tuple(in_shape)):

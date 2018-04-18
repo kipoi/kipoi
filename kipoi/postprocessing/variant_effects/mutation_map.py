@@ -4,13 +4,13 @@ import logging
 import os
 import tempfile
 
-import h5py
 import numpy as np
 import pandas as pd
-import six
 from tqdm import tqdm
 from kipoi.utils import cd
 
+from kipoi.writers import HDF5BatchWriter
+from kipoi.readers import HDF5Reader
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
 from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
@@ -20,7 +20,6 @@ from .snv_predict import SampleCounter, get_genomicranges_line, merge_intervals,
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
 
 
 def _generate_records_for_all_regions(regions, ref_seq):
@@ -35,7 +34,7 @@ def _generate_records_for_all_regions(regions, ref_seq):
     vcf_records = []
     for i, ref_seq_here in enumerate(ref_seq):
         chrom, start, end = regions["chr"][i], regions["start"][i] + 1, regions["end"][i]
-        for pos, ref in zip(range(start, end+1), ref_seq_here):
+        for pos, ref in zip(range(start, end + 1), ref_seq_here):
             qual = 0
             filt = []
             info = {}
@@ -54,8 +53,7 @@ def _generate_records_for_all_regions(regions, ref_seq):
     return vcf_records, contained_regions
 
 
-
-def get_variants_for_all_positions(dl_batch, seq_to_meta, ref_sequences, process_lines_preselection = None):
+def get_variants_for_all_positions(dl_batch, seq_to_meta, ref_sequences, process_lines_preselection=None):
     """
     Function that generates VCF records for all positions in the input sequence(s). This is done by merging the regions.
     When regions are party overlapping then a variant will be tagged with all sequence-fields that participated in the
@@ -109,10 +107,10 @@ def get_variants_for_all_positions(dl_batch, seq_to_meta, ref_sequences, process
 def merged_intervals_seq(ranges_dict, sequence, regions_unif, meta_field_unif_r):
     """
     ranges_dict: Dict of Genomic ranges objects for all the different metadata slots
-    sequence: Sequences stored in a dictionary with metadata slots as keys 
+    sequence: Sequences stored in a dictionary with metadata slots as keys
     regions_unif: A genomic ranges object of the unified ranges
     meta_field_unif_r: Metadata slot names that are associated with a certain region in `regions_unif`
-    seq_to_meta: sequence slot keys to their associated metadata slot key 
+    seq_to_meta: sequence slot keys to their associated metadata slot key
     """
 
     all_joint_seqs = []
@@ -129,7 +127,6 @@ def merged_intervals_seq(ranges_dict, sequence, regions_unif, meta_field_unif_r)
             joint_seq[rel_start:rel_end] = list(sequence[mf_here])
         all_joint_seqs.append("".join(joint_seq.tolist()))
     return all_joint_seqs
-
 
 
 def _overlap_bedtools_region(bedtools_obj, regions):
@@ -151,16 +148,21 @@ def _overlap_bedtools_region(bedtools_obj, regions):
     #
     return bed_regions, contained_regions
 
+
 def compress_genomicranges_list(input_list):
     """Convert list of genomicranges objects to a single genomicranges object."""
+    # TODO - directly use kipoi.metadata.GenomicRanges.collate(input_list) instead of this function
     assert isinstance(input_list, list)
     out_regions = {k: [] for k in ["chr", "start", "end", "strand"]}
     [[out_regions[k].append(v[k][0]) for k in out_regions] for v in input_list]
     return out_regions
 
+
 def get_overlapping_bed_regions(dl_batch, seq_to_meta, bedtools_obj):
     """
-    Function that overlaps metadata ranges with a bed file. Regions are not merged prior to overlap with bedtools_obj!
+    Function that overlaps metadata ranges with a bed file.
+    Regions are not merged prior to overlap with bedtools_obj!
+
     Arguments:
         dl_batch: batch coming from the dataloader
         seq_to_meta: dictionary that converts model input names to its associated metadata field.
@@ -202,10 +204,11 @@ def get_overlapping_bed_regions(dl_batch, seq_to_meta, bedtools_obj):
             process_seq_fields.append(metas)
     return bed_regions, process_lines, process_seq_fields
 
+
 def _generate_seq_sets_mutmap_iter(dl_ouput_schema, dl_batch, seq_to_mut, seq_to_meta,
-                                   sample_counter, ref_sequences, bedtools_obj= None, vcf_fh=None,
+                                   sample_counter, ref_sequences, bedtools_obj=None, vcf_fh=None,
                                    vcf_id_generator_fn=None, vcf_search_regions=False, generate_rc=True,
-                                   batch_size = 32):
+                                   batch_size=32):
 
     all_meta_fields = list(set(seq_to_meta.values()))
 
@@ -363,29 +366,29 @@ def get_ref_seq_from_seq_set(input_set, seq_to_meta, seq_to_str_converter, dl_ou
 
         if not isinstance(strand_info, np.ndarray):
             logger.warn("Strand in dataloader batch not defined properly for metadata field: %s. "
-                        "Assuming all sequences to be in forward direction!"%meta_field)
-            is_rc = np.array([False]*input_set["metadata"][meta_field]["start"].shape[0])
+                        "Assuming all sequences to be in forward direction!" % meta_field)
+            is_rc = np.array([False] * input_set["metadata"][meta_field]["start"].shape[0])
         else:
             is_rc = strand_info == "-"
 
-        str_seqs[meta_field] = seq_to_str_converter[seq_key].to_str(seq_data, is_rc = is_rc)
+        str_seqs[meta_field] = seq_to_str_converter[seq_key].to_str(seq_data, is_rc=is_rc)
     return str_seqs
 
 
-
-### Structure of mutation_map
+# Structure of mutation_map
 # For every DL batch entry across all batches:
 #   For every metadata class (seq key):
 #       Get the DNA sequence as a String
 #       Get the genomic region of the metadata
 #       Get all variants that overlap the region and reset to relative coordinates
 #       Generate the mapping variants versus effects matrix
-#       For every socring method
+#       For every scoring method
 #           For every model output
 #               Extract the effect score
 
 
 class MutationMapDataMerger(object):
+
     def __init__(self, seq_to_meta):
         self.predictions = []
         self.pred_sets = []
@@ -402,7 +405,7 @@ class MutationMapDataMerger(object):
         self.pred_sets.append(pred_set)
         self.ref_seqs.append(ref_seq)
         self.batch_metadata_list.append(batch_metadata)
-        
+
     def get_merged_data(self):
         # In general it doesn't make much sense to concatenate the batches. The output shall be as one entry per process_line in pred_sets
         # predictions are stored as dictionary (keys = scoring function) of pandas DFs where each column is a model output.
@@ -425,8 +428,8 @@ class MutationMapDataMerger(object):
                 for metadata_key in ref_seq:
                     metadata_subset = get_genomicranges_line(batch_metadata[metadata_key], process_line)
                     subset_keys = ["chr", "start", "end", "strand"]
-                    if not (isinstance(metadata_subset["strand"], list)
-                            or isinstance(metadata_subset["strand"], np.ndarray)):
+                    if not (isinstance(metadata_subset["strand"], list) or
+                            isinstance(metadata_subset["strand"], np.ndarray)):
                         subset_keys = ["chr", "start", "end"]
                     metadata_subset_dict = {k: metadata_subset[k][0] for k in subset_keys}
                     if "strand" not in metadata_subset_dict:
@@ -434,7 +437,7 @@ class MutationMapDataMerger(object):
                     metadata_chrom = metadata_subset["chr"][0]
                     metadata_start = metadata_subset["start"][0]
                     metadata_end = metadata_subset["end"][0]
-                    metadata_seqlen = metadata_end-metadata_start
+                    metadata_seqlen = metadata_end - metadata_start
                     ref_seq_here = ref_seq[metadata_key][process_line]
                     query_vcf_recs_rel = {k: [] for k in ["chr", "pos", "ref", "alt", "id", "varpos_rel"]}
                     if query_vcf_recs is not None:
@@ -445,14 +448,14 @@ class MutationMapDataMerger(object):
                             query_vcf_recs_rel["alt"].append(rec.ALT)
                             query_vcf_recs_rel["id"].append(rec.ID)
                             # pos is 1-based, metadata_start is 0 based and the relative position is 0-based, hence -1.
-                            query_vcf_recs_rel["varpos_rel"].append(int(rec.POS) - metadata_start -1)
+                            query_vcf_recs_rel["varpos_rel"].append(int(rec.POS) - metadata_start - 1)
                     # check that number of variants matches the number of bases *3
-                    assert predictions_rowfilt.sum() == metadata_seqlen *3
+                    assert predictions_rowfilt.sum() == metadata_seqlen * 3
                     # generate the ids to get the right order of predictions:
                     correct_order_ids = []
                     # REF/REF was not generated, so those can be appended to the results
                     ref_ref_var_ids = []
-                    for pos, ref in zip(range(metadata_start+1, metadata_end+1), ref_seq_here):
+                    for pos, ref in zip(range(metadata_start + 1, metadata_end + 1), ref_seq_here):
                         for alt in ["A", "C", "G", "T"]:
                             ID = ":".join([metadata_chrom, str(pos), ref.upper(), alt])
                             correct_order_ids.append(ID)
@@ -464,13 +467,13 @@ class MutationMapDataMerger(object):
                         metadata_mutmap[scoring_fn] = {}
                         # check if output labels are not unique
                         if len(set(predictions[scoring_fn].columns)) != predictions[scoring_fn].shape[1]:
-                            predictions[scoring_fn].columns = ["%s_%d"%(d, i) for i, d in enumerate(predictions[scoring_fn].columns)]
+                            predictions[scoring_fn].columns = ["%s_%d" % (d, i) for i, d in enumerate(predictions[scoring_fn].columns)]
                             logger.warn("Model output labels are not unique! appending the column number.")
                         for model_output in predictions[scoring_fn]:
                             mutmap_dict = {}
                             preds = predictions[scoring_fn][model_output].loc[predictions_rowfilt]
                             # append predictions for ref/ref variants:
-                            ref_ref_preds = pd.Series(0, name= preds.name, index=ref_ref_var_ids)
+                            ref_ref_preds = pd.Series(0, name=preds.name, index=ref_ref_var_ids)
                             preds = pd.concat([preds, ref_ref_preds])
                             preds = preds.loc[correct_order_ids].values
                             mutmap_dict["mutation_map"] = np.reshape(preds, (metadata_seqlen, 4)).T
@@ -486,28 +489,21 @@ class MutationMapDataMerger(object):
 
     def save_to_file(self, fname):
         # Best is to use a hdf5 file
-        res = self.get_merged_data()
-        res = {"_list_%d"%i:v for i, v in enumerate(res)}
-        ofh = h5py.File(fname, "w")
-        recursive_h5_mutmap_writer(res, ofh)
-        ofh.close()
+        HDF5BatchWriter.dump(fname, self.get_merged_data())
 
 
 class MutationMapDrawer(object):
+
     def __init__(self, mutation_map=None, fname=None):
         if mutation_map is None and fname is None:
             raise Exception("Either mutation_map or fname for a mutation_map file has to be given")
         if mutation_map is not None:
             self.mutation_map = mutation_map
         elif fname is not None:
-            with h5py.File(fname, "r") as ifh:
-                mutation_map = recursive_h5_mutmap_reader(ifh)
-                mutation_map = [mutation_map["_list_%d" % i] for i in range(len(mutation_map))]
-                self.mutation_map = mutation_map
+            self.mutation_map = HDF5Reader.load(fname)
 
-
-    def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale = False,
-                    cmap = None, limit_region = None):
+    def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
+                    cmap=None, limit_region=None):
         from kipoi.external.concise.seqplotting_deps import encodeDNA
         import matplotlib.pyplot as plt
         if cmap is None:
@@ -519,42 +515,8 @@ class MutationMapDrawer(object):
         # letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].sum(axis=0))[:,None]
         letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].mean(axis=0))[:, None]
 
-        return seqlogo_heatmap(letter_heights, mm_obj['mutation_map'], mm_obj['ovlp_var'], vocab="DNA", ax = ax,
-                               show_letter_scale = show_letter_scale, cmap=cmap, limit_region =limit_region)
-
-
-
-
-def recursive_h5_mutmap_writer(objs, handle, path =""):
-    for key in objs.keys():
-        if isinstance(objs[key], dict):
-            g = handle.create_group(key)
-            recursive_h5_mutmap_writer(objs[key], g, path =path + "/" + key)
-        else:
-            if isinstance(objs[key], list) or isinstance(objs[key], np.ndarray):
-                el = np.array(objs[key])
-                if "U" in el.dtype.str:
-                    el = el.astype("S")
-                handle.create_dataset(name=path + "/" + key, data=el, chunks=True, compression='gzip')
-            else:
-                el = objs[key]
-                if isinstance(el, six.string_types):
-                    el = str(el)
-                handle.create_dataset(name=path + "/" + key, data=el)
-
-def recursive_h5_mutmap_reader(handle):
-    objs = {}
-    for key in handle.keys():
-        if isinstance(handle[key], h5py.Group):
-            objs[key] = recursive_h5_mutmap_reader(handle[key])
-        else:
-            if isinstance(handle[key], h5py.Dataset):
-                el = handle[key].value
-                if isinstance(el, np.ndarray):
-                    if "S" in el.dtype.str:
-                        el = el.astype(str)
-                objs[key] = el
-    return objs
+        return seqlogo_heatmap(letter_heights, mm_obj['mutation_map'], mm_obj['ovlp_var'], vocab="DNA", ax=ax,
+                               show_letter_scale=show_letter_scale, cmap=cmap, limit_region=limit_region)
 
 
 def bed_based_mutation_map(model,
@@ -572,16 +534,17 @@ def bed_based_mutation_map(model,
     Please see _generate_mutation_map docs
     """
     return _generate_mutation_map(model,
-                           dataloader,
-                           bed_fpath=bed_fpath,
-                           batch_size=batch_size,
-                           num_workers=num_workers,
-                           dataloader_args=dataloader_args,
-                           bed_to_region=bed_to_region,
-                           evaluation_function=evaluation_function,
-                           evaluation_function_kwargs=evaluation_function_kwargs,
-                           use_dataloader_example_data=use_dataloader_example_data,
-                           )
+                                  dataloader,
+                                  bed_fpath=bed_fpath,
+                                  batch_size=batch_size,
+                                  num_workers=num_workers,
+                                  dataloader_args=dataloader_args,
+                                  bed_to_region=bed_to_region,
+                                  evaluation_function=evaluation_function,
+                                  evaluation_function_kwargs=evaluation_function_kwargs,
+                                  use_dataloader_example_data=use_dataloader_example_data,
+                                  )
+
 
 def vcf_based_mutation_map(model,
                            dataloader,
@@ -599,42 +562,43 @@ def vcf_based_mutation_map(model,
     Please see _generate_mutation_map docs
     """
     return _generate_mutation_map(model,
-                           dataloader,
-                           vcf_fpath=vcf_fpath,
-                           batch_size=batch_size,
-                           num_workers=num_workers,
-                           dataloader_args=dataloader_args,
-                           vcf_to_region=vcf_to_region,
-                           vcf_id_generator_fn=vcf_id_generator_fn,
-                           evaluation_function=evaluation_function,
-                           evaluation_function_kwargs=evaluation_function_kwargs,
-                           use_dataloader_example_data=use_dataloader_example_data,
-                           )
+                                  dataloader,
+                                  vcf_fpath=vcf_fpath,
+                                  batch_size=batch_size,
+                                  num_workers=num_workers,
+                                  dataloader_args=dataloader_args,
+                                  vcf_to_region=vcf_to_region,
+                                  vcf_id_generator_fn=vcf_id_generator_fn,
+                                  evaluation_function=evaluation_function,
+                                  evaluation_function_kwargs=evaluation_function_kwargs,
+                                  use_dataloader_example_data=use_dataloader_example_data,
+                                  )
+
 
 def dataloader_based_mutation_map(model,
-                           dataloader,
-                           batch_size=32,
-                           num_workers=0,
-                           dataloader_args=None,
-                           evaluation_function=analyse_model_preds,
-                           evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
-                           use_dataloader_example_data=False,
-                           ):
+                                  dataloader,
+                                  batch_size=32,
+                                  num_workers=0,
+                                  dataloader_args=None,
+                                  evaluation_function=analyse_model_preds,
+                                  evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
+                                  use_dataloader_example_data=False,
+                                  ):
     """
     Please see _generate_mutation_map docs
     """
     return _generate_mutation_map(model,
-                           dataloader,
-                           batch_size=batch_size,
-                           num_workers=num_workers,
-                           dataloader_args=dataloader_args,
-                           evaluation_function=evaluation_function,
-                           evaluation_function_kwargs=evaluation_function_kwargs,
-                           use_dataloader_example_data=use_dataloader_example_data,
-                           )
+                                  dataloader,
+                                  batch_size=batch_size,
+                                  num_workers=num_workers,
+                                  dataloader_args=dataloader_args,
+                                  evaluation_function=evaluation_function,
+                                  evaluation_function_kwargs=evaluation_function_kwargs,
+                                  use_dataloader_example_data=use_dataloader_example_data,
+                                  )
 
 
-### Mutation map should be generated from bed file or VCF containing variants or regions. -> Done
+# Mutation map should be generated from bed file or VCF containing variants or regions. -> Done
 def _generate_mutation_map(model,
                            dataloader,
                            vcf_fpath=None,
@@ -656,7 +620,7 @@ def _generate_mutation_map(model,
             dataloader `bed` file inputs can be overwritten either by sequences centered on variants (see arguments
             `vcf_fpath` and `vcf_to_region`) or bed files (see arguments `bed_fpath` and `bed_to_region`). Effect
             scores are returned as `MutationMapDataMerger` object which can be saved to an hdf5 file and used for
-            plotting. It is important to mention that the order of the scored sequences is the order in which the 
+            plotting. It is important to mention that the order of the scored sequences is the order in which the
             dataloader has produced data input - intersected with `vcf_fpath` or `bed_fpath` if given.
             Only `vcf_fpath` or `bed_fpath` can be set at once, but neither is required.
 
@@ -676,9 +640,9 @@ def _generate_mutation_map(model,
                 dataloader_args: arguments passed on to the dataloader for sequence generation, arguments
                     mentioned in dataloader.yaml > postprocessing > variant_effects > bed_input will be overwritten
                     by the methods here.
-                vcf_to_region: Callable that generates a regions compatible with dataloader/model from a cyvcf2 record
+                vcf_to_region: Callable that generates a regions compatible with dataloader/model from a cyvcf2 record - TODO - regions or a single region
                 bed_to_region: Callable that generates a regions compatible with dataloader/model from a bed entry
-                vcf_id_generator_fn: Callable that generates a unique ID from a cyvcf2 record, has to be defined if 
+                vcf_id_generator_fn: Callable that generates a unique ID from a cyvcf2 record, has to be defined if
                     `vcf_fpath` is set.
                 evaluation_function: effect evaluation function. Default is `analyse_model_preds`, which will get
                     arguments defined in `evaluation_function_kwargs`
@@ -712,7 +676,7 @@ def _generate_mutation_map(model,
         if exec_files_bed_keys is not None:
             temp_bed3_file = tempfile.mktemp()  # file path of the temp file
             if (vcf_to_region is not None) and (vcf_fpath is not None):
-                logger.warn("Using VCF file %s to define the dataloader intervals."%vcf_fpath)
+                logger.warn("Using VCF file %s to define the dataloader intervals." % vcf_fpath)
                 vcf_search_regions = False
                 vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
                 with BedWriter(temp_bed3_file) as ofh:
@@ -759,7 +723,6 @@ def _generate_mutation_map(model,
 
         out_reshaper = OutputReshaper(model.schema.targets)
 
-
         seq_to_mut = model_info_extractor.seq_input_mutator
         seq_to_meta = model_info_extractor.seq_input_metadata
         seq_to_str_converter = model_info_extractor.seq_to_str_converter
@@ -779,6 +742,7 @@ def _generate_mutation_map(model,
 
         mmdm = MutationMapDataMerger(seq_to_meta)
 
+        # TODO - ignore the un-used params?
         it = dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
                                                       num_workers=num_workers)
         for i, batch in enumerate(tqdm(it)):
@@ -799,7 +763,7 @@ def _generate_mutation_map(model,
 
             dl_batch_res = []
             # Keep the following metadata entries from the from the lines
-            eval_kwargs_noseq = {k:[] for k in ["line_id", "vcf_records", "process_line"]}
+            eval_kwargs_noseq = {k: [] for k in ["line_id", "vcf_records", "process_line"]}
             query_vcf_records = None
             query_process_lines = None
 
@@ -838,7 +802,6 @@ def _generate_mutation_map(model,
             # Append results and inputs to mutation map
             mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
 
-
         vcf_fh.close()
 
         try:
@@ -847,7 +810,4 @@ def _generate_mutation_map(model,
         except:
             pass
 
-
         return mmdm
-
-

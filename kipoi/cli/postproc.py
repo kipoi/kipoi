@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
+import sys
 import copy
 import logging
 import os
@@ -104,7 +105,7 @@ def get_avail_scoring_methods(model):
         default_scoring_fns = copy.copy(avail_scoring_fn_names)
 
     # try to complete the set of functions if needed. None of the additional ones will become part of the defaults
-    additional_scoring_fn_def_args =[]
+    additional_scoring_fn_def_args = []
     additional_scoring_fns = []
     additional_scoring_fn_names = []
     for scoring_fn, def_args in zip(avail_scoring_fns, avail_scoring_fn_def_args):
@@ -131,7 +132,6 @@ def get_avail_scoring_methods(model):
     avail_scoring_fn_def_args += additional_scoring_fn_def_args
     avail_scoring_fn_names += additional_scoring_fn_names
 
-
     # add the default scoring functions if not already in there
     for scoring_name in categorical_enable["__any__"]:
         if scoring_options[scoring_name] not in avail_scoring_fns:
@@ -145,6 +145,7 @@ def get_avail_scoring_methods(model):
                 default_scoring_fns.append(s_label)
 
     return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
+
 
 def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
     # get the scoring methods according to the model definition
@@ -196,7 +197,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
                     dts[k] = avail_scoring_fns[si](**kwargs)
                 else:
                     logger.warn("Cannot choose scoring function %s. "
-                                     "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
+                                "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
     # if -s not set use all defaults
     elif len(default_scoring_fns) != 0:
         for arg_iter, k in enumerate(default_scoring_fns):
@@ -256,8 +257,6 @@ def cli_score_variants(command, raw_args):
     vcf_path = args.vcf_path
     out_vcf_fpath = args.out_vcf_fpath
     dataloader_arguments = parse_json_file_str(args.dataloader_args)
-
-
 
     # --------------------------------------------
     # install args
@@ -366,11 +365,9 @@ def cli_score_variants(command, raw_args):
     logger.info('Successfully predicted samples')
 
 
-
 def cli_create_mutation_map(command, raw_args):
     """CLI interface to predict
     """
-    import pybedtools
     assert command == "create_mutation_map"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
@@ -467,18 +464,17 @@ def cli_create_mutation_map(command, raw_args):
 
     from kipoi.postprocessing.variant_effects.mutation_map import _generate_mutation_map
     mdmm = _generate_mutation_map(model,
-                           Dl,
-                           vcf_fpath=vcf_region_file,
-                           bed_fpath=bed_region_file,
-                           batch_size=args.batch_size,
-                           num_workers=args.num_workers,
-                           dataloader_args=dataloader_arguments,
-                           vcf_to_region=vcf_to_region,
-                           bed_to_region=bed_to_region,
-                           evaluation_function_kwargs={'diff_types': dts},
-                           )
-    with cd(model.source_dir):
-        mdmm.save_to_file(args.output)
+                                  Dl,
+                                  vcf_fpath=vcf_region_file,
+                                  bed_fpath=bed_region_file,
+                                  batch_size=args.batch_size,
+                                  num_workers=args.num_workers,
+                                  dataloader_args=dataloader_arguments,
+                                  vcf_to_region=vcf_to_region,
+                                  bed_to_region=bed_to_region,
+                                  evaluation_function_kwargs={'diff_types': dts},
+                                  )
+    mdmm.save_to_file(args.output)
 
     logger.info('Successfully generated mutation map data')
 
@@ -499,7 +495,7 @@ def cli_plot_mutation_map(command, raw_args):
     parser.add_argument('--input_line', required=True, type=int,
                         help="Input line for which the plot should be generated")
     parser.add_argument('--model_seq_input', required=True,
-                        help="Model input port to be used for plotting. As defined in model.yaml.")
+                        help="Model input name to be used for plotting. As defined in model.yaml.")
     parser.add_argument('--scoring_key', required=True,
                         help="Variant score label to be used for plotting. As defined when running "
                              "`create_mutation_map`.")
@@ -520,8 +516,8 @@ def cli_plot_mutation_map(command, raw_args):
 
     mutmap = MutationMapDrawer(fname=args.input_file)
 
-    fig = plt.figure(figsize=(50,5))
-    ax = plt.subplot(1,1,1)
+    fig = plt.figure(figsize=(50, 5))
+    ax = plt.subplot(1, 1, 1)
 
     logger.info('Plotting...')
 
@@ -533,10 +529,11 @@ def cli_plot_mutation_map(command, raw_args):
 # --------------------------------------------
 # CLI commands
 
+
 command_functions = {
     'score_variants': cli_score_variants,
     'create_mutation_map': cli_create_mutation_map,
-    'plot_mutation_map':cli_plot_mutation_map
+    'plot_mutation_map': cli_plot_mutation_map
 }
 commands_str = ', '.join(command_functions.keys())
 

@@ -138,8 +138,8 @@ class KipoiVCFParser(object):
         for i, k in enumerate(self.kipoi_columns):
             source_name, model, diff_type = self.kipoi_parsed_colnames[k]
             prefix = 'KV_{model}_{diff_type}_'.format(model=model,
-                                                         i=i,
-                                                         diff_type=diff_type)
+                                                      i=i,
+                                                      diff_type=diff_type)
             out.update(
                 parse_kipoi_info(variant.INFO.get(k),
                                  colnames=self.kipoi_colnames[k],
