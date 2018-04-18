@@ -9,8 +9,6 @@ import pandas as pd
 from tqdm import tqdm
 from kipoi.utils import cd
 
-from kipoi.writers import HDF5BatchWriter
-from kipoi.readers import HDF5Reader
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
 from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
@@ -489,7 +487,8 @@ class MutationMapDataMerger(object):
 
     def save_to_file(self, fname):
         # Best is to use a hdf5 file
-        HDF5BatchWriter.dump(fname, self.get_merged_data())
+        import deepdish
+        deepdish.io.save(fname, self.get_merged_data())
 
 
 class MutationMapDrawer(object):
@@ -500,7 +499,8 @@ class MutationMapDrawer(object):
         if mutation_map is not None:
             self.mutation_map = mutation_map
         elif fname is not None:
-            self.mutation_map = HDF5Reader.load(fname)
+            import deepdish
+            self.mutation_map = deepdish.io.load(fname)
 
     def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
                     cmap=None, limit_region=None):

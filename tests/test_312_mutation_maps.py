@@ -427,7 +427,8 @@ def test_mutation_map():
                                      evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}})
     with cd(model.source_dir):
         mdmm.save_to_file("example_files/first_variant_mm_totest.hdf5")
-        reference = HDF5Reader.load("example_files/first_variant_mm.hdf5")
-        obs = HDF5Reader.load("example_files/first_variant_mm.hdf5")
+        import deepdish
+        reference = deepdish.io.load("example_files/first_variant_mm.hdf5")
+        obs = deepdish.io.load("example_files/first_variant_mm.hdf5")
         compare_rec(reference[0], obs[0])
         os.unlink("example_files/first_variant_mm_totest.hdf5")
