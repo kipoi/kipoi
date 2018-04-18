@@ -17,6 +17,7 @@ from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, Out
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def analyse_model_preds(model, ref, alt, diff_types,
                         output_reshaper, output_filter=None, ref_rc=None, alt_rc=None, **kwargs):
     seqs = {"ref": ref, "alt": alt}
@@ -27,7 +28,7 @@ def analyse_model_preds(model, ref, alt, diff_types,
     if not isinstance(diff_types, dict):
         raise Exception("diff_types has to be a dictionary of callables. Keys will be used to annotate output.")
     # This is deprecated as no simple deduction of sequence length is possible anymore
-    #assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
+    # assert np.all([np.array(_get_seq_len(ref)) == np.array(_get_seq_len(seqs[k])) for k in seqs.keys() if k != "ref"])
 
     # Make predictions
     preds = {}
@@ -54,7 +55,6 @@ def analyse_model_preds(model, ref, alt, diff_types,
         outputs[k] = pd.DataFrame(diff_types[k](**preds), columns=out_annotation[output_filter])
 
     return outputs
-
 
 
 def _overlap_vcf_region(vcf_obj, regions, exclude_indels=True):
@@ -85,13 +85,13 @@ def _overlap_vcf_region(vcf_obj, regions, exclude_indels=True):
 
 def merge_intervals_strandaware(ranges_dict):
     """
-    Perform in-silico mutagenesis on what the dataloader has returned.  
+    Perform in-silico mutagenesis on what the dataloader has returned.
 
     This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
     return a dictionary of which the keys are compliant with evaluation_function arguments
 
     DataLoaders that implement fwd and rc sequence output *__at once__* are not treated in any special way.
-    Perform in-silico mutagenesis on what the dataloader has returned.  
+    Perform in-silico mutagenesis on what the dataloader has returned.
 
     This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
     return a dictionary of which the keys are compliant with evaluation_function arguments
@@ -123,6 +123,7 @@ def merge_intervals_strandaware(ranges_dict):
             out_regions["end"].append(interval.end)
             ranges_ks.append(interval.data)
     return out_regions, ranges_ks
+
 
 def merge_intervals(ranges_dict):
     """
@@ -241,7 +242,6 @@ def get_variants_in_regions_sequential_vcf(dl_batch, seq_to_meta, vcf_fh, vcf_id
     return vcf_records, process_lines, process_seq_fields, process_ids
 
 
-
 def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, process_ids, process_seq_fields):
     preproc_conv = {"pp_line": [], "varpos_rel": [], "ref": [], "alt": [], "start": [], "end": [], "id": [],
                     "do_mutate": []}
@@ -294,6 +294,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
 
 
 class SampleCounter():
+
     def __init__(self):
         self.sample_it_counter = 0
 
@@ -306,7 +307,7 @@ class SampleCounter():
 def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, seq_to_mut, seq_to_meta,
                        sample_counter, vcf_search_regions=False, generate_rc=True):
     """
-        Perform in-silico mutagenesis on what the dataloader has returned.  
+        Perform in-silico mutagenesis on what the dataloader has returned.
 
         This function has to convert the DNA regions in the model input according to ref, alt, fwd, rc and
         return a dictionary of which the keys are compliant with evaluation_function arguments
@@ -382,12 +383,12 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
         ranges_input_obj = dl_batch['metadata'][seq_to_meta[seq_key]]
         #
         # Assemble variant modification information
-        #variants_df = get_variants_df(seq_key, ranges_input_obj, vcf_records,
+        # variants_df = get_variants_df(seq_key, ranges_input_obj, vcf_records,
         #                              process_lines, process_ids, process_seq_fields)
 
         vl = VariantLocalisation()
         vl.append_multi(seq_key, ranges_input_obj, vcf_records,
-                                      process_lines, process_ids, process_seq_fields)
+                        process_lines, process_ids, process_seq_fields)
 
         # for the individual sequence input key get the correct sequence mutator callable
         dna_mutator = seq_to_mut[seq_key]
@@ -420,7 +421,6 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
     pred_set["line_id"] = np.array(process_ids).astype(str)
     pred_set["vcf_records"] = vcf_records
     return pred_set
-
 
 
 def predict_snvs(model,
@@ -552,11 +552,11 @@ def predict_snvs(model,
 
         # open the writers if possible:
         if sync_pred_writer is not None:
-            [el.open() for el in  sync_pred_writer if hasattr(el, "open")]
+            [el.open() for el in sync_pred_writer if hasattr(el, "open")]
 
         # open seq writers if possible:
         if generated_seq_writer is not None:
-            [el.open() for el in  generated_seq_writer if hasattr(el, "open")]
+            [el.open() for el in generated_seq_writer if hasattr(el, "open")]
 
         for i, batch in enumerate(tqdm(it)):
             # For debugging
@@ -622,4 +622,3 @@ def predict_snvs(model,
             return res_concatenated
 
     return None
-
