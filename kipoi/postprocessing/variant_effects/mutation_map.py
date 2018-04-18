@@ -487,8 +487,8 @@ class MutationMapDataMerger(object):
 
     def save_to_file(self, fname):
         # Best is to use a hdf5 file
-        import deepdish
-        deepdish.io.save(fname, self.get_merged_data())
+        from kipoi.postprocessing.variant_effects.utils.generic import write_hdf5
+        return write_hdf5(fname, self.get_merged_data())
 
 
 class MutationMapDrawer(object):
@@ -499,8 +499,8 @@ class MutationMapDrawer(object):
         if mutation_map is not None:
             self.mutation_map = mutation_map
         elif fname is not None:
-            import deepdish
-            self.mutation_map = deepdish.io.load(fname)
+            from kipoi.postprocessing.variant_effects.utils.generic import read_hdf5
+            self.mutation_map = read_hdf5(fname)
 
     def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
                     cmap=None, limit_region=None):
@@ -511,7 +511,7 @@ class MutationMapDrawer(object):
         mm_obj = self.mutation_map[dl_entry][model_seq_key][scoring_key][model_output]
 
         # Derive letter heights from the mutation scores.
-        letter_heights = encodeDNA([mm_obj["ref_seq"]])[0, ...]
+        letter_heights = encodeDNA([str(mm_obj["ref_seq"])])[0, ...]
         # letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].sum(axis=0))[:,None]
         letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].mean(axis=0))[:, None]
 

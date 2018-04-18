@@ -66,6 +66,60 @@ def select_from_dl_batch(obj, rows, nrows_expected=None):
     return out_obj
 
 
+def write_hdf5(fname, data):
+    """Generic hdf5 bulk writer
+    """
+    if isinstance(data, list):
+        data = {"_list_{i}".format(i=i): v for i, v in enumerate(data)}
+    import deepdish
+    deepdish.io.save(fname, data)
+
+# Alternative
+# def recursive_h5_mutmap_writer(objs, handle, path=""):
+#     import six
+#     for key in objs.keys():
+#         if isinstance(objs[key], dict):
+#             g = handle.create_group(key)
+#             recursive_h5_mutmap_writer(objs[key], g, path=path + "/" + key)
+#         else:
+#             if isinstance(objs[key], list) or isinstance(objs[key], np.ndarray):
+#                 el = np.array(objs[key])
+#                 if "U" in el.dtype.str:
+#                     el = el.astype("S")
+#                 handle.create_dataset(name=path + "/" + key, data=el, chunks=True, compression='gzip')
+#             else:
+#                 el = objs[key]
+#                 if isinstance(el, six.string_types):
+#                     el = str(el)
+#                 handle.create_dataset(name=path + "/" + key, data=el)
+
+
+def read_hdf5(fname):
+    """Generic hdf5 bulk reader
+    """
+    import deepdish
+    data = deepdish.io.load(fname)
+    if isinstance(data, dict) and list(data.keys())[0].startswith("_list_"):
+        data = [data["_list_{i}".format(i=i)] for i in range(len(data))]
+    return data
+
+
+# def recursive_h5_mutmap_reader(handle):
+#     import h5py
+#     objs = {}
+#     for key in handle.keys():
+#         if isinstance(handle[key], h5py.Group):
+#             objs[key] = recursive_h5_mutmap_reader(handle[key])
+#         else:
+#             if isinstance(handle[key], h5py.Dataset):
+#                 el = handle[key].value
+#                 if isinstance(el, np.ndarray):
+#                     if "S" in el.dtype.str:
+#                         el = el.astype(str)
+#                 objs[key] = el
+#     return objs
+
+
 def _get_seq_len(input_data):
     if isinstance(input_data, (list, tuple)):
         return input_data[0].shape
