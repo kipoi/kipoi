@@ -41,7 +41,7 @@ def _generate_records_for_all_regions(regions, ref_seq):
             sample_indexes = None
             for alt in ["A", "C", "G", "T"]:
                 # skip REF/REF variants - they should always be 0 anyways.
-                if ref == alt:
+                if ref.upper() == alt.upper():
                     continue
                 ID = ":".join([chrom, str(pos), ref.upper(), alt])
                 record = _Record(chrom, pos, ID, ref.upper(), [_Substitution(alt)], qual, filt, info, fmt,
@@ -511,9 +511,10 @@ class MutationMapPlotter(object):
         from kipoi.postprocessing.variant_effects.utils.generic import write_hdf5
         return write_hdf5(fname, self.mutation_map)
 
-    def draw_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
-                    cmap=None, limit_region=None, annotation_vcf = None, annotation_variants = None,
-                    ignore_stored_var_annotation = False):
+    def plot_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
+                    cmap=None, limit_region=None, limit_region_genomic=None, annotation_vcf = None,
+                    annotation_variants = None, ignore_stored_var_annotation = False, rc_plot = False,
+                    minimum_letter_height = None):
         """
         Generate a mutation map plot
         
@@ -525,11 +526,16 @@ class MutationMapPlotter(object):
         ax: matplotlib axis object
         show_letter_scale: Display letter scale for seqlogo
         cmap: Colourmap for the heatmap
-        limit_region: Limit the plotted region: Tuple of (x_start, x_end) where both x_* are float in [0,sequence_length)
+        limit_region: Limit the plotted region: Tuple of (x_start, x_end) where both x_* are integer in [0,sequence_length)
+        limit_region_genomic: Like limit_region but a tuple of genomic positions. Values outside the queried
+            regions are ignored. Region definition has to 0-based!
         annotation_vcf: VCF used for additional variant annotation in the plot. Only SNVs will be used.
         annotation_variants: dictionary with key: `chr`, `pos`, `id`, `ref`, `alt` and values are lists of strings,
             except for `pos` which is a list of integers of 1-based variant positions.
         ignore_stored_var_annotation: Ignore annotations that have been stored with the mutation map on generation.
+        rc_plot: Reverse-complement plotting
+        minimum_letter_height: Require a minimum height of the reference base. proportion of maximum letter height.
+            e.g. 0.2
         """
         def append_to_ovlp_var(mm_obj, ovlp_var, pos, id, ref, alt):
             seq_len = mm_obj["end"] - mm_obj["start"]
@@ -546,15 +552,34 @@ class MutationMapPlotter(object):
             cmap = plt.cm.bwr
         mm_obj = self.mutation_map[dl_entry][model_seq_key][scoring_key][model_output]
 
-        # Derive letter heights from the mutation scores.
-        letter_heights = encodeDNA([str(mm_obj["ref_seq"])])[0, ...]
-        # letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].sum(axis=0))[:,None]
-        letter_heights = letter_heights * np.abs(mm_obj['mutation_map'].mean(axis=0))[:, None]
+
+        if (limit_region_genomic is not None) and isinstance(limit_region_genomic, tuple):
+            mr_start = mm_obj["metadata_region"]["start"]
+            mr_end = mm_obj["metadata_region"]["end"]
+            if any([(el < mr_start) or (el > mr_end) for el in list(limit_region_genomic)]):
+                raise Exception("`limit_region_genomic` has to lie within: %s"%str([mr_start, mr_end]))
+            limit_region = (limit_region_genomic[0] - mr_start, limit_region_genomic[1] - mr_start, )
+
+        if (limit_region is None) or ((limit_region is not None) and (not isinstance(limit_region, tuple))):
+            limit_region = (0,mm_obj['mutation_map'].shape[1])
+
+        # subset to defined subset
+        mm_matrix = mm_obj['mutation_map'][:,limit_region[0]:limit_region[1]]
+        ref_dna_str = mm_obj["ref_seq"]
+        if hasattr(mm_obj["ref_seq"], "decode"):
+            ref_dna_str = mm_obj["ref_seq"].decode('UTF-8')
+        ref_dna_str = ref_dna_str[limit_region[0]:limit_region[1]]
+        metadata_region = copy.deepcopy(mm_obj["metadata_region"])
+        metadata_region["end"] = metadata_region["start"] + limit_region[1]
+        metadata_region["start"] = metadata_region["start"] + limit_region[0]
+
 
         if ignore_stored_var_annotation or mm_obj['ovlp_var'] is None:
             ovlp_var = {"varpos_rel": [], "id": [], "ref": [], "alt": []}
         else:
             ovlp_var = copy.deepcopy(mm_obj['ovlp_var'])
+            # correct the pre-computed variant overlap:
+            ovlp_var["varpos_rel"] = [el - limit_region[0] for el in ovlp_var["varpos_rel"]]
 
         if (annotation_variants is not None) and isinstance(annotation_variants, dict):
             if not all([k in annotation_variants for k in ["chr", "pos", "id", "ref", "alt"]]):
@@ -564,8 +589,8 @@ class MutationMapPlotter(object):
             if len(num_entries) != 1:
                 raise Exception('All entried in `annotation_variants` have to have the same length!')
             for i in range(num_entries[0]):
-                if mm_obj["metadata_region"]["chr"].lstrip("chr") == str(annotation_variants["chr"][i]).lstrip("chr"):
-                    append_to_ovlp_var(mm_obj["metadata_region"], ovlp_var, annotation_variants["pos"][i],
+                if metadata_region["chr"].lstrip("chr") == str(annotation_variants["chr"][i]).lstrip("chr"):
+                    append_to_ovlp_var(metadata_region, ovlp_var, annotation_variants["pos"][i],
                                        annotation_variants["id"][i], annotation_variants["ref"][i],
                                        [annotation_variants["alt"][i]])
 
@@ -577,14 +602,38 @@ class MutationMapPlotter(object):
             vcf_path = ensure_tabixed_vcf(annotation_vcf)
             vcf_fh = cyvcf2.VCF(vcf_path, "r")
             # overlap records with region
-            reg = {k: [v] for k, v in mm_obj["metadata_region"].items()}
+            reg = {k: [v] for k, v in metadata_region.items()}
             vcf_records, contained_regions = _overlap_vcf_region(vcf_fh, reg)
             for rec in vcf_records:
-                append_to_ovlp_var(mm_obj["metadata_region"], ovlp_var, rec.POS, str(rec.ID), str(rec.REF),
+                append_to_ovlp_var(metadata_region, ovlp_var, rec.POS, str(rec.ID), str(rec.REF),
                                    [str(el) for el in rec.ALT])
 
-        return seqlogo_heatmap(letter_heights, mm_obj['mutation_map'], ovlp_var, vocab="DNA", ax=ax,
-                               show_letter_scale=show_letter_scale, cmap=cmap, limit_region=limit_region)
+        # RC if necessary
+        if rc_plot:
+            mm_matrix = mm_matrix[::-1, ::-1]
+            from .utils.mutators import rc_str
+            ref_dna_str = rc_str(ref_dna_str)
+            seq_len = mm_matrix.shape[1]
+            ovlp_var["varpos_rel"] = [seq_len - el -1 for el in ovlp_var["varpos_rel"]]
+            ovlp_var["ref"] = rc_str(ovlp_var["ref"])
+            ovlp_var["alt"] = [rc_str(el) for el in ovlp_var["alt"]]
+
+
+        # Derive letter heights from the mutation scores.
+        onehot_refseq = encodeDNA([str(ref_dna_str).upper()])[0, ...]
+        mm_non_na = mm_matrix.copy()
+        mm_non_na[np.isnan(mm_non_na)] = 0
+        letter_heights = onehot_refseq * np.abs(mm_non_na.mean(axis=0))[:, None]
+
+        if minimum_letter_height is not None:
+            if (minimum_letter_height > 1) or (minimum_letter_height < 0):
+                raise Exception("minimum_letter_height has to be a float within [0,1]")
+            max_h = letter_heights.max()
+            letter_heights = letter_heights * (1-minimum_letter_height) + onehot_refseq*minimum_letter_height*max_h
+
+
+        return seqlogo_heatmap(letter_heights, mm_non_na, ovlp_var, vocab="DNA", ax=ax,
+                               show_letter_scale=show_letter_scale, cmap=cmap, limit_region=None)
 
 
 
@@ -667,7 +716,10 @@ class MutationMap(object):
                 bedtools_obj = BedTool(bed_fpath)
                 with BedWriter(temp_bed3_file) as ofh:
                     for bed_entry in bedtools_obj:
-                        ofh.append_interval(**vcf_to_region(bed_entry))
+                        # get all the input regions for a given bed entry
+                        in_regions = bed_to_region(bed_entry)
+                        for i in range(len(in_regions["chrom"])):
+                            ofh.append_interval(**{k:v[i] for k,v in in_regions.items()})
             else:
                 logger.warn("Keeping bed file regions defined in `dataloader_args`.")
         else:
@@ -681,7 +733,7 @@ class MutationMap(object):
                             "postprocessing > variant_effects > bed_input.")
 
         # If there was a field for dumping the region definition bed file, then use it.
-        if (self.exec_files_bed_keys is not None) and (not vcf_search_regions):
+        if (self.exec_files_bed_keys is not None) and ((vcf_search_regions is not None) or (bed_to_region is not None)):
             for k in self.exec_files_bed_keys:
                 dataloader_args[k] = temp_bed3_file
 
@@ -795,7 +847,7 @@ class MutationMap(object):
                 query_vcf_records = None
                 query_process_lines = None
 
-                for eval_kwargs in eval_kwargs_iter:
+                for eval_kwargs in tqdm(eval_kwargs_iter):
                     if eval_kwargs is None:
                         # No generated datapoint overlapped any VCF region
                         continue
@@ -831,7 +883,8 @@ class MutationMap(object):
                 # Append results and inputs to mutation map
                 mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
 
-            vcf_fh.close()
+            if vcf_fh is not None:
+                vcf_fh.close()
 
             try:
                 if temp_bed3_file is not None:

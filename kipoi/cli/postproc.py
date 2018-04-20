@@ -521,7 +521,7 @@ def cli_plot_mutation_map(command, raw_args):
 
     logger.info('Plotting...')
 
-    mutmap.draw_mutmap(args.input_line, args.model_seq_input, args.scoring_key, args.model_output, ax=ax)
+    mutmap.plot_mutmap(args.input_line, args.model_seq_input, args.scoring_key, args.model_output, ax=ax)
     fig.savefig(args.output)
 
     logger.info('Successfully plotted mutation map')

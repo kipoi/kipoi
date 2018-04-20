@@ -60,7 +60,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     # rescale letters so that they look nice above the heatmap
     letter_heights_rescaled = np.copy(letter_heights)
-    letter_heights_rescaled /= letter_heights_rescaled.max() / 4.0
+    letter_heights_rescaled /= letter_heights_rescaled.max() / (vocab_len / 2)
 
     assert letter_heights.shape[1] == len(VOCABS[vocab])
     x_range = [1, letter_heights.shape[0]]

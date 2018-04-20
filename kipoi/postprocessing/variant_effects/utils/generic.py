@@ -237,13 +237,15 @@ class BedOverlappingRg(RegionGenerator):
         chroms = []
         starts = []
         ends = []
+        ids = []
         region_len = bed_entry.end - bed_entry.start
         num_intervals = region_len // self.seq_length + int((region_len % self.seq_length) != 0)
         for i in range(num_intervals):
             chroms.append(bed_entry.chrom)
             starts.append(bed_entry.start + (i * self.seq_length))
             ends.append(bed_entry.start + ((i + 1) * self.seq_length))
-        return {"chrom": chroms, "start": starts, "end": ends}
+            ids.append(bed_entry.name + ".%d"%i)
+        return {"chrom": chroms, "start": starts, "end": ends, "id": ids}
 
 
 class SnvPosRestrictedRg(RegionGenerator):
