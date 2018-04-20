@@ -4,10 +4,12 @@
 
 #### 1. Install Kipoi
 
-1. Install git-lfs
-    - `conda install -c conda-forge git-lfs && git lfs install`
-	- For alternative installation options  see <https://git-lfs.github.com/>.
-2. Install kipoi
+1. Install [miniconda](https://conda.io/miniconda.html) or [anaconda](https://www.anaconda.com/download)
+2. Install git and git-lfs
+    - See how to install git [here](https://www.atlassian.com/git/tutorials/install-git) or install it through conda: `conda install -c anaconda git`
+    - Install git-lfs: `conda install -c conda-forge git-lfs && git lfs install`
+   	  - For alternative installation options  see <https://git-lfs.github.com/>.
+3. Install kipoi
     - `pip install kipoi`
 	  - if you wish to use variant effect prediction, run `pip install kipoi[vep]`
 

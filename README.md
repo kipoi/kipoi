@@ -25,16 +25,15 @@ Make sure you have either anaconda ([download page](https://conda.io/miniconda.h
 
 ### 2. Install Git LFS
 
-For downloading models, Kipoi uses [Git Large File Storage](https://git-lfs.github.com/) (LFS). To install it on Ubuntu, run:
+For downloading models, Kipoi uses git and [Git Large File Storage](https://git-lfs.github.com/) (LFS). See how to install git [here](https://www.atlassian.com/git/tutorials/install-git). To install git-lfs on Ubuntu, run:
 
 ```bash
-# on Ubuntu
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install -y git-lfs
+sudo apt-get install -y git git-lfs
 git-lfs install
 ```
 
-Alternatively, install it through conda:
+Alternatively, you can install git-lfs through conda:
 
 ```bash
 conda install -c conda-forge git-lfs && git lfs install
