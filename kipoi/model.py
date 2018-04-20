@@ -456,17 +456,30 @@ class KerasModel(BaseModel, GradientMixin):
         """
         from keras.engine.training import _standardize_input_data
         from keras import backend as K
-        x = _standardize_input_data(x, self.model._feed_input_names,
+        # convert list / dict or array inputs to a standardised model input (a list)
+        x_standardized = _standardize_input_data(x, self.model._feed_input_names,
                                     self.model._feed_input_shapes)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
-            ins = x + [0.]
+            ins = x_standardized + [0.]
         else:
-            ins = x
+            ins = x_standardized
         gf = self._get_gradient_function(layer, use_final_layer= use_final_layer, filter_slices=filter_slices,
                                          filter_func=filter_func, filter_func_kwargs=filter_func_kwargs)
         outputs = gf(ins)
-        if len(outputs) == 1:
-            return outputs[0]
+
+        # re-format to how the input was:
+        if isinstance(x, np.ndarray):
+            assert len(outputs) == 1
+            outputs = outputs[0]
+        elif isinstance(x, list):
+            # Already in right format
+            pass
+        elif isinstance(x, dict):
+            from collections import OrderedDict
+            outputs_dict = OrderedDict()
+            for k, v in zip(self.model._feed_input_names, outputs):
+                outputs_dict[k] = v
+            outputs = outputs_dict
         return outputs
 
     def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
@@ -817,18 +830,30 @@ class PyTorchModel(BaseModel, GradientMixin):
         grad_concat.backward(gradient=replacement_grad)
         removable_hook_obj.remove()
 
+        def extract_grad(variable_obj):
+            vo = variable_obj.cpu()
+            if vo.grad is not None:
+                return vo.grad.data.numpy()
+            else:
+                ret_arr=np.empty(vo.size())
+                ret_arr[:] = np.nan
+                return ret_arr
+
 
         if isinstance(x_in, torch.autograd.Variable):
             # make sure it is on the cpu, then extract the gradient data as numpy arrays
-            grad_out = x_in.cpu().grad.data.numpy()
+            grad_out = extract_grad(x_in)
 
         elif isinstance(x_in, dict):
             # extract gradient values for all dict entries
-            grad_out = {k: x_in[k].cpu().grad.data.numpy() for k in x}
+            from collections import OrderedDict
+            grad_out = OrderedDict()
+            for k in x:
+                grad_out[k] = extract_grad(x_in[k])
 
         elif isinstance(x_in, list):
             # extract gradient values for all list entries
-            grad_out = [el.cpu().grad.data.numpy() for el in x]
+            grad_out = [extract_grad(el) for el in x_in]
 
         else:
             raise Exception("Gradient could not be extracted!")

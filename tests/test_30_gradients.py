@@ -40,9 +40,12 @@ def get_extractor_cfg(model_dir):
 def get_test_kwargs(model_dir):
     return read_json_yaml(os.path.join(model_dir, 'example_files/test.json'))
 
-def get_sample_functional_model_input():
+def get_sample_functional_model_input(kind = "list"):
     import numpy as np
-    return [np.random.rand(1,280,256), np.random.rand(1,280,256)]
+    if kind == "list":
+        return [np.random.rand(1,280,256), np.random.rand(1,280,256)]
+    if kind == "dict":
+        return {"FirstInput": np.random.rand(1,280,256), "SecondInput":  np.random.rand(1,280,256)}
 
 def get_sample_functional_model():
     # Keras ["2.0.4", "2.1.5"]
@@ -53,8 +56,8 @@ def get_sample_functional_model():
         from keras.layers import Input, LSTM, Dense
         from keras.models import Model
         #
-        tweet_a = Input(shape=(280, 256))
-        tweet_b = Input(shape=(280, 256))
+        tweet_a = Input(shape=(280, 256), name="FirstInput")
+        tweet_b = Input(shape=(280, 256), name="SecondInput")
         #
         # This layer can take as input a matrix
         # and will return a vector of size 64
@@ -83,8 +86,8 @@ def get_sample_functional_model():
         from keras.layers import Input, LSTM, Dense, merge
         from keras.models import Model
         #
-        tweet_a = Input(shape=(280, 256))
-        tweet_b = Input(shape=(280, 256))
+        tweet_a = Input(shape=(280, 256), name="FirstInput")
+        tweet_b = Input(shape=(280, 256), name="SecondInput")
         #
         # This layer can take as input a matrix
         # and will return a vector of size 64
@@ -240,3 +243,17 @@ def test__get_gradient_function():
     check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer = False, layer = 2, filter_func = K.sum)
     check_grad(sample_input, grad_fn(sample_input))
+
+
+def test_returned_gradient_fmt():
+    model = kipoi.model.KerasModel(*get_sample_functional_model())
+    sample_input = get_sample_functional_model_input(kind="list")
+    grad_out = model.input_grad(sample_input, wrt_final_layer = True, avg_func = "absmax")
+    assert isinstance(grad_out, type(sample_input))
+    assert len(grad_out) == len(sample_input)
+    sample_input = get_sample_functional_model_input(kind="dict")
+    grad_out = model.input_grad(sample_input, wrt_final_layer=True, avg_func="absmax")
+    assert isinstance(grad_out, type(sample_input))
+    assert len(grad_out) == len(sample_input)
+    assert all([k in grad_out for k in sample_input])
+

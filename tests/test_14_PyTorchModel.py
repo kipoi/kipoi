@@ -2,6 +2,7 @@ import numpy as np
 from kipoi.model import PyTorchModel
 import pytest
 from kipoi.utils import cd
+import kipoi
 
 
 def check_same_weights(dict1, dict2):
@@ -102,22 +103,10 @@ def test_prediction_io():
             m_expected = [m_in[k] for k in sorted(list(m_in))]
             assert all([np.all(el == el2) for el, el2 in zip(pred, m_expected)])
 
-# Test layer activation
-class DummyModel(nn.Module):
-
-    def __init__(self):
-        super(DummyModel, self).__init__()
-        self.first = nn.Linear(1, 1)
-        self.second = nn.Linear(1, 1)
-        self.final = nn.Sigmoid()
-
-    def forward(self, x):
-        x = self.first(x)
-        x = self.second(x)
-        x = self.final(x)
-        return x
 
 
+
+"""
 class PyTConvNet(torch.nn.Module):
     # Taken from https://github.com/vinhkhuc/PyTorch-Mini-Tutorials/blob/master/5_convolutional_net.py
 
@@ -141,7 +130,7 @@ class PyTConvNet(torch.nn.Module):
         x = self.conv.forward(x)
         x = x.view(-1, 320)
         return self.fc.forward(x)
-
+"""
 
 def get_pyt_sequential_model_input():
     np.random.seed(1)
@@ -149,6 +138,7 @@ def get_pyt_sequential_model_input():
 
 
 def pyt_sequential_model_bf():
+    from torch import nn
     new_model = nn.Sequential(
         nn.Conv1d(1, 16, kernel_size=5, padding=2),
         nn.BatchNorm2d(16),
@@ -167,6 +157,23 @@ def get_dummy_model_input():
 
 
 def dummy_model_bf():
+    from torch import nn
+    import torch
+
+    # Test layer activation
+    class DummyModel(nn.Module):
+        def __init__(self):
+            super(DummyModel, self).__init__()
+            self.first = nn.Linear(1, 1)
+            self.second = nn.Linear(1, 1)
+            self.final = nn.Sigmoid()
+
+        def forward(self, x):
+            x = self.first(x)
+            x = self.second(x)
+            x = self.final(x)
+            return x
+
     dummy_model = DummyModel().double()
     init_state = dummy_model.state_dict()
     wt_1 = torch.FloatTensor(1, 1)
@@ -185,25 +192,38 @@ def dummy_model_bf():
     dummy_model.eval()
     return dummy_model
 
+def get_dummy_multi_input(kind = "list"):
+    np.random.seed(1)
+    if kind == "list":
+        return [np.random.rand(20, 1), np.random.rand(20, 1)]
+    elif kind == "dict":
+        return {"FirstInput": np.random.rand(20, 1), "SecondInput": np.random.rand(20, 1)}
 
-class PyTNet(nn.Module):
+def dummy_multi_input_bf():
+    import torch
+    from torch import nn
+    #
+    # Test layer activation
+    class DummyMultiInput(nn.Module):
+        def __init__(self):
+            super(DummyMultiInput, self).__init__()
+            self.first = nn.Linear(1, 1)
+            self.second = nn.Linear(1, 1)
+            self.final = nn.Sigmoid()
+        def forward(self, FirstInput, SecondInput):
+            x_1 = self.first(FirstInput)
+            x_2 = self.first(SecondInput)
+            x = self.second(torch.cat((x_1, x_2), 0))
+            x = self.final(x)
+            return x
+    #
+    dummy_model = DummyMultiInput().double()
+    dummy_model.eval()
+    return dummy_model
 
-    def __init__(self):
-        super(PyTNet, self).__init__()
-        self.conv1 = nn.Conv1d(1, 16, kernel_size=5, padding=2)
-        self.pool = nn.MaxPool1d(2)
-        self.fc1 = nn.Linear(240, 2)
-        self.fc2 = nn.Linear(2, 1)
 
-    def forward(self, x):
-        x1 = self.pool(F.relu(self.conv1(x)))
-        x2 = self.pool(F.sigmoid(self.conv1(x)))
-        x1 = x1.view(-1, 240)
-        x2 = x2.view(-1, 240)
-        x = torch.cat((x1, x2), 0)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return x
+
+
 
 
 def get_pyt_complex_model_input():
@@ -212,6 +232,26 @@ def get_pyt_complex_model_input():
 
 
 def pyt_complex_model_bf():
+    from torch import nn
+    import torch
+    import torch.nn.functional as F
+    class PyTNet(nn.Module):
+        def __init__(self):
+            super(PyTNet, self).__init__()
+            self.conv1 = nn.Conv1d(1, 16, kernel_size=5, padding=2)
+            self.pool = nn.MaxPool1d(2)
+            self.fc1 = nn.Linear(240, 2)
+            self.fc2 = nn.Linear(2, 1)
+
+        def forward(self, x):
+            x1 = self.pool(F.relu(self.conv1(x)))
+            x2 = self.pool(F.sigmoid(self.conv1(x)))
+            x1 = x1.view(-1, 240)
+            x2 = x2.view(-1, 240)
+            x = torch.cat((x1, x2), 0)
+            x = F.relu(self.fc1(x))
+            x = F.relu(self.fc2(x))
+            return x
     return PyTNet().double()
 
 
@@ -253,3 +293,27 @@ def test_gradients():
                                    selected_fwd_node=1)
 
     assert np.all(gF2 * 2 == gT2)
+
+
+def test_returned_gradient_fmt():
+    import kipoi
+    multi_input_model = kipoi.model.PyTorchModel(build_fn=dummy_multi_input_bf)
+    # try first whether the prediction actually works..
+    sample_input = get_dummy_multi_input("list")
+    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", wrt_layer="second",
+                                   selected_fwd_node=None)
+    assert isinstance(grad_out, type(sample_input))
+    assert len(grad_out) == len(sample_input)
+    sample_input = get_dummy_multi_input("dict")
+    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", wrt_layer="second",
+                                            selected_fwd_node=None)
+    assert isinstance(grad_out, type(sample_input))
+    assert len(grad_out) == len(sample_input)
+    assert all([k in grad_out for k in sample_input])
+
+
+def test_gradients_functions():
+    import kipoi
+    multi_input_model = kipoi.model.PyTorchModel(build_fn=dummy_multi_input_bf)
+    sample_input = get_dummy_multi_input("dict")
+    multi_input_model.input_grad(sample_input, avg_func="max", wrt_layer="first", selected_fwd_node=None)
