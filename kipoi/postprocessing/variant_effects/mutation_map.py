@@ -33,7 +33,7 @@ def _generate_records_for_all_regions(regions, ref_seq):
     vcf_records = []
     for i, ref_seq_here in enumerate(ref_seq):
         chrom, start, end = regions["chr"][i], regions["start"][i] + 1, regions["end"][i]
-        for pos, ref in zip(range(start, end + 1), ref_seq_here):
+        for pos, ref in zip(range(start, end + 1), ref_seq_here.upper()):
             qual = 0
             filt = []
             info = {}
@@ -41,10 +41,10 @@ def _generate_records_for_all_regions(regions, ref_seq):
             sample_indexes = None
             for alt in ["A", "C", "G", "T"]:
                 # skip REF/REF variants - they should always be 0 anyways.
-                if ref.upper() == alt.upper():
+                if ref == alt:
                     continue
-                ID = ":".join([chrom, str(pos), ref.upper(), alt])
-                record = _Record(chrom, pos, ID, ref.upper(), [_Substitution(alt)], qual, filt, info, fmt,
+                ID = ":".join([chrom, str(pos), ref, alt])
+                record = _Record(chrom, pos, ID, ref, [_Substitution(alt)], qual, filt, info, fmt,
                                  sample_indexes)
                 vcf_records.append(record)
                 contained_regions.append(i)
@@ -454,9 +454,9 @@ class MutationMapDataMerger(object):
                     correct_order_ids = []
                     # REF/REF was not generated, so those can be appended to the results
                     ref_ref_var_ids = []
-                    for pos, ref in zip(range(metadata_start + 1, metadata_end + 1), ref_seq_here):
+                    for pos, ref in zip(range(metadata_start + 1, metadata_end + 1), ref_seq_here.upper()):
                         for alt in ["A", "C", "G", "T"]:
-                            ID = ":".join([metadata_chrom, str(pos), ref.upper(), alt])
+                            ID = ":".join([metadata_chrom, str(pos), ref, alt])
                             correct_order_ids.append(ID)
                             if ref == alt:
                                 ref_ref_var_ids.append(ID)
@@ -622,7 +622,10 @@ class MutationMapPlotter(object):
         # Derive letter heights from the mutation scores.
         onehot_refseq = encodeDNA([str(ref_dna_str).upper()])[0, ...]
         mm_non_na = mm_matrix.copy()
-        mm_non_na[np.isnan(mm_non_na)] = 0
+        nans = np.isnan(mm_non_na)
+        if np.any(nans):
+            logger.warn("There were %d missing values in the mutation map which are reset to 0 for plotting!"%nans.sum())
+            mm_non_na[nans] = 0
         letter_heights = onehot_refseq * np.abs(mm_non_na.mean(axis=0))[:, None]
 
         if minimum_letter_height is not None:

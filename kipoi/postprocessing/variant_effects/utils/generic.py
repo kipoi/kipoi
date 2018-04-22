@@ -169,7 +169,9 @@ def convert_record(input_record, pyvcf_reader):
 
 
 def default_vcf_id_gen(vcf_record, id_delim=":"):
-    return str(vcf_record.CHROM) + id_delim + str(vcf_record.POS) + id_delim + str(vcf_record.REF) + id_delim + str(vcf_record.ALT)
+    # make sure that also in python2 the variant output is like in python3
+    alt_ids = str([str(alt) for alt in vcf_record.ALT])
+    return str(vcf_record.CHROM) + id_delim + str(vcf_record.POS) + id_delim + str(vcf_record.REF) + id_delim + alt_ids
 
 
 class RegionGenerator(object):
@@ -202,7 +204,7 @@ class SnvCenteredRg(RegionGenerator):
         else:
             self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -227,7 +229,7 @@ class BedOverlappingRg(RegionGenerator):
         else:
             self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
 
     def __call__(self, bed_entry):
         """Generate regions based on a bed file entry. outputs consecutive regions of model sequence length starting
@@ -258,7 +260,7 @@ class SnvPosRestrictedRg(RegionGenerator):
         else:
             self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_lenth`")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
