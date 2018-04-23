@@ -152,6 +152,7 @@ def load_model_custom(file, object):
 
 class GradientMixin(object):
     __metaclass__ = abc.ABCMeta
+    allowed_functions = ["sum", "max", "min", "absmax"]
 
     @abc.abstractmethod
     def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
@@ -495,6 +496,7 @@ class KerasModel(BaseModel, GradientMixin):
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
         """
         import keras.backend as K
         _avg_funcs = {"sum": K.sum, "min": K.min, "max": K.max, "absmax": lambda x: K.max(K.abs(x))}
@@ -757,25 +759,24 @@ class PyTorchModel(BaseModel, GradientMixin):
     def get_grad_tens(self, forward_values, filter_slices, filter_func):
         import torch
         import six
-        allowed_functions = ["sum", "max", "min", "absmax"]
         if (filter_slices is None) and (filter_func is None):
             raise Exception("Either filter slices or filter function have to be defined")
         if filter_func is not None:
-            if not (isinstance(filter_func, six.string_types) and filter_func in allowed_functions):
+            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
                 raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
+
         # perform given operations in numpy, simpler implementation...
-        pt_filt_slice = torch.ByteTensor(*forward_values.size())
         if filter_slices is not None:
-            pt_filt_slice[:] = 0
-            pt_filt_slice[filter_slices] = 1
+            pt_filt_slice = torch.from_numpy(get_filter_array(filter_slices, tuple(forward_values.size()))).byte()
         else:
+            pt_filt_slice = torch.ByteTensor(*forward_values.size())
             pt_filt_slice[:] = 1
         if filter_func == "sum":
             # don't do anything and keep the filter mask
             pass
         else:
             float_mask = self._pt_type_match(pt_filt_slice, forward_values)
-            subset_dataset = forward_values.cpu() * float_mask
+            subset_dataset = forward_values.cpu().data * float_mask
             pt_filt_slice_new = torch.ByteTensor(*pt_filt_slice.size()).zero_()
             if filter_func == "max":
                 # reset so that the masked values are the minimum
@@ -873,6 +874,8 @@ class PyTorchModel(BaseModel, GradientMixin):
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
+            selected_fwd_node: None or integer. If a layer is re-used models may support that the gradient is 
+            calculated only with respect to one of the incoming edges / nodes. 
         """
 
         if wrt_layer is not None:
@@ -943,7 +946,41 @@ def get_op_outputs(graph, node_names):
                          format(type(node_names)))
 
 
-class TensorFlowModel(BaseModel):
+def get_filter_array(filter_slices, input_shape):
+    def index_is_none(index_el):
+        if isinstance(index_el, slice):
+            if all([getattr(index_el, att) is None for att in ["start", "stop", "step"]]):
+                return True
+        return False
+    input_dim = len(input_shape)
+    pt_filt_slice = np.zeros(input_shape)
+    if isinstance(filter_slices,int):
+        if input_dim != 2:
+            raise Exception("Integer filter slice can only be used on 1D filter, but dimension is: %d"%(input_dim-1))
+        pt_filt_slice[:,filter_slices] = 1
+    else:
+        if isinstance(filter_slices, slice):
+            filter_slices = (filter_slices,)
+        if isinstance(filter_slices, list):
+            filter_slices = tuple(filter_slices)
+        if isinstance(filter_slices, tuple):
+            # Add a 0th dimension for samples if missing.
+            if len(filter_slices) == input_dim-1:
+                filter_slices = tuple([slice(None)] + list(filter_slices))
+            # If dimension is wrong complain
+            elif len(filter_slices) != input_dim:
+                raise Exception("Filter slice of length %d cannot be applied in a filter of dimension: %d"%(len(filter_slices),input_dim-1))
+            # If sample dimension is not ":" complain
+            if not index_is_none(filter_slices[0]):
+                raise Exception("0th (sample) dimension always has to be None. Filter dimension without sample dimension: %d."%(input_dim-1))
+            # Finally apply filter
+            pt_filt_slice.__setitem__(filter_slices,1)
+        else:
+            raise Exception("filter_slices has to be None or of type integer, tuple or list. Tuples and lists have to contain compatible objects e.g.: slice()-objects.")
+    return pt_filt_slice
+
+
+class TensorFlowModel(BaseModel, GradientMixin):
 
     MODEL_PACKAGE = "tensorflow"
 
@@ -991,8 +1028,7 @@ class TensorFlowModel(BaseModel):
         else:
             self.const_feed_dict = {}
 
-    def predict_on_batch(self, x):
-
+    def _build_feed_dict(self, x):
         # build feed_dict
         if isinstance(self.input_nodes, dict):
             # dict
@@ -1008,8 +1044,130 @@ class TensorFlowModel(BaseModel):
         else:
             raise ValueError
 
+        return feed_dict
+
+    def predict_on_batch(self, x):
+
+        feed_dict = self._build_feed_dict(x)
+
         return self.sess.run(self.target_ops,
                              feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
+    @classmethod
+    def get_grad_tens(self, forward_values, filter_slices, filter_func):
+        import six
+        if (filter_slices is None) and (filter_func is None):
+            raise Exception("Either filter slices or filter function have to be defined")
+        if filter_func is not None:
+            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+                raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
+        # perform given operations in numpy, simpler implementation...
+        if filter_slices is not None:
+            pt_filt_slice = get_filter_array(filter_slices, forward_values.shape)
+        else:
+            pt_filt_slice = np.zeros_like(forward_values)
+            pt_filt_slice[:] = 1
+        if filter_func == "sum":
+            # don't do anything and keep the filter mask
+            pass
+        else:
+            float_mask = pt_filt_slice
+            subset_dataset = forward_values * float_mask
+            pt_filt_slice_new = np.zeros_like(forward_values)
+            if filter_func == "max":
+                # reset so that the masked values are the minimum
+                subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.min()
+                # Find the maximum output value among the selected
+                for i in range(subset_dataset.shape[0]):
+                    pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].max()
+            elif filter_func == "min":
+                # reset so that the masked values are the maximum
+                subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.max()
+                # Find the minimum value among the selected
+                for i in range(subset_dataset.shape[0]):
+                    pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].min()
+            elif filter_func == "absmax":
+                # Find the absmax value among the selected
+                for i in range(subset_dataset.shape[0]):
+                    pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == np.abs(subset_dataset[i, ...]).max()
+            pt_filt_slice = pt_filt_slice_new * pt_filt_slice
+        return pt_filt_slice
+
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=False, selected_fwd_node = None):
+        """
+        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
+        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+
+        # Arguments
+            x: model input
+            filter_ind: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            wrt_layer: layer from which backwards the gradient should be calculated
+            wrt_final_layer: Use the final (classification) layer as `wrt_layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
+        """
+
+        if selected_fwd_node is not None:
+            raise Exception("TensorFlowModel does not support the use of selected_fwd_node!")
+
+        import tensorflow as tf
+
+        feed_dict = self._build_feed_dict(x)
+
+        # get the correct layer with respect to which the gradients should be calculated
+        assert isinstance(wrt_layer, six.string_types)
+        if not wrt_final_layer:
+            new_target_ops = get_op_outputs(self.graph, wrt_layer)
+        else:
+            new_target_ops = self.target_ops
+            if not isinstance(new_target_ops, tf.Tensor):
+                raise Exception("Gradients can't be calculated with respect to mutliple layers in TensorFlowModel. "
+                                "Please select a single target operation using 'wrt_layer'.")
+
+        fwd_values = self.sess.run(new_target_ops,
+                             feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
+        # Make sure that input_ops is a list of tf.Tensor objects.
+        if isinstance(self.input_ops, dict):
+            input_ops = list(self.input_ops.values())
+        elif isinstance(self.input_ops, list):
+            input_ops = self.input_ops
+        elif isinstance(self.input_ops, tf.Tensor):
+            input_ops = [self.input_ops]
+        else:
+            raise ValueError
+
+        # Run the gradient prediction
+        # get_grad_tens avoids rebuilding the model which is necessary for TF models!
+        grad_op = tf.gradients(new_target_ops, input_ops, name='gradient_%s'%str(wrt_layer),
+                               grad_ys=self.get_grad_tens(fwd_values, filter_ind, avg_func))
+        grad_pred = self.sess.run(grad_op, feed_dict=feed_dict)
+
+        # Format the output so match the input
+        if isinstance(self.input_nodes, dict):
+            # dict
+            grad_pred_formatted = {}
+            for op, ret_val in zip(input_ops, grad_pred):
+                for k, v in six.iteritems(self.input_ops):
+                    if v == op:
+                        grad_pred_formatted[k] = ret_val
+        elif isinstance(self.input_nodes, list):
+            # list
+            grad_pred_formatted = []
+            for op, ret_val in zip(input_ops, grad_pred):
+                for v in self.input_ops:
+                    if v == op:
+                        grad_pred_formatted.append(ret_val)
+        elif isinstance(self.input_nodes, str):
+            # single array
+            grad_pred_formatted = grad_pred[0]
+        else:
+            raise ValueError
+
+        return grad_pred_formatted
+
+
 
 
 AVAILABLE_MODELS = {"keras": KerasModel,

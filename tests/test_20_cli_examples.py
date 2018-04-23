@@ -11,6 +11,7 @@ import h5py
 import filecmp
 from utils import compare_vcfs
 from kipoi.readers import HDF5Reader
+import numpy as np
 
 # TODO - check if you are on travis or not regarding the --install_req flag
 if config.install_req:
@@ -21,6 +22,10 @@ else:
 EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template",
                    "non_bedinput_model", "pyt", "iris_tensorflow"]
 
+predict_activation_layers = {
+    "rbp": "concatenate_6",
+    "pyt": "3"  # two before the last layer
+}
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example):
@@ -228,3 +233,66 @@ def test_pull_kipoi():
     assert returncode == 0
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model.yaml'))
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
+
+
+def test_parse_filter_slice():
+    from  kipoi.cli.postproc import parse_filter_slice
+    class DummySlice():
+        def __getitem__(self, key):
+            return key
+
+    assert DummySlice()[1] == parse_filter_slice("[1]")
+    assert DummySlice()[::-1, ...] == parse_filter_slice("[::-1,...]")
+    assert DummySlice()[..., 1:3, :7, 1:, ...] == parse_filter_slice("[..., 1:3, :7, 1:, ...]")
+    assert DummySlice()[..., 1:3, :7, 1:, ...] == parse_filter_slice("(..., 1:3, :7, 1:, ...)")
+    assert DummySlice()[1] == parse_filter_slice("1")
+    with pytest.raises(Exception):
+        parse_filter_slice("[:::2]")
+
+@pytest.mark.parametrize("example", list(predict_activation_layers))
+def test_grad_predict_example(example):
+    """kipoi postproc grad ...
+    """
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+
+    example_dir = "examples/{0}".format(example)
+
+    for file_format in ["tsv", "hdf5"]:
+        print(example)
+        tmpfile = os.path.realpath(str("./grad_outputs.{0}".format(file_format)))
+
+        # run the
+        args = ["python", os.path.abspath("./kipoi/__main__.py"), "postproc", "grad",
+                "../",  # directory
+                "--source=dir",
+                "--batch_size=4",
+                "--layer", predict_activation_layers[example],
+                "--dataloader_args=test.json",
+                "--output", tmpfile]
+        if INSTALL_FLAG:
+            args.append(INSTALL_FLAG)
+        returncode = subprocess.call(args=args,
+                                     cwd=os.path.realpath(example_dir + "/example_files"))
+        assert returncode == 0
+
+        assert os.path.exists(tmpfile)
+
+        if file_format == "hdf5":
+            data = HDF5Reader.load(tmpfile)
+            assert {'metadata', 'preds', 'inputs'} <= set(data.keys())
+        else:
+            data = pd.read_csv(tmpfile, sep="\t")
+            inputs_columns = data.columns.str.contains("inputs/")
+            preds_columns = data.columns.str.contains("preds/")
+            assert np.all(np.in1d(data.columns.values[preds_columns],
+                                  data.columns.str.replace("inputs/", "preds/").values[inputs_columns]))
+            other_cols = data.columns.values[~(preds_columns | inputs_columns)]
+            expected = ['metadata/ranges/chr',
+                      'metadata/ranges/end',
+                      'metadata/ranges/id',
+                      'metadata/ranges/start',
+                      'metadata/ranges/strand']
+            assert np.all(np.in1d(expected, other_cols))
+
+        os.unlink(tmpfile)

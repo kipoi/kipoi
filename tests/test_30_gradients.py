@@ -256,4 +256,3 @@ def test_returned_gradient_fmt():
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
     assert all([k in grad_out for k in sample_input])
-

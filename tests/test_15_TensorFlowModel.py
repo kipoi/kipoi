@@ -71,3 +71,24 @@ def test_loading():
                         )
     o = a.predict_on_batch(np.ones((3, 4)))
     assert o.shape == (3, 3)
+
+
+class DummySlice():
+    def __getitem__(self,key):
+        return key
+
+
+def test_grad_tens_generation():
+    import tensorflow as tf
+    checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
+    a = TensorFlowModel(input_nodes="inputs",
+                        target_nodes="probas",
+                        checkpoint_path=checkpoint_path
+                        )
+    fwd_values = a.predict_on_batch(np.ones((3, 4)))
+    assert np.all(a.get_grad_tens(fwd_values, DummySlice()[:, 0:1], "min")[0, :] == np.array([1, 0, 0]))
+    assert np.all(a.get_grad_tens(fwd_values, DummySlice()[:, 0:2], "min")[0, :] == np.array([1, 0, 0]))
+    assert np.all(a.get_grad_tens(fwd_values, DummySlice()[:, 0:2], "max")[0, :] == np.array([0, 1, 0]))
+    assert np.all(
+        a.get_grad_tens(fwd_values, DummySlice()[0:2], "max")[0, :] == a.get_grad_tens(fwd_values, DummySlice()[:, 0:2],
+                                                                                   "max")[0, :])

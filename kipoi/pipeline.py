@@ -11,6 +11,7 @@ from .data import numpy_collate_concat
 # import six
 from tqdm import tqdm
 import logging
+import six
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -49,6 +50,7 @@ def validate_kwargs(dataloader, dataloader_kwargs):
     unused = set(dataloader_kwargs.keys()) - set(dataloader.args.keys())
     if len(unused) > 0:
         logger.warn("Some provided dataloader kwargs were not used: {0}".format(unused))
+    return {k: v for k, v in six.iteritems(dataloader_kwargs) if k in dataloader.args}
 
 
 class Pipeline(object):
