@@ -34,6 +34,7 @@ test_requirements = [
     "pytest-xdist",  # running tests in parallel
     "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
     "pytest-cov",
+    "coveralls",
     "scikit-learn",
     "cython",
     # "genomelake",
@@ -43,7 +44,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.2.9',
+    version='0.2.12',
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',

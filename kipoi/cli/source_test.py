@@ -113,8 +113,16 @@ def test_model(model_name, source_name, env_name, batch_size):
             "--batch_size", str(batch_size),
             "--source", source_name,
             model_name]
+    # New, modified path for conda. Source activate namely does the following:
+    # - CONDA_DEFAULT_ENV=${env_name}
+    # - CONDA_PREFIX=${env_path}
+    # - PATH=$conda_bin:$PATH
+    new_env = os.environ.copy()
+    new_env['PATH'] = os.path.dirname(cmd) + os.pathsep + new_env['PATH']
     returncode, logs = _call_command(cmd, args, use_stdout=True,
-                                     return_logs_with_stdout=True)
+                                     return_logs_with_stdout=True,
+                                     env=new_env
+                                     )
     assert returncode == 0
 
     # detect WARNING in the output log
@@ -271,7 +279,7 @@ def cli_test_source(command, raw_args):
                                             m))
         print('-' * 20)
         try:
-            env_name = conda_env_name(m, m, args.source)
+            env_name = conda_env_name(m, source=args.source)
             env_name = "test-" + env_name  # prepend "test-"
             test_model(m, args.source, env_name,
                        get_batch_size(cfg, m, args.batch_size))

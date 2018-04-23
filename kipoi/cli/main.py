@@ -94,7 +94,7 @@ def cli_preproc(command, raw_args):
         kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
     Dataloader = kipoi.get_dataloader_factory(args.dataloader, args.source)
 
-    kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
+    dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
     dataloader = Dataloader(**dataloader_kwargs)
 
     it = dataloader.batch_iter(batch_size=args.batch_size, num_workers=args.num_workers)
@@ -128,6 +128,9 @@ def cli_predict(command, raw_args):
                         help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
+    parser.add_argument("-l", "--layer",
+                        help="Which output layer to use to make the predictions. If specified," +
+                        "`model.predict_activation_on_batch` will be invoked instead of `model.predict_on_batch`")
     parser.add_argument('-o', '--output', required=True, nargs="+",
                         help="Output files. File format is inferred from the file path ending. Available file formats are: " +
                         ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
@@ -159,7 +162,7 @@ def cli_predict(command, raw_args):
     else:
         Dl = model.default_dataloader
 
-    kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
+    dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
     dl = Dl(**dataloader_kwargs)
 
     # setup batching
@@ -194,10 +197,13 @@ def cli_predict(command, raw_args):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
 
         # make the prediction
-        pred_batch = model.predict_on_batch(batch['inputs'])
+        if args.layer is None:
+            pred_batch = model.predict_on_batch(batch['inputs'])
+        else:
+            pred_batch = model.predict_activation_on_batch(batch['inputs'], layer=args.layer)
 
         # write out the predictions, metadata (, inputs, targets)
-        output_batch = prepare_batch(batch, pred_batch)
+        output_batch = prepare_batch(batch, pred_batch, keep_inputs=args.keep_inputs)
         for writer in use_writers:
             writer.batch_write(output_batch)
 

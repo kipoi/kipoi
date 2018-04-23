@@ -156,17 +156,34 @@ class GradientMixin():
         raise NotImplementedError
 
 
-class KerasModel(BaseModel, GradientMixin):
+class LayerActivationMixin():
+
+    @abc.abstractmethod
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """
+        Get predictions based on layer output. 
+
+        Arguments:
+            x: model inputs from dataloader batch
+            layer: layer identifier / name. can be integer or string.
+            pre_nonlinearity: Assure that output is returned from before the non-linearity. This feature does
+            not have to be implemented always (not possible). If not implemented and set to True either raise
+            Error or at least warn! 
+        """
+        raise NotImplementedError
+
+class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads the serialized Keras model
 
     # Arguments
         weights: File path to the hdf5 weights or the hdf5 Keras model
-        arhc: Architecture json model. If None, `weights` is
+        arch: Architecture json model. If None, `weights` is
     assumed to speficy the whole model
         custom_objects: Python file defining the custom Keras objects
     in a `OBJECTS` dictionary
         backend: Keras backend to use ('tensorflow', 'theano', ...)
-
+        image_dim_ordering: 'tf' or 'th': Whether to use 'tf' ('channels_last')
+            or 'th' ('cannels_first') dimension ordering.
 
     # `model.yml` entry
 
@@ -182,11 +199,16 @@ class KerasModel(BaseModel, GradientMixin):
 
     MODEL_PACKAGE = "keras"
 
-    def __init__(self, weights, arch=None, custom_objects=None, backend=None):
+    def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
+        self.image_dim_ordering = image_dim_ordering
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
+        if self.image_dim_ordering is not None:
+            import keras.backend as K
+            logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
+            K.set_image_dim_ordering(self.image_dim_ordering)
         import keras
         from keras.models import model_from_json, load_model
 
@@ -203,7 +225,8 @@ class KerasModel(BaseModel, GradientMixin):
         self.weights = weights
         self.arch = arch
 
-        self.gradient_functions = {}
+        self.gradient_functions = {}  # contains dictionaries with string reps of filter functions / slices
+        self.activation_functions = {}  # contains the activation functions
         if arch is None:
             # load the whole model
             self.model = load_model(weights, custom_objects=self.custom_objects)
@@ -224,6 +247,103 @@ class KerasModel(BaseModel, GradientMixin):
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
+
+    def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
+        """
+        Get layers and outputs either by name / index or from the final layer(s).
+        If the final layer should be used it has an activation function that is not Linear, then the input to the
+        activation function is returned. This check is not performed when `use_final_layer` is False and `layer`
+        is being used.
+
+        Arguments:
+            layer: layer index (int) or name (non-int)
+            use_final_layer:  instead of using `layer` return the final model layer(s) + outputs
+        """
+        import keras
+        sel_outputs = []
+        sel_output_dims = []
+
+        def output_sel(layer, output):
+            """
+            If pre_nonlinearity is true run get_pre_activation_output
+            """
+            if pre_nonlinearity:
+                output = self.get_pre_activation_output(layer, output)[0]  # always has length 1
+            return output
+
+        # If the final layer should be used: (relevant for gradient)
+        if use_final_layer:
+            # Use outputs from the model output layer(s)
+            # If the last layer should be selected automatically then:
+            # get all outputs from the model output layers
+            if isinstance(self.model, keras.models.Sequential):
+                selected_layers = [self.model.layers[-1]]
+            else:
+                selected_layers = self.model.output_layers
+            for l in selected_layers:
+                for i in range(self.get_num_inbound_nodes(l)):
+                    sel_output_dims.append(len(l.get_output_shape_at(i)))
+                    sel_outputs.append(output_sel(l, l.get_output_at(i)))
+
+        # If not the final layer then the get the layer by its name / index
+        elif layer is not None:
+            if isinstance(layer, int):
+                selected_layer = self.model.get_layer(index=layer)
+            elif isinstance(layer, six.string_types):
+                selected_layer = self.model.get_layer(name=layer)
+            selected_layers = [selected_layer]
+            # get the outputs from all nodes of the selected layer (selecting output from individual output nodes
+            # creates None entries when running K.gradients())
+            if self.get_num_inbound_nodes(selected_layer) > 1:
+                logger.warn("Layer %s has multiple input nodes. By default outputs from all nodes "
+                            "are concatenated" % selected_layer.name)
+                for i in range(self.get_num_inbound_nodes(selected_layer)):
+                    sel_output_dims.append(len(selected_layer.get_output_shape_at(i)))
+                    sel_outputs.append(output_sel(selected_layer, selected_layer.get_output_at(i)))
+            else:
+                sel_output_dims.append(len(selected_layer.output_shape))
+                sel_outputs.append(output_sel(selected_layer, selected_layer.output))
+        else:
+            raise Exception("Either use_final_layer has to be set or a layer name has to be defined.")
+
+        return selected_layers, sel_outputs, sel_output_dims
+
+    @staticmethod
+    def get_pre_activation_output(layer, output):
+        import keras
+        # if the current layer uses an activation function then grab the input to the activation function rather
+        # than the output from the activation function.
+        # This can lead to confusion if the activation function translates to backend operations that are not a
+        # single operation. (Which would also be a misuse of the activation function itself.)
+        # suggested here: https://stackoverflow.com/questions/45492318/keras-retrieve-value-of-node-before-activation-function
+        if hasattr(layer, "activation") and not layer.activation == keras.activations.linear:
+            new_output_ois = []
+            if hasattr(output, "op"):
+                # TF
+                for inp_here in output.op.inputs:
+                    new_output_ois.append(inp_here)
+            else:
+                # TH
+                for inp_here in output.owner.inputs:
+                    new_output_ois.append(inp_here)
+            if len(new_output_ois) > 1:
+                raise Exception("More than one input to activation function of selected layer. No general rule "
+                                "implemented for handing those cases. Consider using a linear activation function + a "
+                                "non-linear activation layer instead.")
+            return new_output_ois
+        else:
+            return [output]
+
+    @staticmethod
+    def get_num_inbound_nodes(layer):
+        if hasattr(layer, "_inbound_nodes"):
+            # Keras 2.1.5
+            return len(layer._inbound_nodes)
+        elif hasattr(layer, "inbound_nodes"):
+            # Keras 2.0.4
+            return len(layer.inbound_nodes)
+        else:
+            raise Exception("No way to find out about number of inbound Nodes")
 
     def __generate_direct_saliency_functions__(self, layer, filter_slices=None,
                                                filter_func=None, filter_func_kwargs=None):
@@ -281,8 +401,67 @@ class KerasModel(BaseModel, GradientMixin):
     def pred_grad(self, x, output_slice):
         return self._input_grad(x, -1, output_slice)
 
+    def _generate_activation_output_functions(self, layer, pre_nonlinearity):
+        import copy
+        layer_id = str(layer) + "_" + str(pre_nonlinearity)
+        if layer_id in self.activation_functions:
+            return self.activation_functions[layer_id]
 
-class PyTorchModel(BaseModel):
+        # get the selected layers
+        selected_layers, sel_outputs, sel_output_dims = self.get_layers_and_outputs(layer=layer,
+                                                                                    use_final_layer=False,
+                                                                                    pre_nonlinearity=pre_nonlinearity)
+
+        # copy the model input in case learning flag has to appended when using the activation function.
+        inp = copy.copy(self.model.inputs)
+
+        # Can't we have multiple outputs for the function?
+        output_oi = sel_outputs  # list of outputs should work: https://keras.io/backend/#backend-functions -> backend.function
+
+        from keras import backend as K
+
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+            inp.append(K.learning_phase())
+
+        activation_function = K.function(inp, output_oi)
+
+        # store the generated activation function:
+        self.activation_functions[layer_id] = activation_function
+
+        return activation_function
+
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
+
+        Arguments
+            x: Input samples, as a Numpy array.
+
+        Returns
+            Numpy array(s) of predictions.
+        """
+        from keras.engine.training import _standardize_input_data
+        from keras import backend as K
+        x = _standardize_input_data(x, self.model._feed_input_names,
+                                    self.model._feed_input_shapes)
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+            ins = x + [0.]
+        else:
+            ins = x
+        af = self._generate_activation_output_functions(layer, pre_nonlinearity)
+        outputs = af(ins)
+        return outputs
+
+
+class PytorchFwdHook(object):
+
+    def __init__(self):
+        self.forward_values = []
+
+    def run_forward_hook(self, module, input, output):
+        self.forward_values.append(output)
+
+
+class PyTorchModel(BaseModel, LayerActivationMixin):
     """Loads a pytorch model. 
 
     """
@@ -394,6 +573,10 @@ class PyTorchModel(BaseModel):
         else:
             raise Exception("Input not supported!")
 
+        return self.pred_to_np(pred)
+
+    def pred_to_np(self, pred):
+        from torch.autograd import Variable
         # convert results back to numpy arrays
         if isinstance(pred, Variable):
             pred_np = self._torch_var_to_numpy(pred)
@@ -408,6 +591,171 @@ class PyTorchModel(BaseModel):
             raise Exception("Model output format not supported!")
 
         return pred_np
+
+    def get_layer(self, index):
+        """
+        Get layer (module) based on index: index for sequentials is e.g.: '1.5.1', for models defined as sublcasses of
+        nn.Module it's the class object variable names
+        """
+        # index for sequentials is e.g.: '1.5.1', for models defined as sublcasses of nn.Module it's the class object
+        # variable names
+        for idx, m in self.model.named_modules():
+            if idx == index:
+                return m
+
+    def get_layer_id(self, layer):
+        for idx, m in self.model.named_modules():
+            if m == layer:
+                return idx
+
+    @staticmethod
+    def extract_module_id(trace_node_obj):
+        import re
+        sqb_restr = r"\[([A-Za-z0-9_]+)\]"
+        scopeName = trace_node_obj.scopeName()
+        idx_name = ".".join([re.search(sqb_restr, grp).group(1) for grp in
+                             scopeName.split("/") if re.search(sqb_restr, grp) is not None])
+        return idx_name
+
+    @staticmethod
+    def _is_nonlinear_activation(layer):
+        import torch
+        import torch.nn.modules.activation as tact
+        import inspect
+        activation_modules = []
+        activation_module_names = []
+        for mod_name, mod in tact.__dict__.items():
+            if inspect.isclass(mod) and issubclass(mod, torch.nn.Module):
+                if mod != torch.nn.Module:
+                    activation_modules.append(mod)
+                    activation_module_names.append(mod_name)
+        # This will also catch instances of subclasses
+        return any([isinstance(layer, mod) for mod in activation_modules])
+
+    def _get_trace(self, x):
+        import torch
+        trace, _ = torch.jit.trace(self.model, args=x)
+        return trace
+
+    def get_last_layers(self, x):
+        """
+        Returns the model output layers
+        x must be a pytorch Variable compatible with the model input
+        """
+        trace = self._get_trace(x)
+        layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
+        return [self.get_layer(i) for i in layer_idxs]
+
+    def get_downstream_layers(self, x, layer_id):
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
+        raise Exception("No safe graph taversal is implemented yet!")
+        layer_output_unames = []  # unique names of layer outputs (data streams)
+        trace = self._get_trace(x)
+
+        # Iterate over all modules in the graph and remember the module outputs (so that they can be checked later)
+        for mod in trace.graph().nodes():
+            if self.extract_module_id(mod) == layer_id:
+                layer_output_unames += [n.uniqueName() for n in mod.outputs()]
+
+        # get the model output stream names to check is it is a leaf output
+        model_output_unames = [n.uniqueName() for n in trace.graph().outputs()]
+
+        # get the layer ids that receive data from layer_id
+        next_layer_ids = []
+        for mod in trace.graph().nodes():
+            this_layer_inputs = [n.uniqueName() for n in mod.inputs()]
+            if any([iuname in layer_output_unames for iuname in this_layer_inputs]):
+                next_layer_ids.append(self.extract_module_id(mod))
+
+        if "" in next_layer_ids:
+            raise Exception("The model is not compatible with the current implementation")
+
+        # some values are fed back to the layer itself.
+        next_layer_ids = [lid for lid in next_layer_ids if lid != layer_id]
+
+        # layers receiving from the given layer, is the layer (also) an output leaf node
+        return next_layer_ids, [self.get_layer(i) for i in next_layer_ids], \
+            any([iuname in layer_output_unames for iuname in model_output_unames])
+
+    def get_upstream_layers(self, x, layer_id):
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
+        raise Exception("No safe graph taversal is implemented yet!")
+        layer_input_unames = []  # unique names of layer outputs (data streams)
+        trace = self._get_trace(x)
+
+        # Iterate over all modules in the graph and remember the module inputs (so that they can be checked later)
+        for mod in trace.graph().nodes():
+            if self.extract_module_id(mod) == layer_id:
+                layer_input_unames += [n.uniqueName() for n in mod.inputs()]
+
+        # get the model input stream names to check is it is a leaf input
+        model_input_unames = [n.uniqueName() for n in trace.graph().inputs()]
+
+        # get the layer ids that feed data into layer_id
+        prev_layer_ids = []
+        for mod in trace.graph().nodes():
+            this_layer_outputs = [n.uniqueName() for n in mod.outputs()]
+            if any([ouname in layer_input_unames for ouname in this_layer_outputs]):
+                prev_layer_ids.append(self.extract_module_id(mod))
+
+        # some values are fed back to the layer itself.
+        prev_layer_ids = [lid for lid in prev_layer_ids if lid != layer_id]
+
+        # layers feeding into the given layer, is the layer (also) an output leaf node
+        return prev_layer_ids, [self.get_layer(i) for i in prev_layer_ids], \
+            any([iuname in layer_input_unames for iuname in model_input_unames])
+
+    def _register_fwd_hook(self, layer):
+        """
+        Install a forward hook on the given layer index
+        Returns a PytorchFwdHook object that contains a 
+        """
+        fwd_hook_obj = PytorchFwdHook()
+        removable_hook_obj = layer.register_forward_hook(fwd_hook_obj.run_forward_hook)
+        return fwd_hook_obj, removable_hook_obj
+
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
+
+        Arguments
+            x: Input samples, as a Numpy array.
+        Returns
+            List of list of Numpy array(s) of predictions. First level is the hooks (= layers), second level is the
+            calls of the hooks (if the layer or its upstream layer is called multiple times in a graph).
+        """
+        selected_layers = [self.get_layer(layer)]
+
+        if selected_layers[0] is None:
+            raise ValueError("Unable to get layer {}".format(layer))
+
+        if pre_nonlinearity:
+            raise Exception("pre_nonlinearity is not implemented for PyTorch models.")
+            # Currently inactive code because graph traversal is not yet failsafe for all imaginable model architectures
+            # if not self._is_nonlinear_activation(selected_layers[0]):
+            #    selected_layer_ids, selected_layers, is_leaf = self.get_upstream_layers(x, selected_layers[0])
+            #    if len(selected_layer_ids) ==0:
+            #        if is_leaf:
+            #            raise Exception("Layer '%s' is a nonlinear activation function and is an input leaf node - no "
+            #                            "upstream layer could be found!")
+            #        else:
+            #            raise Exception("Layer '%s' is a nonlinear activation function and no upstream layer could be "
+            #                            "found!")
+
+        # Register hooks for the layers
+        fwd_hook_objs = []
+        removable_hook_objs = []
+        for selected_layer in selected_layers:
+            fwd_hook_obj, removable_hook_obj = self._register_fwd_hook(selected_layer)
+            fwd_hook_objs.append(fwd_hook_obj)
+            removable_hook_objs.append(removable_hook_obj)
+
+        # Run full prediction to also
+        self.predict_on_batch(x)
+        # Remove hook to avoid future use
+        [rho.remove() for rho in removable_hook_objs]
+        # convert results back and return values.
+        # First loop over the hook (= layers) then over the calls of the hooks (inner loop)
+        return [[self.pred_to_np(fv) for fv in fho.forward_values] for fho in fwd_hook_objs]
 
 
 class SklearnModel(BaseModel):
@@ -460,7 +808,7 @@ def get_op_outputs(graph, node_names):
                          format(type(node_names)))
 
 
-class TensorFlowModel(BaseModel):
+class TensorFlowModel(BaseModel, LayerActivationMixin):
 
     MODEL_PACKAGE = "tensorflow"
 
@@ -508,8 +856,7 @@ class TensorFlowModel(BaseModel):
         else:
             self.const_feed_dict = {}
 
-    def predict_on_batch(self, x):
-
+    def _build_feed_dict(self, x):
         # build feed_dict
         if isinstance(self.input_nodes, dict):
             # dict
@@ -525,7 +872,25 @@ class TensorFlowModel(BaseModel):
         else:
             raise ValueError
 
+        return feed_dict
+
+    def predict_on_batch(self, x):
+        feed_dict = self._build_feed_dict(x)
         return self.sess.run(self.target_ops,
+                             feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """
+        Get predictions based on layer output. 
+
+        Arguments:
+            x: model inputs from dataloader batch
+            layer: layer identifier / name. can be integer or string.
+            pre_nonlinearity: Not implemented.
+        """
+        feed_dict = self._build_feed_dict(x)
+        new_target_ops = get_op_outputs(self.graph, layer)
+        return self.sess.run(new_target_ops,
                              feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
 
 
