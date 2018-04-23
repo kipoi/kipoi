@@ -124,13 +124,15 @@ class HDF5BatchWriter(BatchWriter):
 
     def __init__(self, file_path,
                  chunk_size=10000,
-                 compression='default'):
+                 compression='gzip'):
         """
         Args:
           file_path (str): File path of the output tsv file
           chunk_size (str): Chunk size for storing the files
           nested_sep: What separator to use for flattening the nested dictionary structure
             into a single key
+          compression (str): default compression to use for the hdf5 datasets.
+             see also: http://docs.h5py.org/en/latest/high/dataset.html#dataset-compression
         """
         import h5py
         if sys.version_info[0] == 2:
@@ -168,6 +170,7 @@ class HDF5BatchWriter(BatchWriter):
                                       shape=(0, ) + fbatch[k].shape[1:],
                                       dtype=dtype,
                                       maxshape=(None, ) + fbatch[k].shape[1:],
+                                      compression=self.compression,
                                       chunks=(self.chunk_size, ) + fbatch[k].shape[1:])
             self.first_pass = False
         # add data to the buffer
