@@ -31,9 +31,10 @@ predict_activation_layers = {
 def test_test_example(example):
     """kipoi test ...
     """
-    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
+       and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
-    
+
     example_dir = "examples/{0}".format(example)
 
     args = ["python", "./kipoi/__main__.py", "test",
@@ -54,7 +55,7 @@ def test_preproc_example(example, tmpdir):
     if example in {"extended_coda"}:
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
-        
+
     example_dir = "examples/{0}".format(example)
 
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
@@ -142,6 +143,39 @@ def test_predict_example(example, tmpdir):
                                       'preds/0']
 
 
+@pytest.mark.parametrize("example", list(predict_activation_layers))
+def test_predict_activation_example(example, tmpdir):
+    """Kipoi predict --layer=x with a specific output layer specified
+    """
+    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+
+    example_dir = "examples/{0}".format(example)
+
+    print(example)
+    print("tmpdir: {0}".format(tmpdir))
+    tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
+
+    # run the
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
+            "../",  # directory
+            "--source=dir",
+            "--layer", predict_activation_layers[example],
+            "--batch_size=4",
+            "--dataloader_args=test.json",
+            "--output", tmpfile]
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir + "/example_files"))
+    assert returncode == 0
+
+    assert os.path.exists(tmpfile)
+
+    data = HDF5Reader.load(tmpfile)
+    assert {'metadata', 'preds'} <= set(data.keys())
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_predict_variants_example(example, tmpdir):
     """kipoi predict ...
@@ -188,7 +222,7 @@ def test_predict_variants_example(example, tmpdir):
                 args.append(INSTALL_FLAG)
 
             if restricted_bed:
-                args += ["--restriction_bed", example_dir + "/" +"example_files/restricted_regions.bed"]
+                args += ["--restriction_bed", example_dir + "/" + "example_files/restricted_regions.bed"]
 
             returncode = subprocess.call(args=args,
                                          cwd=os.path.realpath(example_dir) + "/../../")

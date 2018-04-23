@@ -104,7 +104,7 @@ def get_avail_scoring_methods(model):
         default_scoring_fns = copy.copy(avail_scoring_fn_names)
 
     # try to complete the set of functions if needed. None of the additional ones will become part of the defaults
-    additional_scoring_fn_def_args =[]
+    additional_scoring_fn_def_args = []
     additional_scoring_fns = []
     additional_scoring_fn_names = []
     for scoring_fn, def_args in zip(avail_scoring_fns, avail_scoring_fn_def_args):
@@ -131,7 +131,6 @@ def get_avail_scoring_methods(model):
     avail_scoring_fn_def_args += additional_scoring_fn_def_args
     avail_scoring_fn_names += additional_scoring_fn_names
 
-
     # add the default scoring functions if not already in there
     for scoring_name in categorical_enable["__any__"]:
         if scoring_options[scoring_name] not in avail_scoring_fns:
@@ -145,6 +144,7 @@ def get_avail_scoring_methods(model):
                 default_scoring_fns.append(s_label)
 
     return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
+
 
 def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
     # get the scoring methods according to the model definition
@@ -196,7 +196,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
                     dts[k] = avail_scoring_fns[si](**kwargs)
                 else:
                     logger.warn("Cannot choose scoring function %s. "
-                                     "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
+                                "Model only supports: %s." % (k, str(avail_scoring_fn_names)))
     # if -s not set use all defaults
     elif len(default_scoring_fns) != 0:
         for arg_iter, k in enumerate(default_scoring_fns):
@@ -260,6 +260,7 @@ def cli_score_variants(command, raw_args):
     if args.file_format not in AVAILABLE_FORMATS:
         logger.error("File ending: {0} for file {1} not from {2}".
                      format(args.file_format, args.output, AVAILABLE_FORMATS))
+        import sys
         sys.exit(1)
 
     if args.file_format in ["hdf5", "h5"]:

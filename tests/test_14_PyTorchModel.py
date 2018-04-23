@@ -1,8 +1,11 @@
 import numpy as np
 from kipoi.model import PyTorchModel
-import pytest
 from kipoi.utils import cd
+import torch
+from torch import nn
+import torch.nn.functional as F
 import kipoi
+import pytest
 
 
 def check_same_weights(dict1, dict2):
@@ -65,6 +68,7 @@ def test_prediction_io():
     import torch
 
     class checking_model(torch.nn.Module):
+
         def __init__(self, original_input):
             super(checking_model, self).__init__()
             self.original_input = original_input
@@ -102,8 +106,6 @@ def test_prediction_io():
         elif isinstance(m_in, dict):
             m_expected = [m_in[k] for k in sorted(list(m_in))]
             assert all([np.all(el == el2) for el, el2 in zip(pred, m_expected)])
-
-
 
 
 """
@@ -192,6 +194,7 @@ def dummy_model_bf():
     dummy_model.eval()
     return dummy_model
 
+
 def get_dummy_multi_input(kind = "list"):
     np.random.seed(1)
     if kind == "list":
@@ -220,6 +223,7 @@ def dummy_multi_input_bf():
     dummy_model = DummyMultiInput().double()
     dummy_model.eval()
     return dummy_model
+
 
 
 
@@ -339,3 +343,4 @@ def test_grad_tens_generation():
     # Filter is 2D
     with pytest.raises(Exception):
         model.get_grad_tens(fwd_values, DummySlice()[0:2], "max")
+

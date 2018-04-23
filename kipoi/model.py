@@ -174,17 +174,34 @@ class GradientMixin(object):
         raise NotImplementedError
 
 
-class KerasModel(BaseModel, GradientMixin):
+class LayerActivationMixin():
+
+    @abc.abstractmethod
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """
+        Get predictions based on layer output. 
+
+        Arguments:
+            x: model inputs from dataloader batch
+            layer: layer identifier / name. can be integer or string.
+            pre_nonlinearity: Assure that output is returned from before the non-linearity. This feature does
+            not have to be implemented always (not possible). If not implemented and set to True either raise
+            Error or at least warn! 
+        """
+        raise NotImplementedError
+
+class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads the serialized Keras model
 
     # Arguments
         weights: File path to the hdf5 weights or the hdf5 Keras model
-        arhc: Architecture json model. If None, `weights` is
+        arch: Architecture json model. If None, `weights` is
     assumed to speficy the whole model
         custom_objects: Python file defining the custom Keras objects
     in a `OBJECTS` dictionary
         backend: Keras backend to use ('tensorflow', 'theano', ...)
-
+        image_dim_ordering: 'tf' or 'th': Whether to use 'tf' ('channels_last')
+            or 'th' ('cannels_first') dimension ordering.
 
     # `model.yml` entry
 
@@ -200,11 +217,16 @@ class KerasModel(BaseModel, GradientMixin):
 
     MODEL_PACKAGE = "keras"
 
-    def __init__(self, weights, arch=None, custom_objects=None, backend=None):
+    def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
+        self.image_dim_ordering = image_dim_ordering
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
+        if self.image_dim_ordering is not None:
+            import keras.backend as K
+            logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
+            K.set_image_dim_ordering(self.image_dim_ordering)
         import keras
         from keras.models import model_from_json, load_model
 
@@ -220,8 +242,11 @@ class KerasModel(BaseModel, GradientMixin):
 
         self.weights = weights
         self.arch = arch
+
         self.final_layer_gradient_function = None
-        self.gradient_functions = {}
+        self.gradient_functions = {}  # contains dictionaries with string reps of filter functions / slices
+        self.activation_functions = {}  # contains the activation functions
+
         if arch is None:
             # load the whole model
             self.model = load_model(weights, custom_objects=self.custom_objects)
@@ -249,6 +274,7 @@ class KerasModel(BaseModel, GradientMixin):
         If the final layer should be used it has an activation function that is not Linear, then the input to the
         activation function is returned. This check is not performed when `use_final_layer` is False and `layer`
         is being used.
+
         Arguments:
             layer: layer index (int) or name (non-int)
             use_final_layer:  instead of using `layer` return the final model layer(s) + outputs
@@ -508,6 +534,59 @@ class KerasModel(BaseModel, GradientMixin):
         return self._input_grad(x, layer=wrt_layer, filter_slices=filter_ind, use_final_layer = wrt_final_layer,
                                 filter_func=avg_func)
 
+
+    def _generate_activation_output_functions(self, layer, pre_nonlinearity):
+        import copy
+        layer_id = str(layer) + "_" + str(pre_nonlinearity)
+        if layer_id in self.activation_functions:
+            return self.activation_functions[layer_id]
+
+        # get the selected layers
+        selected_layers, sel_outputs, sel_output_dims = self.get_layers_and_outputs(layer=layer,
+                                                                                    use_final_layer=False,
+                                                                                    pre_nonlinearity=pre_nonlinearity)
+
+        # copy the model input in case learning flag has to appended when using the activation function.
+        inp = copy.copy(self.model.inputs)
+
+        # Can't we have multiple outputs for the function?
+        output_oi = sel_outputs  # list of outputs should work: https://keras.io/backend/#backend-functions -> backend.function
+
+        from keras import backend as K
+
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+            inp.append(K.learning_phase())
+
+        activation_function = K.function(inp, output_oi)
+
+        # store the generated activation function:
+        self.activation_functions[layer_id] = activation_function
+
+        return activation_function
+
+
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
+    
+        Arguments
+            x: Input samples, as a Numpy array.
+    
+        Returns
+            Numpy array(s) of predictions.
+        """
+        from keras.engine.training import _standardize_input_data
+        from keras import backend as K
+        x = _standardize_input_data(x, self.model._feed_input_names,
+                                    self.model._feed_input_shapes)
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
+            ins = x + [0.]
+        else:
+            ins = x
+        af = self._generate_activation_output_functions(layer, pre_nonlinearity)
+        outputs = af(ins)
+        return outputs
+
+
 class PyTorchFwdHook(object):
 
     def __init__(self):
@@ -527,7 +606,7 @@ pt_type_conversions = {
     "LongTensor": "long"}
 pt_type_conversions = {pre+k: v for pre in ["torch.", "torch.cuda."] for k,v in pt_type_conversions.items()}
 
-class PyTorchModel(BaseModel, GradientMixin):
+class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads a pytorch model. 
 
     """
@@ -651,6 +730,7 @@ class PyTorchModel(BaseModel, GradientMixin):
 
         return pred, input
 
+
     def pred_to_np(self, pred):
         from torch.autograd import Variable
         # convert results back to numpy arrays
@@ -718,18 +798,22 @@ class PyTorchModel(BaseModel, GradientMixin):
         Returns the model output layers
         x must be a pytorch Variable compatible with the model input
         """
-        trace= self._get_trace(x)
-        layer_idxs =  [self.extract_module_id(n) for n in trace.graph().outputs()]
+        trace = self._get_trace(x)
+        layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
         return [self.get_layer(i) for i in layer_idxs]
 
-    def get_next_layers(self, x, layer_id):
+    def get_downstream_layers(self, x, layer_id):
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
+        raise Exception("No safe graph taversal is implemented yet!")
         layer_output_unames = []  # unique names of layer outputs (data streams)
         trace = self._get_trace(x)
+
         # Iterate over all modules in the graph and remember the module outputs (so that they can be checked later)
         for mod in trace.graph().nodes():
             if self.extract_module_id(mod) == layer_id:
                 layer_output_unames += [n.uniqueName() for n in mod.outputs()]
-        # get the model output stream names
+
+        # get the model output stream names to check is it is a leaf output
         model_output_unames = [n.uniqueName() for n in trace.graph().outputs()]
         # get the layer ids that receive data from layer_id
         next_layer_ids = []
@@ -737,11 +821,16 @@ class PyTorchModel(BaseModel, GradientMixin):
             this_layer_inputs = [n.uniqueName() for n in mod.inputs()]
             if any([iuname in layer_output_unames for iuname in this_layer_inputs]):
                 next_layer_ids.append(self.extract_module_id(mod))
+
+        if "" in next_layer_ids:
+            raise Exception("The model is not compatible with the current implementation")
+
         # some values are fed back to the layer itself.
         next_layer_ids = [lid for lid in next_layer_ids if lid != layer_id]
+
         # layers receiving from the given layer, is the layer (also) an output leaf node
         return next_layer_ids, [self.get_layer(i) for i in next_layer_ids], \
-               any([iuname in layer_output_unames for iuname in model_output_unames])
+            any([iuname in layer_output_unames for iuname in model_output_unames])
 
     @classmethod
     def _pt_type_match(self, in_data, like, match_cuda=False):
@@ -895,6 +984,79 @@ class PyTorchModel(BaseModel, GradientMixin):
         return self._input_grad(x, layer=selected_layers[0], filter_slices=filter_ind, filter_func=avg_func,
                                 selected_fwd_node = selected_fwd_node)
 
+    def get_upstream_layers(self, x, layer_id):
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
+        raise Exception("No safe graph taversal is implemented yet!")
+        layer_input_unames = []  # unique names of layer outputs (data streams)
+        trace = self._get_trace(x)
+
+        # Iterate over all modules in the graph and remember the module inputs (so that they can be checked later)
+        for mod in trace.graph().nodes():
+            if self.extract_module_id(mod) == layer_id:
+                layer_input_unames += [n.uniqueName() for n in mod.inputs()]
+
+        # get the model input stream names to check is it is a leaf input
+        model_input_unames = [n.uniqueName() for n in trace.graph().inputs()]
+
+        # get the layer ids that feed data into layer_id
+        prev_layer_ids = []
+        for mod in trace.graph().nodes():
+            this_layer_outputs = [n.uniqueName() for n in mod.outputs()]
+            if any([ouname in layer_input_unames for ouname in this_layer_outputs]):
+                prev_layer_ids.append(self.extract_module_id(mod))
+
+        # some values are fed back to the layer itself.
+        prev_layer_ids = [lid for lid in prev_layer_ids if lid != layer_id]
+
+        # layers feeding into the given layer, is the layer (also) an output leaf node
+        return prev_layer_ids, [self.get_layer(i) for i in prev_layer_ids], \
+            any([iuname in layer_input_unames for iuname in model_input_unames])
+
+
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
+
+        Arguments
+            x: Input samples, as a Numpy array.
+        Returns
+            List of list of Numpy array(s) of predictions. First level is the hooks (= layers), second level is the
+            calls of the hooks (if the layer or its upstream layer is called multiple times in a graph).
+        """
+        selected_layers = [self.get_layer(layer)]
+
+        if selected_layers[0] is None:
+            raise ValueError("Unable to get layer {}".format(layer))
+
+        if pre_nonlinearity:
+            raise Exception("pre_nonlinearity is not implemented for PyTorch models.")
+            # Currently inactive code because graph traversal is not yet failsafe for all imaginable model architectures
+            # if not self._is_nonlinear_activation(selected_layers[0]):
+            #    selected_layer_ids, selected_layers, is_leaf = self.get_upstream_layers(x, selected_layers[0])
+            #    if len(selected_layer_ids) ==0:
+            #        if is_leaf:
+            #            raise Exception("Layer '%s' is a nonlinear activation function and is an input leaf node - no "
+            #                            "upstream layer could be found!")
+            #        else:
+            #            raise Exception("Layer '%s' is a nonlinear activation function and no upstream layer could be "
+            #                            "found!")
+
+        # Register hooks for the layers
+        fwd_hook_objs = []
+        removable_hook_objs = []
+        for selected_layer in selected_layers:
+            fwd_hook_obj, removable_hook_obj = self._register_fwd_hook(selected_layer)
+            fwd_hook_objs.append(fwd_hook_obj)
+            removable_hook_objs.append(removable_hook_obj)
+
+        # Run full prediction to also
+        self.predict_on_batch(x)
+        # Remove hook to avoid future use
+        [rho.remove() for rho in removable_hook_objs]
+        # convert results back and return values.
+        # First loop over the hook (= layers) then over the calls of the hooks (inner loop)
+        return [[self.pred_to_np(fv) for fv in fho.forward_values] for fho in fwd_hook_objs]
+
+
 
 class SklearnModel(BaseModel):
     """Loads the serialized scikit learn model
@@ -980,8 +1142,7 @@ def get_filter_array(filter_slices, input_shape):
     return pt_filt_slice
 
 
-class TensorFlowModel(BaseModel, GradientMixin):
-
+class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
     MODEL_PACKAGE = "tensorflow"
 
     def __init__(self,
@@ -1047,9 +1208,7 @@ class TensorFlowModel(BaseModel, GradientMixin):
         return feed_dict
 
     def predict_on_batch(self, x):
-
         feed_dict = self._build_feed_dict(x)
-
         return self.sess.run(self.target_ops,
                              feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
 
@@ -1167,8 +1326,19 @@ class TensorFlowModel(BaseModel, GradientMixin):
 
         return grad_pred_formatted
 
+    def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
+        """
+        Get predictions based on layer output. 
 
-
+        Arguments:
+            x: model inputs from dataloader batch
+            layer: layer identifier / name. can be integer or string.
+            pre_nonlinearity: Not implemented.
+        """
+        feed_dict = self._build_feed_dict(x)
+        new_target_ops = get_op_outputs(self.graph, layer)
+        return self.sess.run(new_target_ops,
+                             feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
 
 AVAILABLE_MODELS = {"keras": KerasModel,
                     "pytorch": PyTorchModel,

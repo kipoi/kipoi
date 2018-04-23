@@ -1,7 +1,8 @@
 # Kipoi: Model zoo for genomics
 
 [![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
-[![Join the chat at https://gitter.im/kipoi/kipoi-feedback](https://badges.gitter.im/kipoi/kipoi-feedback.svg)](https://gitter.im/kipoi/kipoi-feedback?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Coverage Status](https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master)](https://coveralls.io/github/kipoi/kipoi?branch=master)
+[![Join the chat at https://gitter.im/kipoi/kipoi-contribute](https://badges.gitter.im/kipoi/kipoi-contribute.svg)](https://gitter.im/kipoi/kipoi-contribute?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
@@ -24,16 +25,15 @@ Make sure you have either anaconda ([download page](https://conda.io/miniconda.h
 
 ### 2. Install Git LFS
 
-For downloading models, Kipoi uses [Git Large File Storage](https://git-lfs.github.com/) (LFS). To install it on Ubuntu, run:
+For downloading models, Kipoi uses git and [Git Large File Storage](https://git-lfs.github.com/) (LFS). See how to install git [here](https://www.atlassian.com/git/tutorials/install-git). To install git-lfs on Ubuntu, run:
 
 ```bash
-# on Ubuntu
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install -y git-lfs
+sudo apt-get install -y git git-lfs
 git-lfs install
 ```
 
-Alternatively, install it through conda:
+Alternatively, you can install git-lfs through conda:
 
 ```bash
 conda install -c conda-forge git-lfs && git lfs install

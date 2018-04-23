@@ -48,11 +48,15 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
         # add also the dataloaders to the string
         if not isinstance(dataloader_name, list):
             dataloader_name = [dataloader_name]
+        dataloader_name = [_replace_slash(os.path.normpath(d))
+                           for d in dataloader_name]
         if len(dataloader_name) != 0 and dataloader_name != model_name:
-            dataloader_name = [_replace_slash(os.path.normpath(d))
-                               for d in dataloader_name]
-
             env_name += "-DL-{0}".format(",".join(dataloader_name))
+
+    # limit the env name to 110 characters
+    if len(env_name) > 110:
+        logger.info("Environment name exceeds 110 characters. Limiting it to 110 characters")
+        env_name = env_name[:110]
     return env_name
 
 
@@ -65,7 +69,7 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::cyvcf2",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
-                        pip=["intervaltree"]
+                        pip=["intervaltree", "deepdish"]
                         )
 
 
@@ -191,6 +195,7 @@ def cli_export(cmd, raw_args):
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
+    import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -201,7 +206,7 @@ def cli_create(cmd, raw_args):
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
-    tmpdir = "/tmp/kipoi/envfiles"
+    tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
 
