@@ -384,10 +384,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Returns
             Numpy array(s) of predictions.
         """
-        from keras.engine.training import _standardize_input_data
+        import keras
         from keras import backend as K
-        x = _standardize_input_data(x, self.model._feed_input_names,
-                                    self.model._feed_input_shapes)
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+            x = _standardize_input_data(x, self.model.input_names,
+                                        self.model.internal_input_shapes)
+        else:
+            from keras.engine.training import _standardize_input_data
+            x = _standardize_input_data(x, self.model._feed_input_names,
+                                        self.model._feed_input_shapes)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x + [0.]
         else:
@@ -439,10 +445,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns
             Numpy array(s) of predictions.
         """
-        from keras.engine.training import _standardize_input_data
+        import keras
         from keras import backend as K
-        x = _standardize_input_data(x, self.model._feed_input_names,
-                                    self.model._feed_input_shapes)
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+            x = _standardize_input_data(x, self.model.input_names,
+                                        self.model.internal_input_shapes)
+        else:
+            from keras.engine.training import _standardize_input_data
+            x = _standardize_input_data(x, self.model._feed_input_names,
+                                        self.model._feed_input_shapes)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x + [0.]
         else:
