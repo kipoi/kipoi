@@ -14,13 +14,13 @@ import numpy as np
 from kipoi.postprocessing.variant_effects.utils import OneHotSeqExtractor, StrSeqExtractor
 import h5py
 import os
+from config import install_req as INSTALL_REQ
 
 warnings.filterwarnings('ignore')
 from kipoi.postprocessing.variant_effects import mutation_map as mm
 from kipoi.postprocessing.variant_effects import snv_predict as sp
 
 
-INSTALL_REQ = False
 
 
 class DummyModelInfo(object):

@@ -320,6 +320,9 @@ def test_generate_mutation_maps_example(example, tmpdir):
 
     assert os.path.exists(plt_tmpfile)
 
+    os.unlink(mm_tmpfile)
+    os.unlink(plt_tmpfile)
+
 
 def test_pull_kipoi():
     """Test that pull indeed pulls the right model
