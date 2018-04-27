@@ -61,6 +61,9 @@ setup(
                 "pysam",  # required by pybedtools
                 "intervaltree",
                 "deepdish",
+                "matplotlib",
+                "shapely",
+                "descartes",
                 ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},

@@ -37,6 +37,20 @@ variant_effects:
 %s
 """
 
+dupl_name_postproc_yaml = """
+variant_effects:
+  seq_input:
+    - seq
+  scoring_functions:%s
+    - type: deepsea_effect
+      default: True
+      name: mydiff
+    - name: mydiff
+      type: custom
+      defined_as: tests/data/dummy_diff.py::LogitAlt
+%s
+"""
+
 
 diff_str = """
     - name: diff
@@ -73,20 +87,31 @@ def test_custom_fns():
                                              [{"rc_merging": "max"}]+ [builtin_default_kwargs]*4,
                                              [builtin_default_kwargs] * 3 + [{}] + [builtin_default_kwargs]*5]
         for i2, mydiff_args in enumerate(["", args_w_default, optional_args]):
-            pps = PostProcModelStruct.from_config(from_yaml(postproc_yaml % (diff_str_here, mydiff_args)))
-            model = dummy_container()
-            model.postprocessing = pps
-            if i2 == 0:
-                # mydiff has one argument but none are defined.
-                with pytest.raises(ValueError):
-                    get_avail_scoring_methods(model)
-            else:
-                avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
-                    get_avail_scoring_methods(model)
-                output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
-                expected = [exp_avail_scoring_fn_labels[i], exp_avail_scoring_fns[i], exp_avail_scoring_fn_def_args[i2]]
-                assert_groupwise_identity(output, expected)
-                assert default_scoring_fns == ["deepsea_effect"]
+            for i3, pp_yaml in enumerate([postproc_yaml, dupl_name_postproc_yaml]):
+                pps = PostProcModelStruct.from_config(from_yaml(pp_yaml % (diff_str_here, mydiff_args)))
+                model = dummy_container()
+                model.postprocessing = pps
+                if i3 == 1:
+                    with pytest.raises(Exception):
+                        get_avail_scoring_methods(model)
+                else:
+                    if i2 == 0:
+                        # mydiff has one argument but none are defined.
+                        with pytest.raises(ValueError):
+                            get_avail_scoring_methods(model)
+                    else:
+                        avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+                            get_avail_scoring_methods(model)
+                        output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
+                        expected = [exp_avail_scoring_fn_labels[i], exp_avail_scoring_fns[i], exp_avail_scoring_fn_def_args[i2]]
+                        assert_groupwise_identity(output, expected)
+                        assert default_scoring_fns == ["deepsea_effect"]
+    model = dummy_container()
+    model.postprocessing = dummy_container()
+    model.postprocessing.variant_effects = None
+    with pytest.raises(Exception):
+        get_avail_scoring_methods(model)
+
 
 
 def test_ret():
@@ -213,7 +238,7 @@ def test__get_scoring_fns():
     model.postprocessing = pps
     scorers = [{"logit": ve.Logit, "deepsea_effect": ve.DeepSEA_effect}, {"logit": ve.Logit}, {}]
     json_kwargs = "{rc_merging: 'max'}"
-    for sel_scoring_labels, scorer in zip([[], ["logit"], ["inexistent", "logit"]], scorers):
+    for sel_scoring_labels, scorer in zip([[], ["logit"], ["inexistent", "logit"], ["all"]], scorers):
         jk_list = [json_kwargs] * len(sel_scoring_labels)
         for sel_scoring_kwargs in [[], jk_list]:
             if "inexistent" in sel_scoring_labels:
@@ -223,3 +248,6 @@ def test__get_scoring_fns():
                 dts = _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs)
                 for k in scorer:
                     assert isinstance(dts[k], scorer[k])
+    with pytest.raises(Exception):
+        _get_scoring_fns(model, ["all"], [json_kwargs])
+

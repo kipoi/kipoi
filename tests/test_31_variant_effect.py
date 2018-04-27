@@ -537,12 +537,13 @@ def test_var_eff_pred_varseq():
         with pytest.raises(Exception):
             # This has to raise an exception as the sequence length is None.
             vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
-        writer.close()
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
+    writer.close()
+    with cd(model.source_dir):
         # pass
         # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
@@ -578,12 +579,13 @@ def test_var_eff_pred():
         model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
         writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
         vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
-        writer.close()
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
+    writer.close()
+    with cd(model.source_dir):
         # pass
         #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
@@ -619,12 +621,13 @@ def test_var_eff_pred2():
         model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
         vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
         writer = kipoi.postprocessing.variant_effects.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
-        writer.close()
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
+    writer.close()
+    with cd(model.source_dir):
         # pass
         #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
         compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
@@ -730,6 +733,20 @@ def test__generate_pos_restricted_seqs():
         regions_df = pd.DataFrame(regions.storage)
         assert regions_df.shape[0] == 1
         assert np.all(regions_df[["start", "end"]].values == tpl[1])
+
+def test_BedOverlappingRg():
+    tuples = ([21541490, 21541591], [21541490, 21541592])
+    model_info_extractor = DummyModelInfo(101)
+    for i, tpl in enumerate(tuples):
+        qbf = pb.BedTool("chr22 %d %d" % tuple(tpl), from_string=True)
+        regions = Dummy_internval()
+        #sp._generate_pos_restricted_seqs(vcf_fh, sp._default_vcf_id_gen, qbf, regions.append_interval, seq_length)
+        region_generator = kipoi.postprocessing.variant_effects.BedOverlappingRg(model_info_extractor)
+        for entry in qbf:
+            ret_regions = region_generator(entry)
+            regions_df = pd.DataFrame(ret_regions)
+            assert regions_df.shape[0] == i+1
+            assert all([col in regions_df.columns.tolist() for col in ["chrom", "start", "end"]])
 
 
 def test__generate_snv_centered_seqs():
