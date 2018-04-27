@@ -481,10 +481,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Returns
             Numpy array(s) of predictions.
         """
-        from keras.engine.training import _standardize_input_data
+        from keras.engine import training
+        if hasattr(training, "_standardize_input_data"):
+            # Keras 2
+            from keras.engine.training import _standardize_input_data as sid
+        else:
+            # Keras 1
+            from keras.engine.training import standardize_input_data as sid
         from keras import backend as K
         # convert list / dict or array inputs to a standardised model input (a list)
-        x_standardized = _standardize_input_data(x, self.model._feed_input_names,
+        x_standardized = sid(x, self.model._feed_input_names,
                                     self.model._feed_input_shapes)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x_standardized + [0.]
