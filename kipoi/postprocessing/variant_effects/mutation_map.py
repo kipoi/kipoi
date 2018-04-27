@@ -119,7 +119,8 @@ def merged_intervals_seq(ranges_dict, sequence, regions_unif, meta_field_unif_r)
         joint_seq = np.empty(reg_len, dtype=str)
         joint_seq[:] = ""
         for mf_here in mf:
-            rel_start, rel_end = ranges_dict[mf_here]["start"][0] - reg_start, ranges_dict[mf_here]["end"][0] - reg_start
+            rel_start, rel_end = ranges_dict[mf_here]["start"][0] - reg_start, ranges_dict[mf_here]["end"][
+                0] - reg_start
             # When generating the merged sequence make sure the overlapping parts of the sequence match up!
             if np.any(joint_seq[rel_start:rel_end] != ""):
                 assert all([a == b for a, b in zip(joint_seq[rel_start:rel_end], sequence[mf_here]) if a != ""])
@@ -208,7 +209,6 @@ def _generate_seq_sets_mutmap_iter(dl_ouput_schema, dl_batch, seq_to_mut, seq_to
                                    sample_counter, ref_sequences, bedtools_obj=None, vcf_fh=None,
                                    vcf_id_generator_fn=None, vcf_search_regions=False, generate_rc=True,
                                    batch_size=32):
-
     all_meta_fields = list(set(seq_to_meta.values()))
 
     num_samples_in_batch = len(dl_batch['metadata'][all_meta_fields[0]]["chr"])
@@ -343,7 +343,6 @@ def _generate_seq_sets_mutmap_iter(dl_ouput_schema, dl_batch, seq_to_mut, seq_to
 
 
 def get_ref_seq_from_seq_set(input_set, seq_to_meta, seq_to_str_converter, dl_ouput_schema_inputs):
-
     meta_to_seq = {v: [k for k in seq_to_meta if seq_to_meta[k] == v] for v in seq_to_meta.values()}
     all_meta_fields = list(set(seq_to_meta.values()))
     str_seqs = {}
@@ -387,7 +386,6 @@ def get_ref_seq_from_seq_set(input_set, seq_to_meta, seq_to_str_converter, dl_ou
 
 
 class MutationMapDataMerger(object):
-
     def __init__(self, seq_to_meta):
         self.predictions = []
         self.pred_sets = []
@@ -428,7 +426,7 @@ class MutationMapDataMerger(object):
                     metadata_subset = get_genomicranges_line(batch_metadata[metadata_key], process_line)
                     subset_keys = ["chr", "start", "end", "strand"]
                     if not (isinstance(metadata_subset["strand"], list) or
-                            isinstance(metadata_subset["strand"], np.ndarray)):
+                                isinstance(metadata_subset["strand"], np.ndarray)):
                         subset_keys = ["chr", "start", "end"]
                     metadata_subset_dict = {k: metadata_subset[k][0] for k in subset_keys}
                     if "strand" not in metadata_subset_dict:
@@ -466,7 +464,8 @@ class MutationMapDataMerger(object):
                         metadata_mutmap[scoring_fn] = {}
                         # check if output labels are not unique
                         if len(set(predictions[scoring_fn].columns)) != predictions[scoring_fn].shape[1]:
-                            predictions[scoring_fn].columns = ["%s_%d" % (d, i) for i, d in enumerate(predictions[scoring_fn].columns)]
+                            predictions[scoring_fn].columns = ["%s_%d" % (d, i) for i, d in
+                                                               enumerate(predictions[scoring_fn].columns)]
                             logger.warn("Model output labels are not unique! appending the column number.")
                         for model_output in predictions[scoring_fn]:
                             mutmap_dict = {}
@@ -492,11 +491,10 @@ class MutationMapDataMerger(object):
         return write_hdf5(fname, self.get_merged_data())
 
     def to_plotter(self):
-        return MutationMapPlotter(mutation_map = self.get_merged_data())
+        return MutationMapPlotter(mutation_map=self.get_merged_data())
 
 
 class MutationMapPlotter(object):
-
     def __init__(self, mutation_map=None, fname=None):
         if mutation_map is None and fname is None:
             raise Exception("Either mutation_map or fname for a mutation_map file has to be given")
@@ -512,9 +510,9 @@ class MutationMapPlotter(object):
         return write_hdf5(fname, self.mutation_map)
 
     def plot_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
-                    cmap=None, limit_region=None, limit_region_genomic=None, annotation_vcf = None,
-                    annotation_variants = None, ignore_stored_var_annotation = False, rc_plot = False,
-                    minimum_letter_height = None):
+                    cmap=None, limit_region=None, limit_region_genomic=None, annotation_vcf=None,
+                    annotation_variants=None, ignore_stored_var_annotation=False, rc_plot=False,
+                    minimum_letter_height=None):
         """
         Generate a mutation map plot
         
@@ -537,6 +535,7 @@ class MutationMapPlotter(object):
         minimum_letter_height: Require a minimum height of the reference base. proportion of maximum letter height.
             e.g. 0.2
         """
+
         def append_to_ovlp_var(mm_obj, ovlp_var, pos, id, ref, alt):
             seq_len = mm_obj["end"] - mm_obj["start"]
             varpos_rel = pos - mm_obj["start"] - 1  # variant position is 1-based.
@@ -552,19 +551,18 @@ class MutationMapPlotter(object):
             cmap = plt.cm.bwr
         mm_obj = self.mutation_map[dl_entry][model_seq_key][scoring_key][model_output]
 
-
         if (limit_region_genomic is not None) and isinstance(limit_region_genomic, tuple):
             mr_start = mm_obj["metadata_region"]["start"]
             mr_end = mm_obj["metadata_region"]["end"]
             if any([(el < mr_start) or (el > mr_end) for el in list(limit_region_genomic)]):
-                raise Exception("`limit_region_genomic` has to lie within: %s"%str([mr_start, mr_end]))
-            limit_region = (limit_region_genomic[0] - mr_start, limit_region_genomic[1] - mr_start, )
+                raise Exception("`limit_region_genomic` has to lie within: %s" % str([mr_start, mr_end]))
+            limit_region = (limit_region_genomic[0] - mr_start, limit_region_genomic[1] - mr_start,)
 
         if (limit_region is None) or ((limit_region is not None) and (not isinstance(limit_region, tuple))):
-            limit_region = (0,mm_obj['mutation_map'].shape[1])
+            limit_region = (0, mm_obj['mutation_map'].shape[1])
 
         # subset to defined subset
-        mm_matrix = mm_obj['mutation_map'][:,limit_region[0]:limit_region[1]]
+        mm_matrix = mm_obj['mutation_map'][:, limit_region[0]:limit_region[1]]
         ref_dna_str = mm_obj["ref_seq"]
         if hasattr(mm_obj["ref_seq"], "decode"):
             ref_dna_str = mm_obj["ref_seq"].decode('UTF-8')
@@ -572,7 +570,6 @@ class MutationMapPlotter(object):
         metadata_region = copy.deepcopy(mm_obj["metadata_region"])
         metadata_region["end"] = metadata_region["start"] + limit_region[1]
         metadata_region["start"] = metadata_region["start"] + limit_region[0]
-
 
         if ignore_stored_var_annotation or mm_obj['ovlp_var'] is None:
             ovlp_var = {"varpos_rel": [], "id": [], "ref": [], "alt": []}
@@ -614,17 +611,17 @@ class MutationMapPlotter(object):
             from .utils.mutators import rc_str
             ref_dna_str = rc_str(ref_dna_str)
             seq_len = mm_matrix.shape[1]
-            ovlp_var["varpos_rel"] = [seq_len - el -1 for el in ovlp_var["varpos_rel"]]
+            ovlp_var["varpos_rel"] = [seq_len - el - 1 for el in ovlp_var["varpos_rel"]]
             ovlp_var["ref"] = rc_str(ovlp_var["ref"])
             ovlp_var["alt"] = [rc_str(el) for el in ovlp_var["alt"]]
-
 
         # Derive letter heights from the mutation scores.
         onehot_refseq = encodeDNA([str(ref_dna_str).upper()])[0, ...]
         mm_non_na = mm_matrix.copy()
         nans = np.isnan(mm_non_na)
         if np.any(nans):
-            logger.warn("There were %d missing values in the mutation map which are reset to 0 for plotting!"%nans.sum())
+            logger.warn(
+                "There were %d missing values in the mutation map which are reset to 0 for plotting!" % nans.sum())
             mm_non_na[nans] = 0
         letter_heights = onehot_refseq * np.abs(mm_non_na.mean(axis=0))[:, None]
 
@@ -632,12 +629,11 @@ class MutationMapPlotter(object):
             if (minimum_letter_height > 1) or (minimum_letter_height < 0):
                 raise Exception("minimum_letter_height has to be a float within [0,1]")
             max_h = letter_heights.max()
-            letter_heights = letter_heights * (1-minimum_letter_height) + onehot_refseq*minimum_letter_height*max_h
-
+            letter_heights = letter_heights * (
+            1 - minimum_letter_height) + onehot_refseq * minimum_letter_height * max_h
 
         return seqlogo_heatmap(letter_heights, mm_non_na, ovlp_var, vocab="DNA", ax=ax,
                                show_letter_scale=show_letter_scale, cmap=cmap, limit_region=None)
-
 
 
 class MutationMap(object):
@@ -671,14 +667,12 @@ class MutationMap(object):
                 if k not in self.dataloader_args:
                     self.dataloader_args[k] = self.dataloader.example_kwargs[k]
 
-
-
     def _setup_dataloader_kwargs(self,
-                               vcf_fpath,
-                               bed_fpath,
-                               vcf_to_region,
-                               bed_to_region,
-                               vcf_id_generator_fn):
+                                 vcf_fpath,
+                                 bed_fpath,
+                                 vcf_to_region,
+                                 bed_to_region,
+                                 vcf_id_generator_fn):
         """
         Generate the dataloader kwargs. If e.g. the vcf_fpath should only be used for annotation, but not for
         region generation then set vcf_to_region to None.
@@ -722,7 +716,7 @@ class MutationMap(object):
                         # get all the input regions for a given bed entry
                         in_regions = bed_to_region(bed_entry)
                         for i in range(len(in_regions["chrom"])):
-                            ofh.append_interval(**{k:v[i] for k,v in in_regions.items()})
+                            ofh.append_interval(**{k: v[i] for k, v in in_regions.items()})
             else:
                 logger.warn("Keeping bed file regions defined in `dataloader_args`.")
         else:
@@ -795,10 +789,10 @@ class MutationMap(object):
                 raise Exception("If `vcf_fpath` is set then also `vcf_id_generator_fn` has to be defined!")
 
             dataloader_args, temp_bed3_file, vcf_search_regions = self._setup_dataloader_kwargs(vcf_fpath,
-                               bed_fpath,
-                               vcf_to_region,
-                               bed_to_region,
-                               vcf_id_generator_fn)
+                                                                                                bed_fpath,
+                                                                                                vcf_to_region,
+                                                                                                bed_to_region,
+                                                                                                vcf_id_generator_fn)
 
             model_out_annotation = self.model_info_extractor.get_model_out_annotation()
 
@@ -825,7 +819,7 @@ class MutationMap(object):
 
             # TODO - ignore the un-used params?
             it = self.dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
-                                                          num_workers=num_workers)
+                                                               num_workers=num_workers)
             for i, batch in enumerate(tqdm(it)):
 
                 # get reference sequence for every line in the batch input
@@ -901,7 +895,7 @@ class MutationMap(object):
                      chrom,
                      start,
                      end,
-                     model_seq_length = None,
+                     model_seq_length=None,
                      evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
                      **kwargs):
         """Generate mutation map
@@ -928,19 +922,19 @@ class MutationMap(object):
         """
         from pybedtools import BedTool
         bed_to_region = None
-        bed_region = BedTool("\t".join(["chr"+chrom.lstrip("chr"), str(start), str(end)]), from_string=True)
+        bed_region = BedTool("\t".join(["chr" + chrom.lstrip("chr"), str(start), str(end)]), from_string=True)
         if (self.exec_files_bed_keys is not None):
-            bed_to_region = BedOverlappingRg(self.model_info_extractor, seq_length = model_seq_length)
-        mmdm = self._generate_mutation_map( bed_fpath=bed_region.fn,
-                               vcf_to_region=None,
-                               bed_to_region=bed_to_region,
-                               evaluation_function_kwargs=evaluation_function_kwargs,
-                               **kwargs )
+            bed_to_region = BedOverlappingRg(self.model_info_extractor, seq_length=model_seq_length)
+        mmdm = self._generate_mutation_map(bed_fpath=bed_region.fn,
+                                           vcf_to_region=None,
+                                           bed_to_region=bed_to_region,
+                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           **kwargs)
         return mmdm
 
     def query_bed(self,
                   bed_fpath,
-                  model_seq_length = None,
+                  model_seq_length=None,
                   evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
                   **kwargs):
         """Generate mutation map
@@ -969,19 +963,19 @@ class MutationMap(object):
         if (self.exec_files_bed_keys is not None):
             bed_to_region = BedOverlappingRg(self.model_info_extractor, seq_length=model_seq_length)
         mmdm = self._generate_mutation_map(vcf_fpath=None,
-                               bed_fpath=bed_fpath,
-                               vcf_to_region=None,
-                               bed_to_region=bed_to_region,
-                               vcf_id_generator_fn=default_vcf_id_gen,
-                               evaluation_function_kwargs=evaluation_function_kwargs,
-                               **kwargs)
+                                           bed_fpath=bed_fpath,
+                                           vcf_to_region=None,
+                                           bed_to_region=bed_to_region,
+                                           vcf_id_generator_fn=default_vcf_id_gen,
+                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           **kwargs)
         return mmdm
 
     def query_vcf(self,
                   vcf_fpath,
                   model_seq_length=None,
                   evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
-                  var_centered_regions = True,
+                  var_centered_regions=True,
                   **kwargs):
         """Generate mutation map
 
@@ -1010,18 +1004,19 @@ class MutationMap(object):
         """
         vcf_to_region = None
         if var_centered_regions and (self.exec_files_bed_keys is not None):
-            vcf_to_region = SnvCenteredRg(self.model_info_extractor, seq_length = model_seq_length)
+            vcf_to_region = SnvCenteredRg(self.model_info_extractor, seq_length=model_seq_length)
         if "vcf_to_region" in kwargs:
             vcf_to_region = kwargs["vcf_to_region"]
         mmdm = self._generate_mutation_map(vcf_fpath=vcf_fpath,
-                               bed_fpath=None,
-                               vcf_to_region=vcf_to_region,
-                               bed_to_region=None,
-                               vcf_id_generator_fn=default_vcf_id_gen,
-                               evaluation_function=analyse_model_preds,
-                               evaluation_function_kwargs=evaluation_function_kwargs,
-                               **kwargs)
+                                           bed_fpath=None,
+                                           vcf_to_region=vcf_to_region,
+                                           bed_to_region=None,
+                                           vcf_id_generator_fn=default_vcf_id_gen,
+                                           evaluation_function=analyse_model_preds,
+                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           **kwargs)
         return mmdm
+
 
 def _generate_mutation_map(model,
                            dataloader,
@@ -1079,11 +1074,11 @@ def _generate_mutation_map(model,
     """
     mm = MutationMap(model, dataloader, dataloader_args, use_dataloader_example_data)
     return mm._generate_mutation_map(vcf_fpath=vcf_fpath,
-                               bed_fpath=bed_fpath,
-                               batch_size=batch_size,
-                               num_workers=num_workers,
-                               vcf_to_region=vcf_to_region,
-                               bed_to_region=bed_to_region,
-                               vcf_id_generator_fn=vcf_id_generator_fn,
-                               evaluation_function=evaluation_function,
-                               evaluation_function_kwargs=evaluation_function_kwargs)
+                                     bed_fpath=bed_fpath,
+                                     batch_size=batch_size,
+                                     num_workers=num_workers,
+                                     vcf_to_region=vcf_to_region,
+                                     bed_to_region=bed_to_region,
+                                     vcf_id_generator_fn=vcf_id_generator_fn,
+                                     evaluation_function=evaluation_function,
+                                     evaluation_function_kwargs=evaluation_function_kwargs)

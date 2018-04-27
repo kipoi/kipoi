@@ -42,7 +42,7 @@ def analyse_model_preds(model, ref, alt, diff_types,
             # determine which outputs should be selected
             if output_filter is None:
                 if output_filter.dtype == bool:
-                    assert(output_filter.shape == out_annotation.shape)
+                    assert (output_filter.shape == out_annotation.shape)
                 else:
                     assert np.all(np.in1d(output_filter, out_annotation))
                     output_filter = np.in1d(out_annotation, output_filter)
@@ -247,7 +247,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
                     "do_mutate": []}
 
     if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
-                                           isinstance(ranges_input_obj["strand"], np.ndarray)):
+                                               isinstance(ranges_input_obj["strand"], np.ndarray)):
         preproc_conv["strand"] = []
 
     for i, record in enumerate(vcf_records):
@@ -263,7 +263,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
             pre_new_vals["end"] = ranges_input_obj["end"][ranges_input_i]
             pre_new_vals["varpos_rel"] = int(record.POS) - pre_new_vals["start"]
             if not ((pre_new_vals["varpos_rel"] < 0) or
-                    (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
+                        (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
 
                 # If variant lies in the region then continue
                 pre_new_vals["do_mutate"] = True
@@ -294,7 +294,6 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
 
 
 class SampleCounter():
-
     def __init__(self):
         self.sample_it_counter = 0
 
@@ -343,11 +342,13 @@ def _generate_seq_sets(dl_ouput_schema, dl_batch, vcf_fh, vcf_id_generator_fn, s
     # sequence fields that should be mutated: process_seq_fields
 
     if vcf_search_regions:
-        vcf_records, process_lines, process_seq_fields = get_variants_in_regions_search_vcf(dl_batch, seq_to_meta, vcf_fh)
+        vcf_records, process_lines, process_seq_fields = get_variants_in_regions_search_vcf(dl_batch, seq_to_meta,
+                                                                                            vcf_fh)
     else:
         # vcf_search_regions == False means: rely completely on the variant id
         # so for every sample assert that all metadata ranges ids agree and then find the entry.
-        vcf_records, process_lines, process_seq_fields, process_ids = get_variants_in_regions_sequential_vcf(dl_batch, seq_to_meta,
+        vcf_records, process_lines, process_seq_fields, process_ids = get_variants_in_regions_sequential_vcf(dl_batch,
+                                                                                                             seq_to_meta,
                                                                                                              vcf_fh,
                                                                                                              vcf_id_generator_fn)
 
