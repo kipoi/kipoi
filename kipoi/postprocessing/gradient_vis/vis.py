@@ -76,7 +76,7 @@ class GradPlotter(object):
 
 
     def plot(self, sample, model_input=None, ax=None, limit_region=None, limit_region_genomic=None, rc_plot = False,
-                    transform_fn = grad_x_input, seq_dim = None, additional_plot_fns = None,
+                    transform_fn = grad_x_input, seq_dim = None, additional_plot_fns = None, seq_plotter_obj = None,
                     **heatmap_kwargs):
 
         def raise_missing_metadata():
@@ -113,6 +113,8 @@ class GradPlotter(object):
         if model_input in self.mie.get_mutatable_inputs(only_one_hot=True):
             is_onehot_seq = True
 
+        mr_start = None
+        mr_end = None
         if (limit_region_genomic is not None) and isinstance(limit_region_genomic, tuple):
             mf = get_metadata()
             mr_start = mf["start"][sample]
@@ -136,10 +138,18 @@ class GradPlotter(object):
             if limit_region is not None:
                 values = values[limit_region[0]:limit_region[1], :]
 
-            from kipoi.external.concise.seqplotting_deps import seqlogo
-            seqlogo(values, ax=ax)
-            ax.axes.get_xaxis().set_visible(False)
-            sns.despine(trim=True, bottom = True)
+            if seq_plotter_obj is not None:
+                mf = get_metadata()
+                if mr_start is None:
+                    mr_start = mf["start"][sample]
+                    mr_end = mf["end"][sample]
+                regions = {"chr":[mf["chr"][sample]], "start":[mr_start], "end":[mr_end]}
+                seq_plotter_obj.region_write(regions, values)
+            else:
+                from kipoi.external.concise.seqplotting_deps import seqlogo
+                seqlogo(values, ax=ax)
+                ax.axes.get_xaxis().set_visible(False)
+                sns.despine(trim=True, bottom = True)
 
         else:
             if rc_plot or (limit_region is not None):

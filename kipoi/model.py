@@ -619,7 +619,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
+    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=False):
         """
         Load model
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
@@ -686,9 +686,9 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def _torch_var(self, input, requires_grad=False):
         from torch.autograd import Variable
-        out = Variable(input, requires_grad=requires_grad)
         if self.use_cuda:
-            out = out.cuda()
+            input = input.cuda()
+        out = Variable(input, requires_grad=requires_grad)
         return out
 
     def _torch_var_to_numpy(self, input):

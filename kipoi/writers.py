@@ -216,3 +216,52 @@ FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
                    "hdf5": HDF5BatchWriter,
                    "tsv": TsvBatchWriter,
                    "bed": BedBatchWriter}
+
+
+class RegionWriter(object):
+
+    @abstractmethod
+    def region_write(self, region, data):
+        """Write a single batch of data
+
+        Args:
+          region is a GenomicRanges object or a dictionary with at least keys: "chr", "start", "end" and list-values 
+            of length 1
+          data is a 1D-array of values to be written - where the 0th entry is at 0-based "start" 
+        """
+        pass
+
+    @abstractmethod
+    def close(self):
+        """Close the file
+        """
+        pass
+
+
+class BedGraphWriter(RegionWriter):
+
+    def __init__(self,
+                 file_path,
+                 header=True):
+        """
+
+        Args:
+          file_path (str): File path of the output tsv file
+          dataloader_schema: Schema of the dataloader. Used to find the ranges object
+          nested_sep: What separator to use for flattening the nested dictionary structure
+            into a single key
+        """
+        self.file_path = file_path
+        self.file = open(file_path, "w")
+
+    def region_write(self, region, data):
+        assert data.shape[0] == region["end"][0] - region["start"][0]
+        if len(data.shape) == 2:
+            data = data.sum(axis=1)
+        assert len(data.shape) == 1
+        for zero_pos, value in zip(range(region["start"][0], region["end"][0]), data):
+            self.file.write("\t".join([region["chr"][0], str(zero_pos), str(zero_pos+1), value])+"\n")
+
+    def close(self):
+        self.file.close()
+
