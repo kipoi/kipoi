@@ -41,7 +41,7 @@ def test_export(tmpdir):
 
     pip_idx = [i for i, x in enumerate(env_dict['dependencies']) if isinstance(x, dict)][0]
     assert [p for p in env_dict['dependencies'][pip_idx]['pip']
-            if "tensorflow=" in p]
+            if "tensorflow=" in p or "tensorflow>=" in p]
 
     for dep in ['genomelake', 'scikit-learn', 'pybedtools']:
         assert [p for p in env_dict['dependencies'][pip_idx]['pip']
@@ -54,7 +54,7 @@ def test_export(tmpdir):
                                )
     env_dict = read_yaml(env_file)
     assert env_dict['channels'] == ['defaults']
-    assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p]
+    assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p or "tensorflow-gpu>=" in p]
 
     # vep
     env, env_file = export_env(["rbp_eclip/UPF1"],
