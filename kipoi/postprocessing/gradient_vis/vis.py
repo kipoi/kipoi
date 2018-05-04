@@ -149,7 +149,7 @@ class GradPlotter(object):
                 from kipoi.external.concise.seqplotting_deps import seqlogo
                 seqlogo(values, ax=ax)
                 ax.axes.get_xaxis().set_visible(False)
-                sns.despine(trim=True, bottom = True)
+                sns.despine(trim=True, bottom = True, ax = ax)
 
         else:
             if rc_plot or (limit_region is not None):

@@ -143,9 +143,9 @@ def pyt_sequential_model_bf():
     from torch import nn
     new_model = nn.Sequential(
         nn.Conv1d(1, 16, kernel_size=5, padding=2),
-        nn.BatchNorm2d(16),
+        nn.BatchNorm1d(16),
         nn.ReLU(),
-        nn.MaxPool2d(2),
+        nn.MaxPool1d(2),
         nn.Linear(5, 24),
         nn.ReLU()
     ).double()
@@ -331,13 +331,13 @@ def test_grad_tens_generation():
     removable_hook_obj.remove()
 
     assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, :], "sum").numpy()[0, ...] == np.array(
-        [[1] * 24] * 3 + [[0] * 24] * 5))
+        [[1] * 24] * 3 + [[0] * 24] * 13))
     assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, 0:2], "sum").numpy()[0, ...] == np.array(
-        [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 5))
+        [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 13))
     assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, :], "sum").numpy()[0, ...] == np.array(
-        [[1] * 24] * 3 + [[0] * 24] * 5))
+        [[1] * 24] * 3 + [[0] * 24] * 13))
     assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, 0:2], "sum").numpy()[0, ...] == np.array(
-        [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 5))
+        [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 13))
     # Filter is 2D
     with pytest.raises(Exception):
         model.get_grad_tens(fwd_values, DummySlice()[0:2], "max")
