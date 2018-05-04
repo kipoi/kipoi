@@ -212,7 +212,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
 
 
 def cli_score_variants(command, raw_args):
-    """CLI interface to predict
+    """CLI interface to score variants
     """
     AVAILABLE_FORMATS = ["tsv", "hdf5", "h5"]
     import pybedtools
@@ -366,7 +366,7 @@ def cli_score_variants(command, raw_args):
 
 
 def cli_create_mutation_map(command, raw_args):
-    """CLI interface to predict
+    """CLI interface to calculate mutation map data 
     """
     assert command == "create_mutation_map"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
@@ -480,7 +480,7 @@ def cli_create_mutation_map(command, raw_args):
 
 
 def cli_plot_mutation_map(command, raw_args):
-    """CLI interface to predict
+    """CLI interface to plot mutation map
     """
     assert command == "plot_mutation_map"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
@@ -543,6 +543,9 @@ parser = argparse.ArgumentParser(
 
     # Available sub-commands:
     score_variants   Score variants with a kipoi model
+    create_mutation_map   Calculate variant effect scores for mutation map plotting
+    plot_mutation_map   Plot mutation map from data generated in `create_mutation_map`
+    
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
