@@ -8,7 +8,7 @@ import re
 from abc import abstractmethod
 from collections import OrderedDict
 from .dna_reshapers import ReshapeDnaString, ReshapeDna
-from .mutators import OneHotSequenceMutator, DNAStringSequenceMutator
+from .mutators import OneHotSequenceMutator, DNAStringSequenceMutator, rc_str
 
 import numpy as np
 
@@ -27,9 +27,10 @@ def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
         # pybedtools bug.
         fn = pbh.bgzip(in_place=True, force=force_tabix)
         pysam.tabix_index(fn, force=force_tabix, preset="vcf")
-        #tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
-        #fn = tbxd.fn
+        # tbxd = pbh.tabix(is_sorted=is_sorted, force=force_tabix)
+        # fn = tbxd.fn
     return fn
+
 
 def prep_str(s):
     # https://stackoverflow.com/questions/1007481/how-do-i-replace-whitespaces-with-underscore-and-vice-versa
@@ -65,6 +66,59 @@ def select_from_dl_batch(obj, rows, nrows_expected=None):
     return out_obj
 
 
+def write_hdf5(fname, data):
+    """Generic hdf5 bulk writer
+    """
+    if isinstance(data, list):
+        data = {"_list_{i}".format(i=i): v for i, v in enumerate(data)}
+    import deepdish
+    deepdish.io.save(fname, data)
+
+# Alternative
+# def recursive_h5_mutmap_writer(objs, handle, path=""):
+#     import six
+#     for key in objs.keys():
+#         if isinstance(objs[key], dict):
+#             g = handle.create_group(key)
+#             recursive_h5_mutmap_writer(objs[key], g, path=path + "/" + key)
+#         else:
+#             if isinstance(objs[key], list) or isinstance(objs[key], np.ndarray):
+#                 el = np.array(objs[key])
+#                 if "U" in el.dtype.str:
+#                     el = el.astype("S")
+#                 handle.create_dataset(name=path + "/" + key, data=el, chunks=True, compression='gzip')
+#             else:
+#                 el = objs[key]
+#                 if isinstance(el, six.string_types):
+#                     el = str(el)
+#                 handle.create_dataset(name=path + "/" + key, data=el)
+
+
+def read_hdf5(fname):
+    """Generic hdf5 bulk reader
+    """
+    import deepdish
+    data = deepdish.io.load(fname)
+    if isinstance(data, dict) and list(data.keys())[0].startswith("_list_"):
+        data = [data["_list_{i}".format(i=i)] for i in range(len(data))]
+    return data
+
+
+# def recursive_h5_mutmap_reader(handle):
+#     import h5py
+#     objs = {}
+#     for key in handle.keys():
+#         if isinstance(handle[key], h5py.Group):
+#             objs[key] = recursive_h5_mutmap_reader(handle[key])
+#         else:
+#             if isinstance(handle[key], h5py.Dataset):
+#                 el = handle[key].value
+#                 if isinstance(el, np.ndarray):
+#                     if "S" in el.dtype.str:
+#                         el = el.astype(str)
+#                 objs[key] = el
+#     return objs
+
 
 def _get_seq_len(input_data):
     if isinstance(input_data, (list, tuple)):
@@ -78,8 +132,6 @@ def _get_seq_len(input_data):
         raise ValueError("Input can only be of type: list, dict or np.ndarray")
 
 
-
-
 def concat_columns(df, sep="|"):
     """Concatenate all columns of a dataframe into a pd.Series
     """
@@ -90,6 +142,7 @@ def concat_columns(df, sep="|"):
         else:
             column = column.str.cat(vec, sep=sep)
     return column
+
 
 # TODO: generalise so that also FORMAT, FILTER and sample identifiers are supported...
 def convert_record(input_record, pyvcf_reader):
@@ -116,12 +169,15 @@ def convert_record(input_record, pyvcf_reader):
 
 
 def default_vcf_id_gen(vcf_record, id_delim=":"):
-    return str(vcf_record.CHROM) + id_delim + str(vcf_record.POS) + id_delim + str(vcf_record.REF) + id_delim + str(vcf_record.ALT)
+    # make sure that also in python2 the variant output is like in python3
+    alt_ids = str([str(alt) for alt in vcf_record.ALT])
+    return str(vcf_record.CHROM) + id_delim + str(vcf_record.POS) + id_delim + str(vcf_record.REF) + id_delim + alt_ids
 
 
 class RegionGenerator(object):
     __metaclass__ = abc.ABCMeta
-    def __init__(self, model_info_extractor):
+
+    def __init__(self, model_info_extractor, seq_length=None):
         self.seq_length = None
         self.centered_l_offset = None
         self.centered_r_offset = None
@@ -135,11 +191,20 @@ class RegionGenerator(object):
 
 
 class SnvCenteredRg(RegionGenerator):
-    def __init__(self, model_info_extractor):
+
+    def __init__(self, model_info_extractor, seq_length=None):
+        """
+        Arguments:
+            model_info_extractor: ModelInfoExtractor object.
+            seq_length: Not required parameter: Sequence length in case model has variable sequence length input
+        """
         super(SnvCenteredRg, self).__init__(model_info_extractor)
-        self.seq_length = model_info_extractor.get_seq_len()
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("SnvCenteredRg cannot be used when model input sequence length is not defined!")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -155,13 +220,47 @@ class SnvCenteredRg(RegionGenerator):
                 }
 
 
+class BedOverlappingRg(RegionGenerator):
+
+    def __init__(self, model_info_extractor, seq_length=None):
+        super(BedOverlappingRg, self).__init__(model_info_extractor)
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
+        if self.seq_length is None:
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
+
+    def __call__(self, bed_entry):
+        """Generate regions based on a bed file entry. outputs consecutive regions of model sequence length starting
+        from bed_entry.start and reaching at least until bed_entry.end. Output regions are non-overlapping hence the
+         covered output regions may cover more genetic space than specified in bed_entry. (Overhanging tail)
+        """
+        chroms = []
+        starts = []
+        ends = []
+        ids = []
+        region_len = bed_entry.end - bed_entry.start
+        num_intervals = region_len // self.seq_length + int((region_len % self.seq_length) != 0)
+        for i in range(num_intervals):
+            chroms.append(bed_entry.chrom)
+            starts.append(bed_entry.start + (i * self.seq_length))
+            ends.append(bed_entry.start + ((i + 1) * self.seq_length))
+            ids.append(bed_entry.name + ".%d"%i)
+        return {"chrom": chroms, "start": starts, "end": ends, "id": ids}
+
+
 class SnvPosRestrictedRg(RegionGenerator):
-    def __init__(self, model_info_extractor, pybed_def):
+
+    def __init__(self, model_info_extractor, pybed_def, seq_length=None):
         super(SnvPosRestrictedRg, self).__init__(model_info_extractor)
         self.tabixed = pybed_def.tabix(in_place=False)
-        self.seq_length = model_info_extractor.get_seq_len()
+        if seq_length is not None:
+            self.seq_length = seq_length
+        else:
+            self.seq_length = model_info_extractor.get_seq_len()
         if self.seq_length is None:
-            raise Exception("SnvPosRestrictedRg cannot be used when model input sequence length is not defined!")
+            raise Exception("Model input sequence length is not defined. Please set it manually using `seq_length`")
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
@@ -198,6 +297,7 @@ class SnvPosRestrictedRg(RegionGenerator):
 
 
 class ModelInfoExtractor(object):
+
     def __init__(self, model_obj, dataloader_obj):
         self.model = model_obj
         self.dataloader = dataloader_obj
@@ -208,6 +308,7 @@ class ModelInfoExtractor(object):
         # Collect the different sequence inputs and the corresponfing ranges objects:
         self.seq_input_metadata = {}
         self.seq_input_mutator = {}
+        self.seq_to_str_converter = {}
         self.seq_input_array_trafo = {}
         for seq_field in self.seq_fields:
             special_type = _get_specialtype(dataloader_obj, seq_field)
@@ -219,11 +320,13 @@ class ModelInfoExtractor(object):
             if (special_type is None) or (special_type == kipoi.components.ArraySpecialType.DNASeq):
                 dna_seq_trafo = ReshapeDna(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = OneHotSequenceMutator(dna_seq_trafo)
+                self.seq_to_str_converter[seq_field] = OneHotSeqExtractor(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
             if special_type == kipoi.components.ArraySpecialType.DNAStringSeq:
                 dna_seq_trafo = ReshapeDnaString(_get_seq_shape(dataloader_obj, seq_field))
                 self.seq_input_mutator[seq_field] = DNAStringSequenceMutator(dna_seq_trafo)
+                self.seq_to_str_converter[seq_field] = StrSeqExtractor(dna_seq_trafo)
                 self.seq_input_array_trafo[seq_field] = dna_seq_trafo
 
             self.seq_input_metadata[seq_field] = _get_metadata_name(dataloader_obj, seq_field)
@@ -236,7 +339,7 @@ class ModelInfoExtractor(object):
         if (self.exec_files_bed_keys is not None) and (len(self.exec_files_bed_keys) != 0):
             self.requires_region_definition = True
 
-        self.seq_length = None # None means either not requires_region_definition or undefined sequence length
+        self.seq_length = None  # None means either not requires_region_definition or undefined sequence length
         if self.requires_region_definition:
             # seems to require a bed file definition, so try to assign a sequence length:
             seq_lens = [self.seq_input_array_trafo[seq_field].get_seq_len() for seq_field in self.seq_input_array_trafo]
@@ -359,8 +462,55 @@ def _get_dl_bed_fields(dataloader):
     else:
         return dataloader.postprocessing.variant_effects.bed_input
 
+# TODO - can we find a better name for this class?
+
+
+class OneHotSeqExtractor(object):
+    alphabet = ['A', 'C', 'G', 'T']
+
+    def __init__(self, array_trafo=None):
+        self.array_trafo = array_trafo
+
+    def to_str(self, input_set, is_rc):
+        # input_set: the input sequence in one-hot encoded format
+        # is_rc: list of binary value indicating if samples are reverse-complemented
+        # returns the list of sequences in string representation, if it is_rc was True then the input sequence was rc'd
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        # input_set should now be [N_samples, seq_len, 4]
+        str_sets = []
+        for rcd, sample_i in zip(is_rc, range(len(input_set[0]))):
+            str_set = np.empty(input_set.shape[1], dtype=str)
+            str_set[:] = "N"
+            conv_seq = input_set[sample_i, ...]
+            if rcd:
+                # If the sequence was in reverse complement then convert it to fwd.
+                conv_seq = conv_seq[::-1, ::-1]
+            for i, letter in enumerate(self.alphabet):
+                str_set[conv_seq[:, i] == 1] = letter
+            str_sets.append("".join(str_set.tolist()))
+        return str_sets
+
+
+class StrSeqExtractor(object):
+
+    def __init__(self, array_trafo=None):
+        self.array_trafo = array_trafo
+
+    def to_str(self, input_set, is_rc):
+        # input_set: the input sequence in string sequence format
+        # is_rc: list of binary value indicating if samples are reverse-complemented
+        # returns the list of sequences in string representation
+        if self.array_trafo is not None:
+            input_set = self.array_trafo.to_standard(input_set)
+        # convert all sequences to forward direction
+        if any(is_rc):
+            input_set = [rc_str(conv_seq) if rcd else conv_seq for rcd, conv_seq in zip(is_rc, input_set)]
+        return input_set
+
 
 class VariantLocalisation(object):
+
     def __init__(self):
         self.obj_keys = ["pp_line", "varpos_rel", "ref", "alt", "start", "end", "id", "do_mutate", "strand"]
         self.dummy_initialisable_keys = ["varpos_rel", "ref", "alt", "start", "end", "id", "strand"]
@@ -371,7 +521,7 @@ class VariantLocalisation(object):
         strand_avail = False
         strand_default = "."
         if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
-                                                   isinstance(ranges_input_obj["strand"], np.ndarray)):
+                                               isinstance(ranges_input_obj["strand"], np.ndarray)):
             strand_avail = True
 
         # If the strand is a single string value rather than a list or numpy array than use that as a
@@ -397,7 +547,7 @@ class VariantLocalisation(object):
                 pre_new_vals["varpos_rel"] = int(record.POS) - pre_new_vals["start"]
                 # Check if variant position is valid
                 if not ((pre_new_vals["varpos_rel"] < 0) or
-                            (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
+                        (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
 
                     # If variant lies in the region then actually mutate it with the first alternative allele
                     pre_new_vals["do_mutate"] = True
@@ -422,13 +572,13 @@ class VariantLocalisation(object):
         return new_obj
 
     def get_seq_lens(self):
-        lens = np.array([end - start +1 for start, end in zip(self.data["start"], self.data["end"])])
+        lens = np.array([end - start + 1 for start, end in zip(self.data["start"], self.data["end"])])
         return lens
 
     def strand_vals_valid(self):
         return all([el in ["+", "-", "*", "."] for el in self.data["strand"]])
 
-    def get(self, item, trafo = None):
+    def get(self, item, trafo=None):
         vals = self.data.__getitem__(item)
         if trafo is not None:
             vals = [trafo(el) for el in vals]
@@ -443,7 +593,3 @@ class VariantLocalisation(object):
     def to_df(self):
         import pandas as pd
         return pd.DataFrame(self.data)
-
-
-
-

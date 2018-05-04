@@ -95,3 +95,4 @@ def test_pad_sequences_2():
     assert pad_sequences(sequence_vec, 10, align="start", value="N") == ['CTTACTCAGA', 'TCTTTANNNN']
     assert pad_sequences(sequence_vec, 10, align="end", value="N") == ['CTTACTCAGA', 'NNNNTCTTTA']
     assert pad_sequences(sequence_vec, 4, align="center", value="N") == ['ACTC', 'CTTT']
+

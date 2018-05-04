@@ -151,6 +151,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
         self.prediction_labels = None
         self.column_labels = None
         self.vcf_id_generator = vcf_id_generator
+        self.vcf_writer = None
 
     def __call__(self, predictions, records, line_ids=None):
         # First itertation: the output file has to be created and the headers defined
@@ -221,7 +222,8 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
             self.vcf_writer.write_record(record)
 
     def close(self):
-        self.vcf_writer.close()
+        if self.vcf_writer is not None:
+            self.vcf_writer.close()
 
 
 class VcfWriter(SyncPredictonsWriter):
@@ -242,6 +244,7 @@ class VcfWriter(SyncPredictonsWriter):
         self.prediction_labels = None
         self.column_labels = None
         self.vcf_id_generator = vcf_id_generator
+        self.vcf_writer = None
 
     @staticmethod
     def _generate_info_field(id, num, info_type, desc, source, version):
@@ -318,4 +321,5 @@ class VcfWriter(SyncPredictonsWriter):
             self.vcf_writer.write_record(record_vcf)
 
     def close(self):
-        self.vcf_writer.close()
+        if self.vcf_writer is not None:
+            self.vcf_writer.close()

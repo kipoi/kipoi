@@ -271,10 +271,8 @@ def test_get_layer():
 
 def test_predict_activation_on_batch():
     dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
-    sequential_model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
     complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
     acts_dummy = dummy_model.predict_activation_on_batch(get_dummy_model_input(), layer="first")
-    acts_sequential = sequential_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="0")
 
     acts = complex_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="conv1")
     assert isinstance(acts, list)

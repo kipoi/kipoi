@@ -62,7 +62,9 @@ setup(
                 "intervaltree",
                 "deepdish",
                 "matplotlib",
-                "seaborn"
+                "seaborn",
+                "shapely",
+                "descartes",
                 ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},

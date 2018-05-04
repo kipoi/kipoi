@@ -7,8 +7,7 @@ import os
 import yaml
 import pandas as pd
 import config
-import h5py
-import filecmp
+# import filecmp
 from utils import compare_vcfs
 from kipoi.readers import HDF5Reader
 import numpy as np
@@ -176,8 +175,13 @@ def test_predict_activation_example(example, tmpdir):
     assert {'metadata', 'preds'} <= set(data.keys())
 
 
+
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
-def test_predict_variants_example(example, tmpdir):
+@pytest.mark.parametrize("restricted_bed", [True, False])
+@pytest.mark.parametrize("file_format", ["tsv", "hdf5"])
+def test_predict_variants_example(example, restricted_bed, file_format, tmpdir):
     """kipoi predict ...
     """
     if (example not in {"rbp", "non_bedinput_model"}) or (sys.version_info[0] == 2):
@@ -187,75 +191,137 @@ def test_predict_variants_example(example, tmpdir):
 
     tmpdir_here = tmpdir.mkdir("example")
 
-    for restricted_bed in [True, False]:
-        # non_bedinput_model is not compatible with restricted bed files as
-        # alterations in region generation have no influence on that model
-        if restricted_bed and (example != "rbp"):
-            continue
-        for file_format in ["tsv", "hdf5"]:
-            print(example)
-            print("tmpdir: {0}".format(tmpdir))
-            tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
-            vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
+    # non_bedinput_model is not compatible with restricted bed files as
+    # alterations in region generation have no influence on that model
+    if restricted_bed and (example != "rbp"):
+        pytest.skip("Resticted_bed only available for rbp_eclip")
+    print(example)
+    print("tmpdir: {0}".format(tmpdir))
+    tmpfile = str(tmpdir_here.join("out.{0}".format(file_format)))
+    vcf_tmpfile = str(tmpdir_here.join("out.{0}".format("vcf")))
 
-            dataloader_kwargs = {"fasta_file": example_dir + "/example_files/hg38_chr22.fa",
-                                 "preproc_transformer": example_dir + "/dataloader_files/encodeSplines.pkl",
-                                 "gtf_file": example_dir + "/example_files/gencode_v25_chr22.gtf.pkl.gz",
-                                 "intervals_file": example_dir + "/example_files/variant_intervals.tsv"}
-            import json
-            dataloader_kwargs_str = json.dumps(dataloader_kwargs)
+    dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa",
+                         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+                         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+                         "intervals_file": "example_files/variant_intervals.tsv"}
+    import json
+    dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
-            args = ["python", os.path.abspath("./kipoi/__main__.py"),
-                    "postproc",
-                    "score_variants",
-                    #"./",  # directory
-                    example_dir,
-                    "--source=dir",
-                    "--batch_size=4",
-                    "--dataloader_args='%s'" % dataloader_kwargs_str,
-                    "--vcf_path", example_dir + "/" + "example_files/variants.vcf",
-                    # this one was now gone in the master?!
-                    "--out_vcf_fpath", vcf_tmpfile,
-                    "--output", tmpfile]
-            # run the
-            if INSTALL_FLAG:
-                args.append(INSTALL_FLAG)
+    args = ["python", os.path.abspath("./kipoi/__main__.py"),
+            "postproc",
+            "score_variants",
+            # "./",  # directory
+            example_dir,
+            "--source=dir",
+            "--batch_size=4",
+            "--dataloader_args='%s'" % dataloader_kwargs_str,
+            "--vcf_path", "example_files/variants.vcf",
+            # this one was now gone in the master?!
+            "--out_vcf_fpath", vcf_tmpfile,
+            "--output", tmpfile]
+    # run the
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
 
-            if restricted_bed:
-                args += ["--restriction_bed", example_dir + "/" + "example_files/restricted_regions.bed"]
+    if restricted_bed:
+        args += ["--restriction_bed", "example_files/restricted_regions.bed"]
 
-            returncode = subprocess.call(args=args,
-                                         cwd=os.path.realpath(example_dir) + "/../../")
-            assert returncode == 0
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir) + "/../../")
+    assert returncode == 0
 
-            assert os.path.exists(tmpfile)
-            assert os.path.exists(vcf_tmpfile)
+    assert os.path.exists(tmpfile)
+    assert os.path.exists(vcf_tmpfile)
 
-            if restricted_bed:
-                # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
-                compare_vcfs(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
-            else:
-                # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
-                compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+    if restricted_bed:
+        # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+        compare_vcfs(example_dir + "/example_files/variants_ref_out2.vcf", vcf_tmpfile)
+    else:
+        # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
+        compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
 
-            if file_format == "hdf5":
-                data = HDF5Reader.load(tmpfile)
-            else:
-                table_labels = []
-                table_starts = []
-                table_ends = []
-                tables = {}
-                head_line_id = "KPVEP_"
-                with open(tmpfile, "r") as ifh:
-                    for i, l in enumerate(ifh):
-                        if head_line_id in l:
-                            if (len(table_starts) > 0):
-                                table_ends.append(i - 1)
-                            table_labels.append(l.rstrip()[len(head_line_id):])
-                            table_starts.append(i + 1)
-                    table_ends.append(i)
-                for label, start, end in zip(table_labels, table_starts, table_ends):
-                    tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
+    if file_format == "hdf5":
+        data = HDF5Reader.load(tmpfile)
+    else:
+        table_labels = []
+        table_starts = []
+        table_ends = []
+        tables = {}
+        head_line_id = "KPVEP_"
+        with open(tmpfile, "r") as ifh:
+            for i, l in enumerate(ifh):
+                if head_line_id in l:
+                    if (len(table_starts) > 0):
+                        table_ends.append(i - 1)
+                    table_labels.append(l.rstrip()[len(head_line_id):])
+                    table_starts.append(i + 1)
+            table_ends.append(i)
+        for label, start, end in zip(table_labels, table_starts, table_ends):
+            tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
+
+
+@pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
+def test_generate_mutation_maps_example(example, tmpdir):
+    """kipoi predict ...
+    """
+    if (example not in {"rbp"}) or (sys.version_info[0] == 2):
+        pytest.skip("Only rbp example testable at the moment, which only runs on py3")
+
+    example_dir = "examples/{0}".format(example)
+
+    tmpdir_here = tmpdir.mkdir("example")
+
+    # restricted_bed = False
+    print(example)
+    print("tmpdir: {0}".format(tmpdir))
+    mm_tmpfile = str(tmpdir_here.join("out_mm.hdf5"))
+    plt_tmpfile = str(tmpdir_here.join("plot.png"))
+
+    dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa", "preproc_transformer": "dataloader_files/encodeSplines.pkl", "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz", "intervals_file": "example_files/variant_intervals.tsv"}
+    import json
+    dataloader_kwargs_str = json.dumps(dataloader_kwargs)
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"),
+            "postproc",
+            "create_mutation_map",
+            # "./",  # directory
+            ".",
+            "--source=dir",
+            "--batch_size=4",
+            "--dataloader_args='%s'" % dataloader_kwargs_str,
+            "--regions_file", "example_files/first_variant.vcf",
+            "--output", mm_tmpfile]
+    # run the
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir))
+    assert returncode == 0
+
+    assert os.path.exists(mm_tmpfile)
+
+    # make the plot
+    args = ["python", os.path.abspath("./kipoi/__main__.py"),
+            "postproc",
+            "plot_mutation_map",
+            # "./",  # directory
+            ".",
+            "--input_file=" + mm_tmpfile,
+            "--input_line=0",
+            "--model_seq_input=seq",
+            "--scoring_key=diff",
+            "--model_output=rbp_prb",
+            "--output", plt_tmpfile]
+
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir))
+    assert returncode == 0
+
+    assert os.path.exists(plt_tmpfile)
+
+    os.unlink(mm_tmpfile)
+    os.unlink(plt_tmpfile)
 
 
 def test_pull_kipoi():

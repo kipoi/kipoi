@@ -481,17 +481,23 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Returns
             Numpy array(s) of predictions.
         """
-        from keras.engine import training
-        if hasattr(training, "_standardize_input_data"):
-            # Keras 2
-            from keras.engine.training import _standardize_input_data as sid
-        else:
-            # Keras 1
-            from keras.engine.training import standardize_input_data as sid
+        import keras
         from keras import backend as K
-        # convert list / dict or array inputs to a standardised model input (a list)
-        x_standardized = sid(x, self.model._feed_input_names,
-                                    self.model._feed_input_shapes)
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+            x_standardized = _standardize_input_data(x, self.model.input_names,
+                                        self.model.internal_input_shapes)
+        elif hasattr(keras.engine.training, "_standardize_input_data"):
+            from keras.engine.training import _standardize_input_data
+            if not hasattr(self.model, "_feed_input_names"):
+                if not self.model.built:
+                    self.model.build()
+            fis = None
+            if hasattr(self.model, "_feed_input_shapes"):
+                fis = self.model._feed_input_shapes
+            x_standardized = _standardize_input_data(x, self.model._feed_input_names, fis)
+        else:
+            raise Exception("Keras 2.1.6 and above not yet supported")
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x_standardized + [0.]
         else:
@@ -580,10 +586,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns
             Numpy array(s) of predictions.
         """
-        from keras.engine.training import _standardize_input_data
+        import keras
         from keras import backend as K
-        x = _standardize_input_data(x, self.model._feed_input_names,
-                                    self.model._feed_input_shapes)
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+            x = _standardize_input_data(x, self.model.input_names,
+                                        self.model.internal_input_shapes)
+        else:
+            from keras.engine.training import _standardize_input_data
+            x = _standardize_input_data(x, self.model._feed_input_names,
+                                        self.model._feed_input_shapes)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x + [0.]
         else:
