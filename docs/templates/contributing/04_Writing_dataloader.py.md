@@ -30,12 +30,11 @@ Specifically, a dataloader has to inherit from one of the following classes defi
 
 - `Dataset` 
     - Class that inherits from `kipoi.data.Dataset` and implements `__len__` and `__getitem__` methods. `__getitem__` returns a single sample from the dataset.
-	- It optionally can implement the `build` method which will get executed on each worker separately (useful for initializing file-handles).
     - **useful when:** dataset length is easy to infer, there are no significant performance gain when reading data of the disk in batches
 
 
 - `BatchDataset` 
-    - Class that inherits from `kipoi.data.BatchDataset` and implements `__len__`, `__getitem__` and optionally `build` methods. `__getitem__` returns a single batch of samples from the dataset.
+    - Class that inherits from `kipoi.data.BatchDataset` and implements `__len__` and  `__getitem__` methods. `__getitem__` returns a single batch of samples from the dataset.
     - **useful when:** dataset length is easy to infer, and there is a significant performance gain when reading data of the disk in batches
 
 
@@ -95,14 +94,15 @@ class SeqDataset(Dataset):
 
         self.bt = BedTool(intervals_file)
         self.fasta_file = fasta_file
-
-	def build(self):
-	    self.fasta_extractor = FastaExtractor(self.fasta_file)
+		self.fasta_extractor = None
 
     def __len__(self):
         return len(self.bt)
 
     def __getitem__(self, idx):
+	    if self.fasta_extractor is None:
+	        self.fasta_extractor = FastaExtractor(self.fasta_file)
+		
         interval = self.bt[idx]
 
         seq = np.squeeze(self.fasta_extractor([interval]), axis=0)
@@ -114,6 +114,8 @@ class SeqDataset(Dataset):
             }
         }
 ```
+
+Note that we have initialized the `fasta_extractor` on the first call of `__getitem__`. The reason for this is that when we use parallel dataloading, each process will get a copy of the `SeqDataset(...)` object. Upon the first call of `__getitem__` the extractor and hence the underlying file-handle will be setup for each worker independently.
 
 ### Further examples
 
