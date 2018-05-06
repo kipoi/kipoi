@@ -188,19 +188,16 @@ class SeqDistDataset(Dataset):
         else:
             self.target_dataset = None
 
-    def build(self):
-        """Run on each worker individually
-        """
-        self.input_data_extractors = {
-            "seq": FastaExtractor(self.fasta_file),
-            "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
-                                                            landmarks=["polya"])
-        }
-
     def __len__(self):
         return len(self.bt)
 
     def __getitem__(self, idx):
+        if self.input_data_extractors is None:
+            self.input_data_extractors = {
+                "seq": FastaExtractor(self.fasta_file),
+                "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
+                                                                landmarks=["polya"])
+            }
         interval = self.bt[idx]
 
         out = {}

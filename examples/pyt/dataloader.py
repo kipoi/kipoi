@@ -50,13 +50,13 @@ class SeqDataset(Dataset):
         else:
             self.targets = None
 
-    def build(self):
-        self.fasta_extractor = FastaExtractor(self.fasta_file)
-
     def __len__(self):
         return len(self.bt)
 
     def __getitem__(self, idx):
+        if self.fasta_extractor is None:
+            self.fasta_extractor = FastaExtractor(self.fasta_file)
+
         interval = self.bt[idx]
 
         # Intervals need to be 1000bp wide

@@ -130,14 +130,13 @@ class SeqDistDataset(Dataset):
     def __len__(self):
         return len(self.bt)
 
-    def build(self):
-        self.input_data_extractors = {
-            "seq": FastaExtractor(self.fasta_file),
-            "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
-                                                            landmarks=["polya"])
-        }
-
     def __getitem__(self, idx):
+        if self.input_data_extractors is None:
+            self.input_data_extractors = {
+                "seq": FastaExtractor(self.fasta_file),
+                "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
+                                                                landmarks=["polya"])
+            }
         interval = self.bt[idx]
 
         out = {}
