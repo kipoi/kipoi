@@ -117,7 +117,7 @@ class SeqDistDataset(Dataset):
         self.bt = pybedtools.BedTool(intervals_file)
 
         # extractors
-        self.fast_file = fasta_file
+        self.fasta_file = fasta_file
         self.input_data_extractors = None
 
         # target
