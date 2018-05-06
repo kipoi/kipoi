@@ -1,7 +1,7 @@
 ## Dataloader
 
-- [ ] What args does dataloader have
-- [ ] How do the fields relate to the yaml file
+<!-- - [ ] What args does dataloader have -->
+<!-- - [ ] How do the fields relate to the yaml file -->
 
 ## Available dataloaders
 

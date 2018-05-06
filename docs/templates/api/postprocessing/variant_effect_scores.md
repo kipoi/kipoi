@@ -1,6 +1,6 @@
 ## Variant effect scores
 
-- [ ] describe how these relate to the yaml file
+<!-- - [ ] describe how these relate to the yaml file -->
 
 ## Available scores
 

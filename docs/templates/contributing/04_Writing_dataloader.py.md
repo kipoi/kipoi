@@ -28,14 +28,14 @@ Specifically, a dataloader has to inherit from one of the following classes defi
     - Function that returns the whole dataset as a nested dictionary/list of numpy arrays
     - **useful when:** the dataset is expected to load quickly and fit into the memory
 
-
 - `Dataset` 
     - Class that inherits from `kipoi.data.Dataset` and implements `__len__` and `__getitem__` methods. `__getitem__` returns a single sample from the dataset.
+	- It optionally can implement the `build` method which will get executed on each worker separately (useful for initializing file-handles).
     - **useful when:** dataset length is easy to infer, there are no significant performance gain when reading data of the disk in batches
 
 
 - `BatchDataset` 
-    - Class that inherits from `kipoi.data.BatchDataset` and implements `__len__` and `__getitem__` methods. `__getitem__` returns a single batch of samples from the dataset.
+    - Class that inherits from `kipoi.data.BatchDataset` and implements `__len__`, `__getitem__` and optionally `build` methods. `__getitem__` returns a single batch of samples from the dataset.
     - **useful when:** dataset length is easy to infer, and there is a significant performance gain when reading data of the disk in batches
 
 
@@ -74,7 +74,7 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 
 ### Dataset example
 
-Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.harvard.edu/pph/FASTA.html) file and a [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) file and returns a one-hot encoded sequence (under 'inputs') along with the used genomic interval (under 'metadata/ranges').
+Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.harvard.edu/pph/FASTA.html) file and a [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) file and returns a one-hot encoded sequence (under 'inputs') along with the used genomic interval (under 'metadata/ranges'). Note that we additionally defined the `build` method. This is useful when writing dataloaders that will support dataloading in parallel: the `build` method gets executed on each worker individually. Hence, it's recommended to initialize file handles in the `build` method instead of the `__init__` method.
 
 ```python
 from __future__ import absolute_import, division, print_function
@@ -94,7 +94,10 @@ class SeqDataset(Dataset):
     def __init__(self, intervals_file, fasta_file):
 
         self.bt = BedTool(intervals_file)
-        self.fasta_extractor = FastaExtractor(fasta_file)
+        self.fasta_file = fasta_file
+
+	def build(self):
+	    self.fasta_extractor = FastaExtractor(self.fasta_file)
 
     def __len__(self):
         return len(self.bt)

@@ -1,7 +1,7 @@
 ## Remote sources
 
-- [ ] describe the main logic
-  - remote <-> local folder
+<!-- - [ ] describe the main logic -->
+<!--   - remote <-> local folder -->
 
 
 ## Available sources
