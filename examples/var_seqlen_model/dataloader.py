@@ -117,11 +117,8 @@ class SeqDistDataset(Dataset):
         self.bt = pybedtools.BedTool(intervals_file)
 
         # extractors
-        self.input_data_extractors = {
-            "seq": FastaExtractor(fasta_file),
-            "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
-                                                            landmarks=["polya"])
-        }
+        self.fast_file = fasta_file
+        self.input_data_extractors = None
 
         # target
         if target_file:
@@ -132,6 +129,13 @@ class SeqDistDataset(Dataset):
 
     def __len__(self):
         return len(self.bt)
+
+    def build(self):
+        self.input_data_extractors = {
+            "seq": FastaExtractor(self.fasta_file),
+            "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
+                                                            landmarks=["polya"])
+        }
 
     def __getitem__(self, idx):
         interval = self.bt[idx]
