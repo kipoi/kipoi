@@ -1,7 +1,7 @@
 ## Model
 
-- [ ] describe the attributes of a model
-- [ ] How do the model arguments relate to the yaml
+<!-- - [ ] describe the attributes of a model -->
+<!-- - [ ] How do the model arguments relate to the yaml -->
 
 ## Available models
 

@@ -64,6 +64,7 @@ def test_preproc_example(example, tmpdir):
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
+            "--num_workers=2",
             "--dataloader_args=test.json",
             "--output", tmpfile]
     if INSTALL_FLAG:
@@ -119,6 +120,7 @@ def test_predict_example(example, tmpdir):
             "../",  # directory
             "--source=dir",
             "--batch_size=4",
+            "--num_workers=2",
             "--dataloader_args=test.json",
             "--output", tmpfile]
     if INSTALL_FLAG:
@@ -161,6 +163,7 @@ def test_predict_activation_example(example, tmpdir):
             "--source=dir",
             "--layer", predict_activation_layers[example],
             "--batch_size=4",
+            "--num_workers=2",
             "--dataloader_args=test.json",
             "--output", tmpfile]
     if INSTALL_FLAG:
@@ -173,9 +176,6 @@ def test_predict_activation_example(example, tmpdir):
 
     data = HDF5Reader.load(tmpfile)
     assert {'metadata', 'preds'} <= set(data.keys())
-
-
-
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

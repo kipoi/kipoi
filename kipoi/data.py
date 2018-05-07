@@ -38,6 +38,7 @@ class BaseDataLoader(object):
           **kwargs: Arguments passed to self.batch_iter(**kwargs)
         """
         if cycle:
+            # TODO - use the default way of getting the iterator in pytorch
             return ((x["inputs"], x["targets"]) for x in iter_cycle(self.batch_iter(**kwargs)))
         else:
             return ((x["inputs"], x["targets"]) for x in self.batch_iter(**kwargs))
@@ -117,9 +118,6 @@ class PreloadedDataset(BaseDataLoader):
                 (default: 1).
             shuffle (bool, optional): set to ``True`` to have the data reshuffled
                 at every epoch (default: False).
-            num_workers (int, optional): how many subprocesses to use for data
-                loading. 0 means that the data will be loaded in the main process
-                (default: 0)
             drop_last (bool, optional): set to ``True`` to drop the last incomplete batch,
                 if the dataset size is not divisible by the batch size. If False and
                 the size of dataset is not divisible by the batch size, then the last batch
@@ -196,17 +194,13 @@ class Dataset(BaseDataLoader):
                         **kwargs)
         return iter(dl)
 
-    def load_all(self, batch_size=32, num_workers=0, **kwargs):
+    def load_all(self, batch_size=32, **kwargs):
         """Load the whole dataset into memory
         Arguments:
             batch_size (int, optional): how many samples per batch to load
                 (default: 1).
-            num_workers (int, optional): how many subprocesses to use for data
-                loading. 0 means that the data will be loaded in the main process
-                (default: 0)
         """
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size,
-                                                                     num_workers=num_workers))])
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size, **kwargs))])
 
 
 class BatchDataset(BaseDataLoader):
@@ -232,18 +226,9 @@ class BatchDataset(BaseDataLoader):
 
         Arguments:
             dataset (Dataset): dataset from which to load the data.
-            batch_size (int, optional): how many samples per batch to load
-                (default: 1).
-            shuffle (bool, optional): set to ``True`` to have the data reshuffled
-                at every epoch (default: False).
             num_workers (int, optional): how many subprocesses to use for data
                 loading. 0 means that the data will be loaded in the main process
                 (default: 0)
-            drop_last (bool, optional): set to ``True`` to drop the last incomplete batch,
-                if the dataset size is not divisible by the batch size. If False and
-                the size of dataset is not divisible by the batch size, then the last batch
-                will be smaller. (default: False)
-
         Returns:
             iterator
         """
@@ -270,8 +255,6 @@ class SampleIterator(BaseDataLoader):
     next = __next__
 
     def batch_iter(self, batch_size=32, **kwargs):
-        # TODO - implement this in parallel - add `num_workers` argument
-        # https://github.com/fchollet/keras/blob/master/keras/utils/data_utils.py#L589
         l = []
         for x in iter(self):
             l.append(x)
@@ -286,6 +269,7 @@ class SampleIterator(BaseDataLoader):
 
 
 class BatchIterator(BaseDataLoader):
+
     @abc.abstractmethod
     def __iter__(self):
         raise NotImplementedError
@@ -365,14 +349,14 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     source = kipoi.config.get_source(source)
     yaml_path = source.pull_dataloader(dataloader)
     dataloader_dir = os.path.dirname(yaml_path)
-    
+
     # --------------------------------------------
     # Setup dataloader description
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
         dl = DataLoaderDescription.load(os.path.basename(yaml_path))
         file_path, obj_name = tuple(dl.defined_as.split("::"))
         CustomDataLoader = getattr(load_module(file_path), obj_name)
-    
+
     # check that dl.type is correct
     if dl.type not in AVAILABLE_DATALOADERS:
         raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".
