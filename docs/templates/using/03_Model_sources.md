@@ -8,6 +8,11 @@ model_sources:
     type: git-lfs  # git repository with large file storage (lfs)
     remote_url: git@github.com:kipoi/models.git  # git remote
     local_path: /home/avsec/.kipoi/models/ # local storage path
+
+  # special model source storing models accessed via github permalinks
+  github-permalink:
+    type: github-permalink
+    local_path: /home/avsec/.kipoi/github-permalink/
 ```
 
 
