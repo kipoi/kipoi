@@ -178,3 +178,8 @@ if not os.path.exists(_config_path):
 
 # Add dir as a valid source
 add_source("dir", LocalSource("."))
+
+if "github-permalink" not in model_sources():
+    # backcompatibility with old versions
+    add_source("github-permalink",
+               GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")))

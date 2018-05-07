@@ -1,6 +1,7 @@
 """Test the Kipoi remotes
 """
 import kipoi
+from kipoi.utils import get_file, download_file
 import os
 import pandas as pd
 
@@ -64,25 +65,7 @@ def test_list_models_group():
 
 
 def test_github_permalink():
-    component = "https://github.com/Avsecz/testlfs/tree/25eee661e75555516b6a7e529857e9ceeecdb711/m1/"
-    dl_url = "https://minhaskamal.github.io/DownGit/#/home?url={0}".format(component)
-    from kipoi.remote import GithubPermalinkSource
-    local_path = "/tmp/kipoi/"
-
-    component_path = GithubPermalinkSource._url_to_dir(component)
-    from urllib.request import urlopen
-    from tempfile import NamedTemporaryFile
-    from shutil import unpack_archive
-    zipurl = 'http://stash.compjour.org/data/1800ssa.zip'
-    with urlopen(zipurl) as zipresp, NamedTemporaryFile() as tfile:
-        tfile.write(zipresp.read())
-        tfile.seek(0)
-        unpack_archive(tfile.name, '/tmp/mystuff3', format='zip')
-
-    cpath = get_file(fname="file.zip",
-                     origin=dl_url,
-                     extract=True,
-                     archive_format="zip",
-                     cache_subdir=component_path,
-                     cache_dir=local_path)
-    pass
+    link = "https://github.com/kipoi/models/tree/7d3ea7800184de414aac16811deba6c8eefef2b6/pwm_HOCOMOCO/human/CTCF"
+    m = kipoi.get_model(link, source="github-permalink")
+    d = kipoi.get_model_descr(link, source="github-permalink")
+    assert len(kipoi.get_source("github-permalink").list_models()) == 0
