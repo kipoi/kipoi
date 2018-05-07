@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .remote import load_source, GitLFSSource, LocalSource
+from .remote import load_source, GitLFSSource, GithubPermalinkSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 logger = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ _kipoi_dir = os.path.join(_kipoi_base_dir, '.kipoi')
 # default model_sources
 _MODEL_SOURCES = {
     "kipoi": GitLFSSource(remote_url="https://github.com/kipoi/models.git",
-                          local_path=os.path.join(_kipoi_dir, "models/"))
+                          local_path=os.path.join(_kipoi_dir, "models/")),
+    "github-permalink": GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")),
 }
 
 
@@ -177,3 +178,8 @@ if not os.path.exists(_config_path):
 
 # Add dir as a valid source
 add_source("dir", LocalSource("."))
+
+if "github-permalink" not in model_sources():
+    # backcompatibility with old versions
+    add_source("github-permalink",
+               GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")))

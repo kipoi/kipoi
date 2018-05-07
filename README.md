@@ -84,6 +84,9 @@ model = kipoi.get_model("rbp_eclip/UPF1", source="kipoi") # source="kipoi" is th
 # Load the model from a local directory
 model = kipoi.get_model("~/mymodels/rbp", source="dir")  
 # Note: Custom model sources are defined in ~/.kipoi/config.yaml
+
+# Load the model via github permalink for a particular commit:
+model = kipoi.get_model("https://github.com/kipoi/models/tree/7d3ea7800184de414aac16811deba6c8eefef2b6/pwm_HOCOMOCO/human/CTCF", source='github-permalink')
 ```
 
 Main model attributes and methods
