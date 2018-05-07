@@ -9,7 +9,7 @@ install Kipoi.
 
 #### Make sure you have python installed:
 
-You can try by just execting `python` in your Terminal, if nothing is found you will want to install python (now `pythonw`).
+You can try by just execting `python` in your Terminal, if nothing is found you will want to install python (not `pythonw`).
 There are some good explanations on how [python 2 can be installed on OSX Sierra](http://docs.python-guide.org/en/latest/starting/install/osx/)
 and if you are using High Sierra and you prefer python 3 you can [follow this](http://docs.python-guide.org/en/latest/starting/install3/osx/).
 

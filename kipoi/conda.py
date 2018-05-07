@@ -121,7 +121,7 @@ def env_exists(env):
 
 
 def _call_command(cmd, extra_args, use_stdout=False,
-                  return_logs_with_stdout=False):
+                  return_logs_with_stdout=False, **kwargs):
     """
     Args:
       return_logs_with_stdout (bool): If True, return also the logged lines
@@ -135,7 +135,7 @@ def _call_command(cmd, extra_args, use_stdout=False,
 
     try:
         if use_stdout:
-            p = Popen(cmd_list, stdout=PIPE, universal_newlines=True)
+            p = Popen(cmd_list, stdout=PIPE, universal_newlines=True, **kwargs)
             # Poll process for new output until finished
             if return_logs_with_stdout:
                 out = []
@@ -152,7 +152,7 @@ def _call_command(cmd, extra_args, use_stdout=False,
             else:
                 return return_code
         else:
-            p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd_list, stdout=PIPE, stderr=PIPE, **kwargs)
     except OSError:
         raise Exception("could not invoke {0}\n".format(cmd_list))
     return p.communicate()

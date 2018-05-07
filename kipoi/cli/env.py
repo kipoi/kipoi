@@ -48,11 +48,15 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
         # add also the dataloaders to the string
         if not isinstance(dataloader_name, list):
             dataloader_name = [dataloader_name]
+        dataloader_name = [_replace_slash(os.path.normpath(d))
+                           for d in dataloader_name]
         if len(dataloader_name) != 0 and dataloader_name != model_name:
-            dataloader_name = [_replace_slash(os.path.normpath(d))
-                               for d in dataloader_name]
-
             env_name += "-DL-{0}".format(",".join(dataloader_name))
+
+    # limit the env name to 110 characters
+    if len(env_name) > 110:
+        logger.info("Environment name exceeds 110 characters. Limiting it to 110 characters")
+        env_name = env_name[:110]
     return env_name
 
 
@@ -65,7 +69,7 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::cyvcf2",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
-                        pip=["intervaltree"]
+                        pip=["intervaltree", "deepdish"]
                         )
 
 
@@ -83,7 +87,7 @@ def merge_deps(models,
 
         deps = deps.merge(model_descr.dependencies)
         # handle the dataloader=None case
-        if dataloaders is None:
+        if dataloaders is None or not dataloaders:
             dataloader = os.path.normpath(os.path.join(parsed_model,
                                                        model_descr.default_dataloader))
             logger.info("Inferred dataloader name: {0} from".format(dataloader) +
@@ -91,7 +95,7 @@ def merge_deps(models,
             dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
             deps = deps.merge(dataloader_descr.dependencies)
 
-    if dataloaders is not None:
+    if dataloaders is not None or dataloaders:
         for dataloader in dataloaders:
             parsed_source, parsed_dataloader = parse_source_name(source, dataloader)
             dataloader_descr = kipoi.get_dataloader_descr(parsed_dataloader, parsed_source)
@@ -118,7 +122,7 @@ def export_deps_to_env(deps, env_file=None, env_dir=".", env=None):
 
     logger.info("Environment name: {0}".format(env))
     logger.info("Output env file: {0}".format(env_file))
-    if not os.path.exists(os.path.dirname(env_file)):
+    if not os.path.exists(os.path.abspath(os.path.dirname(env_file))):
         os.makedirs(os.path.dirname(env_file))
     deps.to_env_file(env, env_file)
     logger.info("Done writing the environment file!")
@@ -126,7 +130,7 @@ def export_deps_to_env(deps, env_file=None, env_dir=".", env=None):
 
 
 def export_env(models,
-               dataloaders=[],
+               dataloaders=None,
                source='kipoi',
                env_file=None,
                env_dir=".",
@@ -170,7 +174,8 @@ def cli_export(cmd, raw_args):
         description='Export the environment.yaml file for a specific model.'
     )
     add_env_args(parser)
-    parser.add_argument('-o', '--output', default='environment.yaml', required=True,
+    parser.add_argument('-o', '--output', default='environment.yaml',
+                        required=True,
                         help="Output file name")
     parser.add_argument('-e', '--env', default=None,
                         help="Environment name")
@@ -190,6 +195,7 @@ def cli_export(cmd, raw_args):
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
+    import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -200,7 +206,7 @@ def cli_create(cmd, raw_args):
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
-    tmpdir = "/tmp/kipoi/envfiles"
+    tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
 

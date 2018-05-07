@@ -5,52 +5,14 @@ from colorlog import escape_codes, default_log_colors
 import re
 import sys
 import os
-import subprocess as sp
 import kipoi
 from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.cli.env import conda_env_name
 from kipoi.remote import list_softlink_dependencies
-from kipoi.utils import list_files_recursively, read_txt, get_file_path
+from kipoi.utils import list_files_recursively, read_txt, get_file_path, cd
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-def run(cmds, env=None, mask=None, **kwargs):
-    """
-    Wrapper around subprocess.run()
-    Explicitly decodes stdout to avoid UnicodeDecodeErrors that can occur when
-    using the `universal_newlines=True` argument in the standard
-    subprocess.run.
-    Also uses check=True and merges stderr with stdout. If a CalledProcessError
-    is raised, the output is decoded.
-    Returns the subprocess.CompletedProcess object.
-    """
-    try:
-        p = sp.run(cmds, stdout=sp.PIPE, stderr=sp.STDOUT, check=True, env=env,
-                   **kwargs)
-        p.stdout = p.stdout.decode(errors='replace')
-    except sp.CalledProcessError as e:
-        e.stdout = e.stdout.decode(errors='replace')
-        print(e)
-        # mask command arguments
-
-        def do_mask(arg):
-            if mask is None:
-                # caller has not considered masking, hide the entire command
-                # for security reasons
-                return '<hidden>'
-            elif mask is False:
-                # masking has been deactivated
-                return arg
-            for m in mask:
-                arg = arg.replace(m, '<hidden>')
-            return arg
-        e.cmd = [do_mask(c) for c in e.cmd]
-        logger.error('COMMAND FAILED: %s', ' '.join(e.cmd))
-        logger.error('STDOUT+STDERR:\n%s', do_mask(e.stdout))
-        raise e
-    return p
 
 
 def modified_files(git_range, source_folder, relative=True):
@@ -69,12 +31,15 @@ def modified_files(git_range, source_folder, relative=True):
       relative=True: return the relative path
     """
     assert isinstance(git_range, list)
-    cmds = ['git', 'diff', '--name-only'] + git_range
+    cmds = ['diff', '--name-only'] + git_range
 
-    p = run(cmds, cwd=source_folder)
+    with cd(source_folder):
+        code, lines = _call_command("git", cmds, use_stdout=True,
+                                    return_logs_with_stdout=True)
 
-    modified = [os.path.join(source_folder, m)
-                for m in p.stdout.strip().split('\n')]
+    assert code == 0
+    modified = [os.path.join(source_folder, line)
+                for line in lines]
 
     # exclude files that were deleted in the git-range
     existing = list(filter(os.path.exists, modified))
@@ -130,6 +95,9 @@ def test_model(model_name, source_name, env_name, batch_size):
         logger.info("Environment {0} exists. Removing it.".format(env_name))
         remove_env(env_name)
 
+    # TODO - if the model is a Keras model, print the Keras config file
+    # and note which config file got used
+
     # create the model test environment
     cmd = "kipoi"
     args = ["env", "create",
@@ -145,8 +113,16 @@ def test_model(model_name, source_name, env_name, batch_size):
             "--batch_size", str(batch_size),
             "--source", source_name,
             model_name]
+    # New, modified path for conda. Source activate namely does the following:
+    # - CONDA_DEFAULT_ENV=${env_name}
+    # - CONDA_PREFIX=${env_path}
+    # - PATH=$conda_bin:$PATH
+    new_env = os.environ.copy()
+    new_env['PATH'] = os.path.dirname(cmd) + os.pathsep + new_env['PATH']
     returncode, logs = _call_command(cmd, args, use_stdout=True,
-                                     return_logs_with_stdout=True)
+                                     return_logs_with_stdout=True,
+                                     env=new_env
+                                     )
     assert returncode == 0
 
     # detect WARNING in the output log
@@ -273,6 +249,8 @@ def cli_test_source(command, raw_args):
         logger.info('{0}/{1} models modified according to git:\n- {2}'.
                     format(len(test_models), len(all_models),
                            '\n- '.join(test_models)))
+    # Sort the models alphabetically
+    test_models = sorted(test_models)
 
     # Parse the repo config
     cfg_path = get_file_path(source.local_path, "config",
@@ -288,6 +266,9 @@ def cli_test_source(command, raw_args):
         logger.info("-n/--dry_run enabled. Skipping model testing and exiting.")
         sys.exit(0)
 
+    # TODO - make sure the modes are always tested in the same order?
+    #        - make sure the keras config doesn't get cluttered
+
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
     for i in range(len(test_models)):
@@ -298,7 +279,7 @@ def cli_test_source(command, raw_args):
                                             m))
         print('-' * 20)
         try:
-            env_name = conda_env_name(m, m, args.source)
+            env_name = conda_env_name(m, source=args.source)
             env_name = "test-" + env_name  # prepend "test-"
             test_model(m, args.source, env_name,
                        get_batch_size(cfg, m, args.batch_size))

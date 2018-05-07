@@ -8,7 +8,7 @@ from .utils import cd
 import kipoi  # for .config module
 from .data import numpy_collate_concat
 # import h5py
-# import six
+import six
 from tqdm import tqdm
 import logging
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ def validate_kwargs(dataloader, dataloader_kwargs):
     unused = set(dataloader_kwargs.keys()) - set(dataloader.args.keys())
     if len(unused) > 0:
         logger.warn("Some provided dataloader kwargs were not used: {0}".format(unused))
+    return {k: v for k, v in six.iteritems(dataloader_kwargs) if k in dataloader.args}
 
 
 class Pipeline(object):
@@ -103,7 +104,7 @@ class Pipeline(object):
         """
         pred_list = [batch for batch in tqdm(self.predict_generator(dataloader_kwargs,
                                                                     batch_size, **kwargs))]
-        return numpy_collate_concat(numpy_collate_concat(pred_list))
+        return numpy_collate_concat(pred_list)
 
     def predict_generator(self, dataloader_kwargs, batch_size=32, **kwargs):
         """Prediction generator

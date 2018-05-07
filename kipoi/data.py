@@ -365,15 +365,14 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     source = kipoi.config.get_source(source)
     yaml_path = source.pull_dataloader(dataloader)
     dataloader_dir = os.path.dirname(yaml_path)
-
-    # Setup dataloader description
-    dl = DataLoaderDescription.load(yaml_path)
+    
     # --------------------------------------------
-    # input the
-    file_path, obj_name = tuple(dl.defined_as.split("::"))
+    # Setup dataloader description
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
+        dl = DataLoaderDescription.load(os.path.basename(yaml_path))
+        file_path, obj_name = tuple(dl.defined_as.split("::"))
         CustomDataLoader = getattr(load_module(file_path), obj_name)
-
+    
     # check that dl.type is correct
     if dl.type not in AVAILABLE_DATALOADERS:
         raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".

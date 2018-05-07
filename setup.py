@@ -3,12 +3,12 @@
 
 from setuptools import setup, find_packages
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError, OSError):
-    # print("Unable to convert REAMDE.md to rst using pypandoc")
-    long_description = open('README.md').read()
+# try:
+#     import pypandoc
+#     long_description = pypandoc.convert('README.md', 'rst')
+# except(IOError, ImportError, OSError):
+#     # print("Unable to convert REAMDE.md to rst using pypandoc")
+#     long_description = open('README.md').read()
 
 
 requirements = [
@@ -34,6 +34,7 @@ test_requirements = [
     "pytest-xdist",  # running tests in parallel
     "pytest-pep8",  # see https://github.com/kipoi/kipoi/issues/91
     "pytest-cov",
+    "coveralls",
     "scikit-learn",
     "cython",
     # "genomelake",
@@ -43,12 +44,12 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.2.5',
-    description="Kipoi",  # TODO - update the description
+    version='0.3.0',
+    description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
     url='https://github.com/kipoi/kipoi',
-    long_description="Kipoi",  # TODO - update the description
+    long_description="Kipoi: model zoo for genomics. http://kipoi.org/",
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
@@ -60,6 +61,9 @@ setup(
                 "pysam",  # required by pybedtools
                 "intervaltree",
                 "deepdish",
+                "matplotlib",
+                "shapely",
+                "descartes",
                 ],
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
