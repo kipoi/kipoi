@@ -8,7 +8,7 @@ import six
 import subprocess
 import logging
 from collections import OrderedDict
-from .utils import lfs_installed, get_file_path, cd, list_files_recursively, get_file
+from .utils import lfs_installed, get_file_path, cd, list_files_recursively
 from .components import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi

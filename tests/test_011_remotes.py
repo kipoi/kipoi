@@ -1,7 +1,6 @@
 """Test the Kipoi remotes
 """
 import kipoi
-from kipoi.utils import get_file, download_file
 import os
 import pandas as pd
 
