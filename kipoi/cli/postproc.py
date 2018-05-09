@@ -186,7 +186,7 @@ def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
                     if len(sel_scoring_kwargs) >= 1:
                         # all the {}s in -k replace by their defaults, if the default is None
                         # raise exception with the corrsponding scoring function label etc.
-                        defined_kwargs = parse_json_file_str(sel_scoring_kwargs[si])
+                        defined_kwargs = parse_json_file_str(sel_scoring_kwargs[arg_iter])
                         if len(defined_kwargs) != 0:
                             kwargs = defined_kwargs
                     if kwargs is None:
