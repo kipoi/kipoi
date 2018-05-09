@@ -325,20 +325,19 @@ class DummySlice():
         return key
 
 def test_grad_tens_generation():
-    model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf)
+    model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf, auto_use_cuda=True)
     fwd_hook_obj, removable_hook_obj = model._register_fwd_hook(model.get_layer("4"))
     fwd_values, x_in = model.np_run_pred(get_pyt_sequential_model_input(), requires_grad=True)
     removable_hook_obj.remove()
 
-    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, :], "sum").numpy()[0, ...] == np.array(
+    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, :], "sum").cpu().numpy()[0, ...] == np.array(
         [[1] * 24] * 3 + [[0] * 24] * 13))
-    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, 0:2], "sum").numpy()[0, ...] == np.array(
+    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[:, 0:3, 0:2], "sum").cpu().numpy()[0, ...] == np.array(
         [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 13))
-    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, :], "sum").numpy()[0, ...] == np.array(
+    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, :], "sum").cpu().numpy()[0, ...] == np.array(
         [[1] * 24] * 3 + [[0] * 24] * 13))
-    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, 0:2], "sum").numpy()[0, ...] == np.array(
+    assert np.all(model.get_grad_tens(fwd_values, DummySlice()[0:3, 0:2], "sum").cpu().numpy()[0, ...] == np.array(
         [[1] * 2 + [0] * 22] * 3 + [[0] * 24] * 13))
     # Filter is 2D
     with pytest.raises(Exception):
         model.get_grad_tens(fwd_values, DummySlice()[0:2], "max")
-

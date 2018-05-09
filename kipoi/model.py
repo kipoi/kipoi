@@ -497,7 +497,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 fis = self.model._feed_input_shapes
             x_standardized = _standardize_input_data(x, self.model._feed_input_names, fis)
         else:
-            raise Exception("Keras 2.1.6 and above not yet supported")
+            raise Exception("This Keras version is not supported!")
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x_standardized + [0.]
         else:
@@ -631,7 +631,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=False):
+    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """
         Load model
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
@@ -939,16 +939,16 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         removable_hook_obj.remove()
 
         def extract_grad(variable_obj):
-            vo = variable_obj.cpu()
+            vo = variable_obj
             if vo.grad is not None:
-                return vo.grad.data.numpy()
+                return vo.grad.cpu().data.numpy()
             else:
                 ret_arr=np.empty(vo.size())
                 ret_arr[:] = np.nan
                 return ret_arr
 
 
-        if isinstance(x_in, torch.autograd.Variable):
+        if isinstance(x_in, torch.autograd.Variable) or isinstance(x_in, torch.Tensor):
             # make sure it is on the cpu, then extract the gradient data as numpy arrays
             grad_out = extract_grad(x_in)
 
