@@ -62,9 +62,8 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
         try:
             return cls.from_config(parsed_dict)
         except Exception as e:
-            print(str(e))
-            print("Unable to load file {0} into class {1}".
-                  format(os.path.abspath(path), cls))
+            raise Exception("Unable to load file {0} into class {1}.\nError: \n{2}".
+                            format(os.path.abspath(path), cls, str(e)))
 
     def dump(self, path):
         """Dump the object to a yaml file
