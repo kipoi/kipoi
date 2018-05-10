@@ -47,7 +47,7 @@ output_schema:
         doc: One-hot encoded array of classes: setosa, versicolor, virginica.
     metadata:  # field providing additional information to the samples (not directly required by the model)
         example_row_number:
-            shape: int
+            type: int
             doc: Just an example metadata column
 ```			
 
