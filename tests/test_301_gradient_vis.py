@@ -148,11 +148,11 @@ def test__infer_seq_dim():
 def test_verify_model_input():
     import pytest
     from kipoi.postprocessing.gradient_vis.vis import GradPlotter
-    gp = GradPlotter(None, "examples/rbp", source="dir")
+    gp = GradPlotter({"inputs":[], "preds":[]}, "examples/rbp", source="dir")
     with pytest.raises(Exception):
         gp._verify_model_input(None)
     with pytest.warns(None):
-        gp = GradPlotter(None, "examples/pyt", source="dir")
+        gp = GradPlotter({"inputs":[], "preds":[]}, "examples/pyt", source="dir")
         assert gp._verify_model_input(None) == 'input'
 
 
