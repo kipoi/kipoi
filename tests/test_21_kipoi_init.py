@@ -7,14 +7,13 @@ import pytest
 import logging
 from kipoi.cli.main import cli_init, cli_test
 
-
 # Build up all configs
 test_all = [(m, inp, inp, dl)
             for m in ["keras", "custom"]
             for inp in ["np.array", "list of np.arrays", "dict of np.arrays"]
             for dl in ["Dataset", "PreloadedDataset", "BatchDataset", "SampleIterator",
                        "SampleGenerator", "BatchIterator", "BatchGenerator"]] + \
-    [("sklearn", "np.array", "np.array", "Dataset")]
+           [("sklearn", "np.array", "np.array", "Dataset")]
 
 
 @pytest.mark.parametrize("model_type,model_input_type,model_output_type,dataloader_type", test_all)

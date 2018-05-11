@@ -84,7 +84,8 @@ def test_complex_example():
     scoring_fns = [{"name": "diff", "type": VarEffectFuncType.diff, "default": False},
                    {"type": VarEffectFuncType.logit, "default": False},
                    {"default": True, "type": VarEffectFuncType.deepsea_effect},
-                   {"name": "mydiff", "type": VarEffectFuncType.custom, "defined_as": "postproc.py::myfun", "default": False}]
+                   {"name": "mydiff", "type": VarEffectFuncType.custom, "defined_as": "postproc.py::myfun",
+                    "default": False}]
 
     for in_obj, fn in zip(ppsv.scoring_functions, scoring_fns):
         for k in fn:
@@ -93,7 +94,8 @@ def test_complex_example():
             else:
                 assert getattr(in_obj, k) == fn[k]
 
-    expected_args = {"first_arg": {"doc": "blablabla1", "default": "1"}, "second_arg": {"doc": "blablabla", "default": "10"}}
+    expected_args = {"first_arg": {"doc": "blablabla1", "default": "1"},
+                     "second_arg": {"doc": "blablabla", "default": "10"}}
     custom_fn_args = ppsv.scoring_functions[-1].args
     for k in expected_args:
         for k2 in expected_args[k]:

@@ -8,7 +8,6 @@ from related import from_yaml
 
 CLS = Dependencies
 
-
 GOOD_EXAMPLES = [
     ("""
 conda:

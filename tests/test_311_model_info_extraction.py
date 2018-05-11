@@ -1,6 +1,7 @@
 from kipoi.components import ModelDescription, DataLoaderDescription
 from related import from_yaml
-from kipoi.postprocessing.variant_effects.utils.generic import ModelInfoExtractor, OneHotSequenceMutator, DNAStringSequenceMutator, ReshapeDnaString, ReshapeDna
+from kipoi.postprocessing.variant_effects.utils.generic import ModelInfoExtractor, OneHotSequenceMutator, \
+    DNAStringSequenceMutator, ReshapeDnaString, ReshapeDna
 from related import from_yaml
 
 from kipoi.components import ModelDescription, DataLoaderDescription
@@ -97,7 +98,6 @@ postprocessing:
           %s
 """
 
-
 supports_simple_rc_str = """use_rc: True
 """
 
@@ -119,4 +119,3 @@ def test_ModelDescription():
         assert all([mi.seq_input_metadata[sl] == "ranges_b" for sl in ["seq_c"]])
         assert all([isinstance(mi.seq_input_array_trafo[sl], ReshapeDna) for sl in ["seq_a", "seq_c"]])
         assert all([isinstance(mi.seq_input_array_trafo[sl], ReshapeDnaString) for sl in ["seq_b"]])
-

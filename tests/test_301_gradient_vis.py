@@ -5,6 +5,7 @@ from kipoi.components import ModelSchema
 from related import from_yaml
 import config
 import sys
+
 INSTALL_REQ = config.install_req
 from kipoi.pipeline import install_model_requirements
 import json
@@ -19,9 +20,8 @@ import copy
 
 predict_activation_layers = {
     "rbp": "concatenate_6",
-    #"pyt": "3"  # two before the last layer
+    # "pyt": "3"  # two before the last layer
 }
-
 
 MODEL_SCHEMA_EXAMPLES = ["""
 inputs:
@@ -59,7 +59,7 @@ targets:
         special_type: bigwig
 """]
 
-dummy_dataset=[]
+dummy_dataset = []
 
 
 def test_get_selector():
@@ -68,7 +68,7 @@ def test_get_selector():
     assert get_selector(-1, slice(None, None, -1)) == (Ellipsis, slice(None, None, -1))
 
 
-def get_example_data(example, wrt_layer, writer = None):
+def get_example_data(example, wrt_layer, writer=None):
     example_dir = "examples/{0}".format(example)
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir", and_dataloaders=True)
@@ -77,16 +77,16 @@ def get_example_data(example, wrt_layer, writer = None):
     # The preprocessor
     Dataloader = kipoi.get_dataloader_factory(example_dir, source="dir")
     #
-    with open(example_dir + "/example_files/test.json","r") as ifh:
+    with open(example_dir + "/example_files/test.json", "r") as ifh:
         dataloader_arguments = json.load(ifh)
 
     for k in dataloader_arguments:
-        dataloader_arguments[k] = "example_files/"+dataloader_arguments[k]
+        dataloader_arguments[k] = "example_files/" + dataloader_arguments[k]
 
     outputs = []
     with cd(model.source_dir):
         dl = Dataloader(**dataloader_arguments)
-        it = dl.batch_iter(batch_size=32,num_workers=0)
+        it = dl.batch_iter(batch_size=32, num_workers=0)
 
         # Loop through the data, make predictions, save the output
         for i, batch in enumerate(tqdm(it)):
@@ -104,7 +104,8 @@ def get_example_data(example, wrt_layer, writer = None):
             writer.close()
     return numpy_collate(outputs)
 
-#@pytest.mark.parametrize("example", list(predict_activation_layers))
+
+# @pytest.mark.parametrize("example", list(predict_activation_layers))
 def test_gradplotter():
     from kipoi.postprocessing.gradient_vis.vis import GradPlotter, get_selector
     example = "rbp"
@@ -124,7 +125,7 @@ def test_gradplotter():
 
     gp = GradPlotter.from_hdf5(output, example_dir, source="dir")
 
-    #test get_num_samples
+    # test get_num_samples
     assert gp.data['inputs']['seq'].shape[0] == gp.get_num_samples("seq")
 
     # once we have a gp instance:
@@ -139,22 +140,23 @@ def test_gradplotter():
     except:
         pass
 
+
 def test__infer_seq_dim():
     from kipoi.postprocessing.gradient_vis.vis import GradPlotter
     assert GradPlotter._infer_seq_dim(3, [1, 3, 2, 4]) == 1
     assert GradPlotter._infer_seq_dim(3, [1, 3, 3, 4]) is None
     assert GradPlotter._infer_seq_dim(3, [1, 1, 1, 4]) is None
 
+
 def test_verify_model_input():
     import pytest
     from kipoi.postprocessing.gradient_vis.vis import GradPlotter
-    gp = GradPlotter({"inputs":[], "preds":[]}, "examples/rbp", source="dir")
+    gp = GradPlotter({"inputs": [], "preds": []}, "examples/rbp", source="dir")
     with pytest.raises(Exception):
         gp._verify_model_input(None)
     with pytest.warns(None):
-        gp = GradPlotter({"inputs":[], "preds":[]}, "examples/pyt", source="dir")
+        gp = GradPlotter({"inputs": [], "preds": []}, "examples/pyt", source="dir")
         assert gp._verify_model_input(None) == 'input'
-
 
 
 class DummyRegionWriter(object):
@@ -169,16 +171,17 @@ class DummyRegionWriter(object):
     def close(self):
         pass
 
+
 def test_plot():
     from kipoi.postprocessing.gradient_vis.vis import GradPlotter
     # test genomic region subsetting
     example_data = get_example_data("pyt", "3")
     gp = GradPlotter(example_data, "examples/pyt", source="dir")
-    #np.random.seed(1)
-    #example_data['preds'] = np.random.randn(*example_data['preds'].shape)
+    # np.random.seed(1)
+    # example_data['preds'] = np.random.randn(*example_data['preds'].shape)
 
     # 1) Test Region subsetting (genomic)
-    full_first_region = {k:v[0,0] for k,v in example_data['metadata']['ranges'].items()}
+    full_first_region = {k: v[0, 0] for k, v in example_data['metadata']['ranges'].items()}
     subset_region = (full_first_region["start"] + 20, full_first_region["end"] - 20)
     drw = DummyRegionWriter()
     gp.write(0, limit_region_genomic=subset_region, writer_obj=drw)
@@ -190,9 +193,9 @@ def test_plot():
     # 3) Test whether seq_dims are reduced correctly
     drw = DummyRegionWriter()
     gp.write(0, writer_obj=drw)
-    input_grad_0 = gp.data['inputs'][0,...] * gp.data['preds'][0,...]
+    input_grad_0 = gp.data['inputs'][0, ...] * gp.data['preds'][0, ...]
     seq_dim = np.where(np.array(input_grad_0.shape) == full_first_region["end"] - full_first_region["start"])[0][0]
-    sel = [slice(None)]*(seq_dim) + [0] + [Ellipsis]
+    sel = [slice(None)] * (seq_dim) + [0] + [Ellipsis]
     data_exp_0 = input_grad_0[tuple(sel)].sum()
     assert np.isclose(data_exp_0, drw.datas[0][0])
 
@@ -205,13 +208,12 @@ def test_plot():
     example_data_cp['preds'] = example_data_cp['preds'][0, ...]
     gp2 = GradPlotter(example_data_cp, "examples/pyt", source="dir")
     plt.figure()
-    ax_obj = plt.subplot(1,1,1)
+    ax_obj = plt.subplot(1, 1, 1)
+
     def dummy_plotfn(chrom, start, end, ax):
         assert chrom == full_first_region["chr"]
         assert start == subset_region[0]
         assert end == subset_region[1]
         assert ax == ax_obj
-    gp2.plot(0, limit_region_genomic=subset_region, additional_plot_fns=[dummy_plotfn], ax = ax_obj)
 
-
-
+    gp2.plot(0, limit_region_genomic=subset_region, additional_plot_fns=[dummy_plotfn], ax=ax_obj)

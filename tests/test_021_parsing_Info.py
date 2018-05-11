@@ -20,7 +20,6 @@ version: 0.1
 tags: ['var_interpretation']
 """]
 
-
 BAD_EXAMPLES = ["""
 authors:
     - name: Ziga Avsec

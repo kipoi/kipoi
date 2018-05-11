@@ -22,14 +22,14 @@ def metadata_schema():
 def dl_batch():
     return {"inputs": np.arange(3),
             "metadata": {
-        "ranges": GenomicRanges(chr=np.array(["chr1", "chr1", "chr1"]),
-                                start=np.arange(3) + 1,
-                                end=np.arange(3) + 5,
-                                id=np.arange(3).astype(str),
-                                strand=np.array(["*"] * 3)
-                                ),
-        "gene_id": np.arange(3).astype(str)
-    }}
+                "ranges": GenomicRanges(chr=np.array(["chr1", "chr1", "chr1"]),
+                                        start=np.arange(3) + 1,
+                                        end=np.arange(3) + 5,
+                                        id=np.arange(3).astype(str),
+                                        strand=np.array(["*"] * 3)
+                                        ),
+                "gene_id": np.arange(3).astype(str)
+            }}
 
 
 @fixture
@@ -88,7 +88,8 @@ def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     with HDF5Reader(tmpfile) as f:
         assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
         out = f.load_all()
-        assert np.all(out['metadata']['gene_id'] == np.concatenate([dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
+        assert np.all(out['metadata']['gene_id'] == np.concatenate(
+            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
         assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
                                                                           dl_batch['metadata']['ranges']['chr']]))
         assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
@@ -107,7 +108,8 @@ def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
     with HDF5Reader(tmpfile) as f:
         assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
         out = f.load_all()
-        assert np.all(out['metadata']['gene_id'] == np.concatenate([dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
+        assert np.all(out['metadata']['gene_id'] == np.concatenate(
+            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
         assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
                                                                           dl_batch['metadata']['ranges']['chr']]))
         assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
@@ -136,7 +138,6 @@ def test_BedBatchWriter(dl_batch, pred_batch_array, metadata_schema, tmpdir):
     assert list(df['name']) == [0, 1, 2, 0, 1, 2]
 
 
-
 def test_bigwigwriter():
     from kipoi.writers import BigWigWriter
     import pyBigWig
@@ -144,15 +145,14 @@ def test_bigwigwriter():
     temp_path = tempfile.mkstemp()[1]
     with pytest.raises(Exception):
         bww = BigWigWriter(temp_path)
-        regions = {"chr":["chr1","chr7","chr2"], "start":[10,30,20], "end":[11,31,21]}
-        values = [3.0,4.0,45.4]
+        regions = {"chr": ["chr1", "chr7", "chr2"], "start": [10, 30, 20], "end": [11, 31, 21]}
+        values = [3.0, 4.0, 45.4]
         for i, val in enumerate(values):
-            reg = {k:v[i] for k,v in regions.items()}
+            reg = {k: v[i] for k, v in regions.items()}
             bww.region_write(reg, np.array([val]))
         bww.close()
         bww_2 = pyBigWig(temp_path)
         for i, val in enumerate(values):
-            reg = {k:v[i] for k,v in regions.items()}
+            reg = {k: v[i] for k, v in regions.items()}
             bww.region_write(reg, [val])
             assert bww_2.entries(reg["chr"], reg["start"], reg["end"])[0][2] == val
-

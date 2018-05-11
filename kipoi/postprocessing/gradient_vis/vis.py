@@ -11,25 +11,29 @@ from kipoi.utils import cd
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def grad_x_input(input, grad):
-    return input*grad
+    return input * grad
+
 
 def get_selector(dim, slice_at_dim):
     """
     Place `slice_at_dim` at dimension `dim` for setting or setting items
     """
     if dim >= 0:
-        selector = [slice(None) for i in range(dim)] + [slice_at_dim]  + [Ellipsis]
+        selector = [slice(None) for i in range(dim)] + [slice_at_dim] + [Ellipsis]
     else:
-        selector = [Ellipsis] + [slice_at_dim] + [slice(None) for i in range((dim)*(-1)-1)]
+        selector = [Ellipsis] + [slice_at_dim] + [slice(None) for i in range((dim) * (-1) - 1)]
     selector = tuple(selector)
     return selector
+
 
 class GradPlotter(object):
     """
     Class for plotting gradients. Results can be loaded from a HDF5 file or directly from returns of
     model.input_grad(...)
     """
+
     def __init__(self, data, model, source="kipoi", grad_preds=None):
         """
         Arguments:
@@ -61,7 +65,7 @@ class GradPlotter(object):
         # allow to use relative and absolute paths for referring to the dataloader
         default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
         # This one loads the model!!
-        #default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
+        # default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
         #                                                  dl_source)
 
         # TODO: Is there a nicer way of getting ahold of the dataloader description?
@@ -78,7 +82,7 @@ class GradPlotter(object):
             logger.warn("Model is not enabled for variant effect prediction hence it is unclear whether there is a DNA "
                         "sequence input, so (automatic) seqlogo plots are not available for this model.")
             self.mie = None
-        self.md =md
+        self.md = md
         self.dataloader = default_dataloader
 
         # how can the correct model input be selected
@@ -119,16 +123,15 @@ class GradPlotter(object):
             return dataset[int_ind]
 
     def _select_ds_dict(self, index, dataset):
-            return dataset[index]
+        return dataset[index]
 
     def _verify_model_input(self, model_input):
         if model_input is None:
             if len(self.model_input_keylist) != 1:
                 raise Exception("model_input cannot be None for models that have multiple "
-                                "inputs: %s"%str(self.model_input_keylist))
+                                "inputs: %s" % str(self.model_input_keylist))
             model_input = self.model_input_keylist[0]
-        return  model_input
-
+        return model_input
 
     def get_num_samples(self, model_input=None):
         """
@@ -148,15 +151,14 @@ class GradPlotter(object):
             return np.where(sel)[0][0]
         return None
 
-
-
     def _preprocess_values(self, sample, model_input=None, limit_region=None, limit_region_genomic=None,
-                           transform_fn = grad_x_input, seq_dim = None, requires_region_info = False,
-                           requires_seq_dim = False):
+                           transform_fn=grad_x_input, seq_dim=None, requires_region_info=False,
+                           requires_seq_dim=False):
         def raise_missing_metadata():
             raise Exception("limit_region_genomic can only be used with a `model_input` that has an associated"
                             "metadata field with at least the following entries: 'chrom', 'start', 'end' or type"
                             "GenomicRanges.")
+
         def get_metadata_cse():
             metadata_field = None
             try:
@@ -166,14 +168,13 @@ class GradPlotter(object):
             mf = self.data['metadata'][metadata_field]
             if not all([el in mf for el in ["chr", "start", "end"]]):
                 raise_missing_metadata()
-            cse = {k:np.squeeze(mf[k]) for k in ["chr", "start", "end"]}
+            cse = {k: np.squeeze(mf[k]) for k in ["chr", "start", "end"]}
             for k in ["chr", "start", "end"]:
                 cse[k] = np.squeeze(mf[k])
                 if len(cse[k].shape) != 1:
-                    raise Exception("Invalid metadata format for field ['%s']['%s'] with shape: %s"%
+                    raise Exception("Invalid metadata format for field ['%s']['%s'] with shape: %s" %
                                     (metadata_field, k, str(mf[k].shape)))
             return cse
-
 
         inputs = self.data["inputs"]
         gradients = self.data["preds"]
@@ -182,7 +183,6 @@ class GradPlotter(object):
 
         input = self.get_dataset(model_input, inputs)
         gradient = self.get_dataset(model_input, gradients)
-
 
         is_onehot_seq = False
         if (self.mie is not None) and (model_input in self.mie.get_mutatable_inputs(only_one_hot=True)):
@@ -214,16 +214,14 @@ class GradPlotter(object):
             if not isinstance(limit_region, tuple):
                 raise Exception("`limit_region` has to be a tuple of (start, end) array indices!")
             if mr_start is not None:
-                mr_end = mr_start + limit_region_genomic[1]+1
+                mr_end = mr_start + limit_region_genomic[1] + 1
                 mr_start = mr_start + limit_region_genomic[0]
-
-
 
         if is_onehot_seq:
             # convert to standard layout
             dna_reshaper = ReshapeDna(_get_seq_shape(self.dataloader, model_input))
-            input_reshaped = dna_reshaper.to_standard(input)[sample,...]
-            gradient_reshaped = dna_reshaper.to_standard(gradient)[sample,...]
+            input_reshaped = dna_reshaper.to_standard(input)[sample, ...]
+            gradient_reshaped = dna_reshaper.to_standard(gradient)[sample, ...]
             seq_dim = 0
 
             values = transform_fn(input_reshaped, gradient_reshaped)
@@ -252,15 +250,15 @@ class GradPlotter(object):
 
             return values, is_onehot_seq, mr_chr, mr_start, mr_end, seq_dim
 
-
-    def _plot_dep(self, sample, model_input=None, ax=None, limit_region=None, limit_region_genomic=None, rc_plot = False,
-                    transform_fn = grad_x_input, seq_dim = None, additional_plot_fns = None, seq_plotter_obj = None,
-                    dont_plot = False, **heatmap_kwargs):
+    def _plot_dep(self, sample, model_input=None, ax=None, limit_region=None, limit_region_genomic=None, rc_plot=False,
+                  transform_fn=grad_x_input, seq_dim=None, additional_plot_fns=None, seq_plotter_obj=None,
+                  dont_plot=False, **heatmap_kwargs):
 
         def raise_missing_metadata():
             raise Exception("limit_region_genomic can only be used with a `model_input` that has an associated"
                             "metadata field with at least the following entries: 'chrom', 'start', 'end' or type"
                             "GenomicRanges.")
+
         def get_metadata_cse():
             metadata_field = None
             try:
@@ -270,14 +268,13 @@ class GradPlotter(object):
             mf = self.data['metadata'][metadata_field]
             if not all([el in mf for el in ["chr", "start", "end"]]):
                 raise_missing_metadata()
-            cse = {k:np.squeeze(mf[k]) for k in ["chr", "start", "end"]}
+            cse = {k: np.squeeze(mf[k]) for k in ["chr", "start", "end"]}
             for k in ["chr", "start", "end"]:
                 cse[k] = np.squeeze(mf[k])
                 if len(cse[k].shape) != 1:
-                    raise Exception("Invalid metadata format for field ['%s']['%s'] with shape: %s"%
+                    raise Exception("Invalid metadata format for field ['%s']['%s'] with shape: %s" %
                                     (metadata_field, k, str(mf[k].shape)))
             return cse
-
 
         inputs = self.data["inputs"]
         gradients = self.data["preds"]
@@ -286,7 +283,6 @@ class GradPlotter(object):
 
         input = self.get_dataset(model_input, inputs)
         gradient = self.get_dataset(model_input, gradients)
-
 
         is_onehot_seq = False
         if (self.mie is not None) and (model_input in self.mie.get_mutatable_inputs(only_one_hot=True)):
@@ -309,8 +305,8 @@ class GradPlotter(object):
         if is_onehot_seq:
             # convert to standard layout
             dna_reshaper = ReshapeDna(_get_seq_shape(self.dataloader, model_input))
-            input_reshaped = dna_reshaper.to_standard(input)[sample,...]
-            gradient_reshaped = dna_reshaper.to_standard(gradient)[sample,...]
+            input_reshaped = dna_reshaper.to_standard(input)[sample, ...]
+            gradient_reshaped = dna_reshaper.to_standard(gradient)[sample, ...]
 
             values = transform_fn(input_reshaped, gradient_reshaped)
 
@@ -322,7 +318,7 @@ class GradPlotter(object):
                 if mr_start is None:
                     mr_start = mf["start"][sample]
                     mr_end = mf["end"][sample]
-                regions = {"chr":[mf["chr"][sample]], "start":[mr_start], "end":[mr_end]}
+                regions = {"chr": [mf["chr"][sample]], "start": [mr_start], "end": [mr_end]}
                 seq_plotter_obj.region_write(regions, values)
             if not dont_plot:
                 # Reverse-complement only for the plot itself
@@ -332,7 +328,7 @@ class GradPlotter(object):
                 from kipoi.external.concise.seqplotting_deps import seqlogo
                 seqlogo(values, ax=ax)
                 ax.axes.get_xaxis().set_visible(False)
-                sns.despine(trim=True, bottom = True, ax = ax)
+                sns.despine(trim=True, bottom=True, ax=ax)
 
         elif (seq_plotter_obj is not None) or (not dont_plot):
             if rc_plot or (limit_region is not None) or (seq_plotter_obj is not None):
@@ -356,12 +352,12 @@ class GradPlotter(object):
                 if mr_start is None:
                     mr_start = mf["start"][sample]
                     mr_end = mf["end"][sample]
-                regions = {"chr":[mf["chr"][sample]], "start":[mr_start], "end":[mr_end]}
+                regions = {"chr": [mf["chr"][sample]], "start": [mr_start], "end": [mr_end]}
                 # now compress them down by summation so that only the seq_dim is left
                 values_summed = values
-                for dim in range(0,len(values.shape)):
+                for dim in range(0, len(values.shape)):
                     if dim != seq_dim:
-                        values_summed = np.sum(values_summed, axis = dim, keepdims=True)
+                        values_summed = np.sum(values_summed, axis=dim, keepdims=True)
                 values_summed = np.squeeze(values_summed)
 
                 seq_plotter_obj.region_write(regions, values_summed)
@@ -371,7 +367,7 @@ class GradPlotter(object):
                     rc_sel = get_selector(seq_dim, slice(None, None, -1))
                     values = values.__getitem__(rc_sel)
 
-                sns.heatmap(values, ax = ax, **heatmap_kwargs)
+                sns.heatmap(values, ax=ax, **heatmap_kwargs)
 
         if (additional_plot_fns is not None) and (not dont_plot):
             mf = get_metadata_cse()
@@ -379,10 +375,10 @@ class GradPlotter(object):
                 if mr_start is None:
                     mr_start = mf["start"][sample]
                     mr_end = mf["end"][sample]
-                plot_fn(chrom= mf["chr"][sample], start=mr_start, end=mr_end, ax=ax)
+                plot_fn(chrom=mf["chr"][sample], start=mr_start, end=mr_end, ax=ax)
 
-    def plot(self, sample, model_input=None, ax=None, limit_region=None, limit_region_genomic=None, rc_plot = False,
-                    transform_fn = grad_x_input, seq_dim = None, additional_plot_fns = None, **heatmap_kwargs):
+    def plot(self, sample, model_input=None, ax=None, limit_region=None, limit_region_genomic=None, rc_plot=False,
+             transform_fn=grad_x_input, seq_dim=None, additional_plot_fns=None, **heatmap_kwargs):
         """
         Plot grad*input for one sample in the data (batch). If the selected model input is tagged as "DNASequence" and 
         the model variant effect prediction activated (here only necessary for parsing model info), then values 
@@ -411,13 +407,13 @@ class GradPlotter(object):
         requires_region_info = additional_plot_fns is not None
 
         values, is_onehot_seq, mr_chr, mr_start, mr_end, seq_dim = self._preprocess_values(sample,
-                                           model_input=model_input,
-                                           limit_region=limit_region,
-                                           limit_region_genomic=limit_region_genomic,
-                                           transform_fn=transform_fn,
-                                           seq_dim=seq_dim,
-                                           requires_region_info=requires_region_info,
-                                           requires_seq_dim=True)
+                                                                                           model_input=model_input,
+                                                                                           limit_region=limit_region,
+                                                                                           limit_region_genomic=limit_region_genomic,
+                                                                                           transform_fn=transform_fn,
+                                                                                           seq_dim=seq_dim,
+                                                                                           requires_region_info=requires_region_info,
+                                                                                           requires_seq_dim=True)
 
         import seaborn as sns
         if is_onehot_seq:
@@ -428,22 +424,21 @@ class GradPlotter(object):
             from kipoi.external.concise.seqplotting_deps import seqlogo
             seqlogo(values, ax=ax)
             ax.axes.get_xaxis().set_visible(False)
-            sns.despine(trim=True, bottom = True, ax = ax)
+            sns.despine(trim=True, bottom=True, ax=ax)
 
         else:
             if rc_plot:
                 rc_sel = get_selector(seq_dim, slice(None, None, -1))
                 values = values.__getitem__(rc_sel)
 
-            sns.heatmap(values, ax = ax, **heatmap_kwargs)
+            sns.heatmap(values, ax=ax, **heatmap_kwargs)
 
         if (additional_plot_fns is not None):
             for plot_fn in additional_plot_fns:
-                plot_fn(chrom= mr_chr, start=mr_start, end=mr_end, ax=ax)
-
+                plot_fn(chrom=mr_chr, start=mr_start, end=mr_end, ax=ax)
 
     def write(self, sample, writer_obj, model_input=None, limit_region=None, limit_region_genomic=None,
-              transform_fn = grad_x_input, seq_dim = None):
+              transform_fn=grad_x_input, seq_dim=None):
         """
         Write grad*input for one sample in the data (batch). If the selected model input is tagged as "DNASequence" and 
         the model variant effect prediction activated (here only necessary for parsing model info), then values 
@@ -466,13 +461,13 @@ class GradPlotter(object):
             dimensions and metadata sequence length. 
         """
         values, is_onehot_seq, mr_chr, mr_start, mr_end, seq_dim = self._preprocess_values(sample,
-                            model_input=model_input,
-                            limit_region=limit_region,
-                            limit_region_genomic=limit_region_genomic,
-                            transform_fn = transform_fn,
-                            seq_dim = seq_dim,
-                            requires_region_info = True,
-                            requires_seq_dim = True)
+                                                                                           model_input=model_input,
+                                                                                           limit_region=limit_region,
+                                                                                           limit_region_genomic=limit_region_genomic,
+                                                                                           transform_fn=transform_fn,
+                                                                                           seq_dim=seq_dim,
+                                                                                           requires_region_info=True,
+                                                                                           requires_seq_dim=True)
 
         regions = {"chr": [mr_chr], "start": [mr_start], "end": [mr_end]}
 
@@ -483,11 +478,8 @@ class GradPlotter(object):
         else:
             # now compress them down by summation so that only the seq_dim is left
             values_summed = values
-            for dim in range(0,len(values.shape)):
+            for dim in range(0, len(values.shape)):
                 if dim != seq_dim:
-                    values_summed = np.sum(values_summed, axis = dim, keepdims=True)
+                    values_summed = np.sum(values_summed, axis=dim, keepdims=True)
             values_summed = np.squeeze(values_summed)
             writer_obj.region_write(regions, values_summed)
-
-
-

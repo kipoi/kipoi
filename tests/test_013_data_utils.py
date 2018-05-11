@@ -48,7 +48,6 @@ def test_get_item(data):
 
 
 def test_preloaded_dataset(data):
-
     def data_fn():
         return data
 

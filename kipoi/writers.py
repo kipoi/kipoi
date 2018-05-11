@@ -19,7 +19,6 @@ from kipoi.components import MetadataType
 
 
 class BatchWriter(object):
-
     @abstractmethod
     def batch_write(self, batch):
         """Write a single batch of data
@@ -35,11 +34,11 @@ class BatchWriter(object):
         """
         pass
 
+
 # --------------------------------------------
 
 
 class TsvBatchWriter(BatchWriter):
-
     def __init__(self,
                  file_path,
                  nested_sep="/"):
@@ -69,7 +68,6 @@ class TsvBatchWriter(BatchWriter):
 
 
 class BedBatchWriter(BatchWriter):
-
     def __init__(self,
                  file_path,
                  metadata_schema,
@@ -105,7 +103,7 @@ class BedBatchWriter(BatchWriter):
 
         bed_cols = ["chr", "start", "end", "id", "score", "strand"]
         cols = [os.path.join(self.ranges_key, x) for x in bed_cols] + \
-            sorted([x for x in fbatch if x.startswith("preds/")])
+               sorted([x for x in fbatch if x.startswith("preds/")])
         df = pd.DataFrame(fbatch)[cols]
         df.rename(columns={os.path.join(self.ranges_key, bc): bc for bc in bed_cols}, inplace=True)
         df.rename(columns={"id": "name"}, inplace=True)
@@ -121,7 +119,6 @@ class BedBatchWriter(BatchWriter):
 
 
 class HDF5BatchWriter(BatchWriter):
-
     def __init__(self, file_path,
                  chunk_size=10000,
                  compression='gzip'):
@@ -167,11 +164,11 @@ class HDF5BatchWriter(BatchWriter):
                     dtype = fbatch[k].dtype
 
                 self.f.create_dataset(k,
-                                      shape=(0, ) + fbatch[k].shape[1:],
+                                      shape=(0,) + fbatch[k].shape[1:],
                                       dtype=dtype,
-                                      maxshape=(None, ) + fbatch[k].shape[1:],
+                                      maxshape=(None,) + fbatch[k].shape[1:],
                                       compression=self.compression,
-                                      chunks=(self.chunk_size, ) + fbatch[k].shape[1:])
+                                      chunks=(self.chunk_size,) + fbatch[k].shape[1:])
             self.first_pass = False
         # add data to the buffer
         if self.write_buffer is None:
@@ -207,6 +204,7 @@ class HDF5BatchWriter(BatchWriter):
     def dump(cls, file_path, batch):
         cls(file_path=file_path).batch_write(batch).close()
 
+
 # Nice-to-have writers:
 # - parquet
 # - zarr, bcolz <-> xarray
@@ -219,7 +217,6 @@ FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
 
 
 class RegionWriter(object):
-
     @abstractmethod
     def region_write(self, region, data):
         """Write a single batch of data
@@ -239,7 +236,6 @@ class RegionWriter(object):
 
 
 class BedGraphWriter(RegionWriter):
-
     def __init__(self,
                  file_path):
         """
@@ -258,6 +254,7 @@ class BedGraphWriter(RegionWriter):
         :param data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
             data.sum(axis=1) is performed on it first.
         """
+
         def get_el(obj):
             if isinstance(obj, np.ndarray):
                 assert len(data.shape) == 1
@@ -265,6 +262,7 @@ class BedGraphWriter(RegionWriter):
                 assert len(obj) == 1
                 return obj[0]
             return obj
+
         chr = get_el(region["chr"])
         start = int(get_el(region["start"]))
         end = int(get_el(region["end"]))
@@ -273,7 +271,7 @@ class BedGraphWriter(RegionWriter):
             data = data.sum(axis=1)
         assert len(data.shape) == 1
         for zero_pos, value in zip(range(start, end), data):
-            self.write_entry(chr, zero_pos, zero_pos+1, value)
+            self.write_entry(chr, zero_pos, zero_pos + 1, value)
 
     def write_entry(self, chr, start, end, value):
         tokens = [chr, start, end, value]
@@ -282,8 +280,8 @@ class BedGraphWriter(RegionWriter):
     def close(self):
         self.file.close()
 
-class BigWigWriter(RegionWriter):
 
+class BigWigWriter(RegionWriter):
     def __init__(self,
                  file_path):
         """
@@ -294,7 +292,7 @@ class BigWigWriter(RegionWriter):
         import tempfile
         self.temp_bedgraph_path = tempfile.mkstemp()[1]
         self.file_path = file_path
-        self.bgw = BedGraphWriter(file_path = self.temp_bedgraph_path)
+        self.bgw = BedGraphWriter(file_path=self.temp_bedgraph_path)
         raise Exception("BigWigWriter is not functional due to a Segmentation fault when trying to write to a file.")
 
     def region_write(self, region, data):
@@ -321,9 +319,3 @@ class BigWigWriter(RegionWriter):
                 bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])
 
         bw.close()
-
-
-
-
-
-

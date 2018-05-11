@@ -72,6 +72,7 @@ def test_prediction_io():
         def __init__(self, original_input):
             super(checking_model, self).__init__()
             self.original_input = original_input
+
         #
 
         def forward(self, *args, **kwargs):
@@ -134,6 +135,7 @@ class PyTConvNet(torch.nn.Module):
         return self.fc.forward(x)
 """
 
+
 def get_pyt_sequential_model_input():
     np.random.seed(1)
     return np.random.rand(3, 1, 10)
@@ -195,12 +197,13 @@ def dummy_model_bf():
     return dummy_model
 
 
-def get_dummy_multi_input(kind = "list"):
+def get_dummy_multi_input(kind="list"):
     np.random.seed(1)
     if kind == "list":
         return [np.random.rand(20, 1), np.random.rand(20, 1)]
     elif kind == "dict":
         return {"FirstInput": np.random.rand(20, 1), "SecondInput": np.random.rand(20, 1)}
+
 
 def dummy_multi_input_bf():
     import torch
@@ -213,21 +216,18 @@ def dummy_multi_input_bf():
             self.first = nn.Linear(1, 1)
             self.second = nn.Linear(1, 1)
             self.final = nn.Sigmoid()
+
         def forward(self, FirstInput, SecondInput):
             x_1 = self.first(FirstInput)
             x_2 = self.first(SecondInput)
             x = self.second(torch.cat((x_1, x_2), 0))
             x = self.final(x)
             return x
+
     #
     dummy_model = DummyMultiInput().double()
     dummy_model.eval()
     return dummy_model
-
-
-
-
-
 
 
 def get_pyt_complex_model_input():
@@ -256,6 +256,7 @@ def pyt_complex_model_bf():
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
             return x
+
     return PyTNet().double()
 
 
@@ -283,6 +284,7 @@ def test_predict_activation_on_batch():
         acts = dummy_model.predict_activation_on_batch(get_dummy_model_input(),
                                                        layer="final", pre_nonlinearity=True)
 
+
 def test_gradients():
     import kipoi
     dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
@@ -303,7 +305,7 @@ def test_returned_gradient_fmt():
     # try first whether the prediction actually works..
     sample_input = get_dummy_multi_input("list")
     grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", wrt_layer="second",
-                                   selected_fwd_node=None)
+                                            selected_fwd_node=None)
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
     sample_input = get_dummy_multi_input("dict")
@@ -320,9 +322,11 @@ def test_gradients_functions():
     sample_input = get_dummy_multi_input("dict")
     multi_input_model.input_grad(sample_input, avg_func="max", wrt_layer="first", selected_fwd_node=None)
 
+
 class DummySlice():
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         return key
+
 
 def test_grad_tens_generation():
     model = kipoi.model.PyTorchModel(build_fn=pyt_sequential_model_bf, auto_use_cuda=True)

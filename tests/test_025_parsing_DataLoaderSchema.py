@@ -8,7 +8,6 @@ from related import from_yaml
 # Class to test
 CLS = DataLoaderSchema
 
-
 # common header
 inp_targ = """
 inputs:
@@ -55,7 +54,6 @@ metadata:
             - doc: this is another array here
               type: GenomicRanges
 """]
-
 
 BAD_EXAMPLES = ["""
 metadata:

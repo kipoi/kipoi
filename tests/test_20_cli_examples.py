@@ -37,7 +37,7 @@ def test_test_example(example):
     """kipoi test ...
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
-       and sys.version_info[0] == 2:
+            and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
     example_dir = "examples/{0}".format(example)
@@ -97,16 +97,16 @@ def test_predict_example(example, tmpdir):
     """
     # TODO - test -out
     # Traceback (most recent call last):
-#   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 60, in <module>
-#     main()
-#   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 56, in main
-#     command_fn(args.command, sys.argv[2:])
-#   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/pipeline.py", line 273, in cli_predict
-#     pred_batch = model.predict_on_batch(batch['inputs'])
-#   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/model.py", line 22, in predict_on_batch
-#     raise NotImplementedError
-# NotImplementedError
-# _________________________
+    #   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 60, in <module>
+    #     main()
+    #   File "/home/avsec/projects-work/kipoi/kipoi/__main__.py", line 56, in main
+    #     command_fn(args.command, sys.argv[2:])
+    #   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/pipeline.py", line 273, in cli_predict
+    #     pred_batch = model.predict_on_batch(batch['inputs'])
+    #   File "/home/avsec/bin/anaconda3/lib/python3.6/site-packages/kipoi/model.py", line 22, in predict_on_batch
+    #     raise NotImplementedError
+    # NotImplementedError
+    # _________________________
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
@@ -283,7 +283,10 @@ def test_generate_mutation_maps_example(example, tmpdir):
     mm_tmpfile = str(tmpdir_here.join("out_mm.hdf5"))
     plt_tmpfile = str(tmpdir_here.join("plot.png"))
 
-    dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa", "preproc_transformer": "dataloader_files/encodeSplines.pkl", "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz", "intervals_file": "example_files/variant_intervals.tsv"}
+    dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa",
+                         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+                         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+                         "intervals_file": "example_files/variant_intervals.tsv"}
     import json
     dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -355,6 +358,7 @@ def test_parse_filter_slice():
     with pytest.raises(Exception):
         parse_filter_slice("[:::2]")
 
+
 @pytest.mark.parametrize("example", list(predict_activation_layers))
 def test_grad_predict_example(example):
     """kipoi postproc grad ...
@@ -376,7 +380,7 @@ def test_grad_predict_example(example):
                 "--batch_size=4",
                 "--dataloader_args=test.json",
                 "--output", tmpfile]
-        layer_args = ["--layer", predict_activation_layers[example],]
+        layer_args = ["--layer", predict_activation_layers[example], ]
         final_layer_arg = ["--final_layer"]
 
         if INSTALL_FLAG:
@@ -393,10 +397,10 @@ def test_grad_predict_example(example):
                 assert {'metadata', 'preds', 'inputs'} <= set(data.keys())
                 # Here we can attempt to write a bedgraph file:
                 bg_args = ["python", os.path.abspath("./kipoi/__main__.py"), "postproc", "gr_inp_to_file",
-                        "../",  # directory
-                        "--source=dir",
-                        '--output', bedgraph_temp_file,
-                        "--input_file", tmpfile]
+                           "../",  # directory
+                           "--source=dir",
+                           '--output', bedgraph_temp_file,
+                           "--input_file", tmpfile]
                 if grad_inputs[example] is not None:
                     bg_args += ["--model_input", grad_inputs[example]]
                 returncode = subprocess.call(args=bg_args,
@@ -414,10 +418,10 @@ def test_grad_predict_example(example):
                                       data.columns.str.replace("inputs/", "preds/").values[inputs_columns]))
                 other_cols = data.columns.values[~(preds_columns | inputs_columns)]
                 expected = ['metadata/ranges/chr',
-                          'metadata/ranges/end',
-                          'metadata/ranges/id',
-                          'metadata/ranges/start',
-                          'metadata/ranges/strand']
+                            'metadata/ranges/end',
+                            'metadata/ranges/id',
+                            'metadata/ranges/start',
+                            'metadata/ranges/strand']
                 assert np.all(np.in1d(expected, other_cols))
 
             os.unlink(tmpfile)

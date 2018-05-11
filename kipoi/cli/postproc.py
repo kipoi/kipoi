@@ -151,7 +151,7 @@ def get_avail_scoring_methods(model):
 def _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs):
     # get the scoring methods according to the model definition
     avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, \
-        default_scoring_fns = get_avail_scoring_methods(model)
+    default_scoring_fns = get_avail_scoring_methods(model)
 
     errmsg_scoring_kwargs = "When defining `--scoring_kwargs` a JSON representation of arguments (or the path of a" \
                             " file containing them) must be given for every `--scoring` function."
@@ -237,7 +237,7 @@ def cli_score_variants(command, raw_args):
                         help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-o', '--output', required=False,
                         help="Additional output file. File format is inferred from the file path ending" +
-                        ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
+                             ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
     parser.add_argument('-s', "--scoring", default="diff", nargs="+",
                         help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
                              "available except for `diff` which is always available. Select scoring function by the"
@@ -370,6 +370,7 @@ def isint(qstr):
     import re
     return bool(re.match("^[0-9]+$", qstr))
 
+
 # Parse the slice
 def parse_filter_slice(in_str):
     if in_str.startswith("(") or in_str.startswith("["):
@@ -422,18 +423,18 @@ def cli_grad(command, raw_args):
                              "function. If a non-linear activation function is used attempt to use its input. This "
                              "feature is not available for all models.", action='store_true')
     parser.add_argument("-f", "--filter_ind",
-                        help="Filter index that should be inspected with gradients. If not set all filters will "+
+                        help="Filter index that should be inspected with gradients. If not set all filters will " +
                              "be used.", default=None)
     parser.add_argument("-a", "--avg_func",
-                        help="Averaging function to be applied across selected filters (`--filter_ind`) in "+
-                        "layer `--layer`.", choices = GradientMixin.allowed_functions, default="sum")
+                        help="Averaging function to be applied across selected filters (`--filter_ind`) in " +
+                             "layer `--layer`.", choices=GradientMixin.allowed_functions, default="sum")
     parser.add_argument('--selected_fwd_node', help="If the selected layer has multiple inbound connections in "
-                                                          "the graph then those can be selected here with an integer "
-                                                          "index. Not necessarily supported by all models.",
+                                                    "the graph then those can be selected here with an integer "
+                                                    "index. Not necessarily supported by all models.",
                         default=None, type=int)
     parser.add_argument('-o', '--output', required=True, nargs="+",
                         help="Output files. File format is inferred from the file path ending. Available file formats are: " +
-                        ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
+                             ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
     args = parser.parse_args(raw_args)
 
     dataloader_kwargs = parse_json_file_str(args.dataloader_args)
@@ -461,7 +462,7 @@ def cli_grad(command, raw_args):
                         "`--final_layer` flag.")
 
     # Not a good idea
-    #if layer is not None and isint(layer):
+    # if layer is not None and isint(layer):
     #    logger.warn("Interpreting `--layer` value as integer layer index!")
     #    layer = int(args.layer)
 
@@ -515,8 +516,8 @@ def cli_grad(command, raw_args):
         # make the prediction
         pred_batch = model.input_grad(batch['inputs'], filter_ind=filter_ind_parsed,
                                       avg_func=args.avg_func, wrt_layer=layer, wrt_final_layer=args.final_layer,
-                                      selected_fwd_node = args.selected_fwd_node,
-                                      pre_nonlinearity = args.pre_nonlinearity)
+                                      selected_fwd_node=args.selected_fwd_node,
+                                      pre_nonlinearity=args.pre_nonlinearity)
 
         # write out the predictions, metadata (, inputs, targets)
         # always keep the inputs so that input*grad can be generated!
@@ -563,7 +564,7 @@ def cli_grad_to_file(command, raw_args):
 
     logger.info('Loading gradient results file and model info...')
 
-    gp = GradPlotter.from_hdf5(args.input_file, model = args.model, source=args.source)
+    gp = GradPlotter.from_hdf5(args.input_file, model=args.model, source=args.source)
 
     if args.input_line is not None:
         samples = [args.input_line]
@@ -576,7 +577,6 @@ def cli_grad_to_file(command, raw_args):
         raise Exception("Output file format not supported!")
 
     logger.info('Writing...')
-
 
     for sample in samples:
         gp.write(sample, model_input=args.model_input, writer_obj=of_obj)

@@ -21,10 +21,7 @@ from kipoi.postprocessing.variant_effects import mutation_map as mm
 from kipoi.postprocessing.variant_effects import snv_predict as sp
 
 
-
-
 class DummyModelInfo(object):
-
     def __init__(self, seq_length):
         self.seq_length = seq_length
 
@@ -37,7 +34,6 @@ class dummy_container(object):
 
 
 class Dummy_internval:
-
     def __init__(self):
         self.storage = {"chrom": [], "start": [], "end": [], "id": []}
 
@@ -77,7 +73,8 @@ def test__overlap_bedtools_region():
     ins = [True, True, False]
     for start, end, isin in zip(starts, ends, ins):
         regions = dict(start=[start], end=[end], chr=["chr22"])
-        bed_regions, contained_regions = kipoi.postprocessing.variant_effects.mutation_map._overlap_bedtools_region(bobj, regions)
+        bed_regions, contained_regions = kipoi.postprocessing.variant_effects.mutation_map._overlap_bedtools_region(
+            bobj, regions)
         if isin:
             assert len(bed_regions) == 1
             assert contained_regions == [0]
@@ -136,6 +133,7 @@ def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_
             id = vcf_id_generator_fn(record)
             for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
                 int_write_fn(chrom=chrom, start=start, end=end, id=id)
+
 
 # greatly simplify this one:
 # Check that batching works
@@ -262,8 +260,9 @@ def test__generate_seq_sets_mutmap_iter():
             req_cols = ['alt', 'ref_rc', 'ref', 'alt_rc']
             assert np.all(np.in1d(req_cols, list(ss_batch.keys())))
         # using bed input
-        bed_obj = BedTool("chr22 %d %d" % (annotated_regions["start"].values[0] - 1, annotated_regions["end"].values[0]),
-                          from_string=True).tabix()
+        bed_obj = BedTool(
+            "chr22 %d %d" % (annotated_regions["start"].values[0] - 1, annotated_regions["end"].values[0]),
+            from_string=True).tabix()
         eval_kwargs_iter = mm._generate_seq_sets_mutmap_iter(dataloader.output_schema, model_input,
                                                              seq_to_mut=seq_to_mut,
                                                              seq_to_meta=seq_to_meta,
@@ -286,6 +285,7 @@ def test_OneHotSeqExtractor():
         for i, char in enumerate(seq):
             X[i, BASES.index(char.upper())] = 1
         return X
+
     seqs = ["ACTGTCTATA"] * 2
     one_hot = np.array([onehot(seq) for seq in seqs])
     one_hot[1, ...] = one_hot[1, ::-1, ::-1]
@@ -389,8 +389,8 @@ def test_MutationMapDataMerger():
                     assert all([k in exp_entries for k in mm_obj])
                     assert len(mm_obj) == len(exp_entries)
                     # This only works when als ref/ref mutations are taken into account
-                    #retval = np.reshape(pred_proto[model_output].loc[np.array(process_line)==i], (seq_len, 4)).T
-                    #assert np.all(mm_obj['mutation_map'] == retval)
+                    # retval = np.reshape(pred_proto[model_output].loc[np.array(process_line)==i], (seq_len, 4)).T
+                    # assert np.all(mm_obj['mutation_map'] == retval)
                     assert mm_obj['ref_seq'] == rseq[i]
                     assert mm_obj['ovlp_var']['varpos_rel'][0] == seq_len // 2 - 1
                     assert all([mm_obj['metadata_region'][k] == gr_meta["ranges"][k][i]

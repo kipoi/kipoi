@@ -4,6 +4,8 @@ import pytest
 import os
 import numpy as np
 from kipoi.model import TensorFlowModel
+
+
 # fixture
 
 
@@ -72,8 +74,9 @@ def test_loading():
     o = a.predict_on_batch(np.ones((3, 4)))
     assert o.shape == (3, 3)
 
+
 class DummySlice():
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         return key
 
 
@@ -90,7 +93,7 @@ def test_grad_tens_generation():
     assert np.all(a.get_grad_tens(fwd_values, DummySlice()[:, 0:2], "max")[0, :] == np.array([0, 1, 0]))
     assert np.all(
         a.get_grad_tens(fwd_values, DummySlice()[0:2], "max")[0, :] == a.get_grad_tens(fwd_values, DummySlice()[:, 0:2],
-                                                                                   "max")[0, :])
+                                                                                       "max")[0, :])
 
 
 def test_activation_on_batch():
