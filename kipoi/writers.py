@@ -241,27 +241,89 @@ class RegionWriter(object):
 class BedGraphWriter(RegionWriter):
 
     def __init__(self,
-                 file_path,
-                 header=True):
+                 file_path):
         """
 
         Args:
-          file_path (str): File path of the output tsv file
-          dataloader_schema: Schema of the dataloader. Used to find the ranges object
-          nested_sep: What separator to use for flattening the nested dictionary structure
-            into a single key
+          file_path (str): File path of the output bedgraph file
         """
         self.file_path = file_path
         self.file = open(file_path, "w")
 
     def region_write(self, region, data):
-        assert data.shape[0] == region["end"][0] - region["start"][0]
+        """
+        Write region to file.
+        :param region: Defines the region that will be written position by position. A dict of e.g.: {"chr":"chr1",
+            "start":0, "end":4}
+        :param data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
+            data.sum(axis=1) is performed on it first.
+        """
+        def get_el(obj):
+            if isinstance(obj, np.ndarray):
+                assert len(data.shape) == 1
+            if isinstance(obj, list) or isinstance(obj, np.ndarray):
+                assert len(obj) == 1
+                return obj[0]
+            return obj
+        chr = get_el(region["chr"])
+        start = int(get_el(region["start"]))
+        end = int(get_el(region["end"]))
+        assert data.shape[0] == end - start
         if len(data.shape) == 2:
             data = data.sum(axis=1)
         assert len(data.shape) == 1
-        for zero_pos, value in zip(range(region["start"][0], region["end"][0]), data):
-            self.file.write("\t".join([region["chr"][0], str(zero_pos), str(zero_pos+1), value])+"\n")
+        for zero_pos, value in zip(range(start, end), data):
+            self.write_entry(chr, zero_pos, zero_pos+1, value)
+
+    def write_entry(self, chr, start, end, value):
+        tokens = [chr, start, end, value]
+        self.file.write("\t".join([str(el) for el in tokens]) + "\n")
 
     def close(self):
         self.file.close()
+
+class BigWigWriter(RegionWriter):
+
+    def __init__(self,
+                 file_path):
+        """
+        BigWig entries have to be sorted so the generated values are cached in a bedgraph file.
+        Args:
+          file_path (str): File path of the output tsv file
+        """
+        import tempfile
+        self.temp_bedgraph_path = tempfile.mkstemp()[1]
+        self.file_path = file_path
+        self.bgw = BedGraphWriter(file_path = self.temp_bedgraph_path)
+        raise Exception("BigWigWriter is not functional due to a Segmentation fault when trying to write to a file.")
+
+    def region_write(self, region, data):
+        self.bgw.region_write(region, data)
+
+    def write_entry(self, chr, start, end, value):
+        self.bgw.write_entry(chr, start, end, value)
+
+    def close(self):
+        from pybedtools import BedTool
+        import pyBigWig
+        import pdb
+        pdb.set_trace()
+        # close the temp file
+        self.bgw.close()
+        # sort the tempfile and get the path of the sorted file
+        sorted_fn = BedTool(self.temp_bedgraph_path).sort().fn
+        # write the bigwig file
+        bw = pyBigWig.open(self.file_path, "w")
+
+        with open(sorted_fn, "r") as ifh:
+            for l in ifh:
+                chr, start, end, val = l.rstrip().split("\t")
+                bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])
+
+        bw.close()
+
+
+
+
+
 

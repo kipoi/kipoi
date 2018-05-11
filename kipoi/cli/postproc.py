@@ -366,13 +366,12 @@ def cli_score_variants(command, raw_args):
     logger.info('Successfully predicted samples')
 
 
+def isint(qstr):
+    import re
+    return bool(re.match("^[0-9]+$", qstr))
 
 # Parse the slice
 def parse_filter_slice(in_str):
-    import re
-    def isint(qstr):
-        return bool(re.match("^[0-9]+$", qstr))
-
     if in_str.startswith("(") or in_str.startswith("["):
         in_str_els = in_str.lstrip("([").rstrip(")]").split(",")
         slices = []
@@ -402,7 +401,7 @@ def cli_grad(command, raw_args):
     assert command == "grad"
     from tqdm import tqdm
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
-                                     description='Calculate gradients.')
+                                     description='Save gradients and inputs to a hdf5 file.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
     parser.add_argument('--batch_size', type=int, default=32,
@@ -411,10 +410,17 @@ def cli_grad(command, raw_args):
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-i", "--install_req", action='store_true',
                         help="Install required packages from requirements.txt")
-    parser.add_argument("-l", "--layer",
+    parser.add_argument("-l", "--layer", default=None,
                         help="Which output layer to use to make the predictions. If specified," +
                              "`model.predict_activation_on_batch` will be invoked instead of `model.predict_on_batch`",
-                        required = True)
+                        required=False)
+    parser.add_argument("--final_layer",
+                        help="Alternatively to `--layer` this flag can be used to indicate that the last layer should "
+                             "be used.", action='store_true')
+    parser.add_argument("--pre_nonlinearity",
+                        help="Flag indicating that it should checked whether the selected output is post activation "
+                             "function. If a non-linear activation function is used attempt to use its input. This "
+                             "feature is not available for all models.", action='store_true')
     parser.add_argument("-f", "--filter_ind",
                         help="Filter index that should be inspected with gradients. If not set all filters will "+
                              "be used.", default=None)
@@ -448,6 +454,18 @@ def cli_grad(command, raw_args):
         kipoi.pipeline.install_model_requirements(args.model,
                                                   args.source,
                                                   and_dataloaders=True)
+
+    layer = args.layer
+    if layer is None and not args.final_layer:
+        raise Exception("A layer has to be selected explicitely using `--layer` or implicitely by using the"
+                        "`--final_layer` flag.")
+
+    # Not a good idea
+    #if layer is not None and isint(layer):
+    #    logger.warn("Interpreting `--layer` value as integer layer index!")
+    #    layer = int(args.layer)
+
+
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 
@@ -496,8 +514,9 @@ def cli_grad(command, raw_args):
 
         # make the prediction
         pred_batch = model.input_grad(batch['inputs'], filter_ind=filter_ind_parsed,
-                                      avg_func=args.avg_func, wrt_layer=args.layer, wrt_final_layer=False,
-                                      selected_fwd_node = args.selected_fwd_node)
+                                      avg_func=args.avg_func, wrt_layer=layer, wrt_final_layer=args.final_layer,
+                                      selected_fwd_node = args.selected_fwd_node,
+                                      pre_nonlinearity = args.pre_nonlinearity)
 
         # write out the predictions, metadata (, inputs, targets)
         # always keep the inputs so that input*grad can be generated!
@@ -508,6 +527,65 @@ def cli_grad(command, raw_args):
     for writer in use_writers:
         writer.close()
     logger.info('Done! Gradients stored in {0}'.format(",".join(args.output)))
+
+
+def cli_grad_to_file(command, raw_args):
+    """ CLI to save seq inputs of grad*input to a bigwig file
+    """
+    assert command == "gr_inp_to_file"
+    parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
+                                     description='Save grad*input in a file.')
+    add_model(parser)
+    add_dataloader(parser, with_args=True)
+    # TODO - rename path to fpath
+    parser.add_argument('-f', '--input_file', required=False,
+                        help="Input HDF5 file produced from `grad`")
+    parser.add_argument('-o', '--output', required=False,
+                        help="Output bigwig for bedgraph file")
+    parser.add_argument('--input_line', required=False, type=int, default=None,
+                        help="Input line for which the BigWig file should be generated. If not defined all"
+                             "samples will be written.")
+    parser.add_argument('--model_input', required=False, default=None,
+                        help="Model input name to be used for plotting. As defined in model.yaml. Can be omitted if"
+                             "model only has one input.")
+    args = parser.parse_args(raw_args)
+
+    # Check that all the folders exist
+    dir_exists(os.path.dirname(args.output), logger)
+    # --------------------------------------------
+    # install args
+    import matplotlib.pyplot
+    matplotlib.pyplot.switch_backend('agg')
+    import matplotlib.pylab as plt
+    from kipoi.postprocessing.variant_effects.mutation_map import MutationMapPlotter
+    from kipoi.postprocessing.gradient_vis.vis import GradPlotter
+    from kipoi.writers import BedGraphWriter
+
+    logger.info('Loading gradient results file and model info...')
+
+    gp = GradPlotter.from_hdf5(args.input_file, model = args.model, source=args.source)
+
+    if args.input_line is not None:
+        samples = [args.input_line]
+    else:
+        samples = list(range(gp.get_num_samples(args.model_input)))
+
+    if args.output.endswith(".bed") or args.output.endswith(".bedgraph"):
+        of_obj = BedGraphWriter(args.output)
+    else:
+        raise Exception("Output file format not supported!")
+
+    logger.info('Writing...')
+
+
+    for sample in samples:
+        gp.write(sample, model_input=args.model_input, writer_obj=of_obj)
+
+    logger.info('Saving...')
+
+    of_obj.close()
+
+    logger.info('Successfully wrote grad*input to file.')
 
 
 def cli_create_mutation_map(command, raw_args):
@@ -629,7 +707,7 @@ def cli_plot_mutation_map(command, raw_args):
     """
     assert command == "plot_mutation_map"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
-                                     description='Predict effect of SNVs using ISM.')
+                                     description='Plot mutation map in a file.')
     add_model(parser)
     add_dataloader(parser, with_args=True)
     # TODO - rename path to fpath
@@ -680,7 +758,8 @@ command_functions = {
     'score_variants': cli_score_variants,
     'grad': cli_grad,
     'create_mutation_map': cli_create_mutation_map,
-    'plot_mutation_map': cli_plot_mutation_map
+    'plot_mutation_map': cli_plot_mutation_map,
+    'gr_inp_to_file': cli_grad_to_file
 }
 commands_str = ', '.join(command_functions.keys())
 
@@ -690,6 +769,8 @@ parser = argparse.ArgumentParser(
 
     # Available sub-commands:
     score_variants   Score variants with a kipoi model
+    grad             Save gradients and inputs to a hdf5 file
+    gr_inp_to_file   Save grad*input in a file.
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 

@@ -166,6 +166,11 @@ def test_activation_function_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
     #
+    import keras
+    backend = keras.backend._BACKEND
+    if backend == 'theano' and example == "rbp":
+        pytest.skip("extended_coda example not with theano ")
+    #
     example_dir = "examples/{0}".format(example)
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
@@ -200,23 +205,26 @@ def test_activation_function_model(example):
 
 
 def test_keras_get_layers_and_outputs():
+    import keras
+    backend = keras.backend._BACKEND
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs("shared_lstm")
     assert len(selected_layers) == 1
     assert selected_layers[0].name == "shared_lstm"
     assert len(sel_outputs) == 2
     assert len(sel_output_dims) == 2
-    with pytest.raises(Exception):  # expect exception
-        # LSTM activation layer has non-trivial input
-        selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs("shared_lstm",
+    if backend != 'theano':
+        with pytest.raises(Exception):  # expect exception
+            # LSTM activation layer has non-trivial input
+            selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs("shared_lstm",
+                                                                                         pre_nonlinearity=True)
+        selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
                                                                                      pre_nonlinearity=True)
-    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
-                                                                                 pre_nonlinearity=True)
-    assert len(selected_layers) == 1
-    assert selected_layers[0].name == "final_layer"
-    assert len(sel_outputs) == 1
-    assert sel_outputs[0] != selected_layers[0].output
-    assert len(sel_output_dims) == 1
+        assert len(selected_layers) == 1
+        assert selected_layers[0].name == "final_layer"
+        assert len(sel_outputs) == 1
+        assert sel_outputs[0] != selected_layers[0].output
+        assert len(sel_output_dims) == 1
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
                                                                                  pre_nonlinearity=False)
     assert len(selected_layers) == 1
@@ -231,13 +239,14 @@ def test_keras_get_layers_and_outputs():
     assert selected_layers[0].name == "hidden"
     assert len(sel_outputs) == 1
     assert len(sel_output_dims) == 1
-    selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
-                                                                                 pre_nonlinearity=True)
-    assert len(selected_layers) == 1
-    assert selected_layers[0].name == "final"
-    assert len(sel_outputs) == 1
-    assert sel_outputs[0] != selected_layers[0].output
-    assert len(sel_output_dims) == 1
+    if backend != 'theano':
+        selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
+                                                                                     pre_nonlinearity=True)
+        assert len(selected_layers) == 1
+        assert selected_layers[0].name == "final"
+        assert len(sel_outputs) == 1
+        assert sel_outputs[0] != selected_layers[0].output
+        assert len(sel_output_dims) == 1
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(use_final_layer=True,
                                                                                  pre_nonlinearity=False)
     assert len(selected_layers) == 1
@@ -248,22 +257,26 @@ def test_keras_get_layers_and_outputs():
 
 
 def test_generate_activation_output_functions():
+    import keras
+    backend = keras.backend._BACKEND
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     sample_input = get_sample_functional_model_input()
     act_fn = model._generate_activation_output_functions(layer="shared_lstm", pre_nonlinearity=False)
     act_fn(sample_input)
     act_fn_nl = model._generate_activation_output_functions(layer="final_layer", pre_nonlinearity=False)
     act_fn_nl(sample_input)
-    act_fn_l = model._generate_activation_output_functions(layer="final_layer", pre_nonlinearity=True)
-    act_fn_l(sample_input)
+    if backend != 'theano':
+        act_fn_l = model._generate_activation_output_functions(layer="final_layer", pre_nonlinearity=True)
+        act_fn_l(sample_input)
 
     # sequential model:
     model = kipoi.model.KerasModel(*get_sample_sequential_model())
     sample_input=get_sample_sequential_model_input()
     act_fn_nl = model._generate_activation_output_functions(layer="hidden", pre_nonlinearity=False)
     act_fn_nl(sample_input)
-    act_fn_l = model._generate_activation_output_functions(layer="hidden", pre_nonlinearity=True)
-    act_fn_l(sample_input)
+    if backend != 'theano':
+        act_fn_l = model._generate_activation_output_functions(layer="hidden", pre_nonlinearity=True)
+        act_fn_l(sample_input)
 
 def test_single_layer_gradient():
     model = kipoi.model.KerasModel(*get_single_layer_model())
@@ -278,6 +291,11 @@ def test_gradient_function_model(example):
     """
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
+
+    import keras
+    backend = keras.backend._BACKEND
+    if backend == 'theano' and example == "rbp":
+        pytest.skip("extended_coda example not with theano ")
     #
     example_dir = "examples/{0}".format(example)
     # install the dependencies
@@ -306,7 +324,10 @@ def test_gradient_function_model(example):
         batch = next(it)
         # predict with a model
         model.predict_on_batch(batch["inputs"])
-        model.input_grad(batch["inputs"], Slice_conv()[:, 0])
+        if backend != 'theano':
+            model.input_grad(batch["inputs"], Slice_conv()[:, 0], pre_nonlinearity=True)
+        model.input_grad(batch["inputs"], Slice_conv()[:, 0], pre_nonlinearity=False)
+        model.input_grad(batch["inputs"], 0, pre_nonlinearity=False) # same as Slice_conv()[:, 0]
         model.input_grad(batch["inputs"], avg_func = "sum")
         # if example == "rbp":
         #    model._input_grad(batch["inputs"], -1, Slice_conv()[:, 0])
@@ -325,25 +346,31 @@ def check_grad(input, grad):
 
 def test__get_gradient_function():
     import keras.backend as K
+    import keras
+    backend = keras.backend._BACKEND
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     with pytest.raises(Exception):# expect exception
         grad_fn = model._get_gradient_function(use_final_layer = True)
     sample_input=get_sample_functional_model_input()
-    grad_fn = model._get_gradient_function(use_final_layer = True, filter_slices = 0)
-    check_grad(sample_input, grad_fn(sample_input))
-    grad_fn = model._get_gradient_function(use_final_layer = False, layer = "shared_lstm", filter_slices = 0)
-    check_grad(sample_input, grad_fn(sample_input))
+    if backend != 'theano':
+        # Theano models don't work without a filter_func
+        grad_fn = model._get_gradient_function(use_final_layer = True, filter_slices = 0)
+        check_grad(sample_input, grad_fn(sample_input))
+        grad_fn = model._get_gradient_function(use_final_layer = False, layer = "shared_lstm", filter_slices = 0)
+        check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer = True, filter_func = K.sum)
     check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer = False, layer = "shared_lstm", filter_func = K.sum)
     check_grad(sample_input, grad_fn(sample_input))
     # seqeuntial model:
     model = kipoi.model.KerasModel(*get_sample_sequential_model())
-    sample_input=get_sample_sequential_model_input()
-    grad_fn = model._get_gradient_function(use_final_layer = True, filter_slices = 0)
-    check_grad(sample_input, grad_fn(sample_input))
-    grad_fn = model._get_gradient_function(use_final_layer = False, layer = 2, filter_slices = 0)
-    check_grad(sample_input, grad_fn(sample_input))
+    sample_input = get_sample_sequential_model_input()
+    if backend != 'theano':
+        # Theano models don't work without a filter_func
+        grad_fn = model._get_gradient_function(use_final_layer = True, filter_slices = 0)
+        check_grad(sample_input, grad_fn(sample_input))
+        grad_fn = model._get_gradient_function(use_final_layer = False, layer = 2, filter_slices = 0)
+        check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer = True, filter_func = K.sum)
     check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer = False, layer = 2, filter_func = K.sum)

@@ -26,6 +26,12 @@ predict_activation_layers = {
     "pyt": "3"  # two before the last layer
 }
 
+grad_inputs = {
+    "rbp": "seq",
+    "pyt": None
+}
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example):
     """kipoi test ...
@@ -361,38 +367,57 @@ def test_grad_predict_example(example):
     for file_format in ["tsv", "hdf5"]:
         print(example)
         tmpfile = os.path.realpath(str("./grad_outputs.{0}".format(file_format)))
+        bedgraph_temp_file = os.path.realpath(str("./grad_x_input.bed"))
 
         # run the
         args = ["python", os.path.abspath("./kipoi/__main__.py"), "postproc", "grad",
                 "../",  # directory
                 "--source=dir",
                 "--batch_size=4",
-                "--layer", predict_activation_layers[example],
                 "--dataloader_args=test.json",
                 "--output", tmpfile]
+        layer_args = ["--layer", predict_activation_layers[example],]
+        final_layer_arg = ["--final_layer"]
+
         if INSTALL_FLAG:
             args.append(INSTALL_FLAG)
-        returncode = subprocess.call(args=args,
-                                     cwd=os.path.realpath(example_dir + "/example_files"))
-        assert returncode == 0
 
-        assert os.path.exists(tmpfile)
+        for la in [layer_args, final_layer_arg]:
+            returncode = subprocess.call(args=args + la, cwd=os.path.realpath(example_dir + "/example_files"))
+            assert returncode == 0
 
-        if file_format == "hdf5":
-            data = HDF5Reader.load(tmpfile)
-            assert {'metadata', 'preds', 'inputs'} <= set(data.keys())
-        else:
-            data = pd.read_csv(tmpfile, sep="\t")
-            inputs_columns = data.columns.str.contains("inputs/")
-            preds_columns = data.columns.str.contains("preds/")
-            assert np.all(np.in1d(data.columns.values[preds_columns],
-                                  data.columns.str.replace("inputs/", "preds/").values[inputs_columns]))
-            other_cols = data.columns.values[~(preds_columns | inputs_columns)]
-            expected = ['metadata/ranges/chr',
-                      'metadata/ranges/end',
-                      'metadata/ranges/id',
-                      'metadata/ranges/start',
-                      'metadata/ranges/strand']
-            assert np.all(np.in1d(expected, other_cols))
+            assert os.path.exists(tmpfile)
 
-        os.unlink(tmpfile)
+            if file_format == "hdf5":
+                data = HDF5Reader.load(tmpfile)
+                assert {'metadata', 'preds', 'inputs'} <= set(data.keys())
+                # Here we can attempt to write a bedgraph file:
+                bg_args = ["python", os.path.abspath("./kipoi/__main__.py"), "postproc", "gr_inp_to_file",
+                        "../",  # directory
+                        "--source=dir",
+                        '--output', bedgraph_temp_file,
+                        "--input_file", tmpfile]
+                if grad_inputs[example] is not None:
+                    bg_args += ["--model_input", grad_inputs[example]]
+                returncode = subprocess.call(args=bg_args,
+                                             cwd=os.path.realpath(example_dir + "/example_files"))
+
+                assert returncode == 0
+                assert os.path.exists(bedgraph_temp_file)
+                os.unlink(bedgraph_temp_file)
+
+            else:
+                data = pd.read_csv(tmpfile, sep="\t")
+                inputs_columns = data.columns.str.contains("inputs/")
+                preds_columns = data.columns.str.contains("preds/")
+                assert np.all(np.in1d(data.columns.values[preds_columns],
+                                      data.columns.str.replace("inputs/", "preds/").values[inputs_columns]))
+                other_cols = data.columns.values[~(preds_columns | inputs_columns)]
+                expected = ['metadata/ranges/chr',
+                          'metadata/ranges/end',
+                          'metadata/ranges/id',
+                          'metadata/ranges/start',
+                          'metadata/ranges/strand']
+                assert np.all(np.in1d(expected, other_cols))
+
+            os.unlink(tmpfile)

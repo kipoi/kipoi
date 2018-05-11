@@ -1,5 +1,6 @@
 """Test kipoi.writers
 """
+import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
 from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter
@@ -133,3 +134,25 @@ def test_BedBatchWriter(dl_batch, pred_batch_array, metadata_schema, tmpdir):
                                 'preds/1',
                                 'preds/2']
     assert list(df['name']) == [0, 1, 2, 0, 1, 2]
+
+
+
+def test_bigwigwriter():
+    from kipoi.writers import BigWigWriter
+    import pyBigWig
+    import tempfile
+    temp_path = tempfile.mkstemp()[1]
+    with pytest.raises(Exception):
+        bww = BigWigWriter(temp_path)
+        regions = {"chr":["chr1","chr7","chr2"], "start":[10,30,20], "end":[11,31,21]}
+        values = [3.0,4.0,45.4]
+        for i, val in enumerate(values):
+            reg = {k:v[i] for k,v in regions.items()}
+            bww.region_write(reg, np.array([val]))
+        bww.close()
+        bww_2 = pyBigWig(temp_path)
+        for i, val in enumerate(values):
+            reg = {k:v[i] for k,v in regions.items()}
+            bww.region_write(reg, [val])
+            assert bww_2.entries(reg["chr"], reg["start"], reg["end"])[0][2] == val
+

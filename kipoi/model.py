@@ -13,6 +13,7 @@ import json
 from .components import ModelDescription
 from .pipeline import Pipeline
 import logging
+from distutils.version import LooseVersion
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -156,7 +157,7 @@ class GradientMixin(object):
 
     @abc.abstractmethod
     def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
-                   selected_fwd_node = None):
+                   selected_fwd_node = None, pre_nonlinearity=False):
         """
         Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
         is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
@@ -168,8 +169,9 @@ class GradientMixin(object):
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
-            selected_fwd_node: None or integer. If a layer is re-used models may support that the gradient is 
-            calculated only with respect to one of the incoming edges / nodes. 
+            selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
         """
         raise NotImplementedError
 
@@ -243,7 +245,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         self.weights = weights
         self.arch = arch
 
-        self.final_layer_gradient_function = None
         self.gradient_functions = {}  # contains dictionaries with string reps of filter functions / slices
         self.activation_functions = {}  # contains the activation functions
 
@@ -344,8 +345,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                     new_output_ois.append(inp_here)
             else:
                 # TH
+                # As of the latest version of Theano this feature is not supported - the activation layer is too
+                # diffuse to be handeled here since Theano does not have objects for the activation.
+                raise Exception("`get_pre_activation_output` is not supported for Theano models!")
+                import theano
                 for inp_here in output.owner.inputs:
-                    new_output_ois.append(inp_here)
+                    if not isinstance(inp_here, theano.gof.Constant):
+                        new_output_ois.append(inp_here)
             if len(new_output_ois) > 1:
                 raise Exception("More than one input to activation function of selected layer. No general rule "
                                 "implemented for handing those cases. Consider using a linear activation function + a "
@@ -365,8 +371,22 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         else:
             raise Exception("No way to find out about number of inbound Nodes")
 
+    @staticmethod
+    def homogenize_filter_slices(filter_slices):
+        if isinstance(filter_slices, int):
+            filter_slices = (filter_slices,)
+        if isinstance(filter_slices, slice):
+            filter_slices = (filter_slices,)
+        if isinstance(filter_slices, list):
+            filter_slices = tuple(filter_slices)
+        if isinstance(filter_slices, tuple):
+            # Add a 0th dimension for samples if obviously missing, but no information about the actual dimensions
+            # is known!
+            if len(filter_slices) == 1:
+                filter_slices = tuple([slice(None)] + list(filter_slices))
+        return filter_slices
 
-    def _get_gradient_function(self, layer=None, use_final_layer = False, filter_slices=None,
+    def _get_gradient_function(self, layer=None, use_final_layer = False, pre_nonlinearity=False, filter_slices=None,
                                filter_func=None, filter_func_kwargs=None):
         """
         Get keras gradient function
@@ -385,27 +405,32 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Generate the gradient functions according to the layer / filter definition
         gradient_function = None
 
-
+        layer_label = layer
         # Try to use a previously generated gradient function
         if use_final_layer:
-            if self.final_layer_gradient_function is not None:
-                gradient_function = self.final_layer_gradient_function
-        elif layer is None:
+            layer_label = "_KIPOI_FINAL_"
+
+        if layer_label is None:
             raise Exception("Either `layer` must be defined or `use_final_layer` set to True.")
-        else:
-            if layer not in self.gradient_functions:
-                self.gradient_functions[layer] = {}
-            filter_id = str(filter_slices)
-            if filter_func is not None:
-                filter_id = str(filter_func) + ":" + str(filter_func_kwargs)
-            if filter_id in self.gradient_functions[layer]:
-                gradient_function = self.gradient_functions[layer][filter_id]
+
+        # Cannot query the layer output shape, so only if the slice is an integer or a list of length 1 it is
+        # clear that the batch dimension is missing
+        if filter_slices is not None:
+            filter_slices = self.homogenize_filter_slices(filter_slices)
+
+        if layer_label not in self.gradient_functions:
+            self.gradient_functions[layer_label] = {}
+        filter_id = str(filter_slices) + "_PNL_" + str(pre_nonlinearity)
+        if filter_func is not None:
+            filter_id = str(filter_func) + ":" + str(filter_func_kwargs) + ":"+filter_id
+        if filter_id in self.gradient_functions[layer_label]:
+            gradient_function = self.gradient_functions[layer_label][filter_id]
 
         if gradient_function is None:
             # model layer outputs wrt which the gradient shall be calculated
             selected_layers, sel_outputs, sel_output_dims = self.get_layers_and_outputs(layer = layer,
-                                                                                        use_final_layer=use_final_layer,
-                                                                                        pre_nonlinearity=use_final_layer)
+                                                                                    use_final_layer=use_final_layer,
+                                                                                    pre_nonlinearity=pre_nonlinearity)
 
             # copy the model input in case learning flag has to appended when using the gradient function.
             inp = copy.copy(self.model.inputs)
@@ -462,17 +487,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             gradient_function = K.function(inp, saliency)
 
             # store the generated gradient function:
-            if use_final_layer:
-                self.final_layer_gradient_function = gradient_function
-            else:
-                filter_id = str(filter_slices)
-                self.gradient_functions[layer][filter_id] = gradient_function
+            self.gradient_functions[layer_label][filter_id] = gradient_function
 
         return gradient_function
 
 
     def _input_grad(self, x, layer=None, use_final_layer = False, filter_slices=None,
-                    filter_func=None, filter_func_kwargs=None):
+                    filter_func=None, filter_func_kwargs=None, pre_nonlinearity = False):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
 
         # Arguments
@@ -483,10 +504,19 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         """
         import keras
         from keras import backend as K
+        feed_input_names = None
         if keras.__version__[0] == '1':
             from keras.engine.training import standardize_input_data as _standardize_input_data
-            x_standardized = _standardize_input_data(x, self.model.input_names,
-                                        self.model.internal_input_shapes)
+            if not self.model.built:
+                self.model.build()
+            iis = None
+            if hasattr(self.model, "internal_input_shapes"):
+                iis = self.model.internal_input_shapes
+            elif hasattr(self.model, "model") and hasattr(self.model.model, "internal_input_shapes"):
+                iis = self.model.model.internal_input_shapes
+            feed_input_names = self.model.input_names
+            x_standardized = _standardize_input_data(x, feed_input_names,
+                                                     iis)
         elif hasattr(keras.engine.training, "_standardize_input_data"):
             from keras.engine.training import _standardize_input_data
             if not hasattr(self.model, "_feed_input_names"):
@@ -495,7 +525,8 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             fis = None
             if hasattr(self.model, "_feed_input_shapes"):
                 fis = self.model._feed_input_shapes
-            x_standardized = _standardize_input_data(x, self.model._feed_input_names, fis)
+            feed_input_names = self.model._feed_input_names
+            x_standardized = _standardize_input_data(x, feed_input_names, fis)
         else:
             raise Exception("This Keras version is not supported!")
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
@@ -503,7 +534,8 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         else:
             ins = x_standardized
         gf = self._get_gradient_function(layer, use_final_layer= use_final_layer, filter_slices=filter_slices,
-                                         filter_func=filter_func, filter_func_kwargs=filter_func_kwargs)
+                                         filter_func=filter_func, filter_func_kwargs=filter_func_kwargs,
+                                         pre_nonlinearity = pre_nonlinearity)
         outputs = gf(ins)
 
         # re-format to how the input was:
@@ -516,13 +548,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         elif isinstance(x, dict):
             from collections import OrderedDict
             outputs_dict = OrderedDict()
-            for k, v in zip(self.model._feed_input_names, outputs):
+            for k, v in zip(feed_input_names, outputs):
                 outputs_dict[k] = v
             outputs = outputs_dict
         return outputs
 
     def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
-                   selected_fwd_node = None):
+                   selected_fwd_node = None, pre_nonlinearity=False):
         """
         Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
         is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
@@ -535,16 +567,21 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
             selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
         """
         import keras.backend as K
         _avg_funcs = {"sum": K.sum, "min": K.min, "max": K.max, "absmax": lambda x: K.max(K.abs(x))}
         if avg_func is not None:
             assert avg_func in _avg_funcs
             avg_func = _avg_funcs[avg_func]
+        else:
+            if K._BACKEND == "theano":
+                avg_func = _avg_funcs["sum"]
         if selected_fwd_node is not None:
             raise Exception("'selected_fwd_node' is currently not supported for Keras models!")
         return self._input_grad(x, layer=wrt_layer, filter_slices=filter_ind, use_final_layer = wrt_final_layer,
-                                filter_func=avg_func)
+                                filter_func=avg_func, pre_nonlinearity = pre_nonlinearity)
 
 
     def _generate_activation_output_functions(self, layer, pre_nonlinearity):
@@ -721,26 +758,42 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         pred, _ = self.np_run_pred(x)
         return self.pred_to_np(pred)
 
+    def numpy_to_torch(self, x, requires_grad=False):
+        import torch
+        if isinstance(x, np.ndarray):
+            # convert to a pytorch tensor and then to a pytorch variable
+            input = self._torch_var(torch.from_numpy(self.correct_neg_stride(x)), requires_grad)
+
+        elif isinstance(x, dict):
+            # convert all entries in the dict to pytorch variables
+            input = {k: self._torch_var(torch.from_numpy(self.correct_neg_stride(x[k])), requires_grad) for k in x}
+
+        elif isinstance(x, list):
+            # convert all entries in the list to pytorch variables
+            input = [self._torch_var(torch.from_numpy(self.correct_neg_stride(el)), requires_grad) for el in x]
+
+        else:
+            raise Exception("Input not supported!")
+
+        return input
+
     def np_run_pred(self, x, requires_grad=False):
         """
         Input dictionaries will be translated into **kwargs of the `model.forward(...)` call
         Input lists will be translated into *args of the `model.forward(...)` call
         Input np.ndarray will be used as the only argument in a `model.forward(...)` call
         """
-        import torch
+        input = self.numpy_to_torch(x, requires_grad=requires_grad)
         if isinstance(x, np.ndarray):
             # convert to a pytorch tensor and then to a pytorch variable
-            input = self._torch_var(torch.from_numpy(self.correct_neg_stride(x)), requires_grad)
             pred = self.model(input)
 
         elif isinstance(x, dict):
             # convert all entries in the dict to pytorch variables
-            input = {k: self._torch_var(torch.from_numpy(self.correct_neg_stride(x[k])), requires_grad) for k in x}
             pred = self.model(**input)
 
         elif isinstance(x, list):
             # convert all entries in the list to pytorch variables
-            input = [self._torch_var(torch.from_numpy(self.correct_neg_stride(el)), requires_grad) for el in x]
             pred = self.model(*input)
 
         else:
@@ -785,8 +838,12 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     @staticmethod
     def extract_module_id(trace_node_obj):
         import re
+        import torch
         sqb_restr = r"\[([A-Za-z0-9_]+)\]"
-        scopeName = trace_node_obj.scopeName()
+        if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
+            scopeName = trace_node_obj.scopeName()
+        else:
+            scopeName = trace_node_obj.node().scopeName()
         idx_name = ".".join([re.search(sqb_restr, grp).group(1) for grp in
                              scopeName.split("/") if re.search(sqb_restr, grp) is not None])
         return idx_name
@@ -808,7 +865,21 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def _get_trace(self, x):
         import torch
-        trace, _ = torch.jit.trace(self.model, args=x)
+        # Versions of Pytorch prior to '0.4.0':
+        if LooseVersion(torch.__version__) < LooseVersion('0.4.0') :
+            trace_fn = torch.jit.trace
+        else:
+            trace_fn = torch.jit.get_trace_graph
+
+        trace = None
+
+        if isinstance(x, np.ndarray):
+            trace, _ = trace_fn(self.model, args = (self.numpy_to_torch(x),))
+        elif isinstance(x, dict):
+            trace, _ = trace_fn(self.model, kwargs=self.numpy_to_torch(x))
+        elif isinstance(x, list):
+            trace, _ = trace_fn(self.model, args=tuple(self.numpy_to_torch(x)))
+
         return trace
 
     def get_last_layers(self, x):
@@ -969,7 +1040,8 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         return grad_out
 
 
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=False, selected_fwd_node = None):
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+                   selected_fwd_node = None, pre_nonlinearity=False):
         """
         Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
         is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
@@ -983,6 +1055,8 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
             selected_fwd_node: None or integer. If a layer is re-used models may support that the gradient is 
             calculated only with respect to one of the incoming edges / nodes. 
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
         """
 
         if wrt_layer is not None:
@@ -991,6 +1065,9 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             selected_layers = self.get_last_layers(x)
         else:
             raise Exception("Either `wrt_layer` must be defined or `wrt_final_layer` set to True.")
+
+        if pre_nonlinearity:
+            raise Exception("pre_nonlinearity is not implemented for PyTorch models.")
 
         if len(selected_layers) > 1:
             # This could be implemented by sequentially looping over layers
@@ -1270,7 +1347,8 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             pt_filt_slice = pt_filt_slice_new * pt_filt_slice
         return pt_filt_slice
 
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=False, selected_fwd_node = None):
+    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+                   selected_fwd_node = None, pre_nonlinearity=False):
         """
         Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
         is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
@@ -1282,11 +1360,17 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
-            selected_fwd_node: None - not supported by KerasModel at the moment
+            selected_fwd_node: None - not supported by TensorFlowModel
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
         """
 
         if selected_fwd_node is not None:
             raise Exception("TensorFlowModel does not support the use of selected_fwd_node!")
+
+        if pre_nonlinearity:
+            raise Exception("TensorFlowModel does not support the use of pre_nonlinearity as desired nodes can be "
+                            "selected directly!")
 
         import tensorflow as tf
 
