@@ -44,6 +44,9 @@ def _worker_loop(dataset, index_queue, data_queue, collate_fn):
     global _use_shared_memory
     _use_shared_memory = True
 
+    if hasattr(dataset, 'build'):
+        # Run the build method on the dataset
+        dataset.build()
     # torch.set_num_threads(1)
     while True:
         r = index_queue.get()
@@ -136,6 +139,10 @@ class DataLoaderIter(object):
             # prime the prefetch loop
             for _ in range(2 * self.num_workers):
                 self._put_indices()
+        else:
+            if hasattr(self.dataset, 'build'):
+                # Run the build method for the dataset
+                self.dataset.build()
 
     def __len__(self):
         return len(self.batch_sampler)

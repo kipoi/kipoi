@@ -41,7 +41,8 @@ class SeqDataset(Dataset):
             self.bt = BedToolLinecache(intervals_file)
         else:
             self.bt = BedTool(intervals_file)
-        self.fasta_extractor = FastaExtractor(fasta_file)
+        self.fasta_file = fasta_file
+        self.fasta_extractor = None
 
         # Targets
         if target_file is not None:
@@ -53,6 +54,9 @@ class SeqDataset(Dataset):
         return len(self.bt)
 
     def __getitem__(self, idx):
+        if self.fasta_extractor is None:
+            self.fasta_extractor = FastaExtractor(self.fasta_file)
+
         interval = self.bt[idx]
 
         # Intervals need to be 1000bp wide

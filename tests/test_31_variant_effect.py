@@ -21,6 +21,7 @@ from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, an
 from kipoi.postprocessing.variant_effects.utils.scoring_fns import Rc_merging_pred_analysis
 from kipoi.postprocessing.variant_effects.utils.mutators import rc_str, _modify_single_string_base
 from kipoi.utils import cd
+from kipoi.postprocessing.variant_effects.snv_predict import homogenise_seqname
 import os
 import copy
 warnings.filterwarnings('ignore')
@@ -1055,3 +1056,16 @@ def test_all_scoring_options_available():
 
     assert {x.value for x in list(VarEffectFuncType)} == \
         set(list(scoring_options.keys()) + ["custom"])
+
+
+def test_homogenise_seqname():
+    possible_seqnames_pref = ["chr22", "chr22", "chr21"]
+    possible_seqnames_bad = ["chr22", "22", "chr21"]
+    possible_seqnames = ["21", "22"]
+    assert "chr22" == homogenise_seqname("22", possible_seqnames_pref)
+    assert "chr22" == homogenise_seqname("chr22", possible_seqnames_pref)
+    assert "22" == homogenise_seqname("22", possible_seqnames)
+    assert "22" == homogenise_seqname("chr22", possible_seqnames)
+    homogenise_seqname("22", possible_seqnames_bad)
+    with pytest.raises(Exception):
+        homogenise_seqname("21", possible_seqnames_bad)

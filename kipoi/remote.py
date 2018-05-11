@@ -313,8 +313,11 @@ class GitLFSSource(Source):
             self.pull_source()
         return list_yamls_recursively(self.local_path, which)
 
-    def clone(self):
+    def clone(self, depth=1):
         """Clone the self.remote_url into self.local_path
+
+        Args:
+          depth: --depth argument to git clone. If None, clone the whole history.
         """
         lfs_installed(raise_exception=True)
         if os.path.exists(self.local_path) and os.listdir(self.local_path):
@@ -324,11 +327,12 @@ class GitLFSSource(Source):
         logger.info("Cloning {remote} into {local}".
                     format(remote=self.remote_url,
                            local=self.local_path))
-        subprocess.call(["git",
-                         "clone",
-                         "--depth=1",
-                         self.remote_url,
-                         self.local_path],
+        cmd = ["git", "clone"]
+        if depth is not None:
+            cmd.append("--depth={0}".format(depth))
+        cmd.append(self.remote_url)
+        cmd.append(self.local_path)
+        subprocess.call(cmd,
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
@@ -346,6 +350,18 @@ class GitLFSSource(Source):
                         cwd=self.local_path,
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
+
+    def _commit_checkout(self, commit):
+        """Checkout a particular commit
+        """
+        logger.info("Update {0}".
+                    format(self.local_path))
+        subprocess.call(["git",
+                         "reset",
+                         "--hard",
+                         commit],
+                        cwd=self.local_path,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
     def _pull_component(self, component, which="model"):
         lfs_installed(raise_exception=True)
@@ -483,9 +499,60 @@ class LocalSource(Source):
                             ("local_path", self.local_path)])
 
 
+class GithubPermalinkSource(Source):
+
+    TYPE = "github-permalink"
+
+    def __init__(self, local_path):
+        """Local files
+        """
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
+
+    @classmethod
+    def _parse_url(cls, url):
+        """Map github url to local directory
+        """
+        github_url = "https://github.com/"
+        if not url.startswith(github_url):
+            raise ValueError("url of the permalink: {0} doesn't start with {1}".format(url, github_url))
+        url_dir = url[len(github_url):]
+        if "/tree/" not in url_dir:
+            raise ValueError("'/tree/' missing in the url {0}. Typical github format " +
+                             "is github.com/<user>/<repo>/tree/<commit>/<directory>")
+        url_dir = url_dir.replace("/tree", "")
+
+        user, repo, commit, model = url_dir.split("/", 3)
+        model = model.rstrip("/")
+        return user, repo, commit, model
+
+    def _list_components(self, which="model"):
+        # Same as for local source
+        return []  # list_yamls_recursively(self.local_path, which)
+
+    def _pull_component(self, component, which="model"):
+        user, repo, commit, model = self._parse_url(component)
+        remote_url = "https://github.com/{user}/{repo}.git".format(user=user, repo=repo)
+        lfs_source = GitLFSSource(remote_url, os.path.join(self.local_path, user, repo, commit))
+
+        if not os.path.exists(lfs_source.local_path) or not os.listdir(lfs_source.local_path):
+            # clone the repository
+            lfs_source.clone(depth=None)
+            lfs_source._commit_checkout(commit)
+        lfs_source._pulled = True  # Don't git-pull
+
+        return lfs_source._pull_component(model, which=which)
+
+    def _get_component_descr(self, component, which="model"):
+        return load_component_descr(self._pull_component(component, which), which)
+
+    def get_config(self):
+        return OrderedDict([("type", self.TYPE),
+                            ("local_path", self.local_path)])
+
+
 # --------------------------------------------
 # all available models
-source_classes = [GitLFSSource, GitSource, LocalSource]
+source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource]
 
 
 def load_source(config):
