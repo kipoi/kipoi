@@ -262,18 +262,18 @@ class GradPlotter(object):
         fails.  
         
         Arguments:
-            param sample: Sample in the batch (integer)
-            param model_input: Name of the model input that should be plotted (can be omitted for models with only one
+            sample: Sample in the batch (integer)
+            model_input: Name of the model input that should be plotted (can be omitted for models with only one
             input)
-            param ax: axis object to be passed to the plotting functions.
-            param limit_region: Tuple. Limits the plot to a subset in the sequence dimension (seq_dim)
-            param limit_region_genomic: Tuple. Like `limit_region`, but genomic coordinates - no chromosome
-            param rc_plot: Reverse-complement the plot. If model_input is not "DNASequence" then only reverse
-            param transform_fn: Function fn(input, grad). Default is input*grad
-            param seq_dim: Dimension of the sequence. Used for reversing the order in `rc_plot`. Can be omitted for
+            ax: axis object to be passed to the plotting functions.
+            limit_region: Tuple. Limits the plot to a subset in the sequence dimension (seq_dim)
+            limit_region_genomic: Tuple. Like `limit_region`, but genomic coordinates - no chromosome
+            rc_plot: Reverse-complement the plot. If model_input is not "DNASequence" then only reverse
+            transform_fn: Function fn(input, grad). Default is input*grad
+            seq_dim: Dimension of the sequence. Used for reversing the order in `rc_plot`. Can be omitted for
             "DNASequence" model inputs. If not given, but needed it will be attempted to be inferred from array
             dimensions and metadata sequence length. 
-            param additional_plot_fns: List of functions fn(chrom, start, end, ax) that will be executed after the main
+            additional_plot_fns: List of functions fn(chrom, start, end, ax) that will be executed after the main
             plotting routine 
         """
 
@@ -321,15 +321,15 @@ class GradPlotter(object):
         except for the one defined in `seq_dim`. 
 
         Arguments:
-            param sample: Sample in the batch (integer)
-            param writer_obj: Is a instance of a subclass of "RegionWriter". "region_write()" will be called once per
+            sample: Sample in the batch (integer)
+            writer_obj: Is a instance of a subclass of "RegionWriter". "region_write()" will be called once per
             call of this function.
-            param model_input: Name of the model input that should be written (can be omitted for models with only one
+            model_input: Name of the model input that should be written (can be omitted for models with only one
             input)
-            param limit_region: Tuple. Limits the values to a subset in the sequence dimension (seq_dim)
-            param limit_region_genomic: Tuple. Like `limit_region`, but genomic coordinates - no chromosome
-            param transform_fn: Function fn(input, grad). Default is input*grad
-            param seq_dim: Dimension of the sequence. Used for reversing the order in `rc_plot`. Can be omitted for
+            limit_region: Tuple. Limits the values to a subset in the sequence dimension (seq_dim)
+            limit_region_genomic: Tuple. Like `limit_region`, but genomic coordinates - no chromosome
+            transform_fn: Function fn(input, grad). Default is input*grad
+            seq_dim: Dimension of the sequence. Used for reversing the order in `rc_plot`. Can be omitted for
             "DNASequence" model inputs. If not given, but needed it will be attempted to be inferred from array
             dimensions and metadata sequence length. 
         """
