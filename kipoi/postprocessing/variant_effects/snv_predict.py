@@ -8,11 +8,13 @@ import numpy as np
 import pandas as pd
 import six
 from tqdm import tqdm
-from kipoi.utils import cd
 
-from kipoi.postprocessing.variant_effects.utils.scoring_fns import Logit
+
+from kipoi.postprocessing.variant_effects.scores import Logit, get_scoring_fns
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
-    ModelInfoExtractor, BedWriter, VariantLocalisation
+    ModelInfoExtractor, BedWriter, VariantLocalisation, ensure_tabixed_vcf
+from kipoi.postprocessing.variant_effects.utils.io import VcfWriter
+from kipoi.utils import cd
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -493,6 +495,7 @@ def predict_snvs(model,
                     for each model output (target) column VCF SNV line. If return_predictions == False, returns None.
             """
     import cyvcf2
+    vcf_fpath = os.path.realpath(vcf_fpath)
     with cd(dataloader.source_dir):
         model_info_extractor = ModelInfoExtractor(model_obj=model, dataloader_obj=dataloader)
 
@@ -640,3 +643,81 @@ def predict_snvs(model,
             return res_concatenated
 
     return None
+
+def _get_vcf_to_region(model_info, restriction_bed, seq_length):
+    import kipoi
+    import pybedtools
+    # Select the appropriate region generator
+    if restriction_bed is not None:
+        # Select the restricted SNV-centered region generator
+        pbd = pybedtools.BedTool(restriction_bed)
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
+        logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
+                    'Only defined regions will be tested.')
+    elif model_info.requires_region_definition:
+        # Select the SNV-centered region generator
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=seq_length)
+        logger.info('Using variant-centered sequence generation.')
+    else:
+        # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
+        vcf_to_region = None
+        logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
+                    'produced regions can be predicted')
+    return vcf_to_region
+
+
+def score_variants(model,
+                   dl_args,
+                   input_vcf,
+                   output_vcf,
+                   scores=["logit_ref", "logit_alt", "ref", "alt", "logit", "diff"],
+                   score_kwargs = None,
+                   num_workers=0,
+                   batch_size=32,
+                   source='kipoi',
+                   seq_length = None,
+                   restriction_bed = None,
+                   return_predictions = False):
+    """Score variants: annotate the vcf file using
+    model predictions for the refernece and alternative alleles
+    Args:
+      model: model string or a model class instance
+      dl_args: dataloader arguments as a dictionary
+      input_vcf: input vcf file path
+      output_vcf: output vcf file path
+      scores: list of score names to compute. See kipoi.postprocessing.variant_effects.scores
+      score_kwargs: optional, list of kwargs that corresponds to the entries in score. For details see 
+      num_workers: number of paralell workers to use for dataloading
+      batch_size: batch_size for dataloading
+      source: model source name
+      seq_length: If model accepts variable input sequence length then this value has to be set!
+      restriction_bed: If dataloader can be run with regions generated from the VCF then only variants that overlap
+      regions defined in `restriction_bed` will be tested.
+      return_predictions: return generated predictions also as pandas dataframe.
+    """
+    # TODO - call this function in kipoi.cli.postproc.cli_score_variants
+    # TODO: Add tests
+    import kipoi
+    in_vcf_path_abs = os.path.realpath(input_vcf)
+    out_vcf_path_abs = os.path.realpath(output_vcf)
+    if isinstance(model, str):
+        model = kipoi.get_model(model, source=source, with_dataloader=True)
+    Dataloader = model.default_dataloader
+    vcf_path_tbx = ensure_tabixed_vcf(in_vcf_path_abs)  # TODO - run this within the function
+    writer = VcfWriter(model, in_vcf_path_abs, out_vcf_path_abs)
+    dts = get_scoring_fns(model, scores, score_kwargs)
+
+    # Load effect prediction related model info
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
+    vcf_to_region = _get_vcf_to_region(model_info, restriction_bed, seq_length)
+
+    return predict_snvs(model,
+                        Dataloader,
+                        vcf_path_tbx,
+                        batch_size=batch_size,
+                        dataloader_args=dl_args,
+                        num_workers=num_workers,
+                        vcf_to_region=vcf_to_region,
+                        evaluation_function_kwargs={'diff_types': dts},
+                        sync_pred_writer=writer,
+                        return_predictions = return_predictions)

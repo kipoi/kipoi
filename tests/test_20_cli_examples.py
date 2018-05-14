@@ -215,7 +215,7 @@ def test_predict_variants_example(example, restricted_bed, file_format, tmpdir):
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args='%s'" % dataloader_kwargs_str,
-            "--vcf_path", "example_files/variants.vcf",
+            "--vcf_path", example_dir + "/example_files/variants.vcf",
             # this one was now gone in the master?!
             "--out_vcf_fpath", vcf_tmpfile,
             "--output", tmpfile]
@@ -224,7 +224,7 @@ def test_predict_variants_example(example, restricted_bed, file_format, tmpdir):
         args.append(INSTALL_FLAG)
 
     if restricted_bed:
-        args += ["--restriction_bed", "example_files/restricted_regions.bed"]
+        args += ["--restriction_bed", example_dir + "/example_files/restricted_regions.bed"]
 
     returncode = subprocess.call(args=args,
                                  cwd=os.path.realpath(example_dir) + "/../../")
@@ -285,18 +285,18 @@ def test_generate_mutation_maps_example(example, tmpdir):
             "postproc",
             "create_mutation_map",
             # "./",  # directory
-            ".",
+            example_dir,
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args='%s'" % dataloader_kwargs_str,
-            "--regions_file", "example_files/first_variant.vcf",
+            "--regions_file", example_dir + "/example_files/first_variant.vcf",
             "--output", mm_tmpfile]
     # run the
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
 
     returncode = subprocess.call(args=args,
-                                 cwd=os.path.realpath(example_dir))
+                                 cwd=os.path.realpath(example_dir) + "/../../")
     assert returncode == 0
 
     assert os.path.exists(mm_tmpfile)

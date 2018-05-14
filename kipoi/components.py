@@ -684,13 +684,6 @@ def example_kwargs(dl_args):
     """
     return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
-
-def default_kwargs(args):
-    """Return the example kwargs
-    """
-    return {k: v.default for k, v in six.iteritems(args) if v.default is not None}
-
-
 def print_dl_kwargs(dataloader_class, format_examples_json=False):
     """
     Args:

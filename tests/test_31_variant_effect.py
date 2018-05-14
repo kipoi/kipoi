@@ -1,5 +1,6 @@
+import copy
+import os
 import sys
-import tempfile
 import warnings
 
 import cyvcf2
@@ -18,12 +19,11 @@ import kipoi.postprocessing.variant_effects.utils.io
 from kipoi.metadata import GenomicRanges
 from kipoi.pipeline import install_model_requirements
 from kipoi.postprocessing.variant_effects import Logit, Diff, DeepSEA_effect, analyse_model_preds
-from kipoi.postprocessing.variant_effects.utils.scoring_fns import Rc_merging_pred_analysis
+from kipoi.postprocessing.variant_effects.scores import RCScore, scoring_options
+from kipoi.postprocessing.variant_effects.snv_predict import homogenise_seqname
 from kipoi.postprocessing.variant_effects.utils.mutators import rc_str, _modify_single_string_base
 from kipoi.utils import cd
-from kipoi.postprocessing.variant_effects.snv_predict import homogenise_seqname
-import os
-import copy
+
 warnings.filterwarnings('ignore')
 
 
@@ -439,7 +439,6 @@ def test_get_preproc_conv():
 
 def test_DNAStringSequenceMutator():
     from kipoi.postprocessing.variant_effects.utils.generic import DNAStringSequenceMutator, VariantLocalisation
-    import pandas as pd
     input_set = ["AGTGTCGT", "AGTGTCGT", "AGTGTCGT"]
     ref_mut_set = ["AGNGTCGT", "AGTGTCGT", "AGTGACGT"]
     preproc_conv = {"pp_line": [0, 1, 2], "varpos_rel": [2, 2, 3], "ref": ["T", "A", "A"],
@@ -480,7 +479,6 @@ def onehot(seq):
 
 def test_OneHotSequenceMutator():
     from kipoi.postprocessing.variant_effects.utils.generic import OneHotSequenceMutator, VariantLocalisation
-    import pandas as pd
     input_set = ["AGTGTCGT", "AGTGTCGT", "AGTGTCGT"]
     ref_mut_set = ["AGNGTCGT", "AGTGTCGT", "AGTGACGT"]
     preproc_conv = {"pp_line": [0, 1, 2], "varpos_rel": [2, np.nan, 3], "ref": ["T", np.nan, "A"],
@@ -538,7 +536,7 @@ def test_var_eff_pred_varseq():
         with pytest.raises(Exception):
             # This has to raise an exception as the sequence length is None.
             vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+    res = sp.predict_snvs(model, Dataloader, model_dir + vcf_path, dataloader_args=dataloader_arguments,
                           evaluation_function=analyse_model_preds, batch_size=32,
                           vcf_to_region=vcf_to_region,
                           evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
@@ -580,7 +578,7 @@ def test_var_eff_pred():
         model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
         writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
         vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+    res = sp.predict_snvs(model, Dataloader, model_dir + vcf_path, dataloader_args=dataloader_arguments,
                           evaluation_function=analyse_model_preds, batch_size=32,
                           vcf_to_region=vcf_to_region,
                           evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
@@ -622,7 +620,7 @@ def test_var_eff_pred2():
         model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
         vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
         writer = kipoi.postprocessing.variant_effects.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath)
-    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+    res = sp.predict_snvs(model, Dataloader, model_dir + vcf_path, dataloader_args=dataloader_arguments,
                           evaluation_function=analyse_model_preds, batch_size=32,
                           vcf_to_region=vcf_to_region,
                           evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
@@ -641,7 +639,7 @@ def test_Rc_merging():
     arr_a = np.array([[1, 2], [3, 4]])
     arr_b = np.array([[2, 1], [5, 3]])
     for k in ["min", "max", "mean", "median", lambda x, y: x - y]:
-        ro = Rc_merging_pred_analysis(k)
+        ro = RCScore(k)
         if k == "min":
             assert np.all(ro.rc_merging(arr_a, arr_b) == np.min([arr_a, arr_b], axis=0))
         elif k == "max":
@@ -653,8 +651,8 @@ def test_Rc_merging():
         else:
             assert np.all(ro.rc_merging(arr_a, arr_b) == arr_a - arr_b)
     assert np.all(
-        Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=False) == np.array([[-2, 2], [-5, 4]]))
-    x = Rc_merging_pred_analysis.absmax(arr_a, arr_b * (-1), inplace=True)
+        RCScore.absmax(arr_a, arr_b * (-1), inplace=False) == np.array([[-2, 2], [-5, 4]]))
+    x = RCScore.absmax(arr_a, arr_b * (-1), inplace=True)
     assert np.all(arr_a == np.array([[-2, 2], [-5, 4]]))
 
 
@@ -1051,7 +1049,6 @@ def test_modify_single_string_base():
 
 
 def test_all_scoring_options_available():
-    from kipoi.cli.postproc import scoring_options
     from kipoi.postprocessing.variant_effects.components import VarEffectFuncType
 
     assert {x.value for x in list(VarEffectFuncType)} == \
@@ -1069,3 +1066,60 @@ def test_homogenise_seqname():
     homogenise_seqname("22", possible_seqnames_bad)
     with pytest.raises(Exception):
         homogenise_seqname("21", possible_seqnames_bad)
+
+def test_get_vcf_to_region():
+    from kipoi.postprocessing.variant_effects import ModelInfoExtractor, SnvCenteredRg, SnvPosRestrictedRg
+    from kipoi.postprocessing.variant_effects.snv_predict import _get_vcf_to_region
+    example_dir = "examples/rbp"
+    model = kipoi.get_model(example_dir, source="dir")
+    restr_bed = example_dir + "/example_files/restricted_regions.bed"
+    dataloader = model.default_dataloader
+    model_info = ModelInfoExtractor(model, dataloader)
+    assert isinstance(_get_vcf_to_region(model_info, None, None), SnvCenteredRg)
+    assert isinstance(_get_vcf_to_region(model_info, restr_bed, None), SnvPosRestrictedRg)
+
+    example_dir = "examples/non_bedinput_model"
+    model = kipoi.get_model(example_dir, source="dir")
+    dataloader = model.default_dataloader
+    model_info = ModelInfoExtractor(model, dataloader)
+    assert _get_vcf_to_region(model_info, None, None) is None
+
+
+
+def test_score_variants():
+    if sys.version_info[0] == 2:
+        pytest.skip("rbp example not supported on python 2 ")
+    # Take the rbp model
+    model_dir = "examples/rbp/"
+    if INSTALL_REQ:
+        install_model_requirements(model_dir, "dir", and_dataloaders=True)
+    #
+    model = kipoi.get_model(model_dir, source="dir")
+    #
+    dataloader_arguments = {
+        "fasta_file": "example_files/hg38_chr22.fa",
+        "preproc_transformer": "dataloader_files/encodeSplines.pkl",
+        "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
+    }
+    #
+    # Run the actual predictions
+    vcf_path = "example_files/variants.vcf"
+    out_vcf_fpath = "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+
+    res = sp.score_variants(model, dataloader_arguments, model_dir+vcf_path, model_dir + out_vcf_fpath,
+                            scores=['diff'], score_kwargs=[{"rc_merging":"mean"}], source = "dir")
+    with cd(model.source_dir):
+        # pass
+        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)
+
+    res = sp.score_variants(model_dir, dataloader_arguments, model_dir + vcf_path, model_dir + out_vcf_fpath,
+                            scores=['diff'], score_kwargs=[{"rc_merging": "mean"}], source="dir")
+
+    with cd(model.source_dir):
+        # pass
+        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+        os.unlink(out_vcf_fpath)

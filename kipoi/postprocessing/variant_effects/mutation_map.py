@@ -7,13 +7,13 @@ import tempfile
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from kipoi.utils import cd
 
+from kipoi.postprocessing.variant_effects import BedOverlappingRg, SnvCenteredRg, ensure_tabixed_vcf
+from kipoi.postprocessing.variant_effects.scores import Logit
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
 from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
-from kipoi.postprocessing.variant_effects.utils.scoring_fns import Logit
-from kipoi.postprocessing.variant_effects import BedOverlappingRg, SnvCenteredRg, ensure_tabixed_vcf
+from kipoi.utils import cd
 from .snv_predict import SampleCounter, get_genomicranges_line, merge_intervals, get_variants_in_regions_search_vcf, \
     get_variants_in_regions_sequential_vcf, analyse_model_preds, _overlap_vcf_region
 
