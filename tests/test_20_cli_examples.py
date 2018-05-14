@@ -187,7 +187,7 @@ def test_predict_variants_example(example, restricted_bed, file_format, tmpdir):
     if (example not in {"rbp", "non_bedinput_model"}) or (sys.version_info[0] == 2):
         pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
-    example_dir = "examples/{0}".format(example)
+    example_dir = "examples/{0}/".format(example)
 
     tmpdir_here = tmpdir.mkdir("example")
 
@@ -204,6 +204,7 @@ def test_predict_variants_example(example, restricted_bed, file_format, tmpdir):
                          "preproc_transformer": "dataloader_files/encodeSplines.pkl",
                          "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
                          "intervals_file": "example_files/variant_intervals.tsv"}
+    dataloader_kwargs = {k: example_dir + v for k, v in dataloader_kwargs.items()}
     import json
     dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -267,7 +268,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
     if (example not in {"rbp"}) or (sys.version_info[0] == 2):
         pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
-    example_dir = "examples/{0}".format(example)
+    example_dir = "examples/{0}/".format(example)
 
     tmpdir_here = tmpdir.mkdir("example")
 
@@ -278,6 +279,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
     plt_tmpfile = str(tmpdir_here.join("plot.png"))
 
     dataloader_kwargs = {"fasta_file": "example_files/hg38_chr22.fa", "preproc_transformer": "dataloader_files/encodeSplines.pkl", "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz", "intervals_file": "example_files/variant_intervals.tsv"}
+    dataloader_kwargs = {k: example_dir +v for k,v in dataloader_kwargs.items()}
     import json
     dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -289,7 +291,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
             "--source=dir",
             "--batch_size=4",
             "--dataloader_args='%s'" % dataloader_kwargs_str,
-            "--regions_file", example_dir + "/example_files/first_variant.vcf",
+            "--regions_file", example_dir + "example_files/first_variant.vcf",
             "--output", mm_tmpfile]
     # run the
     if INSTALL_FLAG:

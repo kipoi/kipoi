@@ -781,104 +781,103 @@ class MutationMap(object):
             """
         import cyvcf2
         from pybedtools import BedTool
-        with cd(self.dataloader.source_dir):
-            if (bed_fpath is not None) and (vcf_fpath is not None):
-                raise Exception("Can't use both `bed_fpath` and `vcf_fpath`.")
+        if (bed_fpath is not None) and (vcf_fpath is not None):
+            raise Exception("Can't use both `bed_fpath` and `vcf_fpath`.")
 
-            if (vcf_fpath is not None) and (vcf_id_generator_fn is None):
-                raise Exception("If `vcf_fpath` is set then also `vcf_id_generator_fn` has to be defined!")
+        if (vcf_fpath is not None) and (vcf_id_generator_fn is None):
+            raise Exception("If `vcf_fpath` is set then also `vcf_id_generator_fn` has to be defined!")
 
-            dataloader_args, temp_bed3_file, vcf_search_regions = self._setup_dataloader_kwargs(vcf_fpath,
-                                                                                                bed_fpath,
-                                                                                                vcf_to_region,
-                                                                                                bed_to_region,
-                                                                                                vcf_id_generator_fn)
+        dataloader_args, temp_bed3_file, vcf_search_regions = self._setup_dataloader_kwargs(vcf_fpath,
+                                                                                            bed_fpath,
+                                                                                            vcf_to_region,
+                                                                                            bed_to_region,
+                                                                                            vcf_id_generator_fn)
 
-            model_out_annotation = self.model_info_extractor.get_model_out_annotation()
+        model_out_annotation = self.model_info_extractor.get_model_out_annotation()
 
-            out_reshaper = OutputReshaper(self.model.schema.targets)
+        out_reshaper = OutputReshaper(self.model.schema.targets)
 
-            seq_to_mut = self.model_info_extractor.seq_input_mutator
-            seq_to_meta = self.model_info_extractor.seq_input_metadata
-            seq_to_str_converter = self.model_info_extractor.seq_to_str_converter
+        seq_to_mut = self.model_info_extractor.seq_input_mutator
+        seq_to_meta = self.model_info_extractor.seq_input_metadata
+        seq_to_str_converter = self.model_info_extractor.seq_to_str_converter
 
-            # Open vcf again
-            vcf_fh = None
-            bed_obj = None
-            if vcf_fpath is not None:
-                vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
-            if bed_fpath is not None:
-                bed_obj = BedTool(bed_fpath).tabix()
+        # Open vcf again
+        vcf_fh = None
+        bed_obj = None
+        if vcf_fpath is not None:
+            vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
+        if bed_fpath is not None:
+            bed_obj = BedTool(bed_fpath).tabix()
 
-            # pre-process regions
-            keys = set()  # what is that?
+        # pre-process regions
+        keys = set()  # what is that?
 
-            sample_counter = SampleCounter()
+        sample_counter = SampleCounter()
 
-            mmdm = MutationMapDataMerger(seq_to_meta)
+        mmdm = MutationMapDataMerger(seq_to_meta)
 
-            # TODO - ignore the un-used params?
-            it = self.dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
-                                                               num_workers=num_workers)
-            for i, batch in enumerate(tqdm(it)):
+        # TODO - ignore the un-used params?
+        it = self.dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
+                                                           num_workers=num_workers)
+        for i, batch in enumerate(tqdm(it)):
 
-                # get reference sequence for every line in the batch input
-                ref_seq_strs = get_ref_seq_from_seq_set(batch, seq_to_meta, seq_to_str_converter,
-                                                        self.dataloader.output_schema.inputs)
+            # get reference sequence for every line in the batch input
+            ref_seq_strs = get_ref_seq_from_seq_set(batch, seq_to_meta, seq_to_str_converter,
+                                                    self.dataloader.output_schema.inputs)
 
-                eval_kwargs_iter = _generate_seq_sets_mutmap_iter(self.dataloader.output_schema, batch,
-                                                                  seq_to_mut=seq_to_mut,
-                                                                  seq_to_meta=seq_to_meta,
-                                                                  sample_counter=sample_counter,
-                                                                  ref_sequences=ref_seq_strs,
-                                                                  bedtools_obj=bed_obj,
-                                                                  vcf_fh=vcf_fh,
-                                                                  vcf_id_generator_fn=vcf_id_generator_fn,
-                                                                  vcf_search_regions=vcf_search_regions,
-                                                                  generate_rc=self.model_info_extractor.use_seq_only_rc,
-                                                                  batch_size=batch_size)
+            eval_kwargs_iter = _generate_seq_sets_mutmap_iter(self.dataloader.output_schema, batch,
+                                                              seq_to_mut=seq_to_mut,
+                                                              seq_to_meta=seq_to_meta,
+                                                              sample_counter=sample_counter,
+                                                              ref_sequences=ref_seq_strs,
+                                                              bedtools_obj=bed_obj,
+                                                              vcf_fh=vcf_fh,
+                                                              vcf_id_generator_fn=vcf_id_generator_fn,
+                                                              vcf_search_regions=vcf_search_regions,
+                                                              generate_rc=self.model_info_extractor.use_seq_only_rc,
+                                                              batch_size=batch_size)
 
-                dl_batch_res = []
-                # Keep the following metadata entries from the from the lines
-                eval_kwargs_noseq = {k: [] for k in ["line_id", "vcf_records", "process_line"]}
-                query_vcf_records = None
-                query_process_lines = None
+            dl_batch_res = []
+            # Keep the following metadata entries from the from the lines
+            eval_kwargs_noseq = {k: [] for k in ["line_id", "vcf_records", "process_line"]}
+            query_vcf_records = None
+            query_process_lines = None
 
-                for eval_kwargs in tqdm(eval_kwargs_iter):
-                    if eval_kwargs is None:
-                        # No generated datapoint overlapped any VCF region
-                        continue
+            for eval_kwargs in tqdm(eval_kwargs_iter):
+                if eval_kwargs is None:
+                    # No generated datapoint overlapped any VCF region
+                    continue
 
-                    if evaluation_function_kwargs is not None:
-                        assert isinstance(evaluation_function_kwargs, dict)
-                        for k in evaluation_function_kwargs:
-                            eval_kwargs[k] = evaluation_function_kwargs[k]
+                if evaluation_function_kwargs is not None:
+                    assert isinstance(evaluation_function_kwargs, dict)
+                    for k in evaluation_function_kwargs:
+                        eval_kwargs[k] = evaluation_function_kwargs[k]
 
-                    eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
-                    res_here = evaluation_function(self.model, output_reshaper=out_reshaper, **eval_kwargs)
-                    for k in res_here:
-                        keys.add(k)
-                        res_here[k].index = eval_kwargs["line_id"]
+                eval_kwargs["out_annotation_all_outputs"] = model_out_annotation
+                res_here = evaluation_function(self.model, output_reshaper=out_reshaper, **eval_kwargs)
+                for k in res_here:
+                    keys.add(k)
+                    res_here[k].index = eval_kwargs["line_id"]
 
-                    # save predictions
-                    dl_batch_res.append(res_here)
+                # save predictions
+                dl_batch_res.append(res_here)
 
-                    # save metadata for creating mutation maps
-                    [eval_kwargs_noseq[k].extend(eval_kwargs[k]) for k in eval_kwargs_noseq]
-                    query_vcf_records = eval_kwargs["query_vcf_records"]
-                    query_process_lines = eval_kwargs["query_process_lines"]
+                # save metadata for creating mutation maps
+                [eval_kwargs_noseq[k].extend(eval_kwargs[k]) for k in eval_kwargs_noseq]
+                query_vcf_records = eval_kwargs["query_vcf_records"]
+                query_process_lines = eval_kwargs["query_process_lines"]
 
-                # query vcf entries have to appended at the end of the batch again
-                eval_kwargs_noseq["query_vcf_records"] = query_vcf_records
-                eval_kwargs_noseq["query_process_lines"] = query_process_lines
-                # Concatenate results over batches
-                dl_batch_res_concatenated = {}
-                for k in keys:
-                    dl_batch_res_concatenated[k] = pd.concat(
-                        [inner_batch[k] for inner_batch in dl_batch_res if k in inner_batch])
+            # query vcf entries have to appended at the end of the batch again
+            eval_kwargs_noseq["query_vcf_records"] = query_vcf_records
+            eval_kwargs_noseq["query_process_lines"] = query_process_lines
+            # Concatenate results over batches
+            dl_batch_res_concatenated = {}
+            for k in keys:
+                dl_batch_res_concatenated[k] = pd.concat(
+                    [inner_batch[k] for inner_batch in dl_batch_res if k in inner_batch])
 
-                # Append results and inputs to mutation map
-                mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
+            # Append results and inputs to mutation map
+            mmdm.append(dl_batch_res_concatenated, eval_kwargs_noseq, ref_seq_strs, batch["metadata"])
 
             if vcf_fh is not None:
                 vcf_fh.close()
