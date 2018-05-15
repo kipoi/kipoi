@@ -431,4 +431,7 @@ def test_mutation_map():
         reference = read_hdf5("example_files/first_variant_mm.hdf5")
         obs = read_hdf5("example_files/first_variant_mm.hdf5")
         compare_rec(reference[0], obs[0])
+        import matplotlib
+        matplotlib.pyplot.switch_backend('agg')
+        mdmm.plot_mutmap(0,"seq", "diff", "rbp_prb")
         os.unlink("example_files/first_variant_mm_totest.hdf5")

@@ -514,7 +514,7 @@ def cli_grad(command, raw_args):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
 
         # make the prediction
-        pred_batch = model.input_grad(batch['inputs'], filter_ind=filter_ind_parsed,
+        pred_batch = model.input_grad(batch['inputs'], filter_idx=filter_ind_parsed,
                                       avg_func=args.avg_func, wrt_layer=layer, wrt_final_layer=args.final_layer,
                                       selected_fwd_node=args.selected_fwd_node,
                                       pre_nonlinearity=args.pre_nonlinearity)

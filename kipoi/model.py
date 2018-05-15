@@ -157,16 +157,16 @@ class GradientMixin(object):
     allowed_functions = ["sum", "max", "min", "absmax"]
 
     @abc.abstractmethod
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+    def input_grad(self, x, filter_idx=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
         """
-        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
-        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
-        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+        Calculate the input-layer gradient for filter `filter_idx` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_idx` and `avg_func` are both
+        not None then `filter_idx` is first applied and then `avg_func` across the selected filters.
 
         # Arguments
             x: model input
-            filter_ind: filter index of `layer` for which the gradient should be returned
+            filter_idx: filter index of `layer` for which the gradient should be returned
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
@@ -553,16 +553,16 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             outputs = outputs_dict
         return outputs
 
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+    def input_grad(self, x, filter_idx=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
         """
-        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
-        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
-        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+        Calculate the input-layer gradient for filter `filter_idx` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_idx` and `avg_func` are both
+        not None then `filter_idx` is first applied and then `avg_func` across the selected filters.
 
         # Arguments
             x: model input
-            filter_ind: filter index of `layer` for which the gradient should be returned
+            filter_idx: filter index of `layer` for which the gradient should be returned
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
@@ -580,7 +580,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 avg_func = _avg_funcs["sum"]
         if selected_fwd_node is not None:
             raise Exception("'selected_fwd_node' is currently not supported for Keras models!")
-        return self._input_grad(x, layer=wrt_layer, filter_slices=filter_ind, use_final_layer=wrt_final_layer,
+        return self._input_grad(x, layer=wrt_layer, filter_slices=filter_idx, use_final_layer=wrt_final_layer,
                                 filter_func=avg_func, pre_nonlinearity=pre_nonlinearity)
 
     def _generate_activation_output_functions(self, layer, pre_nonlinearity):
@@ -1036,16 +1036,16 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         return grad_out
 
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+    def input_grad(self, x, filter_idx=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
         """
-        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
-        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
-        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+        Calculate the input-layer gradient for filter `filter_idx` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_idx` and `avg_func` are both
+        not None then `filter_idx` is first applied and then `avg_func` across the selected filters.
 
         # Arguments
             x: model input
-            filter_ind: filter index of `layer` for which the gradient should be returned
+            filter_idx: filter index of `layer` for which the gradient should be returned
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
@@ -1072,7 +1072,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         if selected_layers[0] is None:
             raise ValueError("Unable to get layer {}".format(wrt_layer))
 
-        return self._input_grad(x, layer=selected_layers[0], filter_slices=filter_ind, filter_func=avg_func,
+        return self._input_grad(x, layer=selected_layers[0], filter_slices=filter_idx, filter_func=avg_func,
                                 selected_fwd_node=selected_fwd_node)
 
     def get_upstream_layers(self, x, layer_id):
@@ -1348,16 +1348,16 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             pt_filt_slice = pt_filt_slice_new * pt_filt_slice
         return pt_filt_slice
 
-    def input_grad(self, x, filter_ind=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
+    def input_grad(self, x, filter_idx=None, avg_func=None, wrt_layer=None, wrt_final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
         """
-        Calculate the input-layer gradient for filter `filter_ind` in layer `layer` with respect to `x`. If avg_func
-        is defined average over filters with the averaging function `avg_func`. If `filter_ind` and `avg_func` are both
-        not None then `filter_ind` is first applied and then `avg_func` across the selected filters.
+        Calculate the input-layer gradient for filter `filter_idx` in layer `layer` with respect to `x`. If avg_func
+        is defined average over filters with the averaging function `avg_func`. If `filter_idx` and `avg_func` are both
+        not None then `filter_idx` is first applied and then `avg_func` across the selected filters.
 
         # Arguments
             x: model input
-            filter_ind: filter index of `layer` for which the gradient should be returned
+            filter_idx: filter index of `layer` for which the gradient should be returned
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             wrt_layer: layer from which backwards the gradient should be calculated
             wrt_final_layer: Use the final (classification) layer as `wrt_layer`
@@ -1403,7 +1403,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Run the gradient prediction
         # get_grad_tens avoids rebuilding the model which is necessary for TF models!
         grad_op = tf.gradients(new_target_ops, input_ops, name='gradient_%s' % str(wrt_layer),
-                               grad_ys=self.get_grad_tens(fwd_values, filter_ind, avg_func))
+                               grad_ys=self.get_grad_tens(fwd_values, filter_idx, avg_func))
         grad_pred = self.sess.run(grad_op, feed_dict=feed_dict)
 
         # Format the output so match the input

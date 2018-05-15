@@ -3,7 +3,7 @@
 import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
-from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter
+from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter, BedGraphWriter
 from kipoi.readers import HDF5Reader
 from kipoi.cli.main import prepare_batch
 import numpy as np
@@ -156,3 +156,22 @@ def test_bigwigwriter():
             reg = {k: v[i] for k, v in regions.items()}
             bww.region_write(reg, [val])
             assert bww_2.entries(reg["chr"], reg["start"], reg["end"])[0][2] == val
+
+def test_bedgraphwriter():
+    import os
+    import tempfile
+    temp_path = tempfile.mkstemp()[1]
+    bgw = BedGraphWriter(temp_path)
+    regions = {"chr": ["chr1", "chr7", "chr2"], "start": [10, 30, 20], "end": [11, 31, 21]}
+    values = [3.0, 4.0, 45.4]
+    for i, val in enumerate(values):
+        reg = {k: v[i] for k, v in regions.items()}
+        bgw.region_write(reg, np.array([val]))
+    bgw.close()
+    with open(temp_path, "r") as ifh:
+        for i, l in enumerate(ifh):
+            els = l.rstrip().split()
+            for j,k in enumerate(["chr", "start", "end"]):
+                assert str(regions[k][i]) == els[j]
+            assert str(values[i]) == els[-1]
+    os.unlink(temp_path)
