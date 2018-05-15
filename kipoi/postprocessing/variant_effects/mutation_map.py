@@ -16,6 +16,7 @@ from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
 from kipoi.utils import cd
 from .snv_predict import SampleCounter, get_genomicranges_line, merge_intervals, get_variants_in_regions_search_vcf, \
     get_variants_in_regions_sequential_vcf, analyse_model_preds, _overlap_vcf_region
+from .utils import is_indel_wrapper
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -702,7 +703,7 @@ class MutationMap(object):
                 vcf_fh = cyvcf2.VCF(vcf_fpath, "r")
                 with BedWriter(temp_bed3_file) as ofh:
                     for record in vcf_fh:
-                        if not record.is_indel:
+                        if not is_indel_wrapper(record):
                             region = vcf_to_region(record)
                             id = vcf_id_generator_fn(record)
                             for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):

@@ -19,297 +19,209 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def _prepare_multi_model_args(args):
+    assert isinstance(args.model, list)
+    assert isinstance(args.source, list)
+    assert isinstance(args.seq_length, list)
+    assert isinstance(args.dataloader, list)
+    assert isinstance(args.dataloader_source, list)
+    assert isinstance(args.dataloader_args, list)
 
-def cli_score_variants_DEP(command, raw_args):
-    """CLI interface to score variants
-    """
-    AVAILABLE_FORMATS = ["tsv", "hdf5", "h5"]
-    import pybedtools
-    assert command == "score_variants"
-    parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
-                                     description='Predict effect of SNVs using ISM.')
-    add_model(parser)
-    add_dataloader(parser, with_args=True)
-    parser.add_argument('-v', '--vcf_path',
-                        help='Input VCF.')
-    # TODO - rename path to fpath
-    parser.add_argument('-a', '--out_vcf_fpath',
-                        help='Output annotated VCF file path.', default=None)
-    parser.add_argument('--batch_size', type=int, default=32,
-                        help='Batch size to use in prediction')
-    parser.add_argument("-n", "--num_workers", type=int, default=0,
-                        help="Number of parallel workers for loading the dataset")
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
-    parser.add_argument('-r', '--restriction_bed', default=None,
-                        help="Regions for prediction can only be subsets of this bed file")
-    parser.add_argument('-o', '--output', required=False,
-                        help="Additional output file. File format is inferred from the file path ending" +
-                        ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
-    parser.add_argument('-s', "--scoring", default="diff", nargs="+",
-                        help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
-                             "available except for `diff` which is always available. Select scoring function by the"
-                             "`name` tag defined in the model yaml file.")
-    parser.add_argument('-k', "--scoring_kwargs", default="", nargs="+",
-                        help="JSON definition of the kwargs for the scoring functions selected in --scoring. The "
-                             "definiton can either be in JSON in the command line or the path of a .json file. The "
-                             "individual JSONs are expected to be supplied in the same order as the labels defined in "
-                             "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
-                             "scoring method.")
-    parser.add_argument('-l', "--seq_length", type=int, default=None,
-                        help="Optional parameter: Model input sequence length - necessary if the model does not have a "
-                             "pre-defined input sequence length.")
 
-    args = parser.parse_args(raw_args)
-
-    # extract args for kipoi.variant_effects.predict_snvs
-    vcf_path = args.vcf_path
-    out_vcf_fpath = args.out_vcf_fpath
-    dataloader_arguments = parse_json_file_str(args.dataloader_args)
-
-    # --------------------------------------------
-    # install args
-    if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model, args.source, and_dataloaders=True)
-    # load model & dataloader
-    model = kipoi.get_model(args.model, args.source)
-
-    if args.dataloader is not None:
-        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
-    else:
-        Dl = model.default_dataloader
-    with cd(model.source_dir):
-
-        # Check that all the folders exist
-        file_exists(args.vcf_path, logger)
-        dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
-        if args.output is not None:
-            dir_exists(os.path.dirname(args.output), logger)
-
-            # infer the file format
-            args.file_format = args.output.split(".")[-1]
-            if args.file_format not in AVAILABLE_FORMATS:
-                logger.error("File ending: {0} for file {1} not from {2}".
-                             format(args.file_format, args.output, AVAILABLE_FORMATS))
-                sys.exit(1)
-
-            if args.file_format in ["hdf5", "h5"]:
-                # only if hdf5 output is used
-                import deepdish
-
-        if not isinstance(args.scoring, list):
-            args.scoring = [args.scoring]
-
-        dts = get_scoring_fns(model, args.scoring, args.scoring_kwargs)
-
-        # Load effect prediction related model info
-        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
-        manual_seq_len = args.seq_length
-
-        # Select the appropriate region generator
-        if args.restriction_bed is not None:
-            # Select the restricted SNV-centered region generator
-            pbd = pybedtools.BedTool(args.restriction_bed)
-            vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
-            logger.info('Restriction bed file defined. Only variants in defined regions will be tested.'
-                        'Only defined regions will be tested.')
-        elif model_info.requires_region_definition:
-            # Select the SNV-centered region generator
-            vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info, seq_length=manual_seq_len)
-            logger.info('Using variant-centered sequence generation.')
+    def ensure_matching_args(ref_arg, query_arg, ref_label, query_label, allow_zero=True):
+        assert isinstance(ref_arg, list)
+        assert isinstance(query_arg, list)
+        n = len(ref_arg)
+        if allow_zero and (len(query_arg) == 0):
+            ret = [None] * n
+        elif len(query_arg) == 1:
+            ret = [query_arg[0]] * n
+        elif not len(query_arg) == n:
+            raise Exception("Either give one {q} for all {r} or one {q} for every {r} in the same order.".format(
+                q=query_label, r=ref_label))
         else:
-            # No regions can be defined for the given model, VCF overlap will be inferred, hence tabixed VCF is necessary
-            vcf_to_region = None
-            # Make sure that the vcf is tabixed
-            vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
-            logger.info('Dataloader does not accept definition of a regions bed-file. Only VCF-variants that lie within'
-                        'produced regions can be predicted')
+            ret = query_arg
+        return ret
 
-    if model_info.use_seq_only_rc:
-        logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
-    else:
-        logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
 
-    with cd(model.source_dir):
-        # Get a vcf output writer if needed
-        if out_vcf_fpath is not None:
-            logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
-            vcf_writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath)
-        else:
-            vcf_writer = None
-
-    keep_predictions = args.output is not None
-
-    res = kipoi.postprocessing.variant_effects.predict_snvs(
-        model,
-        Dl,
-        vcf_path,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        dataloader_args=dataloader_arguments,
-        vcf_to_region=vcf_to_region,
-        evaluation_function_kwargs={"diff_types": dts},
-        sync_pred_writer=vcf_writer,
-        return_predictions=keep_predictions
-    )
-
-    with cd(model.source_dir):
-        # tabular files
-        if args.output is not None:
-            if args.file_format in ["tsv"]:
-                for i, k in enumerate(res):
-                    # Remove an old file if it is still there...
-                    if i == 0:
-                        try:
-                            os.unlink(args.output)
-                        except Exception:
-                            pass
-                    with open(args.output, "w") as ofh:
-                        ofh.write("KPVEP_%s\n" % k.upper())
-                        res[k].to_csv(args.output, sep="\t", mode="a")
-
-            if args.file_format in ["hdf5", "h5"]:
-                deepdish.io.save(args.output, res)
-
-    logger.info('Successfully predicted samples')
-
+    args.source = ensure_matching_args(args.model, args.source, "--model", "--source", allow_zero=False)
+    args.seq_length = ensure_matching_args(args.model, args.seq_length, "--model", "--seq_length")
+    args.dataloader = ensure_matching_args(args.model, args.dataloader, "--model", "--dataloader")
+    args.dataloader_source = ensure_matching_args(args.dataloader, args.dataloader_source, "--dataloader",
+                                                  "--dataloader_source")
+    args.dataloader_args = ensure_matching_args(args.model, args.dataloader_args, "--model",
+                                                "--dataloader_args", allow_zero=False)
 
 def cli_score_variants(command, raw_args):
     """CLI interface to score variants
     """
+    # Updated argument names:
+    # - scoring -> scores
+    # - --vcf_path -> --input_vcf, -i
+    # - --out_vcf_fpath -> --output_vcf, -o
+    # - --output -> -e, --extra_output
+    # - remove - -install_req
+    # - scoring_kwargs -> score_kwargs
     AVAILABLE_FORMATS = ["tsv", "hdf5", "h5"]
     assert command == "score_variants"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
-    add_model(parser)
-    add_dataloader(parser, with_args=True)
-    parser.add_argument('-v', '--vcf_path',
+    parser.add_argument('model', help='Model name.', nargs="+")
+    parser.add_argument('--source', default=["kipoi"],nargs="+",
+                        choices=list(kipoi.config.model_sources().keys()),
+                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                             " under model_sources. " +
+                             "'dir' is an additional source referring to the local folder.")
+    parser.add_argument('--dataloader',nargs="+",default=[],
+                        help="Dataloader name. If not specified, the model's default" +
+                             "DataLoader will be used")
+    parser.add_argument('--dataloader_source', nargs="+",default=["kipoi"],
+                        help="Dataloader source")
+    parser.add_argument('--dataloader_args',nargs="+",default=[],
+                        help="Dataloader arguments either as a json string:" +
+                             "'{\"arg1\": 1} or as a file path to a json file")
+    parser.add_argument('-i', '--input_vcf',
                         help='Input VCF.')
-    # TODO - rename path to fpath
-    parser.add_argument('-a', '--out_vcf_fpath',
+    parser.add_argument('-o', '--output_vcf',
                         help='Output annotated VCF file path.', default=None)
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
     parser.add_argument('-r', '--restriction_bed', default=None,
                         help="Regions for prediction can only be subsets of this bed file")
-    parser.add_argument('-o', '--output', required=False,
+    parser.add_argument('-e', '--extra_output', required=False,
                         help="Additional output file. File format is inferred from the file path ending" +
                         ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
-    parser.add_argument('-s', "--scoring", default="diff", nargs="+",
+    parser.add_argument('-s', "--scores", default="diff", nargs="+",
                         help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
                              "available except for `diff` which is always available. Select scoring function by the"
                              "`name` tag defined in the model yaml file.")
-    parser.add_argument('-k', "--scoring_kwargs", default="", nargs="+",
+    parser.add_argument('-k', "--score_kwargs", default="", nargs="+",
                         help="JSON definition of the kwargs for the scoring functions selected in --scoring. The "
                              "definiton can either be in JSON in the command line or the path of a .json file. The "
                              "individual JSONs are expected to be supplied in the same order as the labels defined in "
                              "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
                              "scoring method.")
-    parser.add_argument('-l', "--seq_length", type=int, default=None,
+    parser.add_argument('-l', "--seq_length", type=int, nargs="+",default=[],
                         help="Optional parameter: Model input sequence length - necessary if the model does not have a "
                              "pre-defined input sequence length.")
+    parser.add_argument('--std_var_id', action="store_true", help="If set then variant IDs in the annotated"
+                             " VCF will be replaced with a standardised, unique ID.")
 
     args = parser.parse_args(raw_args)
-
-    # extract args for kipoi.variant_effects.predict_snvs
-    vcf_path = args.vcf_path
-    out_vcf_fpath = args.out_vcf_fpath
-    dataloader_arguments = parse_json_file_str(args.dataloader_args)
-
-    # --------------------------------------------
-    # install args
-    if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model, args.source, and_dataloaders=True)
-    # load model & dataloader
-    model = kipoi.get_model(args.model, args.source)
-
-    if args.dataloader is not None:
-        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
-    else:
-        Dl = model.default_dataloader
+    # Make sure all the multi-model arguments like source, dataloader etc. fit together
+    _prepare_multi_model_args(args)
 
     # Check that all the folders exist
-    file_exists(args.vcf_path, logger)
-    dir_exists(os.path.dirname(args.out_vcf_fpath), logger)
-    if args.output is not None:
-        dir_exists(os.path.dirname(args.output), logger)
+    file_exists(args.input_vcf, logger)
+    dir_exists(os.path.dirname(args.output_vcf), logger)
+    if args.extra_output is not None:
+        dir_exists(os.path.dirname(args.extra_output), logger)
 
         # infer the file format
-        args.file_format = args.output.split(".")[-1]
+        args.file_format = args.extra_output.split(".")[-1]
         if args.file_format not in AVAILABLE_FORMATS:
             logger.error("File ending: {0} for file {1} not from {2}".
-                         format(args.file_format, args.output, AVAILABLE_FORMATS))
+                         format(args.file_format, args.extra_output, AVAILABLE_FORMATS))
             sys.exit(1)
 
         if args.file_format in ["hdf5", "h5"]:
             # only if hdf5 output is used
             import deepdish
 
-    if not isinstance(args.scoring, list):
-        args.scoring = [args.scoring]
+    if not isinstance(args.scores, list):
+        args.scores = [args.scores]
 
-    scoring_kwargs = []
-    if len(args.scoring_kwargs) >0:
-        scoring_kwargs = args.scoring_kwargs
-        if len(args.scoring) >= 1:
+    score_kwargs = []
+    if len(args.score_kwargs) > 0:
+        score_kwargs = args.score_kwargs
+        if len(args.scores) >= 1:
             # Check if all scoring functions should be used:
-            if args.scoring == ["all"]:
-                if len(scoring_kwargs) >= 1:
-                    raise ValueError("`--scoring_kwargs` cannot be defined in combination will `--scoring all`!")
+            if args.scores == ["all"]:
+                if len(score_kwargs) >= 1:
+                    raise ValueError("`--score_kwargs` cannot be defined in combination will `--scoring all`!")
             else:
-                scoring_kwargs = [parse_json_file_str(el) for el in scoring_kwargs]
-                if not len(args.scoring_kwargs) == len(scoring_kwargs):
-                    raise ValueError("When defining `--scoring_kwargs` a JSON representation of arguments (or the "
+                score_kwargs = [parse_json_file_str(el) for el in score_kwargs]
+                if not len(args.score_kwargs) == len(score_kwargs):
+                    raise ValueError("When defining `--score_kwargs` a JSON representation of arguments (or the "
                                      "path of a file containing them) must be given for every "
-                                     "`--scoring` function.")
+                                     "`--scores` function.")
 
-    # Load effect prediction related model info
-    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
+    keep_predictions = args.extra_output is not None
 
-    if model_info.use_seq_only_rc:
-        logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
-    else:
-        logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
+    res = None
+    if keep_predictions:
+        res = {}
 
-    if out_vcf_fpath is not None:
-        logger.info('Annotated VCF will be written to %s.' % str(out_vcf_fpath))
+    n_models = len(args.model)
 
-    keep_predictions = args.output is not None
+    for model_name, model_source, dataloader, dataloader_source, dataloader_args, seq_length in zip(args.model,
+                                                        args.source, args.dataloader, args.dataloader_source,
+                                                        args.dataloader_args, args.seq_length):
+        model_name_safe = model_name.replace("/","_")
+        output_vcf_model = None
+        if args.output_vcf is not None:
+            output_vcf_model = args.output_vcf
+            # If multiple models are to be analysed then vcfs need renaming.
+            if n_models > 1:
+                if output_vcf_model.endswith(".vcf"):
+                    output_vcf_model = output_vcf_model[:-4]
+                output_vcf_model += model_name_safe + ".vcf"
 
-    res = kipoi.postprocessing.variant_effects.score_variants(model,
-                                                              dataloader_arguments,
-                                                              args.vcf_path,
-                                                              out_vcf_fpath,
-                                                              scores=scoring_kwargs,
-                                                              score_kwargs=None,
-                                                              num_workers=0,
-                                                              batch_size=32,
-                                                              source='kipoi',
-                                                              seq_length=args.seq_length,
-                                                              restriction_bed=args.restriction_bed,
-                                                              return_predictions=keep_predictions)
+        dataloader_arguments = parse_json_file_str(dataloader_args)
 
+        # --------------------------------------------
+        # load model & dataloader
+        model = kipoi.get_model(model_name, model_source)
+
+        if dataloader is not None:
+            Dl = kipoi.get_dataloader_factory(dataloader, dataloader_source)
+        else:
+            Dl = model.default_dataloader
+
+        # Load effect prediction related model info
+        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
+
+        if model_info.use_seq_only_rc:
+            logger.info('Model SUPPORTS simple reverse complementation of input DNA sequences.')
+        else:
+            logger.info('Model DOES NOT support simple reverse complementation of input DNA sequences.')
+
+        if output_vcf_model is not None:
+            logger.info('Annotated VCF will be written to %s.' % str(output_vcf_model))
+
+        res[model_name_safe] = kipoi.postprocessing.variant_effects.score_variants(model,
+                                                                  dataloader_arguments,
+                                                                  args.input_vcf,
+                                                                  output_vcf_model,
+                                                                  scores=args.scores,
+                                                                  score_kwargs=score_kwargs,
+                                                                  num_workers=args.num_workers,
+                                                                  batch_size=args.batch_size,
+                                                                  seq_length=seq_length,
+                                                                  std_var_id=args.std_var_id,
+                                                                  restriction_bed=args.restriction_bed,
+                                                                  return_predictions=keep_predictions)
 
     # tabular files
-    if args.output is not None:
+    if keep_predictions:
         if args.file_format in ["tsv"]:
-            for i, k in enumerate(res):
-                # Remove an old file if it is still there...
-                if i == 0:
-                    try:
-                        os.unlink(args.output)
-                    except Exception:
-                        pass
-                with open(args.output, "w") as ofh:
-                    ofh.write("KPVEP_%s\n" % k.upper())
-                    res[k].to_csv(args.output, sep="\t", mode="a")
+            for model_name in res:
+                for i, k in enumerate(res[model_name]):
+                    # Remove an old file if it is still there...
+                    if i == 0:
+                        try:
+                            os.unlink(args.extra_output)
+                        except Exception:
+                            pass
+                    with open(args.extra_output, "w") as ofh:
+                        ofh.write("KPVEP_%s:%s\n" % (k.upper(), model_name))
+                        res[model_name][k].to_csv(args.extra_output, sep="\t", mode="a")
 
         if args.file_format in ["hdf5", "h5"]:
-            deepdish.io.save(args.output, res)
+            deepdish.io.save(args.extra_output, res)
+
 
     logger.info('Successfully predicted samples')
 

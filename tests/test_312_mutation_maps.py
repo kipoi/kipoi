@@ -19,6 +19,7 @@ from config import install_req as INSTALL_REQ
 warnings.filterwarnings('ignore')
 from kipoi.postprocessing.variant_effects import mutation_map as mm
 from kipoi.postprocessing.variant_effects import snv_predict as sp
+from kipoi.postprocessing.variant_effects.utils import is_indel_wrapper
 
 
 
@@ -131,7 +132,7 @@ def test_get_variants_for_all_positions():
 
 def _write_regions_from_vcf(vcf_iter, vcf_id_generator_fn, int_write_fn, region_generator):
     for record in vcf_iter:
-        if not record.is_indel:
+        if not is_indel_wrapper(record):
             region = region_generator(record)
             id = vcf_id_generator_fn(record)
             for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
@@ -415,9 +416,10 @@ def test_mutation_map():
         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
     }
+    dataloader_arguments = {k: model_dir + v for k, v in dataloader_arguments.items()}
     #
     # Run the actual predictions
-    vcf_path = "example_files/first_variant.vcf"
+    vcf_path = model_dir + "example_files/first_variant.vcf"
     #
     model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
     vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)

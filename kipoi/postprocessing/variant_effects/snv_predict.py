@@ -14,7 +14,7 @@ from kipoi.postprocessing.variant_effects.scores import Logit, get_scoring_fns
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation, ensure_tabixed_vcf
 from kipoi.postprocessing.variant_effects.utils.io import VcfWriter
-from kipoi.utils import cd
+from .utils import is_indel_wrapper
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -90,7 +90,7 @@ def _overlap_vcf_region(vcf_obj, regions, exclude_indels=True):
         region_str = "{0}:{1}-{2}".format(chrom, start, end)
         variants = vcf_obj(region_str)
         for record in variants:
-            if record.is_indel and exclude_indels:
+            if is_indel_wrapper(record) and exclude_indels:
                 continue
             vcf_records.append(record)
             contained_regions.append(i)
@@ -270,7 +270,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
         preproc_conv["strand"] = []
 
     for i, record in enumerate(vcf_records):
-        assert not record.is_indel  # Catch indels, that needs a slightly modified processing
+        assert not is_indel_wrapper(record) # Catch indels, that needs a slightly modified processing
         ranges_input_i = process_lines[i]
         new_vals = {k: np.nan for k in preproc_conv.keys() if k not in ["do_mutate", "pp_line"]}
         new_vals["do_mutate"] = False
@@ -515,7 +515,7 @@ def predict_snvs(model,
 
             with BedWriter(temp_bed3_file) as ofh:
                 for record in vcf_fh:
-                    if not record.is_indel:
+                    if not is_indel_wrapper(record):
                         region = vcf_to_region(record)
                         id = vcf_id_generator_fn(record)
                         for chrom, start, end in zip(region["chrom"], region["start"], region["end"]):
@@ -674,6 +674,7 @@ def score_variants(model,
                    batch_size=32,
                    source='kipoi',
                    seq_length = None,
+                   std_var_id = False,
                    restriction_bed = None,
                    return_predictions = False):
     """Score variants: annotate the vcf file using
@@ -688,6 +689,7 @@ def score_variants(model,
       num_workers: number of paralell workers to use for dataloading
       batch_size: batch_size for dataloading
       source: model source name
+      std_var_id: If true then variant IDs in the annotated VCF will be replaced with a standardised, unique ID.
       seq_length: If model accepts variable input sequence length then this value has to be set!
       restriction_bed: If dataloader can be run with regions generated from the VCF then only variants that overlap
       regions defined in `restriction_bed` will be tested.
@@ -702,7 +704,7 @@ def score_variants(model,
         model = kipoi.get_model(model, source=source, with_dataloader=True)
     Dataloader = model.default_dataloader
     vcf_path_tbx = ensure_tabixed_vcf(in_vcf_path_abs)  # TODO - run this within the function
-    writer = VcfWriter(model, in_vcf_path_abs, out_vcf_path_abs)
+    writer = VcfWriter(model, in_vcf_path_abs, out_vcf_path_abs, standardise_var_id=std_var_id)
     dts = get_scoring_fns(model, scores, score_kwargs)
 
     # Load effect prediction related model info

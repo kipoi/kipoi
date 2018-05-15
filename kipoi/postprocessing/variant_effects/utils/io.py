@@ -142,7 +142,8 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
     object will be modified in the process! Hence use carefully!
     """
 
-    def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen):
+    def __init__(self, model, reference_cyvcf2_obj, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen,
+                 standardise_var_id=False):
         super(VcfWriterCyvcf2, self).__init__(model)
         # self.vcf_reader = cyvcf2.Reader(reference_vcf_path, "r")
         self.vcf_reader = reference_cyvcf2_obj
@@ -152,6 +153,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
         self.column_labels = None
         self.vcf_id_generator = vcf_id_generator
         self.vcf_writer = None
+        self.standardise_var_id = standardise_var_id
 
     def __call__(self, predictions, records, line_ids=None):
         # First itertation: the output file has to be created and the headers defined
@@ -208,7 +210,7 @@ class VcfWriterCyvcf2(SyncPredictonsWriter):
 
         # Actually write the vcf entries.
         for pred_line, record in enumerate(records):
-            if self.vcf_id_generator is not None:
+            if self.standardise_var_id and self.vcf_id_generator is not None:
                 record.ID = self.vcf_id_generator(record)
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
@@ -233,7 +235,8 @@ class VcfWriter(SyncPredictonsWriter):
     the VCF file used here is identical to the one used in cyvcf2.
     """
 
-    def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen):
+    def __init__(self, model, reference_vcf_path, out_vcf_fpath, id_delim=":", vcf_id_generator=default_vcf_id_gen,
+                 standardise_var_id = False):
         import vcf
         super(VcfWriter, self).__init__(model)
         compressed = reference_vcf_path.endswith(".gz")
@@ -245,6 +248,7 @@ class VcfWriter(SyncPredictonsWriter):
         self.column_labels = None
         self.vcf_id_generator = vcf_id_generator
         self.vcf_writer = None
+        self.standardise_var_id = standardise_var_id
 
     @staticmethod
     def _generate_info_field(id, num, info_type, desc, source, version):
@@ -307,7 +311,7 @@ class VcfWriter(SyncPredictonsWriter):
         # Actually write the vcf entries.
         for pred_line, record in enumerate(records):
             record_vcf = convert_record(record, self.vcf_reader)
-            if self.vcf_id_generator is not None:
+            if self.standardise_var_id and self.vcf_id_generator is not None:
                 record_vcf.ID = self.vcf_id_generator(record)
             for k in predictions:
                 # In case there is a pediction for this line, annotate the vcf...
