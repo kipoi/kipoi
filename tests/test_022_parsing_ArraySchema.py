@@ -55,7 +55,7 @@ column_labels:
 shape: (1, )
 doc: Predicted binding strength
 column_labels: rbp_prb""", ["rbp_prb"])
-]
+                          ]
 
 BAD_EXAMPLES_COLNAMES = ["""
 shape: (3, )
@@ -87,11 +87,13 @@ def test_parse_bad_info(info_str):
     with raises(Exception):
         CLS.from_config(bim)
 
+
 @pytest.mark.parametrize("info_str,info_res", GOOD_EXAMPLES_COLNAMES)
 def test_parse_col_naming(info_str, info_res):
     bim = from_yaml(info_str)
     info2 = CLS.from_config(bim)
-    assert(info2.column_labels == info_res)
+    assert (info2.column_labels == info_res)
+
 
 @pytest.mark.parametrize("info_str", BAD_EXAMPLES_COLNAMES)
 def test_parse_col_naming_bad(info_str):
@@ -99,13 +101,14 @@ def test_parse_col_naming_bad(info_str):
     # Just prints out the warning at the moment, so no way to check with testing...
     CLS.from_config(bim)
 
+
 def test_correct_shape():
-    correct_shapes = [(100, ),
+    correct_shapes = [(100,),
                       (None, 100),
-                      (None, ),
-                      (100, ),
-                      (100, ),
-                      (100, )]
+                      (None,),
+                      (100,),
+                      (100,),
+                      (100,)]
 
     for i, info_str in enumerate(GOOD_EXAMPLES):
         correct_shape = correct_shapes[i]

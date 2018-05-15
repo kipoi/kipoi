@@ -13,7 +13,8 @@ def center_cmap(cmap, vmax, vmin, center):
 
 
 def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax=None, show_letter_scale=False,
-                    cmap=None, cbar=True, cbar_kws=None, cbar_ax=None, limit_region=None):
+                    cmap=None, cbar=True, cbar_kws=None, cbar_ax=None, limit_region=None, var_box_color="black",
+                    show_var_id=True):
     """
     Plot heatmap and seqlogo plot together in one axis.
 
@@ -60,15 +61,24 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     # rescale letters so that they look nice above the heatmap
     letter_heights_rescaled = np.copy(letter_heights)
-    letter_heights_rescaled /= letter_heights_rescaled.max() / (vocab_len / 2)
+
+    letter_height_scaling = (vocab_len / 2)
+
+    if letter_heights_rescaled.min() < 0:
+        lh_range = (letter_heights_rescaled.max() - letter_heights_rescaled.min()) / letter_height_scaling
+        letter_y_offset = - letter_heights_rescaled.min() / lh_range
+        letter_heights_rescaled = letter_heights_rescaled / lh_range
+    else:
+        letter_y_offset = 0.0
+        letter_heights_rescaled /= letter_heights_rescaled.max() / letter_height_scaling
 
     assert letter_heights.shape[1] == len(VOCABS[vocab])
     x_range = [1, letter_heights.shape[0]]
 
     for x_pos, heights in enumerate(letter_heights_rescaled):
         letters_and_heights = sorted(zip(heights, list(VOCABS[vocab].keys())))
-        y_pos_pos = 0.0
-        y_neg_pos = 0.0
+        y_pos_pos = letter_y_offset
+        y_neg_pos = letter_y_offset
         for height, letter in letters_and_heights:
             color = VOCABS[vocab][letter]
             polygons = letter_polygons[letter]
@@ -121,13 +131,14 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
             y_lowlim = y_alt_lowlim
             box_height = 1
             ax.add_patch(
-                mpatches.Rectangle((rel_pos + 0.5, y_lowlim), box_width, box_height, fill=False, lw=2, ec="black"))
-            # annotate the box
-            ax.annotate(var_id, xy=(rel_pos + box_width + 0.5, y_lowlim + box_height / 2),
-                        xytext=(rel_pos + box_width + 0.5 + 2, y_lowlim + box_height / 2),
-                        arrowprops=dict(arrowstyle="->",
-                                        connectionstyle="arc"),
-                        bbox=dict(boxstyle="round,pad=.5", fc="0.9", alpha=0.7))
+                mpatches.Rectangle((rel_pos + 0.5, y_lowlim), box_width, box_height, fill=False, lw=2,
+                                   ec=var_box_color))
+            if show_var_id:
+                # annotate the box
+                ax.annotate(var_id, xy=(rel_pos + box_width + 0.5, y_lowlim + box_height / 2),
+                            xytext=(rel_pos + box_width + 0.5 + 2, y_lowlim + box_height / 2),
+                            arrowprops=dict(arrowstyle="->", connectionstyle="arc"),
+                            bbox=dict(boxstyle="round,pad=.5", fc="0.9", alpha=0.7))
 
     if limit_region is not None:
         if not isinstance(limit_region, tuple):

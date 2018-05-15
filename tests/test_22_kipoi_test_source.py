@@ -22,6 +22,7 @@ def test_list_softlink_dependencies():
     assert list_softlink_dependencies(os.path.join(component_dir, 'deepTarget'),
                                       component_dir) == set()
 
+
 def dont_test_diff():
     git_range = ["master", "HEAD"]
     local_path = "/home/avsec/.kipoi/models"

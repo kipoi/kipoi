@@ -387,7 +387,9 @@ class ModelInfoExtractor(object):
         # Check if model supports simple rc-testing of input sequences:
         self.use_seq_only_rc = _get_model_use_seq_only_rc(model_obj)
 
-    def get_mutatable_inputs(self):
+    def get_mutatable_inputs(self, only_one_hot=False):
+        if only_one_hot:
+            return [k for k, v in self.seq_input_mutator.items() if isinstance(v, OneHotSequenceMutator)]
         return list(self.seq_input_mutator.keys())
 
     def get_seq_mutator(self, seq_field):
