@@ -8,7 +8,6 @@ from related import from_yaml
 # Class to test
 CLS = DataLoaderArgument
 
-
 # common header
 inp_targ = """
 """
@@ -41,7 +40,6 @@ example: astring
 # only one tag
 tags: tag1
 """]
-
 
 BAD_EXAMPLES = ["""
 doc: some description

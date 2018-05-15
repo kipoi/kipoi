@@ -30,6 +30,7 @@ def compare_arrays(a, b):
     assert np.allclose(a["metadata"][0], b["metadata"][0])
     assert np.allclose(a["metadata"][1], b["metadata"][1])
 
+
 # --------------------------------------------
 
 
@@ -37,6 +38,7 @@ def test_PreloadedDataset(data):
     # PreloadedDataset example:
     def data_fn():
         return data
+
     # ------------------------
 
     d = PreloadedDataset.from_fn(data_fn)()
@@ -57,6 +59,7 @@ def test_Dataset(data):
 
         def __getitem__(self, idx):
             return get_dataset_item(self.data, idx)
+
     # ------------------------
 
     d = MyDataset(data)
@@ -80,6 +83,7 @@ def test_BatchDataset(data):
             start = idx * self.batch_size
             end = min((idx + 1) * self.batch_size, self.data["targets"].shape[0])
             return get_dataset_item(self.data, np.arange(start, end))
+
     # ------------------------
     d = MyBatchDataset(data)
 
@@ -104,7 +108,9 @@ def test_SampleIterator(data):
             ret = get_dataset_item(self.data, self.idx)
             self.idx += 1
             return ret
+
         next = __next__
+
     # ------------------------
 
     d = MySampleIterator(data)
@@ -134,7 +140,9 @@ def test_BatchIterator(data):
             end = min((idx + 1) * self.batch_size, self.data["targets"].shape[0])
             self.idx += 1
             return get_dataset_item(self.data, np.arange(start, end))
+
         next = __next__
+
     # ------------------------
 
     d = MyBatchIterator(data, 3)
@@ -150,6 +158,7 @@ def test_SampleGenerator(data):
     def generator_fn(data):
         for idx in range(data["targets"].shape[0]):
             yield get_dataset_item(data, idx)
+
     # ------------------------
 
     d = SampleGenerator.from_fn(generator_fn)(data)
@@ -168,6 +177,7 @@ def test_BatchGenerator(data):
             start = idx * batch_size
             end = min((idx + 1) * batch_size, data["targets"].shape[0])
             yield get_dataset_item(data, np.arange(start, end))
+
     # ------------------------
 
     d = BatchGenerator.from_fn(generator_fn)(data, 3)

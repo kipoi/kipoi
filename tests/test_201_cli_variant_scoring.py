@@ -9,7 +9,7 @@ class dummy_container(object):
     pass
 
 
-def assert_groupwise_identity(group_a, group_b, equality_test = lambda x,y: x==y):
+def assert_groupwise_identity(group_a, group_b, equality_test=lambda x, y: x == y):
     # Function that asserts that the elements, ordered by the first group list, are identical
     # First element in group-wise identity tests have to be unique!
     if (len(list(set(group_a[0]))) != len(group_a[0])) or (len(list(set(group_b[0]))) != len(group_b[0])):
@@ -19,8 +19,7 @@ def assert_groupwise_identity(group_a, group_b, equality_test = lambda x,y: x==y
         if ref_index is None:
             ref_index = [b.index(el_a) for el_a in a]
         else:
-            assert all([equality_test(b[i],el_a) for i, el_a in zip(ref_index, a)])
-
+            assert all([equality_test(b[i], el_a) for i, el_a in zip(ref_index, a)])
 
 
 postproc_yaml = """
@@ -51,7 +50,6 @@ variant_effects:
 %s
 """
 
-
 diff_str = """
     - name: diff
       type: diff
@@ -80,12 +78,12 @@ def test_custom_fns():
     for i, diff_str_here in enumerate(["", diff_str]):
         if diff_str_here == "":
             exp_avail_scoring_fn_def_args = [None, [builtin_default_kwargs] * 2 +
-                                             [{"rc_merging": "max"}] + [builtin_default_kwargs]*4,
-                                             [builtin_default_kwargs] * 2 + [{}] + [builtin_default_kwargs]*5]
+                                             [{"rc_merging": "max"}] + [builtin_default_kwargs] * 4,
+                                             [builtin_default_kwargs] * 2 + [{}] + [builtin_default_kwargs] * 5]
         else:
             exp_avail_scoring_fn_def_args = [None, [builtin_default_kwargs] * 3 +
-                                             [{"rc_merging": "max"}]+ [builtin_default_kwargs]*4,
-                                             [builtin_default_kwargs] * 3 + [{}] + [builtin_default_kwargs]*5]
+                                             [{"rc_merging": "max"}] + [builtin_default_kwargs] * 4,
+                                             [builtin_default_kwargs] * 3 + [{}] + [builtin_default_kwargs] * 5]
         for i2, mydiff_args in enumerate(["", args_w_default, optional_args]):
             for i3, pp_yaml in enumerate([postproc_yaml, dupl_name_postproc_yaml]):
                 pps = PostProcModelStruct.from_config(from_yaml(pp_yaml % (diff_str_here, mydiff_args)))
@@ -100,10 +98,11 @@ def test_custom_fns():
                         with pytest.raises(ValueError):
                             get_avail_scoring_methods(model)
                     else:
-                        avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+                        avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
                             get_avail_scoring_methods(model)
                         output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
-                        expected = [exp_avail_scoring_fn_labels[i], exp_avail_scoring_fns[i], exp_avail_scoring_fn_def_args[i2]]
+                        expected = [exp_avail_scoring_fn_labels[i], exp_avail_scoring_fns[i],
+                                    exp_avail_scoring_fn_def_args[i2]]
                         assert_groupwise_identity(output, expected)
                         assert default_scoring_fns == ["deepsea_effect"]
     model = dummy_container()
@@ -113,12 +112,12 @@ def test_custom_fns():
         get_avail_scoring_methods(model)
 
 
-
 def test_ret():
     pps = PostProcModelStruct.from_config(from_yaml(postproc_yaml % ('', args_w_default)))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = get_avail_scoring_methods(model)
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = get_avail_scoring_methods(
+        model)
 
 
 postproc_yaml_nofndef = """
@@ -133,11 +132,11 @@ def test_default_diff():
     pps = PostProcModelStruct.from_config(from_yaml(postproc_yaml_nofndef))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
         get_avail_scoring_methods(model)
     #
     output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
-    expected = [["diff", "ref", "alt"], [ve.Diff, ve.Ref, ve.Alt], [builtin_default_kwargs]*3]
+    expected = [["diff", "ref", "alt"], [ve.Diff, ve.Ref, ve.Alt], [builtin_default_kwargs] * 3]
     assert_groupwise_identity(output, expected)
     assert default_scoring_fns == ["diff"]
 
@@ -182,7 +181,7 @@ def test_rename_custom():
     pps = PostProcModelStruct.from_config(from_yaml(rename_custom_yaml))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
         get_avail_scoring_methods(model)
     output = [avail_scoring_fn_names]
     expected = [["custom_logit", "diff", "ref", "alt", "logit_ref", "logit", "deepsea_effect"]]
@@ -204,10 +203,6 @@ variant_effects:
         rc_merging:
           default: "max"
 """
-
-
-
-
 
 
 # if no default is set all scoring functions are used.
@@ -250,4 +245,3 @@ def test__get_scoring_fns():
                     assert isinstance(dts[k], scorer[k])
     with pytest.raises(Exception):
         _get_scoring_fns(model, ["all"], [json_kwargs])
-

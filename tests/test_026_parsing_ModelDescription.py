@@ -41,7 +41,6 @@ schema:
             doc: Predicted binding strength
 """]
 
-
 BAD_EXAMPLES = ["""
 type: keras
 args:
@@ -85,6 +84,7 @@ def test_parse_bad_info(info_str):
 
     with raises(Exception):
         CLS.from_config(bim)
+
 
 # --------------------------------------------
 # load example yaml files

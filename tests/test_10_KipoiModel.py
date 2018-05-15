@@ -14,7 +14,6 @@ import torch
 import genomelake
 import keras
 
-
 EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "pyt"]
 # TODO - finish the unit-test
 INSTALL_REQ = config.install_req

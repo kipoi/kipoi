@@ -62,6 +62,7 @@ setup(
                 "intervaltree",
                 "deepdish",
                 "matplotlib",
+                "seaborn",
                 "shapely",
                 "descartes",
                 ],

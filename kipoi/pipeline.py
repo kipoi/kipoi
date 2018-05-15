@@ -11,6 +11,7 @@ from .data import numpy_collate_concat
 import six
 from tqdm import tqdm
 import logging
+import six
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 

@@ -1,4 +1,3 @@
-
 import kipoi
 import kipoi.postprocessing.variant_effects as ve
 import numpy as np
@@ -16,6 +15,7 @@ import tempfile
 from kipoi.metadata import GenomicRanges
 
 warnings.filterwarnings('ignore')
+
 
 # general structure:
 # for an indel we need a) the reference output, b) the alternative output with the variant.

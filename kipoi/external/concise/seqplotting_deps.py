@@ -353,5 +353,89 @@ def pad_sequences(sequence_vec, maxlen=None, align="end", value="N"):
 
     return padded_sequence_vec
 
+# TODO - add figsize???
+def seqlogo(letter_heights, vocab="DNA", ax=None):
+    """Make a logo plot
+    # Arguments
+        letter_heights: "motif length" x "vocabulary size" numpy array
+    Can also contain negative values.
+        vocab: str, Vocabulary name. Can be: DNA, RNA, AA, RNAStruct.
+        ax: matplotlib axis
+    """
+    import matplotlib.pyplot as plt
+    ax = ax or plt.gca()
+
+    assert letter_heights.shape[1] == len(VOCABS[vocab])
+    x_range = [1, letter_heights.shape[0]]
+    pos_heights = np.copy(letter_heights)
+    pos_heights[letter_heights < 0] = 0
+    neg_heights = np.copy(letter_heights)
+    neg_heights[letter_heights > 0] = 0
+
+    for x_pos, heights in enumerate(letter_heights):
+        letters_and_heights = sorted(zip(heights, list(VOCABS[vocab].keys())))
+        y_pos_pos = 0.0
+        y_neg_pos = 0.0
+        for height, letter in letters_and_heights:
+            color = VOCABS[vocab][letter]
+            polygons = letter_polygons[letter]
+            if height > 0:
+                add_letter_to_axis(ax, polygons, color, 0.5 + x_pos, y_pos_pos, height)
+                y_pos_pos += height
+            else:
+                add_letter_to_axis(ax, polygons, color, 0.5 + x_pos, y_neg_pos, height)
+                y_neg_pos += height
+
+    # if add_hline:
+    #     ax.axhline(color="black", linewidth=1)
+    ax.set_xlim(x_range[0] - 1, x_range[1] + 1)
+    ax.grid(False)
+    ax.set_xticks(list(range(*x_range)) + [x_range[-1]])
+    ax.set_aspect(aspect='auto', adjustable='box')
+    ax.autoscale_view()
+
+def seqlogo_fig(letter_heights, vocab="DNA", figsize=(10, 2), ncol=1, plot_name=None):
+    """
+    # Arguments
+        plot_name: Title of the plot. Can be a list of names
+    """
+    import matplotlib.pyplot as plt
+    import math
+    fig = plt.figure(figsize=figsize)
+
+    if len(letter_heights.shape) == 3:
+        #
+        n_plots = letter_heights.shape[2]
+        nrow = math.ceil(n_plots / ncol)
+        if isinstance(plot_name, list):
+            assert len(plot_name) == n_plots
+    else:
+        n_plots = 1
+        nrow = 1
+        ncol = 1
+
+    for i in range(n_plots):
+        if len(letter_heights.shape) == 3:
+            w_cur = letter_heights[:, :, i]
+        else:
+            w_cur = letter_heights
+        ax = plt.subplot(nrow, ncol, i + 1)
+        plt.tight_layout()
+
+        # plot the motif
+        seqlogo(w_cur, vocab, ax)
+
+        # add the title
+        if plot_name is not None:
+            if n_plots > 0:
+                if isinstance(plot_name, list):
+                    pln = plot_name[i]
+                else:
+                    pln = plot_name + " {0}".format(i)
+            else:
+                pln = plot_name
+            ax.set_title(pln)
+    return fig
+
 
 ####### copy end

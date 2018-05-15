@@ -6,7 +6,6 @@ from kipoi.components import ArraySchema, MetadataStruct, DataLoaderSchema, Mode
 from kipoi.metadata import GenomicRanges
 from related import from_yaml
 
-
 # numpy arrays
 
 GOOD_ARR_SCHEMA_PAIRS = [
@@ -125,7 +124,6 @@ metadata:
         }
     })
 ]
-
 
 BAD_DLSCHEMA_PAIRS = [
     (GOOD_DLSCHEMA_PAIRS[0][0], {
@@ -257,7 +255,6 @@ targets:
     doc: "."
 """)
 ]
-
 
 BAD_DLSCHEMA_MODEL_PAIRS = [
     ("""

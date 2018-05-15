@@ -26,6 +26,7 @@ def get_info_ids(info_tags):
 def get_kipoi_colnames(info_tags):
     """Get the kipoi column labels
     """
+
     def parse_kpvep_descr(desc):
         """Parse kipoi info tag
         """
@@ -69,6 +70,7 @@ def parse_kipoi_info(elem, colnames, prefix="", add_index=True):
         return OrderedDict([(prefix + c, soft_to_float(elems[i]))
                             for i, c in enumerate(colnames)])
 
+
 # TODO - convert all info tags to a nice dictionary or pandas data-frame
 #         - TODO ?- should I convert it to a dictionary or a pandas.DataFrame?
 #         - TODO ?- which columns do we need in the final table
@@ -83,7 +85,6 @@ def soft_to_float(x):
 
 
 class KipoiVCFParser(object):
-
     def __init__(self, vcf_file):
         """Iteratively a vcf file intoa dictionary
 
