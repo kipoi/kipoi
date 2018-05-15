@@ -512,8 +512,8 @@ class MutationMapPlotter(object):
     def plot_mutmap(self, dl_entry, model_seq_key, scoring_key, model_output, ax=None, show_letter_scale=False,
                     cmap=None, limit_region=None, limit_region_genomic=None, annotation_vcf=None,
                     annotation_variants=None, ignore_stored_var_annotation=False, rc_plot=False,
-                    minimum_letter_height=None, cbar=True, var_box_color = "black",
-                    show_var_id = True, grad_inp_style_lh = False):
+                    minimum_letter_height=None, cbar=True, var_box_color="black",
+                    show_var_id=True, grad_inp_style_lh=False):
         """
         Generate a mutation map plot
         
@@ -637,11 +637,11 @@ class MutationMapPlotter(object):
                     raise Exception("minimum_letter_height has to be a float within [0,1]")
                 max_h = letter_heights.max()
                 letter_heights = letter_heights * (
-                1 - minimum_letter_height) + onehot_refseq * minimum_letter_height * max_h
+                    1 - minimum_letter_height) + onehot_refseq * minimum_letter_height * max_h
 
         return seqlogo_heatmap(letter_heights, mm_non_na, ovlp_var, vocab="DNA", ax=ax,
                                show_letter_scale=show_letter_scale, cmap=cmap, limit_region=None,
-                               cbar=cbar, var_box_color = var_box_color, show_var_id = show_var_id)
+                               cbar=cbar, var_box_color=var_box_color, show_var_id=show_var_id)
 
 
 class MutationMap(object):

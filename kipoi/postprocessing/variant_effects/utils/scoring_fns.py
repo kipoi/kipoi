@@ -13,6 +13,7 @@ logger.addHandler(logging.NullHandler())
 
 class Pred_analysis(object):
     __metaclass__ = abc.ABCMeta
+
     @abc.abstractmethod
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         raise NotImplementedError("Analysis routine has to be implemented")
@@ -20,6 +21,7 @@ class Pred_analysis(object):
 
 class Rc_merging_pred_analysis(Pred_analysis):
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
+
     #
 
     def __init__(self, rc_merging="mean"):
@@ -32,6 +34,7 @@ class Rc_merging_pred_analysis(Pred_analysis):
             self.rc_merging = rc_merging
         else:
             raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
+
     #
 
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
@@ -87,6 +90,7 @@ class LogitRef(Rc_merging_pred_analysis):
         else:
             return logits
 
+
 class Alt(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         alt_out = alt
@@ -94,13 +98,13 @@ class Alt(Rc_merging_pred_analysis):
             alt_out = self.rc_merging(alt, alt_rc)
         return alt_out
 
+
 class Ref(Rc_merging_pred_analysis):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         ref_out = ref
         if ref_rc is not None:
             ref_out = self.rc_merging(ref, ref_rc)
         return ref_out
-
 
 
 class Diff(Rc_merging_pred_analysis):
@@ -124,16 +128,11 @@ class DeepSEA_effect(Rc_merging_pred_analysis):
         diffs = preds["alt"] - preds["ref"]
 
         if (preds["ref_rc"] is not None) and ((preds["alt_rc"] is not None)):
-            logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
+            logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(
+                preds["ref_rc"] / (1 - preds["ref_rc"]))
             diffs_rc = preds["alt_rc"] - preds["ref_rc"]
             logit_diffs = self.rc_merging(logit_diffs, logit_diffs_rc)
             diffs = self.rc_merging(diffs, diffs_rc)
-            #self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
+            # self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
 
         return np.abs(logit_diffs) * np.abs(diffs)
-
-
-
-
-
-

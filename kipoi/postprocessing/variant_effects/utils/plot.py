@@ -13,8 +13,8 @@ def center_cmap(cmap, vmax, vmin, center):
 
 
 def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax=None, show_letter_scale=False,
-                    cmap=None, cbar=True, cbar_kws=None, cbar_ax=None, limit_region=None, var_box_color = "black",
-                    show_var_id = True):
+                    cmap=None, cbar=True, cbar_kws=None, cbar_ax=None, limit_region=None, var_box_color="black",
+                    show_var_id=True):
     """
     Plot heatmap and seqlogo plot together in one axis.
 
@@ -37,7 +37,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     # heatmap grid
     grid = np.mgrid[0.5:(seq_len + 0.5):1, -vocab_len:0:1].reshape(2, -1).T
-    y_hm_tickpos = (np.arange(-vocab_len, 0, 1) + 0.5)[::-1] # alphabet position with 0 on top
+    y_hm_tickpos = (np.arange(-vocab_len, 0, 1) + 0.5)[::-1]  # alphabet position with 0 on top
     y_seqlogo_tickpos = np.array([0, letter_rescaling])  # tuple of where the ticks for the seqlogo should be placed
 
     if ax is None:
@@ -50,7 +50,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
         patches.append(rect)
 
     # Add colours to the heatmap - flip the alphabet order so that "A" is on top.
-    colors = heatmap_data[::-1,:].T.reshape((seq_len * 4))
+    colors = heatmap_data[::-1, :].T.reshape((seq_len * 4))
     # Centre the colours around 0
     cmap_centered = center_cmap(cmap, colors.max(), colors.min(), 0.0)
     collection = PatchCollection(patches, cmap=cmap_centered, alpha=1.0)
@@ -64,7 +64,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     letter_height_scaling = (vocab_len / 2)
 
-    if letter_heights_rescaled.min()<0:
+    if letter_heights_rescaled.min() < 0:
         lh_range = (letter_heights_rescaled.max() - letter_heights_rescaled.min()) / letter_height_scaling
         letter_y_offset = - letter_heights_rescaled.min() / lh_range
         letter_heights_rescaled = letter_heights_rescaled / lh_range
@@ -74,7 +74,6 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
 
     assert letter_heights.shape[1] == len(VOCABS[vocab])
     x_range = [1, letter_heights.shape[0]]
-
 
     for x_pos, heights in enumerate(letter_heights_rescaled):
         letters_and_heights = sorted(zip(heights, list(VOCABS[vocab].keys())))
@@ -121,8 +120,8 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
             # y_ref_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(ref[0])
             # y_alt_lowlim = -vocab_len + list(VOCABS[vocab].keys()).index(alt[0])
             # This is for the flipped alphabet
-            y_ref_lowlim = list(VOCABS[vocab].keys()).index(ref[0])*(-1)-1
-            y_alt_lowlim = list(VOCABS[vocab].keys()).index(alt[0][0])*(-1)-1
+            y_ref_lowlim = list(VOCABS[vocab].keys()).index(ref[0]) * (-1) - 1
+            y_alt_lowlim = list(VOCABS[vocab].keys()).index(alt[0][0]) * (-1) - 1
             # box drawing
             box_width = len(ref)
             # Deprecated: draw bax around ref and alt.
@@ -138,7 +137,7 @@ def seqlogo_heatmap(letter_heights, heatmap_data, ovlp_var=None, vocab="DNA", ax
                 # annotate the box
                 ax.annotate(var_id, xy=(rel_pos + box_width + 0.5, y_lowlim + box_height / 2),
                             xytext=(rel_pos + box_width + 0.5 + 2, y_lowlim + box_height / 2),
-                            arrowprops=dict(arrowstyle="->",connectionstyle="arc"),
+                            arrowprops=dict(arrowstyle="->", connectionstyle="arc"),
                             bbox=dict(boxstyle="round,pad=.5", fc="0.9", alpha=0.7))
 
     if limit_region is not None:

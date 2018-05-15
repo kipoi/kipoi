@@ -2,12 +2,12 @@ import numpy as np
 from collections import OrderedDict
 import copy
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
 class ReshapeDnaString(object):
-
     def __init__(self, input_shape):
         if len(input_shape) == 0:
             self.format_style = "string"
@@ -54,7 +54,6 @@ class ReshapeDnaString(object):
 
 
 class OutputReshaper(object):
-
     def __init__(self, model_target_schema, group_delim="."):
         self.model_target_schema = model_target_schema
         self.standard_dict_order = None  # This one is used to always produce the same order of outputs for a dict
@@ -114,7 +113,7 @@ class OutputReshaper(object):
             labels = []
             for k in self.standard_dict_order:
                 arr = self.ensure_2dim(ds[k])
-                assert(arr.shape[1] == self.anno[k].shape[0])
+                assert (arr.shape[1] == self.anno[k].shape[0])
                 outputs.append(arr)
                 labels.append(self.anno[k])
             flat = np.concatenate(outputs, axis=1)
@@ -140,7 +139,8 @@ class OutputReshaper(object):
         else:
             res_shape = [dim for dim in arrayschema_obj.shape if dim is not None]
             if len(res_shape) > 1:
-                raise NotImplementedError("Don't know how to deal with multi-dimensional model target %s" % str(arrayschema_obj))
+                raise NotImplementedError(
+                    "Don't know how to deal with multi-dimensional model target %s" % str(arrayschema_obj))
             # if res_shape[0] == 1:
             #    ret = np.array([""])
             # else:
@@ -149,7 +149,6 @@ class OutputReshaper(object):
 
 
 class ReshapeDna(object):
-
     def __init__(self, in_shape):
         in_shape = np.array(in_shape)
         # None can only occur once and then it can only be the seqlen
@@ -214,7 +213,7 @@ class ReshapeDna(object):
         elif in_array.shape[0] == 1:
             self.single_sample_no_batch_axis = False
 
-        #  is there an actual sequence sample axis?
+        # is there an actual sequence sample axis?
         additional_axis = len(in_array.shape) - len(self.in_shape)
         in_shape = self.in_shape
 
@@ -228,7 +227,8 @@ class ReshapeDna(object):
         # Raise an exception if the input array does not agree with the specifications in the model input schema
         if (additional_axis != 1) or (in_array.shape[1:] != tuple(in_shape)):
             raise Exception("General array mismatch! Given: %s Expecting: %s" % (str(in_array.shape),
-                                                                                 "([N], %s)" + ", ".join(in_shape.astype(str).tolist())))
+                                                                                 "([N], %s)" + ", ".join(
+                                                                                     in_shape.astype(str).tolist())))
         #
         if not self.reshape_needed:
             return in_array

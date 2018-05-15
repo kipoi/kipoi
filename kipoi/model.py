@@ -1224,12 +1224,12 @@ def get_filter_array(filter_slices, input_shape):
             # If dimension is wrong complain
             elif len(filter_slices) != input_dim:
                 raise Exception("Filter slice of length %d cannot be applied in a filter of dimension: %d" % (
-                len(filter_slices), input_dim - 1))
+                    len(filter_slices), input_dim - 1))
             # If sample dimension is not ":" complain
             if not index_is_none(filter_slices[0]):
                 raise Exception(
                     "0th (sample) dimension always has to be None. Filter dimension without sample dimension: %d." % (
-                    input_dim - 1))
+                        input_dim - 1))
             # Finally apply filter
             pt_filt_slice.__setitem__(filter_slices, 1)
         else:
