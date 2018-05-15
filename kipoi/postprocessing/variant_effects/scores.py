@@ -24,6 +24,7 @@ def default_kwargs(args):
 
 class Score(object):
     __metaclass__ = abc.ABCMeta
+
     @abc.abstractmethod
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         raise NotImplementedError("Analysis routine has to be implemented")
@@ -31,6 +32,7 @@ class Score(object):
 
 class RCScore(Score):
     allowed_str_opts = ["min", "max", "mean", "median", "absmax"]
+
     #
 
     def __init__(self, rc_merging="mean"):
@@ -43,6 +45,7 @@ class RCScore(Score):
             self.rc_merging = rc_merging
         else:
             raise Exception("rc_merging has to be a callable function of a string: %s" % str(self.allowed_str_opts))
+
     #
 
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
@@ -98,6 +101,7 @@ class LogitRef(RCScore):
         else:
             return logits
 
+
 class Alt(RCScore):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         alt_out = alt
@@ -105,13 +109,13 @@ class Alt(RCScore):
             alt_out = self.rc_merging(alt, alt_rc)
         return alt_out
 
+
 class Ref(RCScore):
     def __call__(self, ref, alt, ref_rc=None, alt_rc=None):
         ref_out = ref
         if ref_rc is not None:
             ref_out = self.rc_merging(ref, ref_rc)
         return ref_out
-
 
 
 class Diff(RCScore):
@@ -135,11 +139,12 @@ class DeepSEA_effect(RCScore):
         diffs = preds["alt"] - preds["ref"]
 
         if (preds["ref_rc"] is not None) and ((preds["alt_rc"] is not None)):
-            logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(preds["ref_rc"] / (1 - preds["ref_rc"]))
+            logit_diffs_rc = np.log(preds["alt_rc"] / (1 - preds["alt_rc"])) - np.log(
+                preds["ref_rc"] / (1 - preds["ref_rc"]))
             diffs_rc = preds["alt_rc"] - preds["ref_rc"]
             logit_diffs = self.rc_merging(logit_diffs, logit_diffs_rc)
             diffs = self.rc_merging(diffs, diffs_rc)
-            #self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
+            # self.rc_merging(np.abs(logit_diffs) * np.abs(diffs), np.abs(logit_diffs_rc) * np.abs(diffs_rc))
 
         return np.abs(logit_diffs) * np.abs(diffs)
 
@@ -163,7 +168,6 @@ scoring_options = {
     "deepsea_effect": DeepSEA_effect
 }
 
-
 scoring_names = {
     VarEffectFuncType.diff: "diff",
     VarEffectFuncType.ref: "ref",
@@ -173,6 +177,7 @@ scoring_names = {
     VarEffectFuncType.logit_alt: "logit_alt",
     VarEffectFuncType.deepsea_effect: "deepsea_effect",
 }
+
 
 def get_avail_scoring_fns(model):
     if model.postprocessing.variant_effects is None:
@@ -270,7 +275,7 @@ def get_avail_scoring_fns(model):
     return avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns
 
 
-def get_scoring_fns(model, scoring_fns, scoring_kwargs = None):
+def get_scoring_fns(model, scoring_fns, scoring_kwargs=None):
     """
     Transform a list of scoring functions and names to a dictionary of scoring functions that are set up with kwargs
     defined in scoring_kwargs.
@@ -285,7 +290,7 @@ def get_scoring_fns(model, scoring_fns, scoring_kwargs = None):
     """
     # get the scoring methods according to the model definition
     avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, \
-        default_scoring_fns = get_avail_scoring_fns(model)
+    default_scoring_fns = get_avail_scoring_fns(model)
 
     errmsg_scoring_kwargs = "When using `scoring_kwargs` a kwargs dictionary for every entry in " \
                             "`scoring_kwargs` must be given."
@@ -354,4 +359,3 @@ def get_scoring_fns(model, scoring_fns, scoring_kwargs = None):
         raise Exception("No scoring method was chosen!")
 
     return dts
-

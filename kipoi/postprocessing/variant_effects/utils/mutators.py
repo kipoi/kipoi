@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-
 class SequenceMutator(object):
     __metaclass__ = abc.ABCMeta
 
@@ -48,6 +47,7 @@ def _modify_bases(seq_obj, lines, pos, base, is_rc, return_ref_warning=False):
     seq_obj[lines[known_bases], pos[known_bases], base_sel_idx[known_bases]] = 1
     return warn_lines
 
+
 def rc_str(dna):
     """Reverse complement a string
     """
@@ -57,6 +57,7 @@ def rc_str(dna):
         complement[k.lower()] = complement[k].lower()
     return ''.join([complement[base] for base in dna[::-1]])
 
+
 def _modify_single_string_base(seq_obj, pos, base, is_rc):
     """modify the single base of a string"""
     if is_rc:
@@ -64,6 +65,7 @@ def _modify_single_string_base(seq_obj, pos, base, is_rc):
         base = rc_str(base)
     ret_obj = seq_obj[:pos] + base + seq_obj[(pos + 1):]
     return ret_obj
+
 
 class OneHotSequenceMutator_OLD(SequenceMutator):
     def __init__(self, array_trafo=None):
@@ -97,7 +99,8 @@ class OneHotSequenceMutator_OLD(SequenceMutator):
         for ppl in ref_warnings:
             pcl = np.where(preproc_conv["pp_line"].values == ppl)[0][0]
             vstr = "".join([['A', 'C', 'G', 'T', 'N'][x.argmax() if (x.sum() != 0) and
-                                                      np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in input_set[pcl, ...]])
+                                                                    np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in
+                            input_set[pcl, ...]])
             logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
                         "Sequence:\n%s" % (str(preproc_conv.iloc[pcl]), vstr))
         # generate reverse complement if needed
@@ -134,13 +137,14 @@ class OneHotSequenceMutator(SequenceMutator):
         ref_warnings = _modify_bases(seq_obj=input_set,
                                      lines=variant_loc_mutate.get("pp_line"),
                                      pos=variant_loc_mutate.get("varpos_rel").astype(np.int),
-                                     base=variant_loc_mutate.get(allele, trafo = lambda x: x.upper()),
+                                     base=variant_loc_mutate.get(allele, trafo=lambda x: x.upper()),
                                      is_rc=variant_loc_mutate.get("strand") == "-",
                                      return_ref_warning=get_warnings)
         for ppl in ref_warnings:
             pcl = np.where(variant_loc.get("pp_line") == ppl)[0][0]
             vstr = "".join([['A', 'C', 'G', 'T', 'N'][x.argmax() if (x.sum() != 0) and
-                                                      np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in input_set[pcl, ...]])
+                                                                    np.all(np.in1d(x, np.arange(0, 4))) else 4] for x in
+                            input_set[pcl, ...]])
             logger.warn("Variant reference allele is not the allele present in sequence for:\n%s\n"
                         "Sequence:\n%s" % (str(variant_loc.to_df().iloc[pcl]), vstr))
         # generate reverse complement if needed
@@ -149,8 +153,6 @@ class OneHotSequenceMutator(SequenceMutator):
         if self.array_trafo is not None:
             input_set = self.array_trafo.from_standard(input_set)
         return input_set
-
-
 
 
 class DNAStringSequenceMutator_OLD(SequenceMutator):

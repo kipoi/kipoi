@@ -17,6 +17,7 @@ import kipoi
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def is_indel_wrapper(record):
     if record.is_indel:
         return True
@@ -82,6 +83,7 @@ def write_hdf5(fname, data):
         data = {"_list_{i}".format(i=i): v for i, v in enumerate(data)}
     import deepdish
     deepdish.io.save(fname, data)
+
 
 # Alternative
 # def recursive_h5_mutmap_writer(objs, handle, path=""):
@@ -169,6 +171,7 @@ def convert_record(input_record, pyvcf_reader):
             return pyvcf_reader._parse_info(";".join(out_str_elms))
         else:
             return {}
+
     #
     info_tag = revert_to_info(input_record.INFO)
     alt = pyvcf_reader._map(pyvcf_reader._parse_alt, input_record.ALT)
@@ -200,7 +203,6 @@ class RegionGenerator(object):
 
 
 class SnvCenteredRg(RegionGenerator):
-
     def __init__(self, model_info_extractor, seq_length=None):
         """
         Arguments:
@@ -217,8 +219,8 @@ class SnvCenteredRg(RegionGenerator):
         seq_length_half = int(self.seq_length / 2)
         self.centered_l_offset = seq_length_half - 1
         self.centered_r_offset = seq_length_half + self.seq_length % 2
-        #self.centered_l_offset = seq_length_half
-        #self.centered_r_offset = seq_length_half + self.seq_length % 2 -1
+        # self.centered_l_offset = seq_length_half
+        # self.centered_r_offset = seq_length_half + self.seq_length % 2 -1
 
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
@@ -230,7 +232,6 @@ class SnvCenteredRg(RegionGenerator):
 
 
 class BedOverlappingRg(RegionGenerator):
-
     def __init__(self, model_info_extractor, seq_length=None):
         super(BedOverlappingRg, self).__init__(model_info_extractor)
         if seq_length is not None:
@@ -255,12 +256,11 @@ class BedOverlappingRg(RegionGenerator):
             chroms.append(bed_entry.chrom)
             starts.append(bed_entry.start + (i * self.seq_length))
             ends.append(bed_entry.start + ((i + 1) * self.seq_length))
-            ids.append(bed_entry.name + ".%d"%i)
+            ids.append(bed_entry.name + ".%d" % i)
         return {"chrom": chroms, "start": starts, "end": ends, "id": ids}
 
 
 class SnvPosRestrictedRg(RegionGenerator):
-
     def __init__(self, model_info_extractor, pybed_def, seq_length=None):
         super(SnvPosRestrictedRg, self).__init__(model_info_extractor)
         self.tabixed = pybed_def.tabix(in_place=False)
@@ -277,7 +277,8 @@ class SnvPosRestrictedRg(RegionGenerator):
     def __call__(self, variant_record):
         """single variant instance yielded by vcf_iter
         """
-        overlap = self.tabixed.tabix_intervals("%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS + 1))
+        overlap = self.tabixed.tabix_intervals(
+            "%s:%d-%d" % (variant_record.CHROM, variant_record.POS, variant_record.POS + 1))
         chroms = []
         starts = []
         ends = []
@@ -288,7 +289,8 @@ class SnvPosRestrictedRg(RegionGenerator):
                 continue
 
             if len(interval) != self.seq_length:
-                centered_se = np.array([(variant_record.POS - self.centered_l_offset), (variant_record.POS + self.centered_r_offset)])
+                centered_se = np.array(
+                    [(variant_record.POS - self.centered_l_offset), (variant_record.POS + self.centered_r_offset)])
                 start_missing = centered_se[0] - i_s  # >=0 if ok
                 end_missing = i_e - centered_se[1]  # >=0 if ok
                 if start_missing < 0:
@@ -306,7 +308,6 @@ class SnvPosRestrictedRg(RegionGenerator):
 
 
 class ModelInfoExtractor(object):
-
     def __init__(self, model_obj, dataloader_obj):
         self.model = model_obj
         self.dataloader = dataloader_obj
@@ -469,6 +470,7 @@ def _get_dl_bed_fields(dataloader):
     else:
         return dataloader.postprocessing.variant_effects.bed_input
 
+
 # TODO - can we find a better name for this class?
 
 
@@ -500,7 +502,6 @@ class OneHotSeqExtractor(object):
 
 
 class StrSeqExtractor(object):
-
     def __init__(self, array_trafo=None):
         self.array_trafo = array_trafo
 
@@ -517,7 +518,6 @@ class StrSeqExtractor(object):
 
 
 class VariantLocalisation(object):
-
     def __init__(self):
         self.obj_keys = ["pp_line", "varpos_rel", "ref", "alt", "start", "end", "id", "do_mutate", "strand"]
         self.dummy_initialisable_keys = ["varpos_rel", "ref", "alt", "start", "end", "id", "strand"]
@@ -528,7 +528,7 @@ class VariantLocalisation(object):
         strand_avail = False
         strand_default = "."
         if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
-                                               isinstance(ranges_input_obj["strand"], np.ndarray)):
+                                                   isinstance(ranges_input_obj["strand"], np.ndarray)):
             strand_avail = True
 
         # If the strand is a single string value rather than a list or numpy array than use that as a
@@ -554,7 +554,7 @@ class VariantLocalisation(object):
                 pre_new_vals["varpos_rel"] = int(record.POS) - pre_new_vals["start"]
                 # Check if variant position is valid
                 if not ((pre_new_vals["varpos_rel"] < 0) or
-                        (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
+                            (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
 
                     # If variant lies in the region then actually mutate it with the first alternative allele
                     pre_new_vals["do_mutate"] = True

@@ -27,7 +27,6 @@ def _prepare_multi_model_args(args):
     assert isinstance(args.dataloader_source, list)
     assert isinstance(args.dataloader_args, list)
 
-
     def ensure_matching_args(ref_arg, query_arg, ref_label, query_label, allow_zero=True):
         assert isinstance(ref_arg, list)
         assert isinstance(query_arg, list)
@@ -43,7 +42,6 @@ def _prepare_multi_model_args(args):
             ret = query_arg
         return ret
 
-
     args.source = ensure_matching_args(args.model, args.source, "--model", "--source", allow_zero=False)
     args.seq_length = ensure_matching_args(args.model, args.seq_length, "--model", "--seq_length")
     args.dataloader = ensure_matching_args(args.model, args.dataloader, "--model", "--dataloader")
@@ -51,6 +49,7 @@ def _prepare_multi_model_args(args):
                                                   "--dataloader_source")
     args.dataloader_args = ensure_matching_args(args.model, args.dataloader_args, "--model",
                                                 "--dataloader_args", allow_zero=False)
+
 
 def cli_score_variants(command, raw_args):
     """CLI interface to score variants
@@ -67,17 +66,17 @@ def cli_score_variants(command, raw_args):
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Predict effect of SNVs using ISM.')
     parser.add_argument('model', help='Model name.', nargs="+")
-    parser.add_argument('--source', default=["kipoi"],nargs="+",
+    parser.add_argument('--source', default=["kipoi"], nargs="+",
                         choices=list(kipoi.config.model_sources().keys()),
                         help='Model source to use. Specified in ~/.kipoi/config.yaml' +
                              " under model_sources. " +
                              "'dir' is an additional source referring to the local folder.")
-    parser.add_argument('--dataloader',nargs="+",default=[],
+    parser.add_argument('--dataloader', nargs="+", default=[],
                         help="Dataloader name. If not specified, the model's default" +
                              "DataLoader will be used")
-    parser.add_argument('--dataloader_source', nargs="+",default=["kipoi"],
+    parser.add_argument('--dataloader_source', nargs="+", default=["kipoi"],
                         help="Dataloader source")
-    parser.add_argument('--dataloader_args',nargs="+",default=[],
+    parser.add_argument('--dataloader_args', nargs="+", default=[],
                         help="Dataloader arguments either as a json string:" +
                              "'{\"arg1\": 1} or as a file path to a json file")
     parser.add_argument('-i', '--input_vcf',
@@ -92,7 +91,7 @@ def cli_score_variants(command, raw_args):
                         help="Regions for prediction can only be subsets of this bed file")
     parser.add_argument('-e', '--extra_output', required=False,
                         help="Additional output file. File format is inferred from the file path ending" +
-                        ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
+                             ". Available file formats are: {0}".format(",".join(AVAILABLE_FORMATS)))
     parser.add_argument('-s', "--scores", default="diff", nargs="+",
                         help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
                              "available except for `diff` which is always available. Select scoring function by the"
@@ -103,11 +102,11 @@ def cli_score_variants(command, raw_args):
                              "individual JSONs are expected to be supplied in the same order as the labels defined in "
                              "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
                              "scoring method.")
-    parser.add_argument('-l', "--seq_length", type=int, nargs="+",default=[],
+    parser.add_argument('-l', "--seq_length", type=int, nargs="+", default=[],
                         help="Optional parameter: Model input sequence length - necessary if the model does not have a "
                              "pre-defined input sequence length.")
     parser.add_argument('--std_var_id', action="store_true", help="If set then variant IDs in the annotated"
-                             " VCF will be replaced with a standardised, unique ID.")
+                                                                  " VCF will be replaced with a standardised, unique ID.")
 
     args = parser.parse_args(raw_args)
     # Make sure all the multi-model arguments like source, dataloader etc. fit together
@@ -157,9 +156,12 @@ def cli_score_variants(command, raw_args):
     n_models = len(args.model)
 
     for model_name, model_source, dataloader, dataloader_source, dataloader_args, seq_length in zip(args.model,
-                                                        args.source, args.dataloader, args.dataloader_source,
-                                                        args.dataloader_args, args.seq_length):
-        model_name_safe = model_name.replace("/","_")
+                                                                                                    args.source,
+                                                                                                    args.dataloader,
+                                                                                                    args.dataloader_source,
+                                                                                                    args.dataloader_args,
+                                                                                                    args.seq_length):
+        model_name_safe = model_name.replace("/", "_")
         output_vcf_model = None
         if args.output_vcf is not None:
             output_vcf_model = args.output_vcf
@@ -192,17 +194,17 @@ def cli_score_variants(command, raw_args):
             logger.info('Annotated VCF will be written to %s.' % str(output_vcf_model))
 
         res[model_name_safe] = kipoi.postprocessing.variant_effects.score_variants(model,
-                                                                  dataloader_arguments,
-                                                                  args.input_vcf,
-                                                                  output_vcf_model,
-                                                                  scores=args.scores,
-                                                                  score_kwargs=score_kwargs,
-                                                                  num_workers=args.num_workers,
-                                                                  batch_size=args.batch_size,
-                                                                  seq_length=seq_length,
-                                                                  std_var_id=args.std_var_id,
-                                                                  restriction_bed=args.restriction_bed,
-                                                                  return_predictions=keep_predictions)
+                                                                                   dataloader_arguments,
+                                                                                   args.input_vcf,
+                                                                                   output_vcf_model,
+                                                                                   scores=args.scores,
+                                                                                   score_kwargs=score_kwargs,
+                                                                                   num_workers=args.num_workers,
+                                                                                   batch_size=args.batch_size,
+                                                                                   seq_length=seq_length,
+                                                                                   std_var_id=args.std_var_id,
+                                                                                   restriction_bed=args.restriction_bed,
+                                                                                   return_predictions=keep_predictions)
 
     # tabular files
     if keep_predictions:
@@ -221,7 +223,6 @@ def cli_score_variants(command, raw_args):
 
         if args.file_format in ["hdf5", "h5"]:
             deepdish.io.save(args.extra_output, res)
-
 
     logger.info('Successfully predicted samples')
 
@@ -388,6 +389,7 @@ def cli_plot_mutation_map(command, raw_args):
     fig.savefig(args.output)
 
     logger.info('Successfully plotted mutation map')
+
 
 # --------------------------------------------
 # CLI commands

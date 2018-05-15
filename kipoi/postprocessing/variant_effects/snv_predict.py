@@ -9,7 +9,6 @@ import pandas as pd
 import six
 from tqdm import tqdm
 
-
 from kipoi.postprocessing.variant_effects.scores import Logit, get_scoring_fns
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation, ensure_tabixed_vcf
@@ -270,7 +269,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
         preproc_conv["strand"] = []
 
     for i, record in enumerate(vcf_records):
-        assert not is_indel_wrapper(record) # Catch indels, that needs a slightly modified processing
+        assert not is_indel_wrapper(record)  # Catch indels, that needs a slightly modified processing
         ranges_input_i = process_lines[i]
         new_vals = {k: np.nan for k in preproc_conv.keys() if k not in ["do_mutate", "pp_line"]}
         new_vals["do_mutate"] = False
@@ -642,6 +641,7 @@ def predict_snvs(model,
 
     return None
 
+
 def _get_vcf_to_region(model_info, restriction_bed, seq_length):
     import kipoi
     import pybedtools
@@ -669,14 +669,14 @@ def score_variants(model,
                    input_vcf,
                    output_vcf,
                    scores=["logit_ref", "logit_alt", "ref", "alt", "logit", "diff"],
-                   score_kwargs = None,
+                   score_kwargs=None,
                    num_workers=0,
                    batch_size=32,
                    source='kipoi',
-                   seq_length = None,
-                   std_var_id = False,
-                   restriction_bed = None,
-                   return_predictions = False):
+                   seq_length=None,
+                   std_var_id=False,
+                   restriction_bed=None,
+                   return_predictions=False):
     """Score variants: annotate the vcf file using
     model predictions for the refernece and alternative alleles
     Args:
@@ -720,4 +720,4 @@ def score_variants(model,
                         vcf_to_region=vcf_to_region,
                         evaluation_function_kwargs={'diff_types': dts},
                         sync_pred_writer=writer,
-                        return_predictions = return_predictions)
+                        return_predictions=return_predictions)

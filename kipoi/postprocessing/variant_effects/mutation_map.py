@@ -631,7 +631,7 @@ class MutationMapPlotter(object):
                 raise Exception("minimum_letter_height has to be a float within [0,1]")
             max_h = letter_heights.max()
             letter_heights = letter_heights * (
-            1 - minimum_letter_height) + onehot_refseq * minimum_letter_height * max_h
+                1 - minimum_letter_height) + onehot_refseq * minimum_letter_height * max_h
 
         return seqlogo_heatmap(letter_heights, mm_non_na, ovlp_var, vocab="DNA", ax=ax,
                                show_letter_scale=show_letter_scale, cmap=cmap, limit_region=None)
