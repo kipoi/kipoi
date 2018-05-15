@@ -12,7 +12,6 @@ from kipoi.postprocessing.variant_effects import BedOverlappingRg, SnvCenteredRg
 from kipoi.postprocessing.variant_effects.scores import Logit
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
-from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
 from kipoi.utils import cd
 from .snv_predict import SampleCounter, get_genomicranges_line, merge_intervals, get_variants_in_regions_search_vcf, \
     get_variants_in_regions_sequential_vcf, analyse_model_preds, _overlap_vcf_region
@@ -547,6 +546,7 @@ class MutationMapPlotter(object):
                 ovlp_var['alt'].append(alt)
 
         from kipoi.external.concise.seqplotting_deps import encodeDNA
+        from kipoi.postprocessing.variant_effects.utils.plot import seqlogo_heatmap
         import matplotlib.pyplot as plt
         if cmap is None:
             cmap = plt.cm.bwr
