@@ -1,7 +1,8 @@
 from kipoi.components import PostProcModelStruct
 from related import from_yaml
 import pytest
-from kipoi.cli.postproc import get_avail_scoring_methods, _get_scoring_fns, builtin_default_kwargs
+from kipoi.postprocessing.variant_effects.scores import get_avail_scoring_fns, get_scoring_fns, \
+    builtin_default_kwargs
 from kipoi.postprocessing import variant_effects as ve
 
 
@@ -91,15 +92,15 @@ def test_custom_fns():
                 model.postprocessing = pps
                 if i3 == 1:
                     with pytest.raises(Exception):
-                        get_avail_scoring_methods(model)
+                        get_avail_scoring_fns(model)
                 else:
                     if i2 == 0:
                         # mydiff has one argument but none are defined.
                         with pytest.raises(ValueError):
-                            get_avail_scoring_methods(model)
+                            get_avail_scoring_fns(model)
                     else:
-                        avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
-                            get_avail_scoring_methods(model)
+                        avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+                            get_avail_scoring_fns(model)
                         output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
                         expected = [exp_avail_scoring_fn_labels[i], exp_avail_scoring_fns[i],
                                     exp_avail_scoring_fn_def_args[i2]]
@@ -109,15 +110,15 @@ def test_custom_fns():
     model.postprocessing = dummy_container()
     model.postprocessing.variant_effects = None
     with pytest.raises(Exception):
-        get_avail_scoring_methods(model)
+        get_avail_scoring_fns(model)
 
 
 def test_ret():
     pps = PostProcModelStruct.from_config(from_yaml(postproc_yaml % ('', args_w_default)))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = get_avail_scoring_methods(
-        model)
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names,\
+    default_scoring_fns = get_avail_scoring_fns(model)
 
 
 postproc_yaml_nofndef = """
@@ -132,8 +133,8 @@ def test_default_diff():
     pps = PostProcModelStruct.from_config(from_yaml(postproc_yaml_nofndef))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
-        get_avail_scoring_methods(model)
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+        get_avail_scoring_fns(model)
     #
     output = [avail_scoring_fn_names, avail_scoring_fns, avail_scoring_fn_def_args]
     expected = [["diff", "ref", "alt"], [ve.Diff, ve.Ref, ve.Alt], [builtin_default_kwargs] * 3]
@@ -159,7 +160,7 @@ def test_dupl_name():
     model = dummy_container()
     model.postprocessing = pps
     with pytest.raises(Exception):
-        get_avail_scoring_methods(model)
+        get_avail_scoring_fns(model)
 
 
 # test modification of name with custom_
@@ -181,8 +182,8 @@ def test_rename_custom():
     pps = PostProcModelStruct.from_config(from_yaml(rename_custom_yaml))
     model = dummy_container()
     model.postprocessing = pps
-    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
-        get_avail_scoring_methods(model)
+    avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns =\
+        get_avail_scoring_fns(model)
     output = [avail_scoring_fn_names]
     expected = [["custom_logit", "diff", "ref", "alt", "logit_ref", "logit", "deepsea_effect"]]
     assert_groupwise_identity(output, expected)
@@ -211,7 +212,7 @@ def test_auto_default():
     model = dummy_container()
     model.postprocessing = pps
     avail_scoring_fns, avail_scoring_fn_def_args, avail_scoring_fn_names, default_scoring_fns = \
-        get_avail_scoring_methods(model)
+        get_avail_scoring_fns(model)
     output = [avail_scoring_fn_names]
     expected = [default_scoring_fns + ["logit_ref", "diff", "ref", "alt"]]
     assert_groupwise_identity(output, expected)
@@ -232,16 +233,16 @@ def test__get_scoring_fns():
     model = dummy_container()
     model.postprocessing = pps
     scorers = [{"logit": ve.Logit, "deepsea_effect": ve.DeepSEA_effect}, {"logit": ve.Logit}, {}]
-    json_kwargs = "{rc_merging: 'max'}"
+    kwargs = {"rc_merging": 'max'}
     for sel_scoring_labels, scorer in zip([[], ["logit"], ["inexistent", "logit"], ["all"]], scorers):
-        jk_list = [json_kwargs] * len(sel_scoring_labels)
+        jk_list = [kwargs] * len(sel_scoring_labels)
         for sel_scoring_kwargs in [[], jk_list]:
             if "inexistent" in sel_scoring_labels:
                 with pytest.warns(None):
-                    dts = _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs)
+                    dts = get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs)
             else:
-                dts = _get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs)
+                dts = get_scoring_fns(model, sel_scoring_labels, sel_scoring_kwargs)
                 for k in scorer:
                     assert isinstance(dts[k], scorer[k])
     with pytest.raises(Exception):
-        _get_scoring_fns(model, ["all"], [json_kwargs])
+        get_scoring_fns(model, ["all"], [kwargs])

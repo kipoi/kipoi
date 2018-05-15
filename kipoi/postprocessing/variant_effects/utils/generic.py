@@ -18,6 +18,16 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def is_indel_wrapper(record):
+    if record.is_indel:
+        return True
+    if len(record.ALT) == 0 or len(record.REF) == 0:
+        return True
+    if record.REF == "." or record.REF == b".":
+        return True
+    return False
+
+
 def ensure_tabixed_vcf(input_fn, is_sorted=False, force_tabix=True):
     import pybedtools
     import pysam
@@ -530,7 +540,7 @@ class VariantLocalisation(object):
 
         # Iterate over all variants
         for i, record in enumerate(vcf_records):
-            assert not record.is_indel  # Catch indels, that needs a slightly modified processing
+            assert not is_indel_wrapper(record)  # Catch indels, that needs a slightly modified processing
             ranges_input_i = process_lines[i]
             # Initialise the new values as missing values, and as skip for processing
             new_vals = {k: np.nan for k in self.dummy_initialisable_keys}
