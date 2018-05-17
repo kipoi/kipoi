@@ -390,13 +390,13 @@ def test_generate_mutation_maps_example(example, tmpdir):
     args = ["python", os.path.abspath("./kipoi/__main__.py"),
             "postproc",
             "plot_mutation_map",
-            # "./",  # directory
-            ".",
             "--input_file=" + mm_tmpfile,
             "--input_line=0",
             "--model_seq_input=seq",
             "--scoring_key=diff",
             "--model_output=rbp_prb",
+            "--limit_region_genomic", "21541588", "21541592",
+            "--rc_plot",
             "--output", plt_tmpfile]
 
     returncode = subprocess.call(args=args,

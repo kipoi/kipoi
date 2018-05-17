@@ -572,8 +572,6 @@ def cli_plot_mutation_map(command, raw_args):
     assert command == "plot_mutation_map"
     parser = argparse.ArgumentParser('kipoi postproc {}'.format(command),
                                      description='Plot mutation map in a file.')
-    add_model(parser)
-    add_dataloader(parser, with_args=True)
     # TODO - rename path to fpath
     parser.add_argument('-f', '--input_file', required=False,
                         help="Input HDF5 file produced from `create_mutation_map`")
@@ -588,6 +586,11 @@ def cli_plot_mutation_map(command, raw_args):
                              "`create_mutation_map`.")
     parser.add_argument('--model_output', required=True,
                         help="Model output to be used for plotting. As defined in model.yaml.")
+    parser.add_argument('--limit_region_genomic', required=False, nargs =2, type = int, default=None,
+                        help="Limit to genomic region. Given as tuple without chromosome, "
+                             "eg: `--limit_region_genomic 13245 12347`")
+    parser.add_argument('--rc_plot', required=False, action="store_true",
+                        help="Make reverse-complement plot.")
     args = parser.parse_args(raw_args)
 
     # Check that all the folders exist
@@ -603,12 +606,17 @@ def cli_plot_mutation_map(command, raw_args):
 
     mutmap = MutationMapPlotter(fname=args.input_file)
 
-    fig = plt.figure(figsize=(50, 5))
+    fig = plt.figure(figsize=(20, 2))
     ax = plt.subplot(1, 1, 1)
 
     logger.info('Plotting...')
 
-    mutmap.plot_mutmap(args.input_line, args.model_seq_input, args.scoring_key, args.model_output, ax=ax)
+    if args.limit_region_genomic is not None:
+        args.limit_region_genomic = tuple(args.limit_region_genomic)
+
+
+    mutmap.plot_mutmap(args.input_line, args.model_seq_input, args.scoring_key, args.model_output, ax=ax,
+                       limit_region_genomic=args.limit_region_genomic, rc_plot=args.rc_plot)
     fig.savefig(args.output)
 
     logger.info('Successfully plotted mutation map')
