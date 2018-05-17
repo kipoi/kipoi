@@ -653,6 +653,28 @@ class Dependencies(RelatedConfigMixin):
             pip=[replace_gpu(dep) for dep in deps.pip],
             conda_channels=deps.conda_channels)
 
+    def osx(self):
+        """Get the os-x compatible dependencies
+        """
+        from sys import platform
+        if platform != 'darwin':
+            logger.warn("Calling osx dependency conversion on non-osx platform: {}".
+                        format(platform))
+
+        def replace_osx(dep):
+            if dep.startswith("pytorch-cpu"):
+                new_dep = dep.replace("pytorch-cpu", "pytorch")
+                logger.info("osx: Replacing the dependency {0} with {1}".
+                            format(dep, new_dep))
+                return new_dep
+            return dep
+
+        deps = self.normalized()
+        return Dependencies(
+            conda=[replace_osx(dep) for dep in deps.conda],
+            pip=[replace_osx(dep) for dep in deps.pip],
+            conda_channels=deps.conda_channels)
+
     # @classmethod
     # def from_file(cls, path):
     #     """TODO instantiate Dependencies from a yaml file
