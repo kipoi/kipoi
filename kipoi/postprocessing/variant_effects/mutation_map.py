@@ -9,7 +9,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from kipoi.postprocessing.variant_effects import BedOverlappingRg, SnvCenteredRg, ensure_tabixed_vcf
-from kipoi.postprocessing.variant_effects.scores import Logit
+from kipoi.postprocessing.variant_effects.scores import Logit, get_scoring_fns
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation
 from kipoi.utils import cd
@@ -903,7 +903,8 @@ class MutationMap(object):
                      start,
                      end,
                      model_seq_length=None,
-                     evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
+                     scores=["logit_ref", "logit_alt", "ref", "alt", "logit", "diff"],
+                     score_kwargs=None,
                      **kwargs):
         """Generate mutation map
 
@@ -922,7 +923,8 @@ class MutationMap(object):
             end: End of region of interest. Assembly is defined by the dataload arguments.
             model_seq_length: Optional argument of model sequence length to use if model accepts variable input
             sequence length. 
-            evaluation_function_kwargs: kwargs passed on to `evaluation_function`.
+            scores: list of score names to compute. See kipoi.postprocessing.variant_effects.scores
+            score_kwargs: optional, list of kwargs that corresponds to the entries in score.
 
         # Returns
             A `MutationMapPlotter` object containing variant scores.
@@ -932,17 +934,19 @@ class MutationMap(object):
         bed_region = BedTool("\t".join(["chr" + chrom.lstrip("chr"), str(start), str(end)]), from_string=True)
         if (self.exec_files_bed_keys is not None):
             bed_to_region = BedOverlappingRg(self.model_info_extractor, seq_length=model_seq_length)
+        dts = get_scoring_fns(self.model, scores, score_kwargs)
         mmdm = self._generate_mutation_map(bed_fpath=bed_region.fn,
                                            vcf_to_region=None,
                                            bed_to_region=bed_to_region,
-                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           evaluation_function_kwargs={'diff_types': dts},
                                            **kwargs)
         return mmdm
 
     def query_bed(self,
                   bed_fpath,
                   model_seq_length=None,
-                  evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
+                  scores=["logit_ref", "logit_alt", "ref", "alt", "logit", "diff"],
+                  score_kwargs=None,
                   **kwargs):
         """Generate mutation map
 
@@ -961,7 +965,8 @@ class MutationMap(object):
                 regions based this (`bed_fpath`) bed file. Assembly is defined by the dataload arguments.
             model_seq_length: Optional argument of model sequence length to use if model accepts variable input
                 sequence length. 
-            evaluation_function_kwargs: kwargs passed on to `evaluation_function`.
+            scores: list of score names to compute. See kipoi.postprocessing.variant_effects.scores
+            score_kwargs: optional, list of kwargs that corresponds to the entries in score.
 
         # Returns
             A `MutationMapPlotter` object containing variant scores.
@@ -969,19 +974,21 @@ class MutationMap(object):
         bed_to_region = None
         if (self.exec_files_bed_keys is not None):
             bed_to_region = BedOverlappingRg(self.model_info_extractor, seq_length=model_seq_length)
+        dts = get_scoring_fns(self.model, scores, score_kwargs)
         mmdm = self._generate_mutation_map(vcf_fpath=None,
                                            bed_fpath=bed_fpath,
                                            vcf_to_region=None,
                                            bed_to_region=bed_to_region,
                                            vcf_id_generator_fn=default_vcf_id_gen,
-                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           evaluation_function_kwargs={'diff_types': dts},
                                            **kwargs)
         return mmdm
 
     def query_vcf(self,
                   vcf_fpath,
                   model_seq_length=None,
-                  evaluation_function_kwargs={'diff_types': {'logit': Logit()}},
+                  scores=["logit_ref", "logit_alt", "ref", "alt", "logit", "diff"],
+                  score_kwargs=None,
                   var_centered_regions=True,
                   **kwargs):
         """Generate mutation map
@@ -1004,7 +1011,8 @@ class MutationMap(object):
                 sequence length.
             var_centered_regions: Generate variant-centered regions if the model accepts that. If a custom
                 `vcf_to_region` should be used then this can be set explicitly in the kwargs.
-            evaluation_function_kwargs: kwargs passed on to `evaluation_function`.
+            scores: list of score names to compute. See kipoi.postprocessing.variant_effects.scores
+            score_kwargs: optional, list of kwargs that corresponds to the entries in score.
 
         # Returns
             A `MutationMapPlotter` object containing variant scores.
@@ -1014,13 +1022,14 @@ class MutationMap(object):
             vcf_to_region = SnvCenteredRg(self.model_info_extractor, seq_length=model_seq_length)
         if "vcf_to_region" in kwargs:
             vcf_to_region = kwargs["vcf_to_region"]
+        dts = get_scoring_fns(self.model, scores, score_kwargs)
         mmdm = self._generate_mutation_map(vcf_fpath=vcf_fpath,
                                            bed_fpath=None,
                                            vcf_to_region=vcf_to_region,
                                            bed_to_region=None,
                                            vcf_id_generator_fn=default_vcf_id_gen,
                                            evaluation_function=analyse_model_preds,
-                                           evaluation_function_kwargs=evaluation_function_kwargs,
+                                           evaluation_function_kwargs={'diff_types': dts},
                                            **kwargs)
         return mmdm
 

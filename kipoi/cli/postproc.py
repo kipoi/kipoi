@@ -469,15 +469,15 @@ def cli_create_mutation_map(command, raw_args):
                         help="Install required packages from requirements.txt")
     parser.add_argument('-o', '--output', required=True,
                         help="Output HDF5 file. To be used as input for plotting.")
-    parser.add_argument('-s', "--scoring", default="diff", nargs="+",
+    parser.add_argument('-s', "--scores", default="diff", nargs="+",
                         help="Scoring method to be used. Only scoring methods selected in the model yaml file are"
                              "available except for `diff` which is always available. Select scoring function by the"
                              "`name` tag defined in the model yaml file.")
-    parser.add_argument('-k', "--scoring_kwargs", default="", nargs="+",
-                        help="JSON definition of the kwargs for the scoring functions selected in --scoring. The "
+    parser.add_argument('-k', "--score_kwargs", default="", nargs="+",
+                        help="JSON definition of the kwargs for the scoring functions selected in --scores. The "
                              "definiton can either be in JSON in the command line or the path of a .json file. The "
                              "individual JSONs are expected to be supplied in the same order as the labels defined in "
-                             "--scoring. If the defaults or no arguments should be used define '{}' for that respective "
+                             "--scores. If the defaults or no arguments should be used define '{}' for that respective "
                              "scoring method.")
     parser.add_argument('-l', "--seq_length", type=int, default=None,
                         help="Optional parameter: Model input sequence length - necessary if the model does not have a "
@@ -514,10 +514,10 @@ def cli_create_mutation_map(command, raw_args):
         else:
             Dl = model.default_dataloader
 
-    if not isinstance(args.scoring, list):
-        args.scoring = [args.scoring]
+    if not isinstance(args.scores, list):
+        args.scores = [args.scores]
 
-    dts = get_scoring_fns(model, args.scoring, args.scoring_kwargs)
+    dts = get_scoring_fns(model, args.scores, args.score_kwargs)
 
     # Load effect prediction related model info
     model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dl)
