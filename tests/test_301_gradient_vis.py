@@ -68,7 +68,7 @@ def test_get_selector():
     assert get_selector(-1, slice(None, None, -1)) == (Ellipsis, slice(None, None, -1))
 
 
-def get_example_data(example, wrt_layer, writer=None):
+def get_example_data(example, layer, writer=None):
     example_dir = "examples/{0}".format(example)
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir", and_dataloaders=True)
@@ -92,8 +92,8 @@ def get_example_data(example, wrt_layer, writer=None):
         for i, batch in enumerate(tqdm(it)):
 
             # make the prediction
-            pred_batch = model.input_grad(batch['inputs'], avg_func="sum", wrt_layer=wrt_layer,
-                                          wrt_final_layer=False)
+            pred_batch = model.input_grad(batch['inputs'], avg_func="sum", layer=layer,
+                                          final_layer=False)
             # write out the predictions, metadata (, inputs, targets)
             # always keep the inputs so that input*grad can be generated!
             output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)

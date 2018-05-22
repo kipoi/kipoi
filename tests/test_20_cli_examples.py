@@ -391,7 +391,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
             "postproc",
             "plot_mutation_map",
             "--input_file=" + mm_tmpfile,
-            "--input_line=0",
+            "--input_entry=0",
             "--model_seq_input=seq",
             "--scoring_key=diff",
             "--model_output=rbp_prb",

@@ -377,7 +377,7 @@ def cli_grad(command, raw_args):
 
         # make the prediction
         pred_batch = model.input_grad(batch['inputs'], filter_idx=filter_ind_parsed,
-                                      avg_func=args.avg_func, wrt_layer=layer, wrt_final_layer=args.final_layer,
+                                      avg_func=args.avg_func, layer=layer, final_layer=args.final_layer,
                                       selected_fwd_node=args.selected_fwd_node,
                                       pre_nonlinearity=args.pre_nonlinearity)
 
@@ -405,7 +405,7 @@ def cli_grad_to_file(command, raw_args):
                         help="Input HDF5 file produced from `grad`")
     parser.add_argument('-o', '--output', required=False,
                         help="Output bigwig for bedgraph file")
-    parser.add_argument('--input_line', required=False, type=int, default=None,
+    parser.add_argument('--sample', required=False, type=int, default=None,
                         help="Input line for which the BigWig file should be generated. If not defined all"
                              "samples will be written.")
     parser.add_argument('--model_input', required=False, default=None,
@@ -428,8 +428,8 @@ def cli_grad_to_file(command, raw_args):
 
     gp = GradPlotter.from_hdf5(args.input_file, model=args.model, source=args.source)
 
-    if args.input_line is not None:
-        samples = [args.input_line]
+    if args.sample is not None:
+        samples = [args.sample]
     else:
         samples = list(range(gp.get_num_samples(args.model_input)))
 
@@ -577,7 +577,7 @@ def cli_plot_mutation_map(command, raw_args):
                         help="Input HDF5 file produced from `create_mutation_map`")
     parser.add_argument('-o', '--output', required=False,
                         help="Output image file")
-    parser.add_argument('--input_line', required=True, type=int,
+    parser.add_argument('--input_entry', required=True, type=int,
                         help="Input line for which the plot should be generated")
     parser.add_argument('--model_seq_input', required=True,
                         help="Model input name to be used for plotting. As defined in model.yaml.")
@@ -615,7 +615,7 @@ def cli_plot_mutation_map(command, raw_args):
         args.limit_region_genomic = tuple(args.limit_region_genomic)
 
 
-    mutmap.plot_mutmap(args.input_line, args.model_seq_input, args.scoring_key, args.model_output, ax=ax,
+    mutmap.plot_mutmap(args.input_entry, args.model_seq_input, args.scoring_key, args.model_output, ax=ax,
                        limit_region_genomic=args.limit_region_genomic, rc_plot=args.rc_plot)
     fig.savefig(args.output)
 

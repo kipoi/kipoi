@@ -286,7 +286,7 @@ def test_generate_activation_output_functions():
 def test_single_layer_gradient():
     model = kipoi.model.KerasModel(*get_single_layer_model())
     sample_input = np.array([1])
-    grad_out = model.input_grad(sample_input, wrt_final_layer=True, avg_func="absmax")
+    grad_out = model.input_grad(sample_input, final_layer=True, avg_func="absmax")
     assert np.all(grad_out == 0.5)
 
 
@@ -384,11 +384,11 @@ def test__get_gradient_function():
 def test_returned_gradient_fmt():
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     sample_input = get_sample_functional_model_input(kind="list")
-    grad_out = model.input_grad(sample_input, wrt_final_layer=True, avg_func="absmax")
+    grad_out = model.input_grad(sample_input, final_layer=True, avg_func="absmax")
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
     sample_input = get_sample_functional_model_input(kind="dict")
-    grad_out = model.input_grad(sample_input, wrt_final_layer=True, avg_func="absmax")
+    grad_out = model.input_grad(sample_input, final_layer=True, avg_func="absmax")
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
     assert all([k in grad_out for k in sample_input])

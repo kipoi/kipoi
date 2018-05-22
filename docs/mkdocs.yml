@@ -34,10 +34,10 @@ pages:
 - Home: index.md
 - Using:
   - Getting started: using/01_Getting_started.md
-  - Variant effect predictions: using/02_Variant_effect_prediction.md
+  - Prostprocessing: using/02_Postprocessing.md
   - Private and public model sources: using/03_Model_sources.md
   - Installing on OSX: using/04_Installing_on_OSX.md
-  - Postprocessing:
+  - Postprocessing details:
     - Variant effect prediction: postprocessing/variant_effect_prediction.md
 - Contributing:
   - Getting started: contributing/01_Getting_started.md

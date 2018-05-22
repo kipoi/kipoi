@@ -171,6 +171,9 @@ class GradPlotter(object):
             cse = {k: np.squeeze(mf[k]) for k in ["chr", "start", "end"]}
             for k in ["chr", "start", "end"]:
                 cse[k] = np.squeeze(mf[k])
+                # if only one sample then squeeze does too much, so correct that:
+                if len(cse[k].shape) == 0:
+                    cse[k] = np.array([cse[k]])
                 if len(cse[k].shape) != 1:
                     raise Exception("Invalid metadata format for field ['%s']['%s'] with shape: %s" %
                                     (metadata_field, k, str(mf[k].shape)))
@@ -287,6 +290,11 @@ class GradPlotter(object):
                                                                                            seq_dim=seq_dim,
                                                                                            requires_region_info=requires_region_info,
                                                                                            requires_seq_dim=True)
+
+        if ax is None:
+            import matplotlib.pyplot as plt
+            plt.figure(figsize=(20, 4))
+            ax = plt.subplot(1, 1, 1)
 
         import seaborn as sns
         if is_onehot_seq:

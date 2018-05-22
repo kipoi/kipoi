@@ -288,12 +288,12 @@ def test_predict_activation_on_batch():
 def test_gradients():
     import kipoi
     dummy_model = kipoi.model.PyTorchModel(build_fn=dummy_model_bf)
-    assert dummy_model.input_grad(np.array([[1.0]]), avg_func="sum", wrt_layer="second")[0][0] == 0.125
+    assert dummy_model.input_grad(np.array([[1.0]]), avg_func="sum", layer="second")[0][0] == 0.125
     complex_model = kipoi.model.PyTorchModel(build_fn=pyt_complex_model_bf)
 
-    gT2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", wrt_layer="conv1",
+    gT2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", layer="conv1",
                                    selected_fwd_node=None)
-    gF2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", wrt_layer="conv1",
+    gF2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", layer="conv1",
                                    selected_fwd_node=1)
 
     assert np.all(gF2 * 2 == gT2)
@@ -304,12 +304,12 @@ def test_returned_gradient_fmt():
     multi_input_model = kipoi.model.PyTorchModel(build_fn=dummy_multi_input_bf)
     # try first whether the prediction actually works..
     sample_input = get_dummy_multi_input("list")
-    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", wrt_layer="second",
+    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", layer="second",
                                             selected_fwd_node=None)
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
     sample_input = get_dummy_multi_input("dict")
-    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", wrt_layer="second",
+    grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", layer="second",
                                             selected_fwd_node=None)
     assert isinstance(grad_out, type(sample_input))
     assert len(grad_out) == len(sample_input)
@@ -320,7 +320,7 @@ def test_gradients_functions():
     import kipoi
     multi_input_model = kipoi.model.PyTorchModel(build_fn=dummy_multi_input_bf)
     sample_input = get_dummy_multi_input("dict")
-    multi_input_model.input_grad(sample_input, avg_func="max", wrt_layer="first", selected_fwd_node=None)
+    multi_input_model.input_grad(sample_input, avg_func="max", layer="first", selected_fwd_node=None)
 
 
 class DummySlice():
