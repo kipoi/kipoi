@@ -7,7 +7,7 @@
 
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
-<img src="http://kipoi.org/static/img/fig1.svg" width=600>
+<img src="http://kipoi.org/static/img/fig1_v8_hires.png" width=600>
 
 
 ## Links
