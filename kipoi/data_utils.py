@@ -43,6 +43,42 @@ def _numpy_collate(stack_fn=np.stack):
 numpy_collate = _numpy_collate(np.stack)
 numpy_collate_concat = _numpy_collate(np.concatenate)
 
+# ----------------------------------------------
+
+
+def batch_gen(iterable, batch_size=32):
+    """Create a batch generator
+
+    Args:
+       iterable: an iterable object iterating over samples
+       batch_size: batch size
+    Returns:
+       batch generator
+    """
+    l = []
+    for x in iterable:
+        l.append(x)
+        if len(l) == batch_size:
+            ret = numpy_collate(l)
+            # remove all elements
+            del l[:]
+            yield ret
+    # Returns the rest
+    if len(l) > 0:
+        yield numpy_collate(l)
+
+
+class DataloaderIterable(object):
+    """Create an iterable from a dataloader - helper class
+    """
+
+    def __init__(self, dl_obj, kwargs):
+        self.dl_obj = dl_obj
+        self.kwargs = kwargs
+
+    def __iter__(self):
+        return self.dl_obj.batch_iter(**self.kwargs)
+
 # --------------------------------------------
 # Tools for working with a nested dataset
 
@@ -79,16 +115,13 @@ def get_dataset_item(data, idx):
         raise ValueError("Leafs of the nested structure need to be numpy arrays")
 
 
-def iter_cycle(it):
-    """Alternative to itertools.cycle
-
-    This function doesn't store the iterator elements into a list
-    as itertools.cycle does
+def iterable_cycle(iterable):
     """
-    from itertools import tee
+    Args:
+      iterable: object with an __iter__ method that can be called multiple times
+    """
     while True:
-        it, it_to_use = tee(it, 2)
-        for x in it_to_use:
+        for x in iterable:
             yield x
 
 

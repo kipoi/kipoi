@@ -8,18 +8,20 @@ from kipoi.data import (PreloadedDataset, Dataset, BatchDataset,
                         BatchIterator, BatchGenerator)
 from kipoi.data_utils import get_dataset_item
 
+N = 10
+
 
 @fixture
 def data():
     return {
         "inputs": {
-            "i1": np.arange(10),
-            "i2": np.arange(10)[::-1],
+            "i1": np.arange(N),
+            "i2": np.arange(N)[::-1],
         },
-        "targets": np.arange(10),
+        "targets": np.arange(N),
         "metadata": [
-            np.arange(10),
-            np.arange(10)[::-1]]
+            np.arange(N),
+            np.arange(N)[::-1]]
     }
 
 
@@ -30,6 +32,14 @@ def compare_arrays(a, b):
     assert np.allclose(a["metadata"][0], b["metadata"][0])
     assert np.allclose(a["metadata"][1], b["metadata"][1])
 
+
+def compare_arrays_x(a, b):
+    assert np.allclose(a["i1"], b["i1"])
+    assert np.allclose(a["i2"], b["i2"])
+
+
+def compare_arrays_y(a, b):
+    assert np.allclose(a, b)
 
 # --------------------------------------------
 
@@ -47,10 +57,18 @@ def test_PreloadedDataset(data):
     it = d.batch_iter(3)
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
+    # test batch_train_iter
+    it = d.batch_train_iter(batch_size=2)
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
+
 
 def test_Dataset(data):
     # Dataset example:
     class MyDataset(Dataset):
+
         def __init__(self, data):
             self.data = data
 
@@ -68,10 +86,18 @@ def test_Dataset(data):
     it = d.batch_iter(3)
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
+    # test batch_train_iter
+    it = d.batch_train_iter(batch_size=2)
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
+
 
 def test_BatchDataset(data):
     # BatchDataset example:
     class MyBatchDataset(BatchDataset):
+
         def __init__(self, data, batch_size=3):
             self.data = data
             self.batch_size = batch_size
@@ -91,15 +117,25 @@ def test_BatchDataset(data):
     it = d.batch_iter()
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
+    # batch_train_iter
+    d = MyBatchDataset(data, batch_size=2)
+    it = d.batch_train_iter()
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
+
 
 def test_SampleIterator(data):
     # SampleIterator example:
     class MySampleIterator(SampleIterator):
+
         def __init__(self, data):
             self.data = data
             self.idx = 0
 
         def __iter__(self):
+            self.idx = 0
             return self
 
         def __next__(self):
@@ -120,16 +156,26 @@ def test_SampleIterator(data):
     it = d.batch_iter(batch_size=3)
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
+    # train_iter
+    d = MySampleIterator(data)
+    it = d.batch_train_iter(batch_size=2)
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
+
 
 def test_BatchIterator(data):
     # BatchIterator example:
     class MyBatchIterator(BatchIterator):
+
         def __init__(self, data, batch_size):
             self.data = data
             self.batch_size = batch_size
             self.idx = 0
 
         def __iter__(self):
+            self.idx = 0
             return self
 
         def __next__(self):
@@ -152,6 +198,14 @@ def test_BatchIterator(data):
     it = d.batch_iter()
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
 
+    # test batch_train_iter
+    d = MyBatchIterator(data, 2)
+    it = d.batch_train_iter()
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
+
 
 def test_SampleGenerator(data):
     # SampleGenerator example:
@@ -168,6 +222,13 @@ def test_SampleGenerator(data):
 
     it = d.batch_iter(batch_size=3)
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
+
+    d = SampleGenerator.from_fn(generator_fn)(data)
+    it = d.batch_train_iter(batch_size=2)
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
 
 
 def test_BatchGenerator(data):
@@ -187,3 +248,10 @@ def test_BatchGenerator(data):
 
     it = d.batch_iter()
     compare_arrays(next(it), get_dataset_item(data, np.arange(3)))
+
+    d = BatchGenerator.from_fn(generator_fn)(data, 2)
+    it = d.batch_train_iter()
+    for i in range(6):
+        x, y = next(it)
+    compare_arrays_x(x, get_dataset_item(data, np.arange(2))['inputs'])
+    compare_arrays_y(y, get_dataset_item(data, np.arange(2))['targets'])
