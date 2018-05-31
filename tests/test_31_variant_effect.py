@@ -544,29 +544,28 @@ def test_var_eff_pred_varseq():
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
         "intervals_file": "example_files/variant_centered_intervals.tsv"
     }
-    vcf_path = "example_files/variants.vcf"
-    out_vcf_fpath = "example_files/variants_generated.vcf"
-    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    dataloader_arguments = {k:model_dir + v for k,v in dataloader_arguments.items()}
+    vcf_path = model_dir + "example_files/variants.vcf"
+    out_vcf_fpath = model_dir + "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = model_dir + "example_files/variants_ref_out.vcf"
     #
-    with cd(model.source_dir):
-        vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
-        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
-        writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath, standardise_var_id=True)
-        vcf_to_region = None
-        with pytest.raises(Exception):
-            # This has to raise an exception as the sequence length is None.
-            vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
+    vcf_path = kipoi.postprocessing.variant_effects.ensure_tabixed_vcf(vcf_path)
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
+    writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath, standardise_var_id=True)
+    vcf_to_region = None
+    with pytest.raises(Exception):
+        # This has to raise an exception as the sequence length is None.
+        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
     writer.close()
-    with cd(model.source_dir):
-        # pass
-        # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
+    # pass
+    # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
 
 
 def test_var_eff_pred():
@@ -586,28 +585,29 @@ def test_var_eff_pred():
         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
     }
+    dataloader_arguments = {k: model_dir + v for k, v in dataloader_arguments.items()}
     #
     # Run the actual predictions
-    vcf_path = "example_files/variants.vcf"
-    out_vcf_fpath = "example_files/variants_generated.vcf"
-    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    vcf_path = model_dir + "example_files/variants.vcf"
+    out_vcf_fpath = model_dir + "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = model_dir + "example_files/variants_ref_out.vcf"
     #
-    with cd(model.source_dir):
-        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
-        writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath,
-                                                                standardise_var_id = True)
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
+    #with cd(model.source_dir):
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
+    writer = kipoi.postprocessing.variant_effects.VcfWriter(model, vcf_path, out_vcf_fpath,
+                                                            standardise_var_id = True)
+    vcf_to_region = kipoi.postprocessing.variant_effects.SnvCenteredRg(model_info)
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
     writer.close()
-    with cd(model.source_dir):
-        # pass
-        # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
+    #with cd(model.source_dir):
+    # pass
+    # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
 
 
 def test_var_eff_pred2():
@@ -627,30 +627,31 @@ def test_var_eff_pred2():
         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
     }
+    dataloader_arguments = {k: model_dir + v for k, v in dataloader_arguments.items()}
     #
     # Run the actual predictions
-    vcf_path = "example_files/variants.vcf"
-    out_vcf_fpath = "example_files/variants_generated2.vcf"
-    ref_out_vcf_fpath = "example_files/variants_ref_out2.vcf"
-    restricted_regions_fpath = "example_files/restricted_regions.bed"
+    vcf_path = model_dir + "example_files/variants.vcf"
+    out_vcf_fpath = model_dir + "example_files/variants_generated2.vcf"
+    ref_out_vcf_fpath = model_dir + "example_files/variants_ref_out2.vcf"
+    restricted_regions_fpath = model_dir + "example_files/restricted_regions.bed"
     #
-    with cd(model.source_dir):
-        pbd = pb.BedTool(restricted_regions_fpath)
-        model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
-        vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
-        writer = kipoi.postprocessing.variant_effects.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath,
-                                                                         standardise_var_id = True)
-        res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
-                              evaluation_function=analyse_model_preds, batch_size=32,
-                              vcf_to_region=vcf_to_region,
-                              evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
-                              sync_pred_writer=writer)
+    #with cd(model.source_dir):
+    pbd = pb.BedTool(restricted_regions_fpath)
+    model_info = kipoi.postprocessing.variant_effects.ModelInfoExtractor(model, Dataloader)
+    vcf_to_region = kipoi.postprocessing.variant_effects.SnvPosRestrictedRg(model_info, pbd)
+    writer = kipoi.postprocessing.variant_effects.utils.io.VcfWriter(model, vcf_path, out_vcf_fpath,
+                                                                     standardise_var_id = True)
+    res = sp.predict_snvs(model, Dataloader, vcf_path, dataloader_args=dataloader_arguments,
+                          evaluation_function=analyse_model_preds, batch_size=32,
+                          vcf_to_region=vcf_to_region,
+                          evaluation_function_kwargs={'diff_types': {'diff': Diff("mean")}},
+                          sync_pred_writer=writer)
     writer.close()
-    with cd(model.source_dir):
-        # pass
-        # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
+    #with cd(model.source_dir):
+    # pass
+    # assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
 
 
 def test_Rc_merging():
@@ -1137,25 +1138,26 @@ def test_score_variants():
         "preproc_transformer": "dataloader_files/encodeSplines.pkl",
         "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
     }
+    dataloader_arguments = {k: model_dir + v for k, v in dataloader_arguments.items()}
     #
     # Run the actual predictions
-    vcf_path = "example_files/variants.vcf"
-    out_vcf_fpath = "example_files/variants_generated.vcf"
-    ref_out_vcf_fpath = "example_files/variants_ref_out.vcf"
+    vcf_path = model_dir + "example_files/variants.vcf"
+    out_vcf_fpath = model_dir + "example_files/variants_generated.vcf"
+    ref_out_vcf_fpath = model_dir + "example_files/variants_ref_out.vcf"
 
-    with cd(model.source_dir):
-        res = sp.score_variants(model, dataloader_arguments, vcf_path, out_vcf_fpath,
-                                scores=['diff'], score_kwargs=[{"rc_merging":"mean"}], source = "dir")
+    #with cd(model.source_dir):
+    res = sp.score_variants(model, dataloader_arguments, vcf_path, out_vcf_fpath,
+                            scores=['diff'], score_kwargs=[{"rc_merging":"mean"}], source = "dir")
 
-        # pass
-        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
+    # pass
+    #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    compare_vcfs(out_vcf_fpath, ref_out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
 
-        res = sp.score_variants("./", dataloader_arguments, vcf_path, out_vcf_fpath,
-                                scores=['diff'], score_kwargs=[{"rc_merging": "mean"}], source="dir")
+    res = sp.score_variants(model.source_dir, dataloader_arguments, vcf_path, out_vcf_fpath,
+                            scores=['diff'], score_kwargs=[{"rc_merging": "mean"}], source="dir")
 
-        # pass
-        #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
-        assert os.path.exists(out_vcf_fpath)
-        os.unlink(out_vcf_fpath)
+    # pass
+    #assert filecmp.cmp(out_vcf_fpath, ref_out_vcf_fpath)
+    assert os.path.exists(out_vcf_fpath)
+    os.unlink(out_vcf_fpath)
