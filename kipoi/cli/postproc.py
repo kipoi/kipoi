@@ -150,10 +150,6 @@ def cli_score_variants(command, raw_args):
 
     keep_predictions = args.extra_output is not None
 
-    res = None
-    if keep_predictions:
-        res = {}
-
     n_models = len(args.model)
 
     for model_name, model_source, dataloader, dataloader_source, dataloader_args, seq_length in zip(args.model,
@@ -194,6 +190,7 @@ def cli_score_variants(command, raw_args):
         if output_vcf_model is not None:
             logger.info('Annotated VCF will be written to %s.' % str(output_vcf_model))
 
+        res = {}
         res[model_name_safe] = kipoi.postprocessing.variant_effects.score_variants(model,
                                                                                    dataloader_arguments,
                                                                                    args.input_vcf,
