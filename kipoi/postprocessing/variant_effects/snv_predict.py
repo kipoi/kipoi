@@ -14,6 +14,7 @@ from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, Out
     ModelInfoExtractor, BedWriter, VariantLocalisation, ensure_tabixed_vcf
 from kipoi.postprocessing.variant_effects.utils.io import VcfWriter
 from .utils import is_indel_wrapper
+from kipoi.utils import cd
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -36,7 +37,8 @@ def analyse_model_preds(model, ref, alt, diff_types,
     out_annotation = None
     for k in seqs:
         # Flatten the model output
-        preds_out, pred_labels = output_reshaper.flatten(model.predict_on_batch(seqs[k]))
+        with cd(model.source_dir):
+            preds_out, pred_labels = output_reshaper.flatten(model.predict_on_batch(seqs[k]))
         if out_annotation is None:
             out_annotation = pred_labels
             output_filter = np.zeros(pred_labels.shape[0]) == 0
