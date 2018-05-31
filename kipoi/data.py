@@ -34,8 +34,8 @@ class BaseDataLoader(object):
         (x["inputs"],x["targets"])
 
         Args:
-          cycle: when True, the returned iterator will run indefinitely by using
-            a custom `itertools.cycle` implementation. Use True with `fit_generator` in Keras.
+          cycle: when True, the returned iterator will run indefinitely go through the dataset
+            Use True with `fit_generator` in Keras.
           **kwargs: Arguments passed to self.batch_iter(**kwargs)
         """
         if cycle:

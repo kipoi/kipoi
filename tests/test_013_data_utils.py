@@ -57,15 +57,3 @@ def test_preloaded_dataset(data):
     assert len(d) == 3
     assert d[1] == {"a": [1], "b": {"d": 1}, "c": np.array([1])}
     assert list(d.batch_iter(2))[1] == {'a': [np.array([2])], 'b': {'d': np.array([2])}, 'c': np.array([[2]])}
-
-
-def test_iter_cycle():
-    from itertools import cycle
-    from kipoi.data_utils import iter_cycle
-    a = [1, 2, 3]
-    it1 = iter_cycle(a)
-    it2 = cycle(a)
-    for i in range(20):
-        e1 = next(it1)
-        e2 = next(it2)
-        assert e1 == e2
