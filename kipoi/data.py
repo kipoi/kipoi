@@ -8,7 +8,8 @@ import kipoi  # for .config module
 from kipoi.components import DataLoaderDescription, example_kwargs, print_dl_kwargs
 from .utils import load_module, cd, getargs
 from .external.torch.data import DataLoader
-from kipoi.data_utils import numpy_collate, numpy_collate_concat, get_dataset_item, get_dataset_lens, iter_cycle
+from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
+                              DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 from tqdm import tqdm
 import types
 
@@ -33,13 +34,13 @@ class BaseDataLoader(object):
         (x["inputs"],x["targets"])
 
         Args:
-          cycle: when True, the returned iterator will run indefinitely by using
-            a custom `itertools.cycle` implementation. Use True with `fit_generator` in Keras.
+          cycle: when True, the returned iterator will run indefinitely go through the dataset
+            Use True with `fit_generator` in Keras.
           **kwargs: Arguments passed to self.batch_iter(**kwargs)
         """
         if cycle:
-            # TODO - use the default way of getting the iterator in pytorch
-            return ((x["inputs"], x["targets"]) for x in iter_cycle(self.batch_iter(**kwargs)))
+            return ((x["inputs"], x["targets"])
+                    for x in iterable_cycle(self._batch_iterable(**kwargs)))
         else:
             return ((x["inputs"], x["targets"]) for x in self.batch_iter(**kwargs))
 
@@ -109,6 +110,19 @@ class PreloadedDataset(BaseDataLoader):
     def __getitem__(self, index):
         return get_dataset_item(self.data, index)
 
+    def _batch_iterable(self, batch_size=32, shuffle=False, drop_last=False, **kwargs):
+        """See batch_iter docs
+
+        Returns:
+          iterable
+        """
+        dl = DataLoader(self, batch_size=batch_size,
+                        collate_fn=numpy_collate,
+                        shuffle=shuffle,
+                        num_workers=0,
+                        drop_last=drop_last)
+        return dl
+
     def batch_iter(self, batch_size=32, shuffle=False, drop_last=False, **kwargs):
         """Return a batch-iterator
 
@@ -126,11 +140,10 @@ class PreloadedDataset(BaseDataLoader):
         Returns:
             iterator
         """
-        dl = DataLoader(self, batch_size=batch_size,
-                        collate_fn=numpy_collate,
-                        shuffle=shuffle,
-                        num_workers=0,
-                        drop_last=drop_last)
+        dl = self._batch_iterable(batch_size=batch_size,
+                                  shuffle=shuffle,
+                                  drop_last=drop_last,
+                                  **kwargs)
         return iter(dl)
 
     def load_all(self, **kwargs):
@@ -166,6 +179,23 @@ class Dataset(BaseDataLoader):
         """
         raise NotImplementedError
 
+    def _batch_iterable(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False, **kwargs):
+        """Return a batch-iteratrable
+
+        See batch_iter docs
+
+        Returns:
+            Iterable
+        """
+        dl = DataLoader(self,
+                        batch_size=batch_size,
+                        collate_fn=numpy_collate,
+                        shuffle=shuffle,
+                        num_workers=num_workers,
+                        drop_last=drop_last,
+                        **kwargs)
+        return dl
+
     def batch_iter(self, batch_size=32, shuffle=False, num_workers=0, drop_last=False, **kwargs):
         """Return a batch-iterator
 
@@ -186,12 +216,11 @@ class Dataset(BaseDataLoader):
         Returns:
             iterator
         """
-        dl = DataLoader(self, batch_size=batch_size,
-                        collate_fn=numpy_collate,
-                        shuffle=shuffle,
-                        num_workers=num_workers,
-                        drop_last=drop_last,
-                        **kwargs)
+        dl = self._batch_iterable(batch_size=batch_size,
+                                  shuffle=shuffle,
+                                  num_workers=num_workers,
+                                  drop_last=drop_last,
+                                  **kwargs)
         return iter(dl)
 
     def load_all(self, batch_size=32, **kwargs):
@@ -221,6 +250,18 @@ class BatchDataset(BaseDataLoader):
         """
         raise NotImplementedError
 
+    def _batch_iterable(self, num_workers=0, **kwargs):
+        """Return a batch-iteratorable
+
+        See batch_iter for docs
+        """
+        dl = DataLoader(self, batch_size=1,
+                        collate_fn=numpy_collate_concat,
+                        shuffle=False,
+                        num_workers=num_workers,
+                        drop_last=False)
+        return dl
+
     def batch_iter(self, num_workers=0, **kwargs):
         """Return a batch-iterator
 
@@ -232,11 +273,7 @@ class BatchDataset(BaseDataLoader):
         Returns:
             iterator
         """
-        dl = DataLoader(self, batch_size=1,
-                        collate_fn=numpy_collate_concat,
-                        shuffle=False,
-                        num_workers=num_workers,
-                        drop_last=False)
+        dl = self._batch_iterable(num_workers=num_workers, **kwargs)
         return iter(dl)
 
 
@@ -255,17 +292,11 @@ class SampleIterator(BaseDataLoader):
     next = __next__
 
     def batch_iter(self, batch_size=32, **kwargs):
-        l = []
-        for x in iter(self):
-            l.append(x)
-            if len(l) == batch_size:
-                ret = numpy_collate(l)
-                # remove all elements
-                del l[:]
-                yield ret
-        # Return the rest
-        if len(l) > 0:
-            yield numpy_collate(l)
+        return batch_gen(iter(self), batch_size=batch_size)
+
+    def _batch_iterable(self, batch_size=32, **kwargs):
+        kwargs['batch_size'] = batch_size
+        return DataloaderIterable(self, kwargs)
 
 
 class BatchIterator(BaseDataLoader):
@@ -282,11 +313,13 @@ class BatchIterator(BaseDataLoader):
     next = __next__
 
     def batch_iter(self, **kwargs):
-        # TODO - implement num_workers
         return iter(self)
 
+    def _batch_iterable(self, **kwargs):
+        return DataloaderIterable(self, kwargs)
 
-class SampleGenerator(SampleIterator):
+
+class SampleGenerator(BaseDataLoader):
     """Transform a generator of samples into SampleIterator
     """
     generator_fn = None
@@ -304,18 +337,23 @@ class SampleGenerator(SampleIterator):
         return cls.generator_fn
 
     def __init__(self, *args, **kwargs):
-        self.gen = self._get_generator_fn()(*args, **kwargs)
+        self.args = args
+        self.kwargs = kwargs
 
     def __iter__(self):
-        return self
+        """Return a new generator every time
+        """
+        return self._get_generator_fn()(*self.args, **self.kwargs)
 
-    def __next__(self):
-        return next(self.gen)
+    def batch_iter(self, batch_size=32, **kwargs):
+        return batch_gen(iter(self), batch_size=batch_size)
 
-    next = __next__  # python 2 compatibility
+    def _batch_iterable(self, batch_size=32, **kwargs):
+        kwargs['batch_size'] = batch_size
+        return DataloaderIterable(self, kwargs)
 
 
-class BatchGenerator(BatchIterator):
+class BatchGenerator(BaseDataLoader):
     """Transform a generator of batches into BatchIterator
     """
     generator_fn = None
@@ -331,15 +369,17 @@ class BatchGenerator(BatchIterator):
         return cls.generator_fn
 
     def __init__(self, *args, **kwargs):
-        self.gen = self._get_generator_fn()(*args, **kwargs)
+        self.args = args
+        self.kwargs = kwargs
 
     def __iter__(self):
-        return self
+        return self._get_generator_fn()(*self.args, **self.kwargs)
 
-    def __next__(self):
-        return next(self.gen)
+    def batch_iter(self, **kwargs):
+        return iter(self)
 
-    next = __next__  # python 2 compatibility
+    def _batch_iterable(self, **kwargs):
+        return DataloaderIterable(self, kwargs)
 # --------------------------------------------
 
 
