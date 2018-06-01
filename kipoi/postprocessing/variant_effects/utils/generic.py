@@ -166,9 +166,9 @@ def convert_record(input_record, pyvcf_reader):
     def revert_to_info(info_obj):
         out_str_elms = []
         for el in list(info_obj):
-            out_str_elms.append("{0}={1}".format(*el))
+            out_str_elms.append(u"{0}={1}".format(*el))
         if len(out_str_elms) > 0:
-            return pyvcf_reader._parse_info(";".join(out_str_elms))
+            return pyvcf_reader._parse_info(u";".join(out_str_elms).encode("ascii", "ignore"))
         else:
             return {}
 
