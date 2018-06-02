@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import abc
 import copy
 import logging
@@ -168,7 +169,10 @@ def convert_record(input_record, pyvcf_reader):
         for el in list(info_obj):
             out_str_elms.append(u"{0}={1}".format(*el))
         if len(out_str_elms) > 0:
-            return pyvcf_reader._parse_info(u";".join(out_str_elms).encode("ascii", "ignore"))
+            if sys.version_info[0] < 3:
+                return pyvcf_reader._parse_info(u";".join(out_str_elms).encode("ascii", "ignore"))
+            else:
+                return pyvcf_reader._parse_info(u";".join(out_str_elms))
         else:
             return {}
 
