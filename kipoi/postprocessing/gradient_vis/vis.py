@@ -235,7 +235,7 @@ class GradPlotter(object):
             return values, is_onehot_seq, mr_chr, mr_start, mr_end, seq_dim
 
         else:
-            if requires_seq_dim:
+            if requires_seq_dim or (limit_region is not None):
                 if seq_dim is None:
                     mf = get_metadata_cse()
                     seq_len = mf["end"][sample] - mf["start"][sample]
