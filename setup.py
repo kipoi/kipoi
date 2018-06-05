@@ -13,6 +13,7 @@ from setuptools import setup, find_packages
 
 requirements = [
     "pyyaml",
+    "requests",
     "future",
     "numpy",
     "pandas",
