@@ -17,6 +17,10 @@ variables:
     run:
       name: Install Kipoi
       command: pip install '.[develop,vep]'
+  install_requests: &install_requests
+    run:
+      name: Install requirements for requests correctly
+      command: pip install requests
   kipoi_ls: &kipoi_ls
     run:
       name: List kipoi packages
@@ -66,6 +70,7 @@ jobs:
       - *update_conda
       - *install_pip_deps
       - *install_kipoi
+      - *install_requests
       - *kipoi_ls
       - *run_tests
       - *store_test_results
