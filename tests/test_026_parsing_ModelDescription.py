@@ -125,3 +125,19 @@ def test_model_loading_on_examples(example):
     inp_elem.associated_metadata
 
     md.schema.targets
+
+
+@pytest.mark.parametrize("example", KERAS_EXAMPLES_TO_LOAD)
+def test_load_dump_yaml(example, tmpdir):
+    """Test extractor
+    """
+    model_file = "examples/{0}/model.yaml".format(example)
+
+    md = ModelDescription.load(model_file)
+
+    p = str(tmpdir.mkdir("yaml").join("model.yaml"))
+
+    md.dump(str(p))
+
+    md2 = ModelDescription.load(p)
+    assert md == md2
