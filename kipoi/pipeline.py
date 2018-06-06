@@ -164,7 +164,7 @@ class Pipeline(object):
                    selected_fwd_node, pre_nonlinearity, **kwargs)
 
             # store the predictions with the inputs, so that they can be analysed together afterwards.
-            batch['preds'] = pred
+            batch['grads'] = pred
             batches.append(batch)
 
         return numpy_collate_concat(batches)

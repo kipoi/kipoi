@@ -298,6 +298,14 @@ def test_gradients():
 
     assert np.all(gF2 * 2 == gT2)
 
+def test_gradient_pipeline():
+    model = kipoi.get_model("Basset", source = "kipoi")
+    dl_kwargs = model.default_dataloader.example_kwargs
+    with cd(model.source_dir):
+        ret = model.pipeline.input_grad(dl_kwargs, final_layer=True, avg_func="sum")
+    assert all(k in ret for k in ['targets', 'metadata', 'inputs', 'grads'])
+
+
 
 def test_returned_gradient_fmt():
     import kipoi

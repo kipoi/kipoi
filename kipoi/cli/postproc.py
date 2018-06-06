@@ -380,7 +380,9 @@ def cli_grad(command, raw_args):
 
         # write out the predictions, metadata (, inputs, targets)
         # always keep the inputs so that input*grad can be generated!
-        output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+        #output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+        output_batch = batch
+        output_batch["grads"] = pred_batch
         for writer in use_writers:
             writer.batch_write(output_batch)
 

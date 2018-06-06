@@ -498,7 +498,7 @@ def test_grad_predict_example(example):
 
             if file_format == "hdf5":
                 data = HDF5Reader.load(tmpfile)
-                assert {'metadata', 'preds', 'inputs'} <= set(data.keys())
+                assert {'metadata', 'grads', 'inputs'} <= set(data.keys())
                 # Here we can attempt to write a bedgraph file:
                 bg_args = ["python", os.path.abspath("./kipoi/__main__.py"), "postproc", "gr_inp_to_file",
                            "../",  # directory
@@ -517,9 +517,9 @@ def test_grad_predict_example(example):
             else:
                 data = pd.read_csv(tmpfile, sep="\t")
                 inputs_columns = data.columns.str.contains("inputs/")
-                preds_columns = data.columns.str.contains("preds/")
+                preds_columns = data.columns.str.contains("grads/")
                 assert np.all(np.in1d(data.columns.values[preds_columns],
-                                      data.columns.str.replace("inputs/", "preds/").values[inputs_columns]))
+                                      data.columns.str.replace("inputs/", "grads/").values[inputs_columns]))
                 other_cols = data.columns.values[~(preds_columns | inputs_columns)]
                 expected = ['metadata/ranges/chr',
                             'metadata/ranges/end',
