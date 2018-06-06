@@ -126,3 +126,45 @@ class Pipeline(object):
             if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
                 logger.warn("First batch of data is not compatible with the dataloader schema.")
             yield self.model.predict_on_batch(batch['inputs'])
+
+    def input_grad(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
+                             final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
+        """Get input gradients
+
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            filter_idx: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            layer: layer from which backwards the gradient should be calculated
+            final_layer: Use the final (classification) layer as `layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
+            **kwargs: Further arguments passed to input_grad
+
+        # Returns
+            A dictionary of all model inputs and the gradients. Gradients are stored in key 'preds'
+        """
+
+        if not isinstance(self.model, kipoi.model.GradientMixin):
+            raise Exception("Model does not implement GradientMixin, so `input_grad` is not available.")
+
+        logger.info('Initialized data generator. Running batches...')
+
+        validate_kwargs(self.dataloader_cls, dataloader_kwargs)
+        it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size, **kwargs)
+
+        batches = []
+        for i, batch in tqdm(enumerate(it)):
+            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+                logger.warn("First batch of data is not compatible with the dataloader schema.")
+
+            pred = self.model.input_grad(batch['inputs'], filter_idx, avg_func, layer, final_layer,
+                   selected_fwd_node, pre_nonlinearity, **kwargs)
+
+            # store the predictions with the inputs, so that they can be analysed together afterwards.
+            batch['preds'] = pred
+            batches.append(batch)
+
+        return numpy_collate_concat(batches)
