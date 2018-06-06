@@ -17,6 +17,10 @@ variables:
     run:
       name: Install Kipoi
       command: pip install '.[develop,vep]'
+  install_requests: &install_requests
+    run:
+      name: Install requirements for requests correctly
+      command: pip install requests
   kipoi_ls: &kipoi_ls
     run:
       name: List kipoi packages
