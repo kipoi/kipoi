@@ -70,7 +70,6 @@ jobs:
       - *update_conda
       - *install_pip_deps
       - *install_kipoi
-      - *install_requests
       - *kipoi_ls
       - *run_tests
       - *store_test_results
