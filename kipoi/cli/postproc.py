@@ -380,7 +380,7 @@ def cli_grad(command, raw_args):
 
         # write out the predictions, metadata (, inputs, targets)
         # always keep the inputs so that input*grad can be generated!
-        #output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+        # output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
         output_batch = batch
         output_batch["grads"] = pred_batch
         for writer in use_writers:
@@ -585,7 +585,7 @@ def cli_plot_mutation_map(command, raw_args):
                              "`create_mutation_map`.")
     parser.add_argument('--model_output', required=True,
                         help="Model output to be used for plotting. As defined in model.yaml.")
-    parser.add_argument('--limit_region_genomic', required=False, nargs =2, type = int, default=None,
+    parser.add_argument('--limit_region_genomic', required=False, nargs=2, type=int, default=None,
                         help="Limit to genomic region. Given as tuple without chromosome, "
                              "eg: `--limit_region_genomic 13245 12347`")
     parser.add_argument('--rc_plot', required=False, action="store_true",
@@ -612,7 +612,6 @@ def cli_plot_mutation_map(command, raw_args):
 
     if args.limit_region_genomic is not None:
         args.limit_region_genomic = tuple(args.limit_region_genomic)
-
 
     mutmap.plot_mutmap(args.input_entry, args.model_seq_input, args.scoring_key, args.model_output, ax=ax,
                        limit_region_genomic=args.limit_region_genomic, rc_plot=args.rc_plot)

@@ -299,7 +299,6 @@ def test_gradients():
     assert np.all(gF2 * 2 == gT2)
 
 
-
 def test_returned_gradient_fmt():
     import kipoi
     multi_input_model = kipoi.model.PyTorchModel(build_fn=dummy_multi_input_bf)

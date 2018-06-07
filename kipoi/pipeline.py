@@ -12,6 +12,7 @@ import six
 from tqdm import tqdm
 import logging
 import six
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -139,7 +140,7 @@ class Pipeline(object):
                 yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
 
     def input_grad(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
-                             final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
+                   final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
         """Get input gradients
 
         # Arguments
@@ -158,12 +159,10 @@ class Pipeline(object):
             A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
         """
 
-
         batches = [batch for batch in tqdm(self.input_grad_generator(dataloader_kwargs, batch_size, filter_idx,
                                                                      avg_func, layer, final_layer,
                                                                      selected_fwd_node, pre_nonlinearity, **kwargs))]
         return numpy_collate_concat(batches)
-
 
     def input_grad_generator(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
                              final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
