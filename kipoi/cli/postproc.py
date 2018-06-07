@@ -281,11 +281,11 @@ def cli_grad(command, raw_args):
                         help="Flag indicating that it should checked whether the selected output is post activation "
                              "function. If a non-linear activation function is used attempt to use its input. This "
                              "feature is not available for all models.", action='store_true')
-    parser.add_argument("-f", "--filter_ind",
+    parser.add_argument("-f", "--filter_idx",
                         help="Filter index that should be inspected with gradients. If not set all filters will " +
                              "be used.", default=None)
     parser.add_argument("-a", "--avg_func",
-                        help="Averaging function to be applied across selected filters (`--filter_ind`) in " +
+                        help="Averaging function to be applied across selected filters (`--filter_idx`) in " +
                              "layer `--layer`.", choices=GradientMixin.allowed_functions, default="sum")
     parser.add_argument('--selected_fwd_node', help="If the selected layer has multiple inbound connections in "
                                                     "the graph then those can be selected here with an integer "
@@ -340,9 +340,9 @@ def cli_grad(command, raw_args):
     dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dl, dataloader_kwargs)
     dl = Dl(**dataloader_kwargs)
 
-    filter_ind_parsed = None
-    if args.filter_ind is not None:
-        filter_ind_parsed = parse_filter_slice(args.filter_ind)
+    filter_idx_parsed = None
+    if args.filter_idx is not None:
+        filter_idx_parsed = parse_filter_slice(args.filter_idx)
 
     # setup batching
     it = dl.batch_iter(batch_size=args.batch_size,
@@ -373,7 +373,7 @@ def cli_grad(command, raw_args):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
 
         # make the prediction
-        pred_batch = model.input_grad(batch['inputs'], filter_idx=filter_ind_parsed,
+        pred_batch = model.input_grad(batch['inputs'], filter_idx=filter_idx_parsed,
                                       avg_func=args.avg_func, layer=layer, final_layer=args.final_layer,
                                       selected_fwd_node=args.selected_fwd_node,
                                       pre_nonlinearity=args.pre_nonlinearity)
