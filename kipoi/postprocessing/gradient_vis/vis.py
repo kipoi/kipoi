@@ -45,9 +45,9 @@ class GradPlotter(object):
         """
         self.data = data
         if grad_preds is not None:
-            self.data['preds'] = grad_preds
+            self.data['grads'] = grad_preds
         else:
-            assert 'preds' in self.data
+            assert 'grads' in self.data
 
         # TODO: Instead of copying from kipoi.model should we rather have a get_model_descr
         # TODO-cont: funcion that is also called from get_model
@@ -180,7 +180,7 @@ class GradPlotter(object):
             return cse
 
         inputs = self.data["inputs"]
-        gradients = self.data["preds"]
+        gradients = self.data["grads"]
 
         model_input = self._verify_model_input(model_input)
 
