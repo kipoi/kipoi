@@ -63,7 +63,7 @@ def test_export(tmpdir):
                                vep=True,
                                )
     env_dict = read_yaml(env_file)
-    assert env_dict['channels'] == ['defaults', 'bioconda']
+    assert env_dict['channels'] == ['bioconda', 'conda-forge', 'defaults']
     assert [p for p in env_dict['dependencies'] if "cyvcf2" in p]
     assert env_dict['name'] == env
 

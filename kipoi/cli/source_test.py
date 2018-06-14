@@ -84,7 +84,7 @@ def all_models_to_test(src):
     return list(models) + include
 
 
-def test_model(model_name, source_name, env_name, batch_size):
+def test_model(model_name, source_name, env_name, batch_size, vep=False):
     """kipoi test ...
 
     Args:
@@ -104,6 +104,9 @@ def test_model(model_name, source_name, env_name, batch_size):
             "--source", source_name,
             "--env", env_name,
             model_name]
+    if vep:
+        # Add --vep to environment installation
+        args.insert(-1, "--vep")
     returncode = _call_command(cmd, args, use_stdout=True)
     assert returncode == 0
 
@@ -222,6 +225,8 @@ def cli_test_source(command, raw_args):
                         help='only run tests which match the given substring expression')
     parser.add_argument('-c', '--clean_env', action='store_true',
                         help='clean the environment after running.')
+    parser.add_argument('--vep', action='store_true',
+                        help='Install the vep dependency.')
     parser.add_argument('--all', action='store_true',
                         help="Test all models in the source")
 
@@ -282,7 +287,7 @@ def cli_test_source(command, raw_args):
             env_name = conda_env_name(m, source=args.source)
             env_name = "test-" + env_name  # prepend "test-"
             test_model(m, args.source, env_name,
-                       get_batch_size(cfg, m, args.batch_size))
+                       get_batch_size(cfg, m, args.batch_size), args.vep)
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))
             failed_models += [m]

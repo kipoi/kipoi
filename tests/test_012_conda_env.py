@@ -47,16 +47,53 @@ def test_Dependencies_merge():
     assert dep_merged.conda_channels == ["defaults"]
 
 
-def test_channels():
+def test_bioconda_channels():
     dep1 = Dependencies(conda=["conda_pkg1", "bioconda::conda_pkg2"],
                         pip=[])
     channels, packages = dep1._get_channels_packages()
-    assert channels == ["defaults", "bioconda"]
+    assert channels == ["defaults", "bioconda", "conda-forge"]
+    dep1 = Dependencies(conda=["bioconda::conda_pkg2", "conda_pkg1"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["bioconda", "conda-forge", "defaults"]
 
     dep1 = Dependencies(conda=["bioconda::conda_pkg2"],
                         pip=[])
     channels, packages = dep1._get_channels_packages()
-    assert channels == ["bioconda", "defaults"]
+    assert channels == ["bioconda", "conda-forge", "defaults"]
+
+    dep1 = Dependencies(conda=["conda-forge::conda_pkg2", "bioconda::conda_pkg2"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["conda-forge", "bioconda", "defaults"]
+
+    dep1 = Dependencies(conda=["asd::conda_pkg2", "bioconda::conda_pkg2", "dsa::conda_pkg2"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["asd", "bioconda", "conda-forge", "dsa", "defaults"]
+
+
+def test_handle_pysam():
+    dep1 = Dependencies(conda=["conda_pkg1", "bioconda::pysam"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["bioconda", "conda-forge", "defaults"]
+
+    dep1 = Dependencies(conda=["conda_pkg1", "bioconda::pybedtools"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["defaults", "bioconda", "conda-forge"]
+
+
+def test_other_channels():
+    dep1 = Dependencies(conda=["other::conda_pkg2", "conda_pkg1"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["other", "defaults"]
+    dep1 = Dependencies(conda=["conda_pkg1", "other::conda_pkg2"],
+                        pip=[])
+    channels, packages = dep1._get_channels_packages()
+    assert channels == ["defaults", "other"]
 
 
 def test_create_env():
