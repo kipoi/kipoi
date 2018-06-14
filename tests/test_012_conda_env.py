@@ -70,7 +70,7 @@ def test_bioconda_channels():
     dep1 = Dependencies(conda=["asd::conda_pkg2", "bioconda::conda_pkg2", "dsa::conda_pkg2"],
                         pip=[])
     channels, packages = dep1._get_channels_packages()
-    assert channels == ["asd", "bioconda", "conda-forge, ""dsa"]
+    assert channels == ["asd", "bioconda", "conda-forge", "dsa", "defaults"]
 
 
 def test_handle_pysam():
@@ -79,7 +79,7 @@ def test_handle_pysam():
     channels, packages = dep1._get_channels_packages()
     assert channels == ["bioconda", "conda-forge", "defaults"]
 
-    dep1 = Dependencies(conda=["conda_pkg1", "pybedtools::pysam"],
+    dep1 = Dependencies(conda=["conda_pkg1", "bioconda::pybedtools"],
                         pip=[])
     channels, packages = dep1._get_channels_packages()
     assert channels == ["defaults", "bioconda", "conda-forge"]
