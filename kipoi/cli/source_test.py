@@ -287,7 +287,7 @@ def cli_test_source(command, raw_args):
             env_name = conda_env_name(m, source=args.source)
             env_name = "test-" + env_name  # prepend "test-"
             test_model(m, args.source, env_name,
-                       get_batch_size(cfg, m, args.batch_size, args.vep))
+                       get_batch_size(cfg, m, args.batch_size), args.vep)
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))
             failed_models += [m]
