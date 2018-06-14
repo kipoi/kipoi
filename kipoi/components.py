@@ -590,6 +590,17 @@ class Dependencies(RelatedConfigMixin):
         channels, packages = list(zip(*map(kconda.parse_conda_package, self.conda)))
         channels = unique_list(list(channels) + list(self.conda_channels))
         packages = unique_list(list(packages))
+
+        # Handle channel order
+        if "bioconda" in channels and "conda-forge" not in channels:
+            # Insert 'conda-forge' right after bioconda if it is not included
+            channels.insert(channels.index("bioconda") + 1, "conda-forge")
+        if "pysam" in packages and "bioconda" in channels:
+            if channels.index("defaults") < channels.index("bioconda"):
+                logger.warn("Swapping channel order - putting defaults last. " +
+                            "Using pysam bioconda instead of anaconda")
+                channels.remove("defaults")
+                channels.insert(len(channels), "defaults")
         return channels, packages
 
     def to_env_dict(self, env_name):
@@ -705,6 +716,7 @@ def example_kwargs(dl_args):
     """Return the example kwargs
     """
     return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
+
 
 def print_dl_kwargs(dataloader_class, format_examples_json=False):
     """
