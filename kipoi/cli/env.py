@@ -214,10 +214,16 @@ def cli_create(cmd, raw_args):
     add_env_args(parser)
     parser.add_argument('-e', '--env', default=None,
                         help="Special environment name. default: kipoi-<model>[-<dataloader>]")
+    parser.add_argument('-t', '--tmpdir', default=None,
+                        help="Temporary directory path where to create the conda environment file" + \
+                        "Defaults to /tmp/kipoi/envfiles/<uuid>/")
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
-    tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
+    if args.tmpdir is None:
+        tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
+    else:
+        tmpdir = args.tmpdir
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
 
