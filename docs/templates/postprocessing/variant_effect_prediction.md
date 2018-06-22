@@ -16,7 +16,7 @@ The principle relies on generating model predictions twice, once with DNA sequen
 Scoring methods that come with Kipoi are `Diff` which simply calculates the difference between the two predictions, `Logit` which calculates the difference of `logit(prediction)` of the two predictions and a few more. Those scoring methods can also be user-defined in which case they can be submitted with the model. Not all scoring functions are compatible with all model possible model outputs - for example the logit transformation can only be performed on values [0,1].
 
 ## Model and dataloader requirements
-The model has to produce predictions at least partly based on DNA sequence and the DNA sequence either has to be as a string (e.g. `actgACTG`) or in a 1-hot encoded way in which A = `[1,0,0,0]`, C = `[0,1,0,0]`, T= `[0,0,1,0]`, G= `[0,0,0,1]`. Please note that any letter/base that is not in `actgACTG` will be regarded and treated as `N` (in one-hot: `[0,0,0,0]`)!
+The model has to produce predictions at least partly based on DNA sequence and the DNA sequence either has to be as a string (e.g. `acgtACGT`) or in a 1-hot encoded way in which A = `[1,0,0,0]`, C = `[0,1,0,0]`, G= `[0,0,1,0]`, T= `[0,0,0,1]`. Please note that any letter/base that is not in `acgtACGT` will be regarded and treated as `N` (in one-hot: `[0,0,0,0]`)!
 
 Requirements for the dataloader are that apart from producing the model input it also has to output information which region of the genome this generated sequence corresponds. On a side note: This region is only used to calculate an overlap with the query VCF, hence as long the dataloader output refers to the same sequence assembly as the VCF file variant scoring will return the desired results.
 
