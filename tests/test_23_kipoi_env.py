@@ -53,7 +53,7 @@ def test_export(tmpdir):
                                gpu=True
                                )
     env_dict = read_yaml(env_file)
-    assert env_dict['channels'] == ['defaults']
+    assert env_dict['channels'] == ['bioconda', 'conda-forge', 'defaults']
     assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p or "tensorflow-gpu>=" in p]
 
     # vep
