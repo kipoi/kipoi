@@ -43,7 +43,7 @@ def test_export(tmpdir):
     assert [p for p in env_dict['dependencies'][pip_idx]['pip']
             if "tensorflow=" in p or "tensorflow>=" in p]
 
-    for dep in ['genomelake', 'scikit-learn', 'pybedtools']:
+    for dep in ['concise']:
         assert [p for p in env_dict['dependencies'][pip_idx]['pip']
                 if dep in p]
 
