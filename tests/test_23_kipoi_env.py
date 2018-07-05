@@ -3,7 +3,7 @@
 import subprocess
 import os
 from kipoi.utils import read_yaml
-from kipoi.cli.env import get_env_name, export_env
+from kipoi.cli.env import get_env_name, export_env, list_subcomponents, merge_deps
 
 
 def test_env_name():
@@ -105,3 +105,12 @@ def test_export_multiple(tmpdir):
     del env_dict2['name']
 
     assert env_dict != env_dict2
+
+
+def test_list_submodules():
+    assert set(list_subcomponents("MaxEntScan", "kipoi", "model")) == {"MaxEntScan/3prime", "MaxEntScan/5prime"}
+    assert set(list_subcomponents("Basenji", "kipoi", "model")) == {"Basenji"}
+
+
+def test_deps():
+    assert merge_deps(["MaxEntScan"]) == merge_deps(["MaxEntScan/5prime"])

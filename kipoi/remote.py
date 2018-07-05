@@ -18,9 +18,9 @@ logger.addHandler(logging.NullHandler())
 
 # TODO - optionally don't pull the recent files?
 
-def get_component_file(component_dir, which="model"):
+def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
-    return get_file_path(component_dir, which, extensions=[".yml", ".yaml"])
+    return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
 
 
 def list_yamls_recursively(root_dir, basename):
@@ -185,6 +185,12 @@ class Source(object):
     def _pull_component(self, component, which="model"):
         """Pull/update the model locally and
         returns a local path to it
+        """
+        return
+
+    @abstractmethod
+    def _is_component(self, component, which='model'):
+        """Returns True if the component exists
         """
         return
 
@@ -389,6 +395,10 @@ class GitLFSSource(Source):
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
+    def _is_component(self, component, which="model"):
+        cpath = get_component_file(os.path.join(self.local_path, component), which, raise_err=False)
+        return cpath is not None and os.path.exists(cpath)
+
     def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
@@ -463,6 +473,12 @@ class GitSource(Source):
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
 
+    def _is_component(self, component, which="model"):
+        cpath = get_component_file(os.path.join(self.local_path, component),
+                                   which,
+                                   raise_err=False)
+        return cpath is not None and os.path.exists(cpath)
+
     def _get_component_descr(self, component, which="model"):
         return load_component_descr(self._pull_component(component, which), which)
 
@@ -490,6 +506,12 @@ class LocalSource(Source):
             raise ValueError("{0} {1} doesn't exist".
                              format(which, component))
         return cpath
+
+    def _is_component(self, component, which="model"):
+        cpath = get_component_file(os.path.join(self.local_path, component),
+                                   which,
+                                   raise_err=False)
+        return cpath is not None and os.path.exists(cpath)
 
     def _get_component_descr(self, component, which="model"):
         return load_component_descr(self._pull_component(component, which), which)
@@ -541,6 +563,13 @@ class GithubPermalinkSource(Source):
         lfs_source._pulled = True  # Don't git-pull
 
         return lfs_source._pull_component(model, which=which)
+
+    def _is_component(self, component, which="model"):
+        try:
+            self._pull_component(component, which)
+            return True
+        except Exception:
+            return False
 
     def _get_component_descr(self, component, which="model"):
         return load_component_descr(self._pull_component(component, which), which)
