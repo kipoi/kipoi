@@ -10,6 +10,7 @@ import subprocess
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
 from kipoi.components import Dependencies
+from kipoi.remote import list_subcomponents
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -78,22 +79,6 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                              "seaborn",
                              "shapely",
                              "descartes"])
-
-
-def list_subcomponents(component, source, which="model"):
-    """List all the available submodels
-
-    Args:
-      model: model name or a subname: e.g. instaead of
-        Model1/CTCF we can give Model1 and then all the sub-models would be included
-      source: model source
-    """
-    src = kipoi.get_source(source)
-    if src._is_component(component, which):
-        return [component]
-    else:
-        return [x for x in src._list_components(which)
-                if x.startswith(component) and "/template" not in x]
 
 
 def merge_deps(models,
