@@ -80,33 +80,68 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                              "descartes"])
 
 
+def list_subcomponents(component, source, which="model"):
+    """List all the available submodels
+
+    Args:
+      model: model name or a subname: e.g. instaead of
+        Model1/CTCF we can give Model1 and then all the sub-models would be included
+      source: model source
+    """
+    src = kipoi.get_source(source)
+    if src._is_component(component, which):
+        return [component]
+    else:
+        return [x for x in src._list_components(which)
+                if x.startswith(component) and "/template" not in x]
+
+
 def merge_deps(models,
                dataloaders=None,
                source="kipoi",
                vep=False,
                gpu=False):
+    """Setup the dependencies
+    """
     deps = Dependencies()
     for model in models:
         logger.info("Loading model: {0} description".format(model))
 
         parsed_source, parsed_model = parse_source_name(source, model)
-        model_descr = kipoi.get_model_descr(parsed_model, parsed_source)
 
-        deps = deps.merge(model_descr.dependencies)
-        # handle the dataloader=None case
-        if dataloaders is None or not dataloaders:
-            dataloader = os.path.normpath(os.path.join(parsed_model,
-                                                       model_descr.default_dataloader))
-            logger.info("Inferred dataloader name: {0} from".format(dataloader) +
-                        " the model.")
-            dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
-            deps = deps.merge(dataloader_descr.dependencies)
+        sub_models = list_subcomponents(parsed_model, parsed_source, "model")
+        if len(sub_models) == 0:
+            raise ValueError("Model {0} not found in source {1}".format(parsed_model, parsed_source))
+        if len(sub_models) > 1:
+            logger.info("Found {0} models under the model name: {1}. Merging dependencies for all".
+                        format(len(sub_models), parsed_model))
 
+        for sub_model in sub_models:
+            model_descr = kipoi.get_model_descr(sub_model, parsed_source)
+            deps = deps.merge(model_descr.dependencies)
+
+            # handle the dataloader=None case
+            if dataloaders is None or not dataloaders:
+                dataloader = os.path.normpath(os.path.join(sub_model,
+                                                           model_descr.default_dataloader))
+                logger.info("Inferred dataloader name: {0} from".format(dataloader) +
+                            " the model.")
+                dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
+                deps = deps.merge(dataloader_descr.dependencies)
     if dataloaders is not None or dataloaders:
         for dataloader in dataloaders:
             parsed_source, parsed_dataloader = parse_source_name(source, dataloader)
-            dataloader_descr = kipoi.get_dataloader_descr(parsed_dataloader, parsed_source)
-            deps = deps.merge(dataloader_descr.dependencies)
+            sub_dataloaders = list_subcomponents(parsed_dataloader, parsed_source, "dataloader")
+            if len(sub_dataloaders) == 0:
+                raise ValueError("Dataloader: {0} not found in source {1}".format(parsed_dataloader,
+                                                                                  parsed_source))
+
+            if len(sub_dataloaders) > 1:
+                logger.info("Found {0} dataloaders under the dataloader name: {1}. Merging dependencies for all".
+                            format(len(sub_dataloaders), parsed_dataloader))
+            for sub_dataloader in sub_dataloaders:
+                dataloader_descr = kipoi.get_dataloader_descr(sub_dataloader, parsed_source)
+                deps = deps.merge(dataloader_descr.dependencies)
 
     # add Kipoi to the dependencies
     deps = KIPOI_DEPS.merge(deps)
@@ -215,7 +250,7 @@ def cli_create(cmd, raw_args):
     parser.add_argument('-e', '--env', default=None,
                         help="Special environment name. default: kipoi-<model>[-<dataloader>]")
     parser.add_argument('-t', '--tmpdir', default=None,
-                        help="Temporary directory path where to create the conda environment file" + \
+                        help="Temporary directory path where to create the conda environment file" +
                         "Defaults to /tmp/kipoi/envfiles/<uuid>/")
     args = parser.parse_args(raw_args)
 
