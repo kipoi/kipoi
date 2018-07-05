@@ -86,7 +86,7 @@ def test_preproc_example(example, tmpdir):
     with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    if example != "pyt":
+    if example not in {"pyt", "sklearn_iris"}:
         assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
 
 
