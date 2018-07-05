@@ -9,6 +9,7 @@ import os
 from ..utils import parse_json_file_str, cd
 import kipoi  # for .config module
 from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_dataloader_main, file_exists, dir_exists
+from kipoi.remote import list_subcomponents
 from ..data import numpy_collate_concat
 # import h5py
 # import six
@@ -219,19 +220,23 @@ def cli_pull(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Downloads the directory" +
                                      " associated with the model.")
-    parser.add_argument('model', help='Model name.')
+    parser.add_argument('model', help='Model name. '
+                        '<model> can also refer to a model-group - e.g. if you '
+                        'specify MaxEntScan then the dependencies\n'
+                        'for MaxEntScan/5prime and MaxEntScan/3prime will be installed')
     add_source(parser)
-    parser.add_argument('-e', '--env_file', default=None,
-                        help='If set, export the conda environment to a file.' +
-                        'Example: kipoi pull mymodel -e mymodel.yaml')
     args = parser.parse_args(raw_args)
 
-    kipoi.config.get_source(args.source).pull_model(args.model)
-
-    if args.env_file is not None:
-        env = kipoi.cli.env.export_env(args.env_file, args.model, args.source)
-        print("Activate the environment with:")
-        print("source activate {0}".format(env))
+    src = kipoi.config.get_source(args.source)
+    sub_models = list_subcomponents(args.model, args.source, which='model')
+    if len(sub_models) == 0:
+        logger.error("Model {0} not found in source {1}".format(args.model, args.source))
+        sys.exit(1)
+    if len(sub_models) > 1:
+        logger.info("Found {0} models under the model name: {1}. Pulling all of them".
+                    format(len(sub_models), args.model))
+    for sub_model in sub_models:
+        src.pull_model(sub_model)
 
 
 def cli_init(command, raw_args, **kwargs):
@@ -271,6 +276,7 @@ def cli_init(command, raw_args, **kwargs):
         sys.exit(1)
     print("--------------------------------------------")
     logger.info("Done!\nCreated the following folder into the current working directory: {0}".format(os.path.basename(out_dir)))
+
 
 def cli_info(command, raw_args):
     """CLI interface to predict

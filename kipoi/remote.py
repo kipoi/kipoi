@@ -16,6 +16,21 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def list_subcomponents(component, source, which="model"):
+    """List all the available submodels
+
+    Args:
+      model: model name or a subname: e.g. instaead of
+        Model1/CTCF we can give Model1 and then all the sub-models would be included
+      source: model source
+    """
+    src = kipoi.get_source(source)
+    if src._is_component(component, which):
+        return [component]
+    else:
+        return [x for x in src._list_components(which)
+                if x.startswith(component) and "/template" not in x]
+
 # TODO - optionally don't pull the recent files?
 
 def get_component_file(component_dir, which="model", raise_err=True):
