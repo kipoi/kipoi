@@ -12,13 +12,12 @@ from utils import compare_vcfs
 from kipoi.readers import HDF5Reader
 import numpy as np
 
-# TODO - check if you are on travis or not regarding the --install_req flag
 if config.install_req:
     INSTALL_FLAG = "--install_req"
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template",
+EXAMPLES_TO_RUN = ["rbp", "extended_coda", "sklearn_iris", "iris_model_template",
                    "non_bedinput_model", "pyt", "iris_tensorflow"]
 
 predict_activation_layers = {
@@ -87,7 +86,7 @@ def test_preproc_example(example, tmpdir):
     with open(example_dir + "/dataloader.yaml", "r") as f:
         ex_descr = yaml.load(f)
 
-    if example != "pyt":
+    if example not in {"pyt", "sklearn_iris"}:
         assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
 
 
@@ -148,8 +147,6 @@ def test_predict_example(example, tmpdir):
                                       'metadata/ranges/start',
                                       'metadata/ranges/strand',
                                       'preds/0']
-
-
 
 
 @pytest.mark.parametrize("example", list(predict_activation_layers))
@@ -318,7 +315,7 @@ def test_predict_variants_example_multimodel(file_format, tmpdir):
 
     for example_dir in example_dirs:
         # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
-        vcf_tmpfile_model = vcf_tmpfile[:-4] + example_dir.replace("/","_") + ".vcf"
+        vcf_tmpfile_model = vcf_tmpfile[:-4] + example_dir.replace("/", "_") + ".vcf"
         assert os.path.exists(vcf_tmpfile_model)
         compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile_model)
 
@@ -341,6 +338,7 @@ def test_predict_variants_example_multimodel(file_format, tmpdir):
         for label, start, end in zip(table_labels, table_starts, table_ends):
             tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
 
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_generate_mutation_maps_example(example, tmpdir):
     """kipoi predict ...
@@ -362,7 +360,7 @@ def test_generate_mutation_maps_example(example, tmpdir):
                          "preproc_transformer": "dataloader_files/encodeSplines.pkl",
                          "gtf_file": "example_files/gencode_v25_chr22.gtf.pkl.gz",
                          "intervals_file": "example_files/variant_intervals.tsv"}
-    dataloader_kwargs = {k: example_dir +v for k,v in dataloader_kwargs.items()}
+    dataloader_kwargs = {k: example_dir + v for k, v in dataloader_kwargs.items()}
     import json
     dataloader_kwargs_str = json.dumps(dataloader_kwargs)
 
@@ -419,8 +417,10 @@ def test_pull_kipoi():
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model.yaml'))
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
 
+
 class dummy_container(object):
     pass
+
 
 def test__prepare_multi_model_args():
     from kipoi.cli.postproc import _prepare_multi_model_args
@@ -449,7 +449,8 @@ def test__prepare_multi_model_args():
 
 
 def test_parse_filter_slice():
-    from  kipoi.cli.postproc import parse_filter_slice
+    from kipoi.cli.postproc import parse_filter_slice
+
     class DummySlice():
         def __getitem__(self, key):
             return key

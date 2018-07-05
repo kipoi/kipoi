@@ -391,7 +391,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                                filter_func=None, filter_func_kwargs=None):
         """
         Get keras gradient function
-         
+
         # Arguments:
             layer: Layer name or index with respect to which the input gradients should be returned
             use_final_layer: Alternative to `layer`, if the final layer should be used. In this case `layer` can be None.
@@ -614,10 +614,10 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
-    
+
         Arguments
             x: Input samples, as a Numpy array.
-    
+
         Returns
             Numpy array(s) of predictions.
         """
@@ -917,7 +917,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         # layers receiving from the given layer, is the layer (also) an output leaf node
         return next_layer_ids, [self.get_layer(i) for i in next_layer_ids], \
-               any([iuname in layer_output_unames for iuname in model_output_unames])
+            any([iuname in layer_output_unames for iuname in model_output_unames])
 
     @classmethod
     def _pt_type_match(self, in_data, like, match_cuda=False):
@@ -1102,7 +1102,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         # layers feeding into the given layer, is the layer (also) an output leaf node
         return prev_layer_ids, [self.get_layer(i) for i in prev_layer_ids], \
-               any([iuname in layer_input_unames for iuname in model_input_unames])
+            any([iuname in layer_input_unames for iuname in model_input_unames])
 
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
@@ -1161,23 +1161,27 @@ class SklearnModel(BaseModel):
           type: sklearn
           args:
             pkl_file: asd.pkl
+            predict_method: Which prediction method to use. Available options:
+               'predict', 'predict_proba' or 'predict_log_proba'.
         ```
     """
 
     MODEL_PACKAGE = "scikit-learn"
 
-    def __init__(self, pkl_file):
+    def __init__(self, pkl_file, predict_method="predict"):
         self.pkl_file = pkl_file
 
         from sklearn.externals import joblib
         self.model = joblib.load(self.pkl_file)
+        assert predict_method in ['predict_proba', 'predict', 'predict_log_proba']
+        assert hasattr(self.model, predict_method)
+        self.predict_method = predict_method
 
     def predict_on_batch(self, x):
         # assert isinstance(x, dict)
         # assert len(x) == 1
         # x = x.popitem()[1]
-        return self.model.predict(x)
-
+        return getattr(self.model, self.predict_method)(x)
 
 # --------------------------------------------
 # Tensorflow
