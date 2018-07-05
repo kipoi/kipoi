@@ -52,11 +52,14 @@ def add_dataloader(parser, with_args=True):
 # Multiple models/dataloaders
 def add_env_args(parser, source="kipoi"):
     parser.add_argument('model', nargs="+",
-                        help='Model name(s). You can use <source>::<model> to use models from different sources')
+                        help='Model name(s). You can use <source>::<model> to use models from different sources. \n'
+                        '<model> can also refer to a model-group - e.g. if you specify MaxEntScan then the dependencies\n'
+                        'for MaxEntScan/5prime and MaxEntScan/3prime will be installed')
     add_source(parser, default=source)
     parser.add_argument('--dataloader', default=[], nargs="+",
                         help="Dataloader name(s). If not specified, the model's default " +
-                        "Dataloader will be used. You can use <source>::<dataloader> to use dataloaders from different sources")
+                        "Dataloader will be used. You can use <source>::<dataloader> to use dataloaders from different sources\n"
+                        "As for the --model tag, you can specify whole dataloader groups.")
     parser.add_argument("--vep", action="store_true",
                         help="Include also the dependencies for variant effect prediction")
     parser.add_argument("--gpu", action="store_true",
