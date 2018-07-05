@@ -108,8 +108,8 @@ def test_export_multiple(tmpdir):
 
 
 def test_list_submodules():
-    assert list_subcomponents("MaxEntScan", "kipoi", "model") == ["MaxEntScan/3prime", "MaxEntScan/5prime"]
-    assert list_subcomponents("Basenji", "kipoi", "model") == ["Basenji"]
+    assert set(list_subcomponents("MaxEntScan", "kipoi", "model")) == {"MaxEntScan/3prime", "MaxEntScan/5prime"}
+    assert set(list_subcomponents("Basenji", "kipoi", "model")) == {"Basenji"}
 
 
 def test_deps():
