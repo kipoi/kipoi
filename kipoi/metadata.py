@@ -15,6 +15,9 @@ class GenomicRanges(Mapping):
         self.end = end
         self.id = id
         self.strand = strand
+        for v in ["chr", "start", "end", "id", "strand"]:
+            if eval(v) is None:
+                raise ValueError("{0} can't be None".format(v))
 
     def __getitem__(self, key):
         return self._storage[key]
