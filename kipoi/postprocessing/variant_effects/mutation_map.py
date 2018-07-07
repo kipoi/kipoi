@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 
+import kipoi
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -426,7 +427,7 @@ class MutationMapDataMerger(object):
                     metadata_subset = get_genomicranges_line(batch_metadata[metadata_key], process_line)
                     subset_keys = ["chr", "start", "end", "strand"]
                     if not (isinstance(metadata_subset["strand"], list) or
-                                isinstance(metadata_subset["strand"], np.ndarray)):
+                            isinstance(metadata_subset["strand"], np.ndarray)):
                         subset_keys = ["chr", "start", "end"]
                     metadata_subset_dict = {k: metadata_subset[k][0] for k in subset_keys}
                     if "strand" not in metadata_subset_dict:
@@ -827,7 +828,7 @@ class MutationMap(object):
         # TODO - ignore the un-used params?
         it = self.dataloader(**dataloader_args).batch_iter(batch_size=batch_size,
                                                            num_workers=num_workers)
-        for i, batch in enumerate(tqdm(it)):
+        for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
 
             # get reference sequence for every line in the batch input
             ref_seq_strs = get_ref_seq_from_seq_set(batch, seq_to_meta, seq_to_str_converter,
@@ -851,7 +852,7 @@ class MutationMap(object):
             query_vcf_records = None
             query_process_lines = None
 
-            for eval_kwargs in tqdm(eval_kwargs_iter):
+            for eval_kwargs in tqdm(eval_kwargs_iter, disable=kipoi.config.hide_output()):
                 if eval_kwargs is None:
                     # No generated datapoint overlapped any VCF region
                     continue

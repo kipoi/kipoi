@@ -9,6 +9,7 @@ import pandas as pd
 import six
 from tqdm import tqdm
 
+import kipoi
 from kipoi.postprocessing.variant_effects.scores import Logit, get_scoring_fns
 from kipoi.postprocessing.variant_effects.utils import select_from_dl_batch, OutputReshaper, default_vcf_id_gen, \
     ModelInfoExtractor, BedWriter, VariantLocalisation, ensure_tabixed_vcf
@@ -267,7 +268,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
                     "do_mutate": []}
 
     if ("strand" in ranges_input_obj) and (isinstance(ranges_input_obj["strand"], list) or
-                                               isinstance(ranges_input_obj["strand"], np.ndarray)):
+                                           isinstance(ranges_input_obj["strand"], np.ndarray)):
         preproc_conv["strand"] = []
 
     for i, record in enumerate(vcf_records):
@@ -283,7 +284,7 @@ def get_variants_df(seq_key, ranges_input_obj, vcf_records, process_lines, proce
             pre_new_vals["end"] = ranges_input_obj["end"][ranges_input_i]
             pre_new_vals["varpos_rel"] = int(record.POS) - pre_new_vals["start"]
             if not ((pre_new_vals["varpos_rel"] < 0) or
-                        (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
+                    (pre_new_vals["varpos_rel"] > (pre_new_vals["end"] - pre_new_vals["start"] + 1))):
 
                 # If variant lies in the region then continue
                 pre_new_vals["do_mutate"] = True
@@ -578,7 +579,7 @@ def predict_snvs(model,
     if generated_seq_writer is not None:
         [el.open() for el in generated_seq_writer if hasattr(el, "open")]
 
-    for i, batch in enumerate(tqdm(it)):
+    for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
         # For debugging
         # if i >= 10:
         #     break

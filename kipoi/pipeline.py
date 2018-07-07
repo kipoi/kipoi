@@ -79,7 +79,7 @@ class Pipeline(object):
 
             # test that all predictions go through
             pred_list = []
-            for i, batch in enumerate(tqdm(it)):
+            for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
                 if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
                     logger.warn("First batch of data is not compatible with the dataloader schema.")
                 pred_list.append(self.model.predict_on_batch(batch['inputs']))
@@ -105,7 +105,9 @@ class Pipeline(object):
         :return: Predict the whole array
         """
         pred_list = [batch for batch in tqdm(self.predict_generator(dataloader_kwargs,
-                                                                    batch_size, **kwargs))]
+                                                                    batch_size,
+                                                                    disable=kipoi.config.hide_output(),
+                                                                    **kwargs))]
         return numpy_collate_concat(pred_list)
 
     def predict_generator(self, dataloader_kwargs, batch_size=32, layer=None, **kwargs):
@@ -161,7 +163,7 @@ class Pipeline(object):
 
         batches = [batch for batch in tqdm(self.input_grad_generator(dataloader_kwargs, batch_size, filter_idx,
                                                                      avg_func, layer, final_layer,
-                                                                     selected_fwd_node, pre_nonlinearity, **kwargs))]
+                                                                     selected_fwd_node, pre_nonlinearity, **kwargs), disable=kipoi.config.hide_output())]
         return numpy_collate_concat(batches)
 
     def input_grad_generator(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,

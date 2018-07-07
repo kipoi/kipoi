@@ -31,7 +31,15 @@ def list_subcomponents(component, source, which="model"):
         return [x for x in src._list_components(which)
                 if x.startswith(component) and "/template" not in x]
 
+
+def get_stdout():
+    if kipoi.config.hide_output():
+        return open(os.devnull, "w")
+    else:
+        return None
+
 # TODO - optionally don't pull the recent files?
+
 
 def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
@@ -354,6 +362,7 @@ class GitLFSSource(Source):
         cmd.append(self.remote_url)
         cmd.append(self.local_path)
         subprocess.call(cmd,
+                        stdout=get_stdout(),
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
@@ -369,6 +378,7 @@ class GitLFSSource(Source):
         subprocess.call(["git",
                          "pull"],
                         cwd=self.local_path,
+                        stdout=get_stdout(),
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
@@ -382,6 +392,7 @@ class GitLFSSource(Source):
                          "--hard",
                          commit],
                         cwd=self.local_path,
+                        stdout=get_stdout(),
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
     def _pull_component(self, component, which="model"):
@@ -406,6 +417,7 @@ class GitLFSSource(Source):
             logger.info(" ".join(cmd))
             subprocess.call(cmd,
                             cwd=self.local_path,
+                            stdout=get_stdout(),
                             env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         logger.info("{0} {1} loaded".format(which, component))
         return cpath
@@ -461,7 +473,8 @@ class GitSource(Source):
                          "clone",
                          "--depth=1",
                          self.remote_url,
-                         self.local_path])
+                         self.local_path],
+                        stdout=get_stdout())
         self._pulled = True
 
     def pull_source(self):
@@ -474,6 +487,7 @@ class GitSource(Source):
                     format(self.local_path))
         subprocess.call(["git",
                          "pull"],
+                        stdout=get_stdout(),
                         cwd=self.local_path)
         self._pulled = True
 

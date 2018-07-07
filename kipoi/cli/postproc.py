@@ -113,6 +113,10 @@ def cli_score_variants(command, raw_args):
     # Make sure all the multi-model arguments like source, dataloader etc. fit together
     _prepare_multi_model_args(args)
 
+    # - disable logging
+    kipoi.config.set_hide_output(True)
+    logging.disable(10000000)
+
     # Check that all the folders exist
     file_exists(args.input_vcf, logger)
     dir_exists(os.path.dirname(args.output_vcf), logger)
@@ -325,7 +329,6 @@ def cli_grad(command, raw_args):
     #    logger.warn("Interpreting `--layer` value as integer layer index!")
     #    layer = int(args.layer)
 
-
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 
@@ -367,7 +370,7 @@ def cli_grad(command, raw_args):
             sys.exit(1)
 
     # Loop through the data, make predictions, save the output
-    for i, batch in enumerate(tqdm(it)):
+    for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
         # validate the data schema in the first iteration
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")

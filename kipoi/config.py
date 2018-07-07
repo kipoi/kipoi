@@ -32,6 +32,18 @@ _MODEL_SOURCES = {
 }
 
 
+_HIDE_OUTPUT = True
+
+
+def hide_output():
+    return _HIDE_OUTPUT
+
+
+def set_hide_output(_hide_output):
+    global _HIDE_OUTPUT
+    _HIDE_OUTPUT = _hide_output
+
+
 def model_sources():
     return _MODEL_SOURCES
 

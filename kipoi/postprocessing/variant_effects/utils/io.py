@@ -302,7 +302,7 @@ class VcfWriter(SyncPredictonsWriter):
             self.vcf_writer = vcf.Writer(open(self.out_vcf_fpath, 'w'), self.vcf_reader)
         else:
             if (len(predictions) != len(self.prediction_labels)) or (
-            not all([k in predictions for k in self.prediction_labels])):
+                    not all([k in predictions for k in self.prediction_labels])):
                 raise Exception("Predictions are not consistent across batches")
             for k in predictions:
                 col_labels_here = predictions[k].columns.tolist()

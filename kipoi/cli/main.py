@@ -103,7 +103,7 @@ def cli_preproc(command, raw_args):
     logger.info("Writing to the hdf5 file: {0}".format(args.output))
     writer = writers.HDF5BatchWriter(file_path=args.output)
 
-    for i, batch in enumerate(tqdm(it)):
+    for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
         # check that the first batch was indeed correct
         if i == 0 and not Dataloader.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
@@ -192,7 +192,7 @@ def cli_predict(command, raw_args):
             sys.exit(1)
 
     # Loop through the data, make predictions, save the output
-    for i, batch in enumerate(tqdm(it)):
+    for i, batch in enumerate(tqdm(it, disable=kipoi.config.hide_output())):
         # validate the data schema in the first iteration
         if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")

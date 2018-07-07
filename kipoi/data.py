@@ -58,7 +58,8 @@ class BaseDataLoader(object):
         Arguments:
             **kwargs: passed to batch_iter()
         """
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(**kwargs))])
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(**kwargs),
+                                                     disable=kipoi.config.hide_output())])
 
 # --------------------------------------------
 # Different implementations
@@ -229,7 +230,8 @@ class Dataset(BaseDataLoader):
             batch_size (int, optional): how many samples per batch to load
                 (default: 1).
         """
-        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size, **kwargs))])
+        return numpy_collate_concat([x for x in tqdm(self.batch_iter(batch_size, **kwargs),
+                                                     disable=kipoi.config.hide_output())])
 
 
 class BatchDataset(BaseDataLoader):
