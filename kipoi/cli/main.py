@@ -43,8 +43,6 @@ def cli_test(command, raw_args):
     add_model(parser, source="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     if args.install_req:
@@ -78,8 +76,6 @@ def cli_preproc(command, raw_args):
     add_dataloader_main(parser, with_args=True)
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in data loading')
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-o", "--output", required=True,
@@ -285,8 +281,6 @@ def cli_info(command, raw_args):
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Prints dataloader" +
                                                  " keyword arguments.")
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
     add_model(parser)
     add_dataloader(parser, with_args=False)
     args = parser.parse_args(raw_args)
