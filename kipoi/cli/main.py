@@ -45,10 +45,6 @@ def cli_test(command, raw_args):
                         help='Batch size to use in prediction')
     args = parser.parse_args(raw_args)
     # --------------------------------------------
-    if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model,
-                                                  args.source,
-                                                  and_dataloaders=True)
     mh = kipoi.get_model(args.model, args.source)
 
     if not mh._sufficient_deps(mh.dependencies):
