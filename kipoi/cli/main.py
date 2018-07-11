@@ -82,9 +82,6 @@ def cli_preproc(command, raw_args):
 
     dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
-    # install args
-    if args.install_req:
-        kipoi.pipeline.install_dataloader_requirements(args.dataloader, args.source)
     Dataloader = kipoi.get_dataloader_factory(args.dataloader, args.source)
 
     dataloader_kwargs = kipoi.pipeline.validate_kwargs(Dataloader, dataloader_kwargs)
@@ -117,8 +114,6 @@ def cli_predict(command, raw_args):
                         help='Batch size to use in prediction')
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
-    parser.add_argument("-i", "--install_req", action='store_true',
-                        help="Install required packages from requirements.txt")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
     parser.add_argument("-l", "--layer",
@@ -142,11 +137,6 @@ def cli_predict(command, raw_args):
             sys.exit(1)
         dir_exists(os.path.dirname(o), logger)
     # --------------------------------------------
-    # install args
-    if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model,
-                                                  args.source,
-                                                  and_dataloaders=True)
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 
@@ -282,11 +272,6 @@ def cli_info(command, raw_args):
     args = parser.parse_args(raw_args)
 
     # --------------------------------------------
-    # install args
-    if args.install_req:
-        kipoi.pipeline.install_model_requirements(args.model,
-                                                  args.source,
-                                                  and_dataloaders=True)
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)
 
