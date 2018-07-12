@@ -47,7 +47,13 @@ kipoi.list_models()
 ```python
 model = kipoi.get_model("rbp_eclip/UPF1")
 ```
+---
+** Aside: `get_model` and models versus model groups**: 
 
+>`get_model` expects to receive a path to a directory containing a `model.yaml` file.  This file specifies the underlying model, data loader, and other model attributes.  
+>If instead you provide `get_model` a path to a model *group* (e.g "lsgkm-SVM/Tfbs/Ap2alpha/"), rather than one model (e.g "lsgkm-SVM/Tfbs/Ap2alpha/Helas3/Sydh_Std"), or any other directory without a `model.yaml` file, `get_model` will throw a `ValueError`.
+
+---
 If you wish to acces the model for a particular commit, use the github permalink:
 
 ```python
