@@ -492,6 +492,65 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         return gradient_function
 
+    def _get_feed_input_names(self):
+        import keras
+        from keras import backend as K
+        feed_input_names = None
+        if keras.__version__[0] == '1':
+            feed_input_names = self.model.input_names
+        elif hasattr(keras.engine.training, "_standardize_input_data"):
+            from keras.engine.training import _standardize_input_data
+            if not hasattr(self.model, "_feed_input_names"):
+                if not self.model.built:
+                    self.model.build()
+            feed_input_names = self.model._feed_input_names
+        return feed_input_names
+
+    def _batch_to_list(self, x):
+        import keras
+        from keras import backend as K
+        feed_input_names = self._get_feed_input_names()
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+            if not self.model.built:
+                self.model.build()
+            iis = None
+            if hasattr(self.model, "internal_input_shapes"):
+                iis = self.model.internal_input_shapes
+            elif hasattr(self.model, "model") and hasattr(self.model.model, "internal_input_shapes"):
+                iis = self.model.model.internal_input_shapes
+            x_standardized = _standardize_input_data(x, feed_input_names,
+                                                     iis)
+        elif hasattr(keras.engine.training, "_standardize_input_data"):
+            from keras.engine.training import _standardize_input_data
+            if not hasattr(self.model, "_feed_input_names"):
+                if not self.model.built:
+                    self.model.build()
+            fis = None
+            if hasattr(self.model, "_feed_input_shapes"):
+                fis = self.model._feed_input_shapes
+            x_standardized = _standardize_input_data(x, feed_input_names, fis)
+        else:
+            raise Exception("This Keras version is not supported!")
+        return x_standardized
+
+
+    def _match_to_input(self, to_match, input):
+        feed_input_names = self._get_feed_input_names()
+        if isinstance(input, np.ndarray):
+            assert len(to_match) == 1
+            outputs = to_match[0]
+        elif isinstance(input, list):
+            # Already in right format
+            outputs = to_match
+        elif isinstance(input, dict):
+            from collections import OrderedDict
+            outputs_dict = OrderedDict()
+            for k, v in zip(feed_input_names, to_match):
+                outputs_dict[k] = v
+            outputs = outputs_dict
+        return outputs
+
     def _input_grad(self, x, layer=None, use_final_layer=False, filter_slices=None,
                     filter_func=None, filter_func_kwargs=None, pre_nonlinearity=False):
         """Adapted from keras.engine.training.predict_on_batch. Returns gradients for a single batch of samples.
@@ -504,31 +563,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         """
         import keras
         from keras import backend as K
-        feed_input_names = None
-        if keras.__version__[0] == '1':
-            from keras.engine.training import standardize_input_data as _standardize_input_data
-            if not self.model.built:
-                self.model.build()
-            iis = None
-            if hasattr(self.model, "internal_input_shapes"):
-                iis = self.model.internal_input_shapes
-            elif hasattr(self.model, "model") and hasattr(self.model.model, "internal_input_shapes"):
-                iis = self.model.model.internal_input_shapes
-            feed_input_names = self.model.input_names
-            x_standardized = _standardize_input_data(x, feed_input_names,
-                                                     iis)
-        elif hasattr(keras.engine.training, "_standardize_input_data"):
-            from keras.engine.training import _standardize_input_data
-            if not hasattr(self.model, "_feed_input_names"):
-                if not self.model.built:
-                    self.model.build()
-            fis = None
-            if hasattr(self.model, "_feed_input_shapes"):
-                fis = self.model._feed_input_shapes
-            feed_input_names = self.model._feed_input_names
-            x_standardized = _standardize_input_data(x, feed_input_names, fis)
-        else:
-            raise Exception("This Keras version is not supported!")
+        x_standardized = self._batch_to_list(x)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x_standardized + [0.]
         else:
@@ -539,19 +574,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         outputs = gf(ins)
 
         # re-format to how the input was:
-        if isinstance(x, np.ndarray):
-            assert len(outputs) == 1
-            outputs = outputs[0]
-        elif isinstance(x, list):
-            # Already in right format
-            pass
-        elif isinstance(x, dict):
-            from collections import OrderedDict
-            outputs_dict = OrderedDict()
-            for k, v in zip(feed_input_names, outputs):
-                outputs_dict[k] = v
-            outputs = outputs_dict
-        return outputs
+        return self._match_to_input(outputs, x)
 
     def input_grad(self, x, filter_idx=None, avg_func=None, layer=None, final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
