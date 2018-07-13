@@ -8,7 +8,7 @@ Our documentation uses extended Markdown, as implemented by [MkDocs](http://mkdo
 ## Building the documentation
 
 - Install MkDocs: `pip install mkdocs`
-- If you are on OS-x, install `gnu-sed` and replace `sed` in https://github.com/kipoi/kipoi/blob/master/docs/render_ipynb.bash#L11 with the path to your `gnu-sed`
+- If you are on OS-x, install `gnu-sed` from conda-forge `conda install -c conda-forge sed`. Make sure that `which sed` returns the right path.
 - `cd` to the `docs/` folder and run:
     - `make build`      # Builds a static site in "site" directory
 	  - injects the docstrings into placeholders. See `docs/autogen.py` and `docs/templates/api/model.md`
