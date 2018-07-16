@@ -11,7 +11,7 @@ PLUGINS = [
      "description": "Variant effect prediction"},
     {"plugin": "kipoi_interpret",
      "url": "https://github.com/kipoi/kipoi-interpret",
-     "cli": False,
+     "cli": True,
      "description": "Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT."},
 ]
 
@@ -94,17 +94,25 @@ def get_cli_fn(plugin):
     return load_plugin(plugin).cli_main
 
 
+def plugin2cli(plugin):
+    return plugin.replace("kipoi_", "")
+
+
 def get_plugin_cli_fns():
-    return {plugin: get_cli_fn(plugin)
-            for plugin in list_plugins(cli_support=True)}
+    return {plugin2cli(plugin): get_cli_fn(plugin)
+            for plugin in list_installed(cli_support=True)}
 
 
 def get_plugin_help():
-    header = "# Plugins"
+    header = "\n    # - plugin commands:"
     dfp = list_plugins()
     plugin_msg = []
     for i in range(len(dfp)):
         p = dfp.iloc[i]
         if p.installed and p.cli:
-            plugin_msg.append("{}     {}".format(p.plugin, p.description))
-    return "\n".join([header] + plugin_msg)
+            plugin_msg.append("    {:<17}{}".format(plugin2cli(p.plugin), p.description))
+    if len(plugin_msg) == 0:
+        plugin_msg = ["No plugins installed. "
+                      "Install them using pip install <plugin>. Available plugins: {0}".
+                      format(", ".join(dfp.plugin))]
+    return "\n".join([header] + plugin_msg) + "\n"
