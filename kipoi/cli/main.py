@@ -286,3 +286,13 @@ def cli_info(command, raw_args):
     print("Displaying keyword arguments for {0}".format(dl_info))
     print(kipoi.print_dl_kwargs(Dl))
     print("-" * 80)
+
+
+def cli_list_plugins(command, raw_args):
+    """CLI interface to predict
+    """
+    assert command == "list_plugins"
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description="Lists available pluging")
+    args = parser.parse_args(raw_args)
+    print(kipoi.list_plugins().to_string(index=False, justify="unset"))

@@ -17,6 +17,7 @@ from . import data
 from . import conda
 from . import components
 from . import writers
+from . import plugin
 
 # shortcuts
 from .model import get_model
@@ -25,6 +26,7 @@ from .remote import get_model_descr, get_dataloader_descr
 from .pipeline import install_model_requirements, install_dataloader_requirements
 from .config import get_source, list_sources, list_models, list_dataloaders
 from . import cli
+from .plugin import list_plugins
 # from .config import model_sources as sources
 
 

@@ -452,6 +452,7 @@ def test_parse_filter_slice():
     from kipoi.cli.postproc import parse_filter_slice
 
     class DummySlice():
+
         def __getitem__(self, key):
             return key
 
@@ -530,4 +531,3 @@ def test_grad_predict_example(example):
                 assert np.all(np.in1d(expected, other_cols))
 
             os.unlink(tmpfile)
-

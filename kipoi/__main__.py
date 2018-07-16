@@ -28,6 +28,7 @@ command_functions = {
     'predict': cli.main.cli_predict,
     'pull': cli.main.cli_pull,
     'ls': cli.ls.cli_ls,
+    'list_plugins': cli.main.cli_list_plugins,
     'info': cli.main.cli_info,
     # further sub-commands
     'postproc': cli.postproc.cli_main,
@@ -47,6 +48,7 @@ parser = argparse.ArgumentParser(
     # Kipoi model-zoo command line tool. Available sub-commands:
     # - using models:
     ls               List all the available models
+    list_plugins     List all the available plugins
     info             Print dataloader keyword argument info
     predict          Run the model prediction
     pull             Download the directory associated with the model
