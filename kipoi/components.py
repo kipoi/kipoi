@@ -13,6 +13,7 @@ import numpy as np
 import related
 import six
 
+from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_installed
 import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
@@ -482,14 +483,14 @@ class DataLoaderSchema(RelatedConfigMixin):
         return True
 
 
-@related.immutable(strict=True)
-class PostProcDataLoaderStruct(RelatedConfigMixin):
-    variant_effects = related.ChildField(VarEffectDataLoaderArgs, required=False)
+# @related.immutable(strict=True)
+# class PostProcDataLoaderStruct(RelatedConfigMixin):
+#     variant_effects = related.ChildField(VarEffectDataLoaderArgs, required=False)
 
 
-@related.immutable(strict=True)
-class PostProcModelStruct(RelatedConfigMixin):
-    variant_effects = related.ChildField(VarEffectModelArgs, required=False)
+# @related.immutable(strict=True)
+# class PostProcModelStruct(RelatedConfigMixin):
+#     variant_effects = related.ChildField(VarEffectModelArgs, required=False)
 
 
 @related.immutable(strict=True)
@@ -704,12 +705,25 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.ChildField(PostProcModelStruct, default=PostProcModelStruct(), required=False)
+    postprocessing = related.ChildField(dict)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
     path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
+
+    @classmethod
+    def load(cls, path, append_path=True):
+        obj = super(DataLoaderDescription, cls).load(path, append_path)
+        # load additional objects
+        for k in obj.postprocessing:
+            if k == 'variant_effects':
+                k = 'kipoi_veff'
+            if is_installed(k):
+                # Load the config properly if the plugin is installed
+                parser = get_model_yaml_parser(k)
+                obj.postprocessing[k] = parser.from_config(obj.postprocessing[k])
+        return obj
 
 
 def example_kwargs(dl_args):
@@ -744,7 +758,7 @@ def print_dl_kwargs(dataloader_class, format_examples_json=False):
         print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
     """
@@ -755,9 +769,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.ChildField(PostProcDataLoaderStruct,
-                                        default=PostProcDataLoaderStruct(),
-                                        required=False)
+    postprocessing = related.ChildField(dict, default={}, required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)
@@ -781,6 +793,19 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 import json
                 example_kwargs = json.dumps(example_kwargs)
                 print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+
+    @classmethod
+    def load(cls, path, append_path=True):
+        obj = super(DataLoaderDescription, cls).load(path, append_path)
+        # load additional objects
+        for k in obj.postprocessing:
+            if k == 'variant_effects':
+                k = 'kipoi_veff'
+            if is_installed(k):
+                # Load the config properly if the plugin is installed
+                parser = get_dataloader_yaml_parser(k)
+                obj.postprocessing[k] = parser.from_config(obj.postprocessing[k])
+        return obj
 
 # ---------------------
 # Global source config
