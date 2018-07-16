@@ -100,11 +100,11 @@ def get_plugin_cli_fns():
 
 
 def get_plugin_help():
-    header = "# Plugins"
+    header = "# - Plugin commands"
     dfp = list_plugins()
     plugin_msg = []
     for i in range(len(dfp)):
         p = dfp.iloc[i]
         if p.installed and p.cli:
-            plugin_msg.append("{}     {}".format(p.plugin, p.description))
+            plugin_msg.append("{:<17}{}".format(p.plugin, p.description))
     return "\n".join([header] + plugin_msg)

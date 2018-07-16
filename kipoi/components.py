@@ -705,7 +705,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.ChildField(dict)
+    postprocessing = related.ChildField(dict, default={}, required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)

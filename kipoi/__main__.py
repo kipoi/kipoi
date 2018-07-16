@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import kipoi
 from kipoi import cli
 
 import argparse
@@ -37,8 +38,9 @@ command_functions = {
     'test': cli.main.cli_test,
     'test-source': cli.source_test.cli_test_source,
     'init': cli.main.cli_init,
-
 }
+command_functions = kipoi.utils.merge_dicts(command_functions,
+                                            kipoi.plugin.get_plugin_cli_fns())
 commands_str = ', '.join(command_functions.keys())
 
 parser = argparse.ArgumentParser(
@@ -60,7 +62,7 @@ parser = argparse.ArgumentParser(
     init             Initialize a new Kipoi model
     test             Runs a set of unit-tests for the model
     test-source      Runs a set of unit-tests for many/all models in a source
-    ''')
+    ''' + kipoi.plugin.get_plugin_help())
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
 
