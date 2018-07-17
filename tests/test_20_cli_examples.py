@@ -9,6 +9,7 @@ import pandas as pd
 import config
 # import filecmp
 from utils import compare_vcfs
+import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np
 
@@ -45,6 +46,9 @@ def test_test_example(example):
     returncode = subprocess.call(args=args)
     assert returncode == 0
 
+    if example == 'pyt':
+        kipoi.cli.main.cli_test("test", args[3:])
+
 
 def test_postproc_cli_fail():
     """kipoi test ...
@@ -71,7 +75,7 @@ def test_preproc_example(example, tmpdir):
 
     example_dir = "example/models/{0}".format(example)
 
-    tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
+    tmpfile = str(tmpdir.mkdir("example", ).join("out.h5"))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
@@ -97,6 +101,11 @@ def test_preproc_example(example, tmpdir):
 
     if example not in {"pyt", "sklearn_iris"}:
         assert data["inputs"].keys() == ex_descr["output_schema"]["inputs"].keys()
+
+    if example == 'pyt':
+        args[-1] = tmpfile + "2.h5"
+        with kipoi.utils.cd(os.path.join(example_dir, "example_files")):
+            kipoi.cli.main.cli_preproc("preproc", args[3:])
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -156,6 +165,10 @@ def test_predict_example(example, tmpdir):
                                       'metadata/ranges/start',
                                       'metadata/ranges/strand',
                                       'preds/0']
+    if example == 'pyt':
+        args[-1] = tmpfile + "out2.{0}".format(file_format)
+        with kipoi.utils.cd(os.path.join(example_dir, "example_files")):
+            kipoi.cli.main.cli_predict("predict", args[3:])
 
 
 @pytest.mark.parametrize("example", ACTIVATION_EXAMPLES)
@@ -190,6 +203,10 @@ def test_predict_activation_example(example, tmpdir):
 
     data = HDF5Reader.load(tmpfile)
     assert {'metadata', 'preds'} <= set(data.keys())
+    if example == 'pyt':
+        args[-1] = tmpfile + "2.h5"
+        with kipoi.utils.cd(os.path.join(example_dir, "example_files")):
+            kipoi.cli.main.cli_predict("predict", args[3:])
 
 
 def test_pull_kipoi():
@@ -201,3 +218,5 @@ def test_pull_kipoi():
     assert returncode == 0
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model.yaml'))
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
+
+    kipoi.cli.main.cli_pull("pull", ["rbp_eclip/AARS"])
