@@ -8,7 +8,6 @@ import yaml
 import pandas as pd
 import config
 # import filecmp
-from utils import compare_vcfs
 import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np

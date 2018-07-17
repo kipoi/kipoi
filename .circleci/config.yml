@@ -13,10 +13,8 @@ variables:
     run:
       name: Install kipoi plugins
       command: |
-        git clone git@github.com:kipoi/kipoi-interpret.git
-        pip install -e kipoi-interpret
-        git clone git@github.com:kipoi/kipoi-veff.git
-        pip install -e kipoi-veff
+        pip install kipoi_interpret
+        pip install kipoi_veff
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
