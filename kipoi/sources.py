@@ -229,7 +229,7 @@ class Source(object):
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
-                ("veff_score_variants", d.postprocessing.variant_effects is not None),
+                ("veff_score_variants", "variant_effects" in d.postprocessing),
                 ("license", d.info.license),
                 ("cite_as", d.info.cite_as),
                 ("trained_on", d.info.trained_on),
