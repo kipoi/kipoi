@@ -709,10 +709,11 @@ class ModelDescription(RelatedLoadSaveMixin):
                 k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
-                parser = get_model_yaml_parser(k)
                 try:
-                    parser = get_dataloader_yaml_parser(k)
+                    parser = get_model_yaml_parser(k)
                     self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+
+                    object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
@@ -796,6 +797,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 try:
                     parser = get_dataloader_yaml_parser(k)
                     self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+                    object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warn("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
