@@ -694,7 +694,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.ChildField(dict, default={}, required=False)
+    postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
@@ -761,7 +761,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.ChildField(dict, default={}, required=False)
+    postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)

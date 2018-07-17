@@ -18,9 +18,8 @@ def test_list_plugins():
 
 def test_get_plugin_help():
     h = get_plugin_help()
-    assert "Plug" in h
-    assert "kipoi_veff" in h
-    assert "kipoi_interpret" in h
+    assert "veff" in h
+    assert "interpret" in h
 
 
 def test_yaml_parsers():
@@ -33,7 +32,7 @@ def test_yaml_parsers():
 
 def test_cli_fn():
     fns = get_plugin_cli_fns()
-    assert set(fns) == {"kipoi_veff", "kipoi_interpret"}
+    assert set(fns) == {"veff", "interpret"}
 
 
 def test_cli_list_plugins():

@@ -24,6 +24,7 @@ predict_activation_layers = {
     "rbp": "concatenate_6",
     "pyt": "3"  # two before the last layer
 }
+ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -144,7 +145,7 @@ def test_predict_example(example, tmpdir):
                                       'preds/0']
 
 
-@pytest.mark.parametrize("example", list(predict_activation_layers))
+@pytest.mark.parametrize("example", ACTIVATION_EXAMPLES)
 def test_predict_activation_example(example, tmpdir):
     """Kipoi predict --layer=x with a specific output layer specified
     """
