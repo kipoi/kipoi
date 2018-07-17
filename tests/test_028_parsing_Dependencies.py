@@ -3,7 +3,7 @@
 import pytest
 from pytest import raises
 from kipoi.utils import read_txt
-from kipoi.components import Dependencies
+from kipoi.specs import Dependencies
 from related import from_yaml
 
 CLS = Dependencies

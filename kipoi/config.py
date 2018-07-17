@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .remote import load_source, GitLFSSource, GithubPermalinkSource, LocalSource
+from .sources import load_source, GitLFSSource, GithubPermalinkSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def add_source(name, obj):
 
     # Arguments
       name: source name
-      obj: source object. Can be a dictionary or a Source instance (say `kipoi.remote.LocalSource("mydir/")`).
+      obj: source object. Can be a dictionary or a Source instance (say `kipoi.sources.LocalSource("mydir/")`).
 
     """
     if isinstance(obj, dict):

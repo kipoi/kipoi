@@ -9,8 +9,8 @@ import argparse
 import subprocess
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.components import Dependencies
-from kipoi.remote import list_subcomponents
+from kipoi.specs import Dependencies
+from kipoi.sources import list_subcomponents
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

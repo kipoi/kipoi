@@ -9,7 +9,7 @@ import os
 from ..utils import parse_json_file_str, cd
 import kipoi  # for .config module
 from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_dataloader_main, file_exists, dir_exists
-from kipoi.remote import list_subcomponents
+from kipoi.sources import list_subcomponents
 from ..data import numpy_collate_concat
 # import h5py
 # import six

@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.components import ArraySchema
+from kipoi.specs import ArraySchema
 from related import from_yaml
 
 CLS = ArraySchema
@@ -55,7 +55,7 @@ column_labels:
 shape: (1, )
 doc: Predicted binding strength
 column_labels: rbp_prb""", ["rbp_prb"])
-                          ]
+]
 
 BAD_EXAMPLES_COLNAMES = ["""
 shape: (3, )

@@ -33,7 +33,7 @@ def test_dataloader_model(example):
     if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
-    example_dir = "examples/{0}".format(example)
+    example_dir = "example/models/{0}".format(example)
 
     # install the dependencies
     if INSTALL_REQ:

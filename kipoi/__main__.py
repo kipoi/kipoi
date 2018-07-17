@@ -32,7 +32,6 @@ command_functions = {
     'list_plugins': cli.main.cli_list_plugins,
     'info': cli.main.cli_info,
     # further sub-commands
-    'postproc': cli.postproc.cli_main,
     'env': cli.env.cli_main,
     # Contribuing
     'test': cli.main.cli_test,
@@ -55,7 +54,6 @@ parser = argparse.ArgumentParser(
     predict          Run the model prediction
     pull             Download the directory associated with the model
     preproc          Run the dataloader and save the results to an hdf5 array
-    postproc         Tools for model postprocessing like variant effect prediction
     env              Tools for managing Kipoi conda environments
 
     # - contribuing models:
@@ -74,6 +72,29 @@ def main():
             status=1,
             message='\nCommand `{}` not found. Possible commands: {}\n'.format(
                 args.command, commands_str))
+    # backwards compatibilty
+    if args.command == "postproc":
+        logger.warn("postproc has been deprecated. Please use kipoi <plugin> ...")
+        if sys.argv[2] == "score_variants":
+            args.command = 'veff'
+        elif sys.argv[2] == "create_mutation_map":
+            args.command = 'veff'
+        elif sys.argv[2] == "plot_mutation_map":
+            args.command = 'veff'
+        elif sys.argv[2] == "grad":
+            args.command = 'interpret'
+        elif sys.argv[2] == "gr_inp_to_file":
+            args.command = 'interpret'
+        else:
+            logger.error("Unable to map kipoi postproc <command> to kipoi <plugin> <command>")
+            sys.exit(1)
+
+    # check if the user used the plugin commands
+    if kipoi.plugin.is_plugin("kipoi_" + args.command):
+        if not kipoi.plugin.is_installed("kipoi_" + args.command):
+            logger.error("Plugin {} not installed. Install with `pip install kipoi_{}`".
+                         format(args.command, args.command))
+            sys.exit(1)
     command_fn = command_functions[args.command]
     command_fn(args.command, sys.argv[2:])
 

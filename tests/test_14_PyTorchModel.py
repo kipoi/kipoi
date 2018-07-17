@@ -47,11 +47,11 @@ def test_loading(tmpdir):
     with pytest.raises(Exception):
         PyTorchModel()
     PyTorchModel(build_fn=lambda: get_simple_model())
-    model_path = "examples/pyt/model_files/"
+    model_path = "example/models/pyt/model_files/"
     # load model and weights explcitly
     m1 = PyTorchModel(file=model_path + "pyt.py", weights=model_path + "only_weights.pth", build_fn="get_model")
     # load model and weights through model loader
-    with cd("examples/pyt"):
+    with cd("example/models/pyt"):
         m2 = PyTorchModel(file="model_files/pyt.py", build_fn="get_model_w_weights")
     # assert that's identical
     check_same_weights(m1.model.state_dict(), m2.model.state_dict())
@@ -210,6 +210,7 @@ def dummy_multi_input_bf():
     from torch import nn
     #
     # Test layer activation
+
     class DummyMultiInput(nn.Module):
         def __init__(self):
             super(DummyMultiInput, self).__init__()
@@ -239,6 +240,7 @@ def pyt_complex_model_bf():
     from torch import nn
     import torch
     import torch.nn.functional as F
+
     class PyTNet(nn.Module):
         def __init__(self):
             super(PyTNet, self).__init__()

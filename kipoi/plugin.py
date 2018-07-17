@@ -70,6 +70,12 @@ def list_plugins():
     return df[['plugin', 'installed', 'cli', 'description', 'url']]
 
 
+def is_plugin(name):
+    """Test if name is a pluin
+    """
+    return name in list(PLUGINS)
+
+
 def get_model_yaml_parser(plugin):
     """
     Returns:

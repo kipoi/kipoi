@@ -4,7 +4,7 @@ from collections import OrderedDict
 import pytest
 import kipoi
 import kipoi.conda
-from kipoi.components import Dependencies
+from kipoi.specs import Dependencies
 from kipoi.conda import install_conda, install_pip, normalize_pip, parse_conda_package
 
 

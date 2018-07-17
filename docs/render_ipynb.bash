@@ -2,7 +2,7 @@
 #
 # Compile .md from .ipynb files for mkdocs
 
-# Names of ipynb files to convert (from /nbs) are specified in ipynb_pages.txt
+# Names of ipynb files to convert (from /notebooks) are specified in ipynb_pages.txt
 set -e
 
 function sed_replace {
@@ -17,7 +17,7 @@ for file in $(cat ipynb_pages.txt); do
 
     echo "converting: ${file}.ipynb"
     # .ipynb -> .md
-    jupyter nbconvert --to markdown ../nbs/${file}.ipynb --output-dir sources/${DIR}/
+    jupyter nbconvert --to markdown ../notebooks/${file}.ipynb --output-dir sources/${DIR}/
 
     file_out=sources/${DIR}/${file}.md
     dir_out=sources/${DIR}/${file}_files
@@ -25,7 +25,7 @@ for file in $(cat ipynb_pages.txt); do
     # fix the paths for the original images
     sed_replace '![img](../docs/theme_dir/img/' '![img](/img/' $file_out
     # TODO - prepend the original ipython notebook link
-    echo -e "Generated from [nbs/${file}.ipynb](https://github.com/kipoi/kipoi/blob/master/nbs/${file}.ipynb)\n$(cat ${file_out})" > ${file_out}
+    echo -e "Generated from [notebooks/${file}.ipynb](https://github.com/kipoi/kipoi/blob/master/notebooks/${file}.ipynb)\n$(cat ${file_out})" > ${file_out}
 
     if [ -d "${dir_out}" ]; then
 

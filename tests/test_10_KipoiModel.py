@@ -6,7 +6,7 @@ import sys
 import config
 import six
 import kipoi
-from kipoi.components import Dependencies
+from kipoi.specs import Dependencies
 from kipoi.pipeline import install_model_requirements
 
 # HACK - prevents ImportError: dlopen: cannot load any more object with static TLS
@@ -21,7 +21,7 @@ INSTALL_REQ = config.install_req
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_load_model(example):
-    example_dir = "examples/{0}".format(example)
+    example_dir = "example/models/{0}".format(example)
 
     if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")

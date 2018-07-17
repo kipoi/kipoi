@@ -8,7 +8,7 @@ import os
 import kipoi
 from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.cli.env import conda_env_name
-from kipoi.remote import list_softlink_dependencies
+from kipoi.sources import list_softlink_dependencies
 from kipoi.utils import list_files_recursively, read_txt, get_file_path, cd
 import logging
 logger = logging.getLogger(__name__)
@@ -262,7 +262,7 @@ def cli_test_source(command, raw_args):
                              extensions=[".yml", ".yaml"],
                              raise_err=False)
     if cfg_path is not None:
-        cfg = kipoi.components.SourceConfig.load(cfg_path, append_path=False)
+        cfg = kipoi.specs.SourceConfig.load(cfg_path, append_path=False)
         logger.info("Found config {0}:\n{1}".format(cfg_path, cfg))
     else:
         cfg = None

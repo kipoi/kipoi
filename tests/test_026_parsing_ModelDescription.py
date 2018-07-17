@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.components import ModelDescription
+from kipoi.specs import ModelDescription
 from related import from_yaml
 import six
 
@@ -97,7 +97,7 @@ KERAS_EXAMPLES_TO_LOAD = ["rbp", "extended_coda"]
 def test_model_loading_on_examples(example):
     """Test extractor
     """
-    model_file = "examples/{0}/model.yaml".format(example)
+    model_file = "example/models/{0}/model.yaml".format(example)
 
     md = ModelDescription.load(model_file)
 

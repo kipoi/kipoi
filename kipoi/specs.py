@@ -19,13 +19,12 @@ from kipoi.external.related.fields import StrSequenceField, NestedMappingField, 
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
 from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
-from kipoi.postprocessing.variant_effects.components import VarEffectDataLoaderArgs, VarEffectModelArgs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 # --------------------------------------------
-# Common components (model and dataloader)
+# Common specs (model and dataloader)
 
 
 @related.immutable(strict=True)
@@ -206,7 +205,7 @@ class ArraySchema(RelatedConfigMixin):
 
 
 # --------------------------------------------
-# Model specific components
+# Model specific specs
 
 @related.immutable(strict=True)
 class ModelSchema(RelatedConfigMixin):
@@ -297,7 +296,7 @@ class ModelSchema(RelatedConfigMixin):
 
 
 # --------------------------------------------
-# DataLoader specific components
+# DataLoader specific specs
 
 @enum.unique
 class MetadataType(enum.Enum):
@@ -481,16 +480,6 @@ class DataLoaderSchema(RelatedConfigMixin):
                 return False
 
         return True
-
-
-# @related.immutable(strict=True)
-# class PostProcDataLoaderStruct(RelatedConfigMixin):
-#     variant_effects = related.ChildField(VarEffectDataLoaderArgs, required=False)
-
-
-# @related.immutable(strict=True)
-# class PostProcModelStruct(RelatedConfigMixin):
-#     variant_effects = related.ChildField(VarEffectModelArgs, required=False)
 
 
 @related.immutable(strict=True)
@@ -705,7 +694,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.ChildField(dict, default={}, required=False)
+    postprocessing = related.ChildField(dict, required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
@@ -769,7 +758,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.ChildField(dict, default={}, required=False)
+    postprocessing = related.ChildField(dict, required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)

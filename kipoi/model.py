@@ -10,7 +10,7 @@ import six
 import numpy as np
 import json
 
-from .components import ModelDescription
+from .specs import ModelDescription
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -33,7 +33,7 @@ class BaseModel(object):
         """Tests it the provided dependencies contain MODEL_PACKAGE
 
         Args:
-          deps: instance of kipoi.components.Dependencies
+          deps: instance of kipoi.specs.Dependencies
 
         Returns:
           True if cls.MODEL_PACKAGE is listed in the depenencies and False otherwise
@@ -533,7 +533,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         else:
             raise Exception("This Keras version is not supported!")
         return x_standardized
-
 
     def _match_to_input(self, to_match, input):
         feed_input_names = self._get_feed_input_names()

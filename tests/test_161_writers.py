@@ -8,7 +8,7 @@ from kipoi.readers import HDF5Reader
 from kipoi.cli.main import prepare_batch
 import numpy as np
 import pandas as pd
-from kipoi.components import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
+from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
 from collections import OrderedDict
 
 
@@ -29,7 +29,7 @@ def dl_batch():
                                         strand=np.array(["*"] * 3)
                                         ),
                 "gene_id": np.arange(3).astype(str)
-            }}
+    }}
 
 
 @fixture
@@ -171,7 +171,7 @@ def test_bedgraphwriter():
     with open(temp_path, "r") as ifh:
         for i, l in enumerate(ifh):
             els = l.rstrip().split()
-            for j,k in enumerate(["chr", "start", "end"]):
+            for j, k in enumerate(["chr", "start", "end"]):
                 assert str(regions[k][i]) == els[j]
             assert str(values[i]) == els[-1]
     os.unlink(temp_path)

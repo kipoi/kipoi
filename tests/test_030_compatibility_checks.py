@@ -2,7 +2,7 @@
 """
 import pytest
 import numpy as np
-from kipoi.components import ArraySchema, MetadataStruct, DataLoaderSchema, ModelSchema
+from kipoi.specs import ArraySchema, MetadataStruct, DataLoaderSchema, ModelSchema
 from kipoi.metadata import GenomicRanges
 from related import from_yaml
 
