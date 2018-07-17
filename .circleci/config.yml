@@ -15,6 +15,7 @@ variables:
       command: |
         pip install kipoi_interpret
         pip install kipoi_veff
+        pip install pyfaidx
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
