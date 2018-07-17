@@ -10,11 +10,13 @@ from . import config
 from . import pipeline
 from . import utils
 from . import sources
+from . import remote  # backward compat
 from . import model
 from . import data_utils
 from . import data
 from . import conda
 from . import specs
+from . import components  # backward compat
 from . import writers
 from . import plugin
 
@@ -27,7 +29,3 @@ from .config import get_source, list_sources, list_models, list_dataloaders
 from . import cli
 from .plugin import list_plugins
 # from .config import model_sources as sources
-
-# backward compatibility
-from . import specs as components
-from . import sources as remote
