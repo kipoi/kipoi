@@ -2,7 +2,7 @@
 """
 
 import pytest
-from kipoi.components import Info, Author
+from kipoi.specs import Info, Author
 from related import from_yaml
 
 CLS = Info

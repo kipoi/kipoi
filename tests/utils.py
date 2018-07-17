@@ -1,6 +1,7 @@
 import cyvcf2
 import numpy as np
 
+
 def compare_vcfs(fpath1, fpath2):
     fh1 = cyvcf2.VCF(fpath1)
     fh2 = cyvcf2.VCF(fpath2)
@@ -10,7 +11,7 @@ def compare_vcfs(fpath1, fpath2):
         for k in i1:
             if ':rID' in k:
                 continue
-            min_round = min(len(i1[k]) - i1[k].index(".")-1, len(i2[k]) - i2[k].index(".")-1)-2 # -2 for more tolerance
+            min_round = min(len(i1[k]) - i1[k].index(".") - 1, len(i2[k]) - i2[k].index(".") - 1) - 2  # -2 for more tolerance
             assert np.round(float(i1[k]), min_round) == np.round(float(i2[k]), min_round)
     fh2.close()
     fh1.close()

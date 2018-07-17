@@ -14,7 +14,7 @@ INSTALL_REQ = config.install_req
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_load_model(example):
-    example_dir = "examples/{0}".format(example)
+    example_dir = "example/models/{0}".format(example)
 
     if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
@@ -34,3 +34,5 @@ def test_load_model(example):
     Dl.load_all
 
     Dl.print_args()
+
+    kipoi.get_dataloader_descr(example_dir, source="dir").print_kwargs()

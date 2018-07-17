@@ -1,0 +1,50 @@
+type: Dataset
+defined_as: dataloader.py::SeqDataset
+args:
+  intervals_file:
+    doc: bed3 file with `chrom start end id score strand`
+    example: example_files/intervals.tsv
+  fasta_file:
+    doc: Reference genome sequence
+    example: example_files/example.fa
+  target_file:
+    doc: path to the targets (.tsv) file
+    optional: True
+  use_linecache:
+    doc: if True, use linecache https://docs.python.org/3/library/linecache.html to access bed file rows
+    optional: True
+info:
+  authors:
+      - name: Ziga Avsec
+        github: avsecz
+      - name: Roman Kreuzhuber
+        github: krrome
+  doc: Dataloader for the DeepSEA model.
+dependencies:
+  conda:
+    - bioconda::pybedtools
+    - python=3.5
+    - numpy
+    - pandas
+    - cython
+    - bioconda::pybedtools
+  pip:
+    - pyfaidx
+output_schema:
+  inputs:
+    name: seq
+    shape: (500,4)
+    special_type: DNASeq
+    doc: DNA sequence
+    associated_metadata: ranges
+  targets:
+    name: binding_prob
+    shape: (1, )
+  metadata:
+    ranges:
+      type: GenomicRanges
+      doc: Ranges describing inputs.seq
+postprocessing:
+    variant_effects:
+      bed_input:
+        - intervals_file

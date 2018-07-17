@@ -11,8 +11,8 @@ from kipoi.model import TensorFlowModel
 
 def test_loading():
     import tensorflow as tf
-    checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
-    const_feed_dict_pkl = "examples/iris_tensorflow/model_files/const_feed_dict.pkl"
+    checkpoint_path = "example/models/iris_tensorflow/model_files/model.ckpt"
+    const_feed_dict_pkl = "example/models/iris_tensorflow/model_files/const_feed_dict.pkl"
 
     # dict of variables
     # input = list
@@ -82,7 +82,7 @@ class DummySlice():
 
 def test_grad_tens_generation():
     import tensorflow as tf
-    checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
+    checkpoint_path = "example/models/iris_tensorflow/model_files/model.ckpt"
     a = TensorFlowModel(input_nodes="inputs",
                         target_nodes="probas",
                         checkpoint_path=checkpoint_path
@@ -97,8 +97,8 @@ def test_grad_tens_generation():
 
 
 def test_activation_on_batch():
-    checkpoint_path = "examples/iris_tensorflow/model_files/model.ckpt"
-    const_feed_dict_pkl = "examples/iris_tensorflow/model_files/const_feed_dict.pkl"
+    checkpoint_path = "example/models/iris_tensorflow/model_files/model.ckpt"
+    const_feed_dict_pkl = "example/models/iris_tensorflow/model_files/const_feed_dict.pkl"
 
     # dict of variables
     # input = list

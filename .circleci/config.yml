@@ -9,6 +9,13 @@ variables:
     run:
       name: Install git-lfs
       command: conda install --yes -c conda-forge git-lfs
+  install_kipoi_plugins: &install_kipoi_plugins
+    run:
+      name: Install kipoi plugins
+      command: |
+        pip install kipoi_interpret
+        pip install kipoi_veff
+        pip install pyfaidx
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
@@ -55,6 +62,7 @@ jobs:
       - *update_conda
       - *install_pip_deps
       - *install_kipoi
+      - *install_kipoi_plugins
       - *kipoi_ls
       - *run_tests
       - *run_coveralls
@@ -70,6 +78,7 @@ jobs:
       - *update_conda
       - *install_pip_deps
       - *install_kipoi
+      - *install_kipoi_plugins
       - *kipoi_ls
       - *run_tests
       - *store_test_results

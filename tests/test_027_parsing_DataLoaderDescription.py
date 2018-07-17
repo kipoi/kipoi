@@ -3,7 +3,7 @@
 import pytest
 import six
 from pytest import raises
-from kipoi.components import DataLoaderDescription, example_kwargs
+from kipoi.specs import DataLoaderDescription, example_kwargs
 from related import from_yaml
 
 # Class to test
@@ -129,7 +129,7 @@ KERAS_EXAMPLES_TO_LOAD = ["rbp", "extended_coda"]
 def test_model_loading_on_examples(example):
     """Test extractor
     """
-    model_file = "examples/{0}/dataloader.yaml".format(example)
+    model_file = "example/models/{0}/dataloader.yaml".format(example)
 
     dl = DataLoaderDescription.load(model_file)
 

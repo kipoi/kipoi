@@ -1,4 +1,4 @@
-"""Test the Kipoi remotes
+"""Test the Kipoi sources
 """
 import kipoi
 import os
@@ -23,7 +23,7 @@ def test_load_models_kipoi():
 
 
 def test_load_models_local():
-    model = "examples/iris_model_template"
+    model = "example/models/iris_model_template"
     kipoi.get_model(model, source="dir")
     kipoi.get_dataloader_factory(model, source="dir")
 
@@ -36,7 +36,7 @@ def test_list_models():
 
     # column names
     df_model_columns = ['model', 'version', 'authors', 'contributors', 'doc', 'type', 'inputs', 'targets',
-                        'postproc_score_variants',
+                        'veff_score_variants',
                         'license', 'cite_as', 'trained_on', 'training_procedure', 'tags']
     assert df_model_columns == list(df.columns)
 
@@ -49,14 +49,14 @@ def test_list_models():
     kipoi.get_model_descr("extended_coda", source="kipoi")
 
     # local files
-    kipoi.get_model_descr("examples/extended_coda", source="dir")
+    kipoi.get_model_descr("example/models/extended_coda", source="dir")
 
 
 def test_list_models_group():
     dfg = kipoi.get_source("kipoi").list_models_by_group()
     dfg_columns = ["group", "N_models", "N_subgroups", "is_group", "authors",
                    "contributors",
-                   "postproc_score_variants",
+                   "veff_score_variants",
                    "type", "license", "cite_as", "tags"]
     assert dfg_columns == list(dfg.columns)
     assert len(dfg) > 0

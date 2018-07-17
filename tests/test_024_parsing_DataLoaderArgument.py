@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.components import DataLoaderArgument
+from kipoi.specs import DataLoaderArgument
 from related import from_yaml
 
 # Class to test

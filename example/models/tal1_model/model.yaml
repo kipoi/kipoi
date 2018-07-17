@@ -1,0 +1,39 @@
+type: keras
+args:
+  weights: model_files/weights.hdf5
+  arch: model_files/arch.json
+  custom_objects: custom_keras_objects.py
+info:
+  authors:
+      - name: Ziga Avsec
+        github: avsecs
+  contributors:
+      - name: Roman Kreuzhuber
+        github: krrome
+  name: Tal1_model
+  version: 0.1
+default_dataloader: .
+dependencies:
+  conda:
+    - python=2.7
+    - h5py
+  pip:
+    - tensorflow==1.4
+    - keras==2.1.4
+schema:
+  inputs:
+    name: seq
+    special_type: DNASeq
+    shape: (500, 4)
+    doc: DNA sequence
+    associated_metadata: ranges
+  targets:
+    name: binding_prob
+    shape: (1, )
+    doc: Protein binding probability
+postprocessing:
+    variant_effects:
+      seq_input:
+        - seq
+      scoring_functions:
+          - type: diff

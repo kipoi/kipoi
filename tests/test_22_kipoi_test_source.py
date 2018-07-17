@@ -4,7 +4,7 @@ import pytest
 import sys
 import subprocess as sp
 from kipoi.cli.source_test import modified_files
-from kipoi.remote import list_softlink_dependencies
+from kipoi.sources import list_softlink_dependencies
 import kipoi
 import os
 

@@ -139,7 +139,7 @@ it_train = dl.batch_train_iter(batch_size=32)
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
 
-For more information see: [nbs/python-api.ipynb](nbs/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
+For more information see: [notebooks/python-api.ipynb](notebooks/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
 
 ### Command-line
 

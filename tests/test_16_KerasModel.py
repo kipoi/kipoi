@@ -176,7 +176,7 @@ def test_activation_function_model(example):
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
     #
-    example_dir = "examples/{0}".format(example)
+    example_dir = "example/models/{0}".format(example)
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
     if INSTALL_REQ:
@@ -302,7 +302,7 @@ def test_gradient_function_model(example):
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
     #
-    example_dir = "examples/{0}".format(example)
+    example_dir = "example/models/{0}".format(example)
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
     if INSTALL_REQ:

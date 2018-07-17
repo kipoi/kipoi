@@ -15,7 +15,7 @@ from collections import OrderedDict
 from kipoi.utils import map_nested
 from kipoi.data_utils import flatten_batch, numpy_collate_concat
 from kipoi.external.flatten_json import flatten
-from kipoi.components import MetadataType
+from kipoi.specs import MetadataType
 
 
 class BatchWriter(object):
@@ -103,7 +103,7 @@ class BedBatchWriter(BatchWriter):
 
         bed_cols = ["chr", "start", "end", "id", "score", "strand"]
         cols = [os.path.join(self.ranges_key, x) for x in bed_cols] + \
-               sorted([x for x in fbatch if x.startswith("preds/")])
+            sorted([x for x in fbatch if x.startswith("preds/")])
         df = pd.DataFrame(fbatch)[cols]
         df.rename(columns={os.path.join(self.ranges_key, bc): bc for bc in bed_cols}, inplace=True)
         df.rename(columns={"id": "name"}, inplace=True)

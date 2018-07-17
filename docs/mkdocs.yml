@@ -60,8 +60,9 @@ pages:
   - Dataloader: api/dataloader.md
   - Pipeline: api/pipeline.md
   - Metadata: api/metadata.md
-  - Remotes: api/remote.md
-  - Postprocessing:
-    - Variant effect prediction: api/postprocessing/variant_effects.md
-    - Variant effect scores: api/postprocessing/variant_effect_scores.md
+  - Sources: api/sources.md
+  # TODO - update
+  # - Postprocessing:
+  #   - Variant effect prediction: api/postprocessing/variant_effects.md
+  #   - Variant effect scores: api/postprocessing/variant_effect_scores.md
 # - Contributing: contributing.md

@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.components import ModelSchema
+from kipoi.specs import ModelSchema
 from related import from_yaml
 
 CLS = ModelSchema

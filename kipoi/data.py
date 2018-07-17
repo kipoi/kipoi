@@ -5,7 +5,7 @@ import os
 import abc
 
 import kipoi  # for .config module
-from kipoi.components import DataLoaderDescription, example_kwargs, print_dl_kwargs
+from kipoi.specs import DataLoaderDescription, example_kwargs, print_dl_kwargs
 from .utils import load_module, cd, getargs
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,

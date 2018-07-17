@@ -69,44 +69,27 @@ PAGES = [
         'classes': [kipoi.pipeline.Pipeline],
     },
     {
-        'page': 'api/remote.md',
-        'classes': kipoi.remote.source_classes,
-    },
-    {
-        'page': 'api/postprocessing/variant_effects.md',
-        'functions': [kipoi.postprocessing.variant_effects.predict_snvs],
-    },
-    {
-        'page': 'api/postprocessing/variant_effect_scores.md',
-        'classes': [
-            kipoi.postprocessing.variant_effects.Logit,
-            kipoi.postprocessing.variant_effects.LogitAlt,
-            kipoi.postprocessing.variant_effects.LogitRef,
-            kipoi.postprocessing.variant_effects.LogitRef,
-            kipoi.postprocessing.variant_effects.Diff,
-            kipoi.postprocessing.variant_effects.DeepSEA_effect,
-        ]
+        'page': 'api/sources.md',
+        'classes': kipoi.sources.source_classes,
     },
 
-
+    # TODO - update this to kipoi_veff
     # {
-    #     'page': 'preprocessing/splines.md',
+    #     'page': 'api/postprocessing/variant_effects.md',
+    #     'functions': [kipoi.postprocessing.variant_effects.predict_snvs],
+    # },
+    # {
+    #     'page': 'api/postprocessing/variant_effect_scores.md',
     #     'classes': [
-    #         splines.EncodeSplines,
-    #     ],
-    #     'functions': [
-    #         splines.encodeSplines,
+    #         kipoi.postprocessing.variant_effects.Logit,
+    #         kipoi.postprocessing.variant_effects.LogitAlt,
+    #         kipoi.postprocessing.variant_effects.LogitRef,
+    #         kipoi.postprocessing.variant_effects.LogitRef,
+    #         kipoi.postprocessing.variant_effects.Diff,
+    #         kipoi.postprocessing.variant_effects.DeepSEA_effect,
     #     ]
     # },
-    # {
-    #     'page': 'losses.md',
-    #     'all_module_functions': [losses],
-    # },
-    # {
-    #     'page': 'initializers.md',
-    #     'all_module_functions': [initializers],
-    #     'all_module_classes': [initializers],
-    # },
+
 ]
 
 # TODO

@@ -4,7 +4,7 @@ import subprocess
 import os
 from kipoi.utils import read_yaml
 from kipoi.cli.env import get_env_name, export_env, merge_deps
-from kipoi.remote import list_subcomponents
+from kipoi.sources import list_subcomponents
 
 
 def test_env_name():
