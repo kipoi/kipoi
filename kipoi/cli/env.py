@@ -67,18 +67,12 @@ conda_env_name = get_env_name
 
 
 KIPOI_DEPS = Dependencies(pip=["kipoi"])
-# TODO - this part should be sync-ed with setup.py vep dependencies
-# or we should make a separate python package
+# TODO - update once kipoi_veff will be on bioconda
 VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::cyvcf2",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
-                        pip=["intervaltree",
-                             "deepdish",
-                             "matplotlib",
-                             "seaborn",
-                             "shapely",
-                             "descartes"])
+                        pip=["kipoi_veff"])
 
 
 def merge_deps(models,
