@@ -710,7 +710,11 @@ class ModelDescription(RelatedLoadSaveMixin):
             if is_installed(k):
                 # Load the config properly if the plugin is installed
                 parser = get_model_yaml_parser(k)
-                self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+                try:
+                    parser = get_dataloader_yaml_parser(k)
+                    self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+                except Exception:
+                    logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
 
 def example_kwargs(dl_args):
@@ -789,8 +793,11 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
-                parser = get_dataloader_yaml_parser(k)
-                self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+                try:
+                    parser = get_dataloader_yaml_parser(k)
+                    self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
+                except Exception:
+                    logger.warn("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
 # ---------------------
 # Global source config
