@@ -73,7 +73,7 @@ def list_plugins():
 def is_plugin(name):
     """Test if name is a pluin
     """
-    return name in list(PLUGINS)
+    return name in [p['plugin'] for p in PLUGINS]
 
 
 def get_model_yaml_parser(plugin):

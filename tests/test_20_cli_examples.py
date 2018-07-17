@@ -46,6 +46,19 @@ def test_test_example(example):
     assert returncode == 0
 
 
+def test_postproc_cli_fail():
+    """kipoi test ...
+    """
+    # This command should fail
+    args = ["python", "./kipoi/__main__.py", "postproc", "score_variants"]
+    returncode = subprocess.call(args=args)
+    assert returncode == 2
+
+    args = ["python", "./kipoi/__main__.py", "other"]
+    returncode = subprocess.call(args=args)
+    assert returncode == 2
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_preproc_example(example, tmpdir):
     """kipoi preproc ...

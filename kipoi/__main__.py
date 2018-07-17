@@ -19,8 +19,8 @@ logging.config.fileConfig(pkg_resources.resource_filename(__name__, "logging.con
 logger = logging.getLogger(__name__)
 
 
-def not_implemented(command, arg_list):
-    print("{0} not implemented yet!".format(command))
+# def not_implemented(command, arg_list):
+#     print("{0} not implemented yet!".format(command))
 
 
 command_functions = {
@@ -64,9 +64,16 @@ parser = argparse.ArgumentParser(
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
 
+postproc_cmd_map = {"score_variants": "veff",
+                    "create_mutation_map": "veff",
+                    "plot_mutation_map": "veff",
+                    "grad": "interepret",
+                    "gr_inp_to_file": "interepret"}
+
+
 def main():
     args = parser.parse_args(sys.argv[1:2])
-    if args.command not in command_functions:
+    if args.command != "postproc" and args.command not in command_functions:
         parser.print_help()
         parser.exit(
             status=1,
@@ -74,17 +81,13 @@ def main():
                 args.command, commands_str))
     # backwards compatibilty
     if args.command == "postproc":
-        logger.warn("postproc has been deprecated. Please use kipoi <plugin> ...")
-        if sys.argv[2] == "score_variants":
-            args.command = 'veff'
-        elif sys.argv[2] == "create_mutation_map":
-            args.command = 'veff'
-        elif sys.argv[2] == "plot_mutation_map":
-            args.command = 'veff'
-        elif sys.argv[2] == "grad":
-            args.command = 'interpret'
-        elif sys.argv[2] == "gr_inp_to_file":
-            args.command = 'interpret'
+        logger.warn("`kipoi postproc` has been deprecated. Please use kipoi <plugin> ...: {}".
+                    format(kipoi.plugin.get_plugin_help()))
+        if len(sys.argv) == 2:
+            logger.error("Use - kipoi <plugin> <command>.")
+            sys.exit(1)
+        elif sys.argv[2] in postproc_cmd_map:
+            args.command = postproc_cmd_map[sys.argv[2]]
         else:
             logger.error("Unable to map kipoi postproc <command> to kipoi <plugin> <command>")
             sys.exit(1)

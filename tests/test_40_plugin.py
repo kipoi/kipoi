@@ -2,7 +2,7 @@
 """
 import os
 import subprocess
-from kipoi.plugin import list_installed, list_plugins, get_model_yaml_parser, get_dataloader_yaml_parser, get_cli_fn, get_plugin_help, load_plugin, get_plugin_cli_fns
+from kipoi.plugin import list_installed, list_plugins, get_model_yaml_parser, get_dataloader_yaml_parser, get_cli_fn, get_plugin_help, load_plugin, get_plugin_cli_fns, is_plugin
 
 
 def test_list_installed():
@@ -41,3 +41,9 @@ def test_cli_list_plugins():
             "list_plugins"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
+
+
+def test_is_plugin():
+    assert is_plugin("kipoi_veff")
+    assert is_plugin("kipoi_interpret")
+    assert not is_plugin("kipoi_notplugin")
