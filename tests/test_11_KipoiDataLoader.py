@@ -34,3 +34,5 @@ def test_load_model(example):
     Dl.load_all
 
     Dl.print_args()
+
+    kipoi.get_dataloader_descr(example_dir, source="dir").print_kwargs()
