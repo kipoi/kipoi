@@ -685,7 +685,7 @@ class Dependencies(RelatedConfigMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -694,25 +694,23 @@ class ModelDescription(RelatedLoadSaveMixin):
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
     default_dataloader = related.StringField(default='.')
-    postprocessing = related.ChildField(dict, required=False)
+    postprocessing = related.ChildField(dict, default={}, required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
     path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
 
-    @classmethod
-    def load(cls, path, append_path=True):
-        obj = super(DataLoaderDescription, cls).load(path, append_path)
+    def __attrs_post_init__(self):
         # load additional objects
-        for k in obj.postprocessing:
+        for k in self.postprocessing:
+            k_observed = k
             if k == 'variant_effects':
                 k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
                 parser = get_model_yaml_parser(k)
-                obj.postprocessing[k] = parser.from_config(obj.postprocessing[k])
-        return obj
+                self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
 
 
 def example_kwargs(dl_args):
@@ -758,7 +756,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     output_schema = related.ChildField(DataLoaderSchema)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.ChildField(dict, required=False)
+    postprocessing = related.ChildField(dict, default={}, required=False)
 
     def get_example_kwargs(self):
         return example_kwargs(self.args)
@@ -783,18 +781,16 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 example_kwargs = json.dumps(example_kwargs)
                 print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
-    @classmethod
-    def load(cls, path, append_path=True):
-        obj = super(DataLoaderDescription, cls).load(path, append_path)
+    def __attrs_post_init__(self):
         # load additional objects
-        for k in obj.postprocessing:
+        for k in self.postprocessing:
+            k_observed = k
             if k == 'variant_effects':
                 k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
                 parser = get_dataloader_yaml_parser(k)
-                obj.postprocessing[k] = parser.from_config(obj.postprocessing[k])
-        return obj
+                self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
 
 # ---------------------
 # Global source config

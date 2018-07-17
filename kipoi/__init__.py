@@ -28,18 +28,6 @@ from . import cli
 from .plugin import list_plugins
 # from .config import model_sources as sources
 
-
-# Setup logging
-# import logging
-
-# Set default logging handler to avoid "No handler found" warnings.
-# log_formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(name)s] %(message)s')
-
-# try:  # Python 2.7+
-#     from logging import NullHandler
-# except ImportError:
-#     class NullHandler(logging.Handler):
-#         def emit(self, record):
-#             pass
-
-# logging.getLogger(__name__).addHandler(NullHandler())
+# backward compatibility
+from . import specs as components
+from . import sources as remote
