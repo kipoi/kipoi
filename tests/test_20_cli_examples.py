@@ -52,11 +52,11 @@ def test_postproc_cli_fail():
     # This command should fail
     args = ["python", "./kipoi/__main__.py", "postproc", "score_variants"]
     returncode = subprocess.call(args=args)
-    assert returncode == 2
+    assert returncode > 0
 
     args = ["python", "./kipoi/__main__.py", "other"]
     returncode = subprocess.call(args=args)
-    assert returncode == 2
+    assert returncode > 0
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
