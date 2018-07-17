@@ -3,13 +3,6 @@
 
 from setuptools import setup, find_packages
 
-# try:
-#     import pypandoc
-#     long_description = pypandoc.convert('README.md', 'rst')
-# except(IOError, ImportError, OSError):
-#     # print("Unable to convert REAMDE.md to rst using pypandoc")
-#     long_description = open('README.md').read()
-
 
 requirements = [
     "pyyaml",
@@ -38,7 +31,6 @@ test_requirements = [
     "coveralls",
     "scikit-learn",
     "cython",
-    # "genomelake",
     "keras",
     "tensorflow"
 ]
@@ -55,18 +47,7 @@ setup(
     install_requires=requirements,
     extras_require={
         "develop": test_requirements,
-        # variant effect prediction
-        "vep": ["pyvcf",
-                "cyvcf2",
-                "pybedtools",
-                "pysam",  # required by pybedtools
-                "intervaltree",
-                "deepdish",
-                "matplotlib",
-                "seaborn",
-                "shapely",
-                "descartes",
-                ],
+        "vep": ["kipoi_veff"], # backcompatibily
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
@@ -74,7 +55,6 @@ setup(
     keywords=["model zoo", "deep learning",
               "computational biology", "bioinformatics", "genomics"],
     test_suite='tests',
-    # package_data={'kipoi': ['logging.conf']},
     include_package_data=True,
     tests_require=test_requirements
 )
