@@ -78,11 +78,11 @@ Hint: For an overview over the available models also check the [model overview](
 
 Load the model from model source or local directory
 ```python
-# Load the model from github.com/kipoi/models/rbp
-model = kipoi.get_model("rbp_eclip/UPF1", source="kipoi") # source="kipoi" is the default
+# Load the model from the default Kipoi's model zoo
+model = kipoi.get_model("rbp_eclip/UPF1")
 
 # Load the model from a local directory
-model = kipoi.get_model("~/mymodels/rbp", source="dir")  
+model = kipoi.get_model("~/mymodels/rbp", source="dir")
 # Note: Custom model sources are defined in ~/.kipoi/config.yaml
 
 # Load the model via github permalink for a particular commit:
