@@ -150,16 +150,21 @@ usage: kipoi <command> [-h] ...
     # Kipoi model-zoo command line tool. Available sub-commands:
     # - using models:
     ls               List all the available models
+    list_plugins     List all the available plugins
+    info             Print dataloader keyword argument info
     predict          Run the model prediction
     pull             Download the directory associated with the model
     preproc          Run the dataloader and save the results to an hdf5 array
-    postproc         Tools for model postprocessing like variant effect prediction
     env              Tools for managing Kipoi conda environments
 
     # - contribuing models:
     init             Initialize a new Kipoi model
     test             Runs a set of unit-tests for the model
     test-source      Runs a set of unit-tests for many/all models in a source
+    
+    # - plugin commands:
+    veff             Variant effect prediction
+    interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT.
 ```
 
 Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://kipoi.org/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
@@ -172,14 +177,24 @@ You can add your own (private) model sources. See [docs/using/03_Model_sources/]
 
 See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started/) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models/) for more information.
 
-## Postprocessing
+## Plugins
 
-### SNV effect prediction
+### [kipoi_veff](https://github.com/kipoi/kipoi-veff)
 
-Functionality to predict the effect of SNVs is available in the API as well as in the command line interface. The input
-is a VCF which can then be annotated with effect predictions and returned in the process. For more details on the requirements for the models and
- dataloaders please check [docs/using/02_Variant_effect_prediction](http://kipoi.org/docs/using/02_Variant_effect_prediction/)
+Variant effect prediction plugin compatible with (DNA) sequence based models. It allows to annotate the vcf file using model predictions for the reference and alternative alleles, and writes the results to a new VCF file. For more information see [tutorials/variant_effect_prediction_simple/](https://github.com/kipoi/kipoi/blob/master/notebooks/variant_effect_prediction_simple.ipynb) or [tutorials/variant_effect_prediction/](http://kipoi.org/docs/tutorials/variant_effect_prediction/).
 
+```bash
+pip install kipoi_veff
+```
+
+
+### [kipoi_interpret](https://github.com/kipoi/kipoi-interpret)
+
+Model interepretation plugin for Kipoi. Allows to use feature importance scores like in-silico mutagenesis (ISM), saliency maps or DeepLift with a wide range of Kipoi models. [example notebook](https://github.com/kipoi/kipoi-interpret/blob/master/notebooks/1-DNA-seq-model-example.ipynb)
+
+```bash
+pip install kipoi_interpret
+```
 
 ## Documentation
 
