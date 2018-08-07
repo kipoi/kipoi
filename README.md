@@ -157,7 +157,7 @@ usage: kipoi <command> [-h] ...
     preproc          Run the dataloader and save the results to an hdf5 array
     env              Tools for managing Kipoi conda environments
 
-    # - contribuing models:
+    # - contributing models:
     init             Initialize a new Kipoi model
     test             Runs a set of unit-tests for the model
     test-source      Runs a set of unit-tests for many/all models in a source
