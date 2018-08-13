@@ -15,6 +15,7 @@ This repository implements a python package and a command-line interface (CLI) t
 - [kipoi.org](http://kipoi.org) - Main website
 - [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
+- [bioarxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
   
 ## Installation
 
@@ -199,3 +200,20 @@ pip install kipoi_interpret
 ## Documentation
 
 Documentation can be found here: [kipoi.org/docs](http://kipoi.org/docs)
+
+## Citing Kipoi
+
+If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Bioarxiv preprint: https://doi.org/10.1101/375345.
+
+```bibtex
+@article {kipoi,
+	author = {Avsec, Ziga and Kreuzhuber, Roman and Israeli, Johnny and Xu, Nancy and Cheng, Jun and Shrikumar, Avanti and Banerjee, Abhimanyu and Kim, Daniel S and Urban, Lara and Kundaje, Anshul and Stegle, Oliver and Gagneur, Julien},
+	title = {Kipoi: accelerating the community exchange and reuse of predictive models for genomics},
+	year = {2018},
+	doi = {10.1101/375345},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2018/07/24/375345},
+	eprint = {https://www.biorxiv.org/content/early/2018/07/24/375345.full.pdf},
+	journal = {bioRxiv}
+}
+```
