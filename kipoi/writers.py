@@ -202,7 +202,9 @@ class HDF5BatchWriter(BatchWriter):
 
     @classmethod
     def dump(cls, file_path, batch):
-        cls(file_path=file_path).batch_write(batch).close()
+        obj = cls(file_path=file_path)
+        obj.batch_write(batch)
+        obj.close()
 
 
 # Nice-to-have writers:
