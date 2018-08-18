@@ -172,10 +172,10 @@ class HDF5BatchWriter(BatchWriter):
             self.first_pass = False
         # add data to the buffer
         if self.write_buffer is None:
-            self.write_buffer = fbatch
+            self.write_buffer = [fbatch]
             self.write_buffer_size = batch_size
         else:
-            self.write_buffer = numpy_collate_concat([self.write_buffer, fbatch])
+            self.write_buffer.append(fbatch)
             self.write_buffer_size += batch_size
 
         if self.write_buffer is not None and self.write_buffer_size >= self.chunk_size:
@@ -184,13 +184,14 @@ class HDF5BatchWriter(BatchWriter):
     def _flush_buffer(self):
         """Write buffer
         """
-        for k in self.write_buffer:
+        wb = numpy_collate_concat(self.write_buffer)
+        for k in wb:
             dset = self.f[k]
             clen = dset.shape[0]
             # resize
             dset.resize(clen + self.write_buffer_size, axis=0)
             # write
-            dset[clen:] = self.write_buffer[k]
+            dset[clen:] = wb[k]
         self.f.flush()
         self.write_buffer = None
         self.write_buffer_size = 0
