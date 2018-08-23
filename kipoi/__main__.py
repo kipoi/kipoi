@@ -33,7 +33,7 @@ command_functions = {
     'info': cli.main.cli_info,
     # further sub-commands
     'env': cli.env.cli_main,
-    # Contribuing
+    # Contributing
     'test': cli.main.cli_test,
     'test-source': cli.source_test.cli_test_source,
     'init': cli.main.cli_init,
@@ -56,7 +56,7 @@ parser = argparse.ArgumentParser(
     preproc          Run the dataloader and save the results to an hdf5 array
     env              Tools for managing Kipoi conda environments
 
-    # - contribuing models:
+    # - contributing models:
     init             Initialize a new Kipoi model
     test             Runs a set of unit-tests for the model
     test-source      Runs a set of unit-tests for many/all models in a source

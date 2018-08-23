@@ -8,7 +8,7 @@ import six
 import subprocess
 import logging
 from collections import OrderedDict
-from .utils import lfs_installed, get_file_path, cd, list_files_recursively
+from .utils import unique_list, lfs_installed, get_file_path, cd, list_files_recursively
 from .specs import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
@@ -167,16 +167,16 @@ def list_models_by_group(df, group_filter=""):
             ("N_models", x.shape[0]),
             ("N_subgroups", n_subgroups(x.child.fillna(""))),
             ("is_group", x.is_group.any()),
-            ("authors", {author for authors in x.authors
-                         for author in authors}),
-            ("contributors", {contributor for contributors in x.contributors
-                              for contributor in contributors}),
+            ("authors", unique_list([author for authors in x.authors
+                         for author in authors])),
+            ("contributors", unique_list([contributor for contributors in x.contributors
+                              for contributor in contributors])),
             ("veff_score_variants", x.veff_score_variants.any()),
-            ("type", {t for t in x.type}),
-            ("license", {l for l in x.license}),
-            ("cite_as", {c for c in x.cite_as if c is not None}),
-            ("tags", {tag for tags in x.tags
-                      for tag in tags}),
+            ("type", unique_list([t for t in x.type])),
+            ("license", unique_list([l for l in x.license])),
+            ("cite_as", unique_list([c for c in x.cite_as if c is not None])),
+            ("tags", unique_list([tag for tags in x.tags
+                      for tag in tags])),
         ]))
 
     return df.groupby("group").apply(fn).reset_index()
