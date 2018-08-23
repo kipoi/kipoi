@@ -73,3 +73,4 @@ target/
 logfile.txt
 
 examples/rbp/example_files/variants.vcf.gz.tbi
+/docs/mkdocs.yml

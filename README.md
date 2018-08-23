@@ -1,9 +1,14 @@
 # Kipoi: Model zoo for genomics
 
-[![CircleCI](https://circleci.com/gh/kipoi/kipoi.svg?style=svg&circle-token=afc949457e09baf22e3b3cc3f5ffebb4e140b1f9)](https://circleci.com/gh/kipoi/kipoi)
-[![Coverage Status](https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master)](https://coveralls.io/github/kipoi/kipoi?branch=master)
-[![Join the chat at https://gitter.im/kipoi/kipoi-contribute](https://badges.gitter.im/kipoi/kipoi-contribute.svg)](https://gitter.im/kipoi/kipoi-contribute?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
+<a href='https://circleci.com/gh/kipoi/kipoi'>
+	<img alt='CircleCI' src='https://circleci.com/gh/kipoi/kipoi.svg?style=svg' style="max-height:20px;width:auto">
+</a>
+<a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
+	<img alt='Coverage status' src=https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master style="max-height:20px;width:auto;">
+</a>
+<a href=https://gitter.im/kipoi>
+	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
+</a>
 
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
