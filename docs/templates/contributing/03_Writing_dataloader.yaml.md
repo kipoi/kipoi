@@ -1,6 +1,6 @@
 # dataloader.yaml
 
-The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read [Writing dataloader.py](../04_Writing_dataloader.py).
+The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read [Writing dataloader.py](./04_Writing_dataloader.py.md).
 
 To help understand the synthax of YAML please take a look at: [YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 

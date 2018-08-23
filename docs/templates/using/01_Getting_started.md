@@ -2,23 +2,11 @@
 
 ### Steps
 
-#### 1. Install Kipoi
+#### 1. Install and setup Kipoi
 
-1. Install [miniconda](https://conda.io/miniconda.html) or [anaconda](https://www.anaconda.com/download)
-2. Install git and git-lfs
-    - See how to install git [here](https://www.atlassian.com/git/tutorials/install-git) or install it through conda: `conda install -c anaconda git`
-    - Install git-lfs: `conda install -c conda-forge git-lfs && git lfs install`
-   	  - For alternative installation options  see <https://git-lfs.github.com/>.
-3. Install kipoi
-    - `pip install kipoi`
-	  - if you wish to use variant effect prediction, run `pip install kipoi[vep]`
+First install Kipoi and select a model you want to work with using the [instructions](http://kipoi.org/docs/).
 
-#### 2. Choose the model from [http://kipoi.org/models](http://kipoi.org/groups)
-
-1. Navigate to [http://kipoi.org/models](http://kipoi.org/groups) and select a model of your interest
-2. On model's page (`http://kipoi.org/models/<model>`), check the required arguments in the dataloader section and copy the code snippets
-
-#### 3. Use the model
+#### 2. Use the model
 
 You can use the model from:
 
@@ -30,7 +18,7 @@ You can use the model from:
 
 ### Python - quick start
 
-See the ipython notebook [tutorials/python-api](../tutorials/python-api/) for additional information and a working example of the API. Here is a list of most useful python commands.
+See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for additional information and a working example of the API. Here is a list of most useful python commands.
 
 ```python
 import kipoi
@@ -43,6 +31,24 @@ kipoi.list_models()
 ```
 
 #### Get the model
+Before getting started with models take a short look what a Kipoi model actually is. Kipoi model have to have the following folder structure in which all the relevant files have their assigned places:
+```
+├── dataloader.py     # implements the dataloader
+├── dataloader.yaml   # describes the dataloader
+├── dataloader_files/      #/ files required by the dataloader
+│   ├── x_transfomer.pkl
+│   └── y_transfomer.pkl
+├── model.yaml        # describes the model
+├── model_files/           #/ files required by the model
+│   ├── model.json
+│   └── weights.h5
+└── example_files/         #/ small example files
+    ├── features.csv
+    └── targets.csv
+```
+The core file that defines a model is `model.yaml`, for more details please look at the docs for [contributing models](../contributing/01_Getting_started/).
+
+Now let's get started with the model:
 
 ```python
 model = kipoi.get_model("rbp_eclip/UPF1")
@@ -54,7 +60,13 @@ model = kipoi.get_model("rbp_eclip/UPF1")
 >If instead you provide `get_model` a path to a model *group* (e.g "lsgkm-SVM/Tfbs/Ap2alpha/"), rather than one model (e.g "lsgkm-SVM/Tfbs/Ap2alpha/Helas3/Sydh_Std"), or any other directory without a `model.yaml` file, `get_model` will throw a `ValueError`.
 
 ---
-If you wish to acces the model for a particular commit, use the github permalink:
+If you want to access a model that is not part of the Kipoi model zoo, please use:
+ 
+ ```python
+model = kipoi.get_model("path/to/my/model", source="dir")
+```
+
+If you wish to access the model for a particular commit, use the github permalink:
 
 ```python
 model = kipoi.get_model("https://github.com/kipoi/models/tree/7d3ea7800184de414aac16811deba6c8eefef2b6/pwm_HOCOMOCO/human/CTCF", source='github-permalink')
@@ -62,6 +74,7 @@ model = kipoi.get_model("https://github.com/kipoi/models/tree/7d3ea7800184de414a
 
 
 #### Access information about the model
+In the following commands a few properties of the model will be shown:
 
 ```python
 model.info # Information about the author:
@@ -72,6 +85,7 @@ model.model # Access the underlying Keras model
 ```
 
 #### Test the model
+Every Kipoi model comes with a small test dataset, which is used to assert its functionality in the nightly tests. This model test function can be accessed by:
 
 ```python
 pred = model.pipeline.predict_example()
@@ -108,14 +122,19 @@ model.pipeline.predict({'intervals_file': 'example_files/intervals.bed',
 ```
 
 #### Setup the dataloader
+If you don't want to use the `model.pipeline.predict` function, but you would rather execute the dataloader yourself then you can do the following:
 
 ```python
 dl = model.default_dataloader(dataloader_arg1="...", targets_file="...")
 ```
 
+This generates a dataloader object `dl`.
+
 Note: `kipoi.get_model("<mymodel>").default_dataloader` is the same as `kipoi.get_dataloader_factory("<mymodel>")`
 
 #### Predict for a single batch
+Data can be requested from the dataloader through its iterator functionality, which can then be used to perform model predictions. 
+
 
 ```python
 # Get the batch iterator
@@ -124,9 +143,15 @@ it = dl.batch_iter(batch_size=32)
 # get a single batch
 single_batch = next(it)
 
+```
+
+It is important to note that the dataloader can also annotate model inputs with additional metadata. The `model.pipeline` command therefore selects the values in the `inputs` key as it is shown in the example:
+
+```python
 # Make a prediction
 predictions = model.predict_on_batch(single_batch['inputs'])
 ```
+
 
 #### Re-train the model
 
@@ -142,6 +167,8 @@ model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ### Command-line interface - quick start
 
 #### Show help
+
+For the command line interface the help command should explain most functionality
 
 ```bash
 kipoi -h
@@ -171,6 +198,8 @@ head '/tmp/rbp_eclip__UPF1.example_pred.tsv'
 ```
 
 #### Test a model
+
+Test whether a model is defined correctly and whether is execution using the example files is successful.
 
 ```bash
 kipoi test ~/.kipoi/models/rbp_eclip/UPF1/example_files
@@ -209,4 +238,4 @@ kipoi postproc score_variant rbp_eclip/UPF1 \
 
 ### R - quick start
 
-See [tutorials/R-api](../tutorials/R-api/).
+See [tutorials/R-api](../../tutorials/R-api/).

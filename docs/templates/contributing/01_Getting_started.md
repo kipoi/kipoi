@@ -67,7 +67,7 @@ Rest of this document will go more into the details about steps writing the mode
 
 ### How to write the model
 
-Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../tutorials/contributing_models) for a step-by-step procedure for contributing models.
+Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../../tutorials/contributing_models) for a step-by-step procedure for contributing models.
 
 #### Option #1: Copy existing model
 
@@ -142,7 +142,7 @@ INFO [kipoi.cli.main] Done!
 Created the following folder into the current working directory: my_new_model
 ```
 
-The created folder contains a model and a dataloader for predicting the Iris species. You will now have to [edit the model.yaml](./02_Writing_model.yaml) and to [edit the dataloader.yaml](./04_Writing_dataloader.yaml) files according to your model. Also you will have to copy you rmodel files into the model_files directory. You can check whether you have succeeded and your model is setup correctly with the commands below.
+The created folder contains a model and a dataloader for predicting the Iris species. You will now have to [edit the model.yaml](./02_Writing_model.yaml.md) and to [edit the dataloader.yaml](./03_Writing_dataloader.yaml.md) files according to your model. Also you will have to copy you rmodel files into the model_files directory. You can check whether you have succeeded and your model is setup correctly with the commands below.
 
 ### How to test the model
 Be aware that the test functions will only check whether the definition side of things (model.yaml, dataloader.yaml, syntax errors, etc.) is setup correctly, you will have to validate yourself whether the outputs created by using the predict function produce the desired model output!
