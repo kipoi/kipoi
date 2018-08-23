@@ -329,6 +329,8 @@ Both can either be defined as a list of packages or as a text file (ending in `.
 
 Conda as well as pip dependencies can and should be defined with exact versions of the required packages, as defining a package version using e.g.: `package>=1.0` is very likely to break at some point in future.
 
+If your model is a python-based model and you have not tested whether your model works in python 2 and python 3, then make sure that you also add the correct python version as a dependency e.g.: `python=2.7`.
+
 ###conda
 Conda dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text must be given (ending in `.txt`).
 

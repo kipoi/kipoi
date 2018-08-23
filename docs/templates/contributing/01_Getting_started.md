@@ -2,6 +2,22 @@
 
 Kipoi stores models (descriptions, parameter files, dataloader code, ...) as folders in the [kipoi/models](https://github.com/kipoi/models) github repository. Files residing in folders with a suffix of `_files` are tracked via Git Large File Storage (LFS). New models are added by simply submitting a pull-request to <https://github.com/kipoi/models>.
 
+As a reminder - Kipoi model have to have the following folder structure in which all the relevant files have their assigned places:
+```
+├── dataloader.py     # implements the dataloader
+├── dataloader.yaml   # describes the dataloader
+├── dataloader_files/      #/ files required by the dataloader
+│   ├── x_transfomer.pkl
+│   └── y_transfomer.pkl
+├── model.yaml        # describes the model
+├── model_files/           #/ files required by the model
+│   ├── model.json
+│   └── weights.h5
+└── example_files/         #/ small example files
+    ├── features.csv
+    └── targets.csv
+```
+
 ### Required steps
 
 Here is a list of steps required to contribute a model to [kipoi/models](https://github.com/kipoi/models):
@@ -68,6 +84,13 @@ Rest of this document will go more into the details about steps writing the mode
 ### How to write the model
 
 Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../../tutorials/contributing_models) for a step-by-step procedure for contributing models.
+
+In terms of what to include in your model: The information in these pages here are the minimum requirement. The more
+information you can share with other users the better! If you have converted the model from using a script, please add that.
+If you have additional test and validation scripts that you wrote while verifying the Kipoi model, etc. , please add them.
+You will make future users happy.
+
+Hint: If you want to take a look at a specific model that is already in the zoo, but instead of the content of the model files there is just a hash entry, then use `kipoi pull <model_name>` to download the model data.
 
 #### Option #1: Copy existing model
 
