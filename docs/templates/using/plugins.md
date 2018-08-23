@@ -2,8 +2,8 @@
 
 To enable additional functionality beyond just running model predictions, there are two additional plugins available:
 
-- kipoi-veff: variant effect prediction [github](https://github.com/kipoi/kipoi-veff), [docs](https://kipoi.org/docs/veff)
-- kipoi-interpret: model interpretation.[github](https://github.com/kipoi/kipoi-interpret), [docs](https://kipoi.org/docs/interpret)
+- kipoi-veff: variant effect prediction [github](https://github.com/kipoi/kipoi-veff), [docs](https://kipoi.org/veff-docs/)
+- kipoi-interpret: model interpretation.[github](https://github.com/kipoi/kipoi-interpret), [docs](https://kipoi.org/interpret-docs/)
 
 ### [Kipoi-veff](https://github.com/kipoi/kipoi-veff)
 
