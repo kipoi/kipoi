@@ -1,3 +1,5 @@
+"""Useful utilities for data-loading
+"""
 import numpy as np
 import sys
 import collections

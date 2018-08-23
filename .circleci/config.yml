@@ -100,14 +100,13 @@ jobs:
           command: pip install -e .
       - run:
           name: Install build deps
-          command: pip install nbconvert mkdocs
+          command: pip install nbconvert mkdocs pydoc-markdown
       - run:
           name: Build docs
           command: |
             cd docs/
-            python autogen.py
             ./render_ipynb.bash
-            mkdocs build
+            pydocmd build
       - run:
           name: Deploy docs
           command: .circleci/deploy_docs.bash

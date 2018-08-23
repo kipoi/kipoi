@@ -17,6 +17,7 @@ from . import data
 from . import conda
 from . import specs
 from . import components  # backward compat
+from . import readers
 from . import writers
 from . import plugin
 

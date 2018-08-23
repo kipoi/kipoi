@@ -48,6 +48,14 @@ def set_model_sources(_model_sources):
 
 
 def get_source(source):
+    """Get the source object
+
+    # Arguments
+        source (str): source string
+
+    # Returns
+        Source child class instance: like `kipoi.sources.GitLFSSource`
+    """
     if source in model_sources():
         return model_sources()[source]
     else:
@@ -73,7 +81,7 @@ def add_source(name, obj):
 
 
 def list_sources():
-    """Returns a pandas.DataFrame of possible sources
+    """Returns a `pandas.DataFrame` of possible sources
     """
     def src2dict(k, s):
         lm = s.list_models()
@@ -89,10 +97,13 @@ def list_sources():
 
 
 def list_models(sources=None):
-    """List models as a `pandas.DataFrame`
+    """List models
 
-    Args:
-      sources: list of model sources to use. If None, use all
+    # Arguments
+        sources: list of model sources to use. If None, use all
+
+    # Returns
+        pandas.DataFrame
     """
     def get_df(source_name, source):
         df = source.list_models()
@@ -111,10 +122,13 @@ def list_models(sources=None):
 
 
 def list_dataloaders(sources=None):
-    """List datalaoders as a `pandas.DataFrame`
+    """List dataloaders
 
-    Args:
-sources: list of model sources to use. If None, use all
+    # Arguments
+        sources: list of model sources to use. If None, use all
+
+    # Returns
+        pandas.DataFrame
     """
     def get_df(source_name, source):
         df = source.list_dataloaders()

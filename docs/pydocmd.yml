@@ -1,0 +1,110 @@
+site_name: Kipoi documentation
+
+# ------- readthedocs ---------
+theme:
+ name: readthedocs
+ custom_dir: theme_dir
+extra_css: [css/extra.css]
+# --------------------------
+repo_url: http://github.com/kipoi/kipoi-kipoi
+site_url: http://kipoi.org/docs/
+edit_uri: edit/master/docs/templates/
+site_description: 'Documentation of Kipoi, model zoo for genomics.'
+
+dev_addr: '0.0.0.0:8000'
+
+google_analytics: ["UA-115025493-1", "kipoi.org"]
+# --------------------------------------------
+
+# This tells pydocmd which pages to generate from which Python modules,
+# functions and classes. At the first level is the page name, below that
+# is a tree of Python member names (modules, classes, etc.) that should be
+# documented. Higher indentation leads to smaller header size.
+generate:
+  - api/list_.md:
+    - kipoi.list_models
+    - kipoi.list_dataloaders
+  - api/install_.md:
+    - kipoi.install_model_requirements
+    - kipoi.install_dataloader_requirements
+  - api/model.md:
+    - kipoi.get_model_descr
+    - kipoi.get_model
+  - api/dataloader.md:
+    - kipoi.get_dataloader_descr
+    - kipoi.get_dataloader_factory
+  - api/pipeline.md:
+    - kipoi.pipeline.Pipeline+
+  - api/sources.md:
+    - kipoi.get_source
+    - kipoi.list_sources
+  - api/metadata.md:
+    - kipoi.metadata:
+      - kipoi.metadata.GenomicRanges+
+  - api/readers.md:
+    - kipoi.readers:
+      - kipoi.readers.HDF5Reader+
+  - api/writers.md:
+    - kipoi.writers:
+      - kipoi.writers.TsvBatchWriter+
+      - kipoi.writers.BedBatchWriter+
+      - kipoi.writers.HDF5BatchWriter+
+      - kipoi.writers.BedGraphWriter+
+      - kipoi.writers.BigWigWriter+
+
+
+# MkDocs pages configuration. The `<<` operator is sugar added by pydocmd
+# that allows you to use an external Markdown file (eg. your project's README)
+# in the documentation. The path must be relative to current working directory.
+# pages:
+# - Home: index.md << ../README.md
+# - foobar.baz:
+#   - Cool Stuff: baz/cool-stuff.md
+pages:
+- Home: index.md << ../README.md
+- Using:
+  - Python: using/python.md
+  - CLI: using/cli.md
+  - R: using/R.md
+  - Plugins: using/plugins.md
+  - Private and public model sources: using/03_Model_sources.md
+  - Installing on OSX: using/04_Installing_on_OSX.md
+- Contributing:
+  - Getting started: contributing/01_Getting_started.md
+  - model.yaml: contributing/02_Writing_model.yaml.md
+  - dataloader.py: contributing/04_Writing_dataloader.py.md
+  - dataloader.yaml: contributing/03_Writing_dataloader.yaml.md
+  - model.py: contributing/05_Writing_model.py.md
+  - Multiple very similar models: contributing/06_dumping_models_programatically.md
+- Tutorials:
+  # ipynb's
+  - Contributing models: tutorials/contributing_models.md
+  - Python API: tutorials/python-api.md
+  - R API: tutorials/R-api.md
+  - Comparing models: tutorials/tf_binding_models.md
+  - Composing models: tutorials/composing_models.md
+
+- Api:
+  - list: api/list_.md
+  - install: api/install_.md
+  - Model: api/model.md    
+  - Dataloader: api/dataloader.md
+  - Pipeline: api/pipeline.md
+  - sources: api/sources.md
+  - metadata: api/metadata.md
+  - readers: api/readers.md
+  - writers: api/writers.md
+
+# These options all show off their default values. You don't have to add
+# them to your configuration if you're fine with the default.
+docs_dir: templates
+gens_dir: sources
+site_dir: site
+loader:   pydocmd.loader.PythonLoader
+preprocessor: pydocmd.preprocessor.Preprocessor
+
+# Additional search path for your Python module. If you use Pydocmd from a
+# subdirectory of your project (eg. docs/), you may want to add the parent
+# directory here.
+additional_search_paths:
+- ..

@@ -384,6 +384,58 @@ class BatchGenerator(BaseDataLoader):
 
 
 def get_dataloader_factory(dataloader, source="kipoi"):
+    """Loads the dataloader
+
+    # Arguments
+        dataloader (str): dataloader name
+        source (str): source name
+
+    # Returns
+    - Instance of class inheriting from `kipoi.data.BaseDataLoader` (like `kipoi.data.Dataset`)
+           decorated with additional attributes.
+
+    # Methods
+    - __batch_iter(batch_size, num_workers, **kwargs)__
+         - Arguments
+             - **batch_size**: batch size
+             - **num_workers**: Number of workers to use in parallel.
+             - ****kwargs**: Other kwargs specific to each dataloader
+         - Yields
+             - `dict` with `"inputs"`, `"targets"` and `"metadata"`
+    - __batch_train_iter(cycle=True, **kwargs)__
+         - Arguments
+             - **cycle**: if True, cycle indefinitely
+             - ****kwargs**: Kwargs passed to `batch_iter()` like `batch_size`
+         - Yields
+             - tuple of ("inputs", "targets") from the usual dict returned by `batch_iter()`
+    - __batch_predict_iter(**kwargs)__
+         - Arguments
+             - ****kwargs**: Kwargs passed to `batch_iter()` like `batch_size`
+         - Yields
+             - "inputs" field from the usual dict returned by `batch_iter()`
+    - __load_all(**kwargs)__ - load the whole dataset into memory
+         - Arguments
+             - ****kwargs**: Kwargs passed to `batch_iter()` like `batch_size`
+         - Returns
+             - `dict` with `"inputs"`, `"targets"` and `"metadata"`
+    - **init_example()** - instantiate the dataloader with example kwargs
+    - **print_args()** - print information about the required arguments
+
+    # Appended attributes
+    - **type** (str): dataloader type (class name)
+    - **defined_as** (str): path and dataloader name
+    - **args** (list of kipoi.specs.DataLoaderArgument): datalaoder argument description
+    - **info** (kipoi.specs.Info): general information about the dataloader
+    - **schema** (kipoi.specs.DataloaderSchema): information about the input/output
+            data modalities
+    - **dependencies** (kipoi.specs.Dependencies): class specifying the dependencies.
+          (implements `install` method for running the installation)
+    - **name** (str): model name
+    - **source** (str): model source
+    - **source_dir** (str): local path to model source storage
+    - **postprocessing** (dict): dictionary of loaded plugin specifications
+    - **example_kwargs** (dict): kwargs for running the provided example
+    """
 
     # pull the dataloader & get the dataloader directory
     source = kipoi.config.get_source(source)

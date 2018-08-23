@@ -1,22 +1,4 @@
-## Using Kipoi - Getting started
-
-### Steps
-
-#### 1. Install and setup Kipoi
-
-First install Kipoi and select a model you want to work with using the [instructions](http://kipoi.org/docs/).
-
-#### 2. Use the model
-
-You can use the model from:
-
-- Python
-- Command-line interface
-- R (via the [reticulate](https://github.com/rstudio/reticulate) package)
-
------------------------------------------
-
-### Python - quick start
+## Python API
 
 See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for additional information and a working example of the API. Here is a list of most useful python commands.
 
@@ -24,13 +6,13 @@ See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for
 import kipoi
 ```
 
-#### List all models
+### List all models
 
 ```python
 kipoi.list_models()
 ```
 
-#### Get the model
+### Get the model
 Before getting started with models take a short look what a Kipoi model actually is. Kipoi model have to have the following folder structure in which all the relevant files have their assigned places:
 ```
 ├── dataloader.py     # implements the dataloader
@@ -73,7 +55,7 @@ model = kipoi.get_model("https://github.com/kipoi/models/tree/7d3ea7800184de414a
 ```
 
 
-#### Access information about the model
+### Access information about the model
 In the following commands a few properties of the model will be shown:
 
 ```python
@@ -84,14 +66,14 @@ model.default_dataloader # Access the default dataloader
 model.model # Access the underlying Keras model
 ```
 
-#### Test the model
+### Test the model
 Every Kipoi model comes with a small test dataset, which is used to assert its functionality in the nightly tests. This model test function can be accessed by:
 
 ```python
 pred = model.pipeline.predict_example()
 ```
 
-#### Get predictions for the raw files
+### Get predictions for the raw files
 
 For any generation of the model output the dataloader has to be executed first. A dataloader will require input arguments in which the input files are defined, for example input fasta files or bed files, based on which the model input is generated. One way to display the keyword arguments a dataloader accepts is the following:
 
@@ -121,7 +103,7 @@ model.pipeline.predict({'intervals_file': 'example_files/intervals.bed',
 	                'target_file': 'example_files/targets.tsv'})
 ```
 
-#### Setup the dataloader
+### Setup the dataloader
 If you don't want to use the `model.pipeline.predict` function, but you would rather execute the dataloader yourself then you can do the following:
 
 ```python
@@ -132,7 +114,7 @@ This generates a dataloader object `dl`.
 
 Note: `kipoi.get_model("<mymodel>").default_dataloader` is the same as `kipoi.get_dataloader_factory("<mymodel>")`
 
-#### Predict for a single batch
+### Predict for a single batch
 Data can be requested from the dataloader through its iterator functionality, which can then be used to perform model predictions. 
 
 
@@ -153,7 +135,7 @@ predictions = model.predict_on_batch(single_batch['inputs'])
 ```
 
 
-#### Re-train the model
+### Re-train the model
 
 ```python
 it_train = dl.batch_train_iter(batch_size=32)  # will yield tuples (inputs, targets) indefinitely
@@ -161,81 +143,3 @@ it_train = dl.batch_train_iter(batch_size=32)  # will yield tuples (inputs, targ
 # Since we are using a Keras model, run:
 model.model.fit_generator(it_train, steps_per_epoch=len(dl)//32, epochs=10)
 ```
-
------------------------------------------
-
-### Command-line interface - quick start
-
-#### Show help
-
-For the command line interface the help command should explain most functionality
-
-```bash
-kipoi -h
-```
-
-#### List all models
-
-```bash
-kipoi ls
-```
-#### Get information on how the required dataloader keyword arguments
-```bash
-kipoi info -i --source kipoi rbp_eclip/UPF1
-```
-
-#### Run model prediction
-
-```bash
-cd ~/.kipoi/models/rbp_eclip/UPF1/example_files
-
-kipoi predict rbp_eclip/UPF1 \
-  --dataloader_args='{'intervals_file': 'intervals.bed', 'fasta_file': 'hg38_chr22.fa', 'gtf_file': 'gencode.v24.annotation_chr22.gtf'}' \
-  -o '/tmp/rbp_eclip__UPF1.example_pred.tsv'
-
-# check the results
-head '/tmp/rbp_eclip__UPF1.example_pred.tsv'
-```
-
-#### Test a model
-
-Test whether a model is defined correctly and whether is execution using the example files is successful.
-
-```bash
-kipoi test ~/.kipoi/models/rbp_eclip/UPF1/example_files
-```
-
-#### Install all model dependencies
-
-```bash
-kipoi env install rbp_eclip/UPF1
-```
-
-#### Create a new conda environment for the model
-
-```bash
-kipoi env create rbp_eclip/UPF1
-source activate kipoi-rbp_eclip__UPF
-```
-
-#### List all Kipoi environments
-
-```bash
-kipoi env list
-```
-
-Use `source activate <env>` or `conda activate <env>` to activate the environment.
-
-
-#### Score variants
-
-```bash
-kipoi postproc score_variant rbp_eclip/UPF1 \
-	--batch_size=16 \
-	-v input.vcf \
-	-o output.vcf
-```
-
-### R - quick start
-
-See [tutorials/R-api](../../tutorials/R-api/).

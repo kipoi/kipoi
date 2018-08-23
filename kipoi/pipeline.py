@@ -1,4 +1,4 @@
-"""Whole model pipeline: extractor + model
+"""Whole model pipeline: dataloader + model
 """
 from __future__ import absolute_import
 from __future__ import print_function
@@ -18,6 +18,14 @@ logger.addHandler(logging.NullHandler())
 
 
 def install_model_requirements(model, source="kipoi", and_dataloaders=True):
+    """Install model dependencies
+
+    # Arguments
+        model (str): model name
+        source (str): model source
+        and_dataloaders (bool): if True, install also the dependencies
+            for the default dataloader
+    """
     md = kipoi.get_source(source).get_model_descr(model)
     md.dependencies.install()
     if and_dataloaders:
@@ -33,6 +41,12 @@ def install_model_requirements(model, source="kipoi", and_dataloaders=True):
 
 
 def install_dataloader_requirements(dataloader, source="kipoi"):
+    """Install dataloader dependencies
+
+    # Arguments
+        datalaoder (str): dataloader name
+        source (str): model source
+    """
     kipoi.get_source(source).get_model_descr(dataloader).dependencies.install()
 
 
@@ -55,7 +69,16 @@ def validate_kwargs(dataloader, dataloader_kwargs):
 
 
 class Pipeline(object):
-    """Provides the predict_example, predict and predict_generator to the kipoi.Model
+    """Runs model predictions from raw files:
+
+    ```
+    raw files --(dataloader)--> data batches --(model)--> prediction
+    ```
+
+    # Arguments
+        model: model returned by `kipoi.get_model`
+        dataloader_cls: dataloader class returned by `kipoi.get_dataloader_factory`
+            of `kipoi.get_model().default_dataloader`
     """
 
     def __init__(self, model, dataloader_cls):
@@ -69,6 +92,13 @@ class Pipeline(object):
             logger.info("dataloader.output_schema is compatible with model.schema")
 
     def predict_example(self, batch_size=32, test_equal=False):
+        """Run model prediction for the example file
+
+        # Arguments
+            batch_size: batch_size
+            test_equal: currently not implemented
+            **kwargs: Further arguments passed to batch_iter
+        """
         logger.info('Initialized data generator. Running batches...')
 
         with cd(self.dataloader_cls.source_dir):
@@ -99,10 +129,11 @@ class Pipeline(object):
     def predict(self, dataloader_kwargs, batch_size=32, **kwargs):
         """
         # Arguments
-            preproc_kwargs: Keyword arguments passed to the pre-processor
+            dataloader_kwargs: Keyword arguments passed to the pre-processor
             **kwargs: Further arguments passed to batch_iter
 
-        :return: Predict the whole array
+        # Returns
+            np.array, dict, list: Predict the whole array
         """
         pred_list = [batch for batch in tqdm(self.predict_generator(dataloader_kwargs,
                                                                     batch_size, **kwargs))]
@@ -119,7 +150,7 @@ class Pipeline(object):
             **kwargs: Further arguments passed to batch_iter
 
         # Yields
-            model batch prediction
+        - `dict`: model batch prediction
         """
         logger.info('Initialized data generator. Running batches...')
 
@@ -156,7 +187,7 @@ class Pipeline(object):
             **kwargs: Further arguments passed to input_grad
 
         # Returns
-            A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
+            dict: A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
         """
 
         batches = [batch for batch in tqdm(self.input_grad_generator(dataloader_kwargs, batch_size, filter_idx,
@@ -168,21 +199,21 @@ class Pipeline(object):
                              final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
         """Get input gradients
 
-                # Arguments
-                    dataloader_kwargs: Keyword arguments passed to the dataloader
-                    batch_size: Batch size used for the dataloader
-                    filter_idx: filter index of `layer` for which the gradient should be returned
-                    avg_func: String name of averaging function to be applied across filters in layer `layer`
-                    layer: layer from which backwards the gradient should be calculated
-                    final_layer: Use the final (classification) layer as `layer`
-                    selected_fwd_node: None - not supported by KerasModel at the moment
-                    pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
-                    automatic way)
-                    **kwargs: Further arguments passed to input_grad
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            filter_idx: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            layer: layer from which backwards the gradient should be calculated
+            final_layer: Use the final (classification) layer as `layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
+            **kwargs: Further arguments passed to input_grad
 
-                # Yields
-                    A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
-                """
+        # Yields
+        - `dict`: A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
+        """
 
         if not isinstance(self.model, kipoi.model.GradientMixin):
             raise Exception("Model does not implement GradientMixin, so `input_grad` is not available.")

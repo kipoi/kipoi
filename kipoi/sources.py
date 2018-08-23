@@ -94,8 +94,8 @@ def get_model_descr(model, source="kipoi"):
     """Get model description
 
     # Arguments
-      model: model's relative path/name in the source. 2nd column in the `kipoi.list_models() `pd.DataFrame`.
-      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
+        model: model's relative path/name in the source. 2nd column in the `kipoi.list_models() `pd.DataFrame`.
+        source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
     return kipoi.config.get_source(source).get_model_descr(model)
 
@@ -104,8 +104,8 @@ def get_dataloader_descr(dataloader, source="kipoi"):
     """Get dataloder description
 
     # Arguments
-      datalaoder: dataloader's relative path/name in the source. 2nd column in the `kipoi.list_dataloader() `pd.DataFrame`.
-      source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
+        datalaoder: dataloader's relative path/name in the source. 2nd column in the `kipoi.list_dataloader() `pd.DataFrame`.
+        source: Model source. 1st column in the `kipoi.list_models()` `pd.DataFrame`.
     """
     return kipoi.config.get_source(source).get_dataloader_descr(dataloader)
 
@@ -168,15 +168,15 @@ def list_models_by_group(df, group_filter=""):
             ("N_subgroups", n_subgroups(x.child.fillna(""))),
             ("is_group", x.is_group.any()),
             ("authors", unique_list([author for authors in x.authors
-                         for author in authors])),
+                                     for author in authors])),
             ("contributors", unique_list([contributor for contributors in x.contributors
-                              for contributor in contributors])),
+                                          for contributor in contributors])),
             ("veff_score_variants", x.veff_score_variants.any()),
             ("type", unique_list([t for t in x.type])),
             ("license", unique_list([l for l in x.license])),
             ("cite_as", unique_list([c for c in x.cite_as if c is not None])),
             ("tags", unique_list([tag for tags in x.tags
-                      for tag in tags])),
+                                  for tag in tags])),
         ]))
 
     return df.groupby("group").apply(fn).reset_index()

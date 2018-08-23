@@ -1,14 +1,27 @@
-"""Module defining different metadat classess
+"""Module defining different metadata classes compatible with dataloaders
+
+All classes inherit from `collections.Mapping` which allows to use
+`kipoi.data_utils.numpy_collate` on them (e.g. they behave as a dictionary).
 """
 from collections import Mapping
 from kipoi.data_utils import numpy_collate, numpy_collate_concat
 
 
 class GenomicRanges(Mapping):
-    def __init__(self, chr, start, end, id, strand="*"):
-        """
+    """Container for genomic interval(s)
 
-        """
+    All fields can be either a single values (str or int) or a
+    numpy array of values.
+
+    # Arguments
+        chr (str or np.array): Chromosome(s)
+        start (int or np.array): Interval start (0-based coordinates)
+        end (int or np.array): Interval end (0-based coordinates)
+        id (str or np.array): Interval id
+        strand (str or np.array): Interval strand ("+", "-", or "*")
+    """
+
+    def __init__(self, chr, start, end, id, strand="*"):
         self._storage = dict(chr=chr, start=start, end=end, id=id, strand=strand)
         self.chr = chr
         self.start = start
@@ -33,7 +46,10 @@ class GenomicRanges(Mapping):
 
     @classmethod
     def from_interval(cls, interval):
-        """Create the ranges object from the interval
+        """Create the ranges object from `pybedtools.Interval`
+
+        # Arguments
+            interval: `pybedtools.Interval` instance
         """
         return cls(chr=interval.chrom,
                    start=interval.start,
@@ -47,13 +63,15 @@ class GenomicRanges(Mapping):
 
     @classmethod
     def collate(cls, obj_list, collate_fn=numpy_collate):
-        """Defines the collate property - used in BatchIterator?
-        """
+        # Defines the collate property - used in BatchIterator?
         assert all([isinstance(x, cls) for x in obj_list])
         return cls.from_dict(collate_fn(obj_list))
 
     def to_interval(self):
         """Convert GenomicRanges object to a Interval object
+
+        # Returns
+            (pybedtools.Interval or list[pybedtools.Interval])
         """
         from pybedtools import Interval
         if isinstance(self.chr, str):
@@ -69,4 +87,3 @@ class GenomicRanges(Mapping):
                              name=self.id[i],
                              strand=self.strand[i])
                     for i in range(len(self.chr))]
-

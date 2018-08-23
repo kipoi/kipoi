@@ -1,7 +1,11 @@
 """Writers used in `kipoi predict`
 
-- TsvWriter
-- HDF5Writer
+- TsvBatchWriter
+- BedBatchWriter
+- HDF5BatchWriter
+- RegionWriter
+- BedGraphWriter
+- BigWigWriter
 """
 from __future__ import absolute_import
 from __future__ import print_function
@@ -39,21 +43,27 @@ class BatchWriter(object):
 
 
 class TsvBatchWriter(BatchWriter):
+    """Tab-separated file writer
+
+    # Arguments
+      file_path (str): File path of the output tsv file
+      nested_sep: What separator to use for flattening the nested dictionary structure
+        into a single key
+    """
+
     def __init__(self,
                  file_path,
                  nested_sep="/"):
-        """
-
-        Args:
-          file_path (str): File path of the output tsv file
-          nested_sep: What separator to use for flattening the nested dictionary structure
-            into a single key
-        """
         self.file_path = file_path
         self.nested_sep = nested_sep
         self.first_pass = True
 
     def batch_write(self, batch):
+        """Write a batch of data
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
         df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
         df.sort_index(axis=1, inplace=True)
         if self.first_pass:
@@ -68,18 +78,19 @@ class TsvBatchWriter(BatchWriter):
 
 
 class BedBatchWriter(BatchWriter):
+    """Bed-file writer
+
+    # Arguments
+      file_path (str): File path of the output tsv file
+      dataloader_schema: Schema of the dataloader. Used to find the ranges object
+      nested_sep: What separator to use for flattening the nested dictionary structure
+        into a single key
+    """
+
     def __init__(self,
                  file_path,
                  metadata_schema,
                  header=True):
-        """
-
-        Args:
-          file_path (str): File path of the output tsv file
-          dataloader_schema: Schema of the dataloader. Used to find the ranges object
-          nested_sep: What separator to use for flattening the nested dictionary structure
-            into a single key
-        """
         self.file_path = file_path
         self.header = header
         self.first_pass = True
@@ -95,6 +106,11 @@ class BedBatchWriter(BatchWriter):
         self.ranges_key = range_keys[0]
 
     def batch_write(self, batch):
+        """Write a batch of data to bed file
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
         fbatch = flatten_batch(batch, nested_sep="/")
 
         # since 'score' is not defined in GenomicRanges, use "."
@@ -119,18 +135,20 @@ class BedBatchWriter(BatchWriter):
 
 
 class HDF5BatchWriter(BatchWriter):
+    """HDF5 file writer
+
+    # Arguments
+      file_path (str): File path of the output tsv file
+      chunk_size (str): Chunk size for storing the files
+      nested_sep: What separator to use for flattening the nested dictionary structure
+        into a single key
+      compression (str): default compression to use for the hdf5 datasets.
+         see also: <http://docs.h5py.org/en/latest/high/dataset.html#dataset-compression>
+    """
+
     def __init__(self, file_path,
                  chunk_size=10000,
                  compression='gzip'):
-        """
-        Args:
-          file_path (str): File path of the output tsv file
-          chunk_size (str): Chunk size for storing the files
-          nested_sep: What separator to use for flattening the nested dictionary structure
-            into a single key
-          compression (str): default compression to use for the hdf5 datasets.
-             see also: http://docs.h5py.org/en/latest/high/dataset.html#dataset-compression
-        """
         import h5py
         if sys.version_info[0] == 2:
             self.string_type = h5py.special_dtype(vlen=unicode)
@@ -148,6 +166,11 @@ class HDF5BatchWriter(BatchWriter):
         self.f = h5py.File(self.file_path, 'a')  # Create file
 
     def batch_write(self, batch):
+        """Write a batch of data to bed file
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
         fbatch = flatten(batch, separator="/")
 
         batch_sizes = [fbatch[k].shape[0] for k in fbatch]
@@ -197,12 +220,21 @@ class HDF5BatchWriter(BatchWriter):
         self.write_buffer_size = 0
 
     def close(self):
+        """Close the file handle
+        """
         if self.write_buffer is not None:
             self._flush_buffer()
         self.f.close()
 
     @classmethod
     def dump(cls, file_path, batch):
+        """In a single shot write the batch/data to a file and
+        close the file.
+
+        # Arguments
+            file_path: file path
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
         obj = cls(file_path=file_path)
         obj.batch_write(batch)
         obj.close()
@@ -224,10 +256,10 @@ class RegionWriter(object):
     def region_write(self, region, data):
         """Write a single batch of data
 
-        Args:
-          region is a GenomicRanges object or a dictionary with at least keys: "chr", "start", "end" and list-values 
+        # Arguments
+          region: a `kipoi.metadata.GenomicRanges` object or a dictionary with at least keys: "chr", "start", "end" and list-values 
             of length 1
-          data is a 1D-array of values to be written - where the 0th entry is at 0-based "start" 
+          data: a 1D-array of values to be written - where the 0th entry is at 0-based "start"
         """
         pass
 
@@ -239,23 +271,23 @@ class RegionWriter(object):
 
 
 class BedGraphWriter(RegionWriter):
+    """
+    # Arguments
+      file_path (str): File path of the output bedgraph file
+    """
+
     def __init__(self,
                  file_path):
-        """
-
-        Args:
-          file_path (str): File path of the output bedgraph file
-        """
         self.file_path = file_path
         self.file = open(file_path, "w")
 
     def region_write(self, region, data):
-        """
-        Write region to file.
-        :param region: Defines the region that will be written position by position. A dict of e.g.: {"chr":"chr1",
-            "start":0, "end":4}
-        :param data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
-            data.sum(axis=1) is performed on it first.
+        """Write region to file.
+
+        # Arguments
+            region: Defines the region that will be written position by position. Example: `{"chr":"chr1", "start":0, "end":4}`.
+            data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
+                `data.sum(axis=1)` is performed on it first.
         """
 
         def get_el(obj):
@@ -277,21 +309,31 @@ class BedGraphWriter(RegionWriter):
             self.write_entry(chr, zero_pos, zero_pos + 1, value)
 
     def write_entry(self, chr, start, end, value):
+        """Write region to file.
+
+        # Arguments
+            region: Defines the region that will be written position by position. Example: `{"chr":"chr1", "start":0, "end":4}`.
+            data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
+                `data.sum(axis=1)` is performed on it first.
+        """
         tokens = [chr, start, end, value]
         self.file.write("\t".join([str(el) for el in tokens]) + "\n")
 
     def close(self):
+        """Close the file
+        """
         self.file.close()
 
 
 class BigWigWriter(RegionWriter):
+    """BigWig entries have to be sorted so the generated values are cached in a bedgraph file.
+
+    # Arguments
+      file_path (str): File path of the output tsv file
+    """
+
     def __init__(self,
                  file_path):
-        """
-        BigWig entries have to be sorted so the generated values are cached in a bedgraph file.
-        Args:
-          file_path (str): File path of the output tsv file
-        """
         import tempfile
         self.temp_bedgraph_path = tempfile.mkstemp()[1]
         self.file_path = file_path
@@ -302,9 +344,18 @@ class BigWigWriter(RegionWriter):
         self.bgw.region_write(region, data)
 
     def write_entry(self, chr, start, end, value):
+        """Write region to file.
+
+        # Arguments
+            region: Defines the region that will be written position by position. Example: `{"chr":"chr1", "start":0, "end":4}`.
+            data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
+                `data.sum(axis=1)` is performed on it first.
+        """
         self.bgw.write_entry(chr, start, end, value)
 
     def close(self):
+        """Close the file
+        """
         from pybedtools import BedTool
         import pyBigWig
         import pdb

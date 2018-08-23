@@ -51,14 +51,36 @@ class BaseModel(object):
 
 
 def get_model(model, source="kipoi", with_dataloader=True):
-    """Load the `model` from `source`, as well as the
-    default dataloder to model.default_dataloder.
+    """Load the `model` from `source`, as well as the default dataloder to model.default_dataloder.
 
-    Args:
-      model, str:  model name
-      source, str:  source name
-      with_dataloader, bool: if True, the default dataloader is
-        loaded to model.default_dataloadera and the pipeline at model.pipeline enabled.
+    # Arguments
+      model (str): model name
+      source (str):  source name
+      with_dataloader (bool): if True, the default dataloader is
+        loaded to `model.default_dataloader` and the pipeline at `model.pipeline` enabled.
+
+    # Returns
+    - Instance of class inheriting from `kipoi.models.BaseModel` (like `kipoi.models.KerasModel`)
+       decorated with additional attributes.
+
+    # Methods
+    - **predict_on_batch(x)**: Make model predictions given a batch of data `x`
+
+    # Appended attributes
+    - **type** (`str`): model type (class name)
+    - **args** (`dict`): model args used to instantiate the model class
+    - **info** (`kipoi.specs.Info`): information about the author (etc)
+    - **schema** (`kipoi.specs.ModelSchema`): information about the input/outputdata modalities
+    - **dependencies** (`kipoi.specs.Dependencies`): class specifying the dependencies.
+          (implements `install` method for running the installation)
+    - **default_dataloader** (class inheriting from `kipoi.data.BaseDataLoader`): default
+           dataloader. None if `with_dataloader=False` was used.
+    - **name** (`str`): model name
+    - **source** (`str`): model source
+    - **source_dir** (`str`): local path to model source storage
+    - **postprocessing** (`dict`): dictionary of loaded plugin specifications
+    - **pipeline** (`kipoi.pipeline.Pipeline`): handle to a `Pipeline` object
+
     """
     # TODO - model can be a yaml file or a directory
     source_name = source
