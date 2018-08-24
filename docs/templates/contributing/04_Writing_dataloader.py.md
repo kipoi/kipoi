@@ -73,7 +73,7 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 
 ### Dataset example
 
-Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.harvard.edu/pph/FASTA.html) file and a [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) file and returns a one-hot encoded sequence (under 'inputs') along with the used genomic interval (under 'metadata/ranges'). Note that we additionally defined the `build` method. This is useful when writing dataloaders that will support dataloading in parallel: the `build` method gets executed on each worker individually. Hence, it's recommended to initialize file handles in the `build` method instead of the `__init__` method.
+Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.harvard.edu/pph/FASTA.html) file and a [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) file and returns a one-hot encoded sequence (under 'inputs') along with the used genomic interval (under 'metadata/ranges').
 
 ```python
 from __future__ import absolute_import, division, print_function
@@ -115,7 +115,7 @@ class SeqDataset(Dataset):
         }
 ```
 
-Note that we have initialized the `fasta_extractor` on the first call of `__getitem__`. The reason for this is that when we use parallel dataloading, each process will get a copy of the `SeqDataset(...)` object. Upon the first call of `__getitem__` the extractor and hence the underlying file-handle will be setup for each worker independently.
+Since `FastaExtractor` is not multi-processing safe, we have initialized it on the first call of `__getitem__` instead of `__init__`. The reason for this is that when we use parallel dataloading, each process will get a copy of the `SeqDataset(...)` object. Upon the first call of `__getitem__` the `fasta_extractor` and hence the underlying file-handle will be setup for each worker independently.
 
 ### Further examples
 
