@@ -100,8 +100,8 @@ class SeqDataset(Dataset):
         return len(self.bt)
 
     def __getitem__(self, idx):
-	    if self.fasta_extractor is None:
-	        self.fasta_extractor = FastaExtractor(self.fasta_file)
+        if self.fasta_extractor is None:
+            self.fasta_extractor = FastaExtractor(self.fasta_file)
 		
         interval = self.bt[idx]
 
