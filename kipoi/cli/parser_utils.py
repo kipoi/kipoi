@@ -13,9 +13,9 @@ import kipoi
 def add_source(parser, default="kipoi"):
     parser.add_argument('--source', default=default,
                         choices=list(kipoi.config.model_sources().keys()),
-                        help='Model source to use. Specified in ~/.kipoi/config.yaml' +
+                        help='Model source to use (default={}). Specified in ~/.kipoi/config.yaml'.format(default) +
                         " under model_sources. " +
-                        "'dir' is an additional source referring to the local folder.")
+                        "When 'dir' is used, use the local directory path when specifying the model/dataloader.")
 
 
 def add_model(parser, source="kipoi"):
