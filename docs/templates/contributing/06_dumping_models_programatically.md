@@ -1,6 +1,6 @@
 ## Contributing multiple very similar models
 
-Consider an example where multiple models were trained, each for a different cell-lines (case for CpGenie). Here is the final folder structure of the contributed model *group* (simplifed from te [CpGenie](https://github.com/kipoi/models/tree/master/CpGenie) model)
+Consider an example where multiple models were trained, each for a different cell-lines (case for CpGenie). Here is the final folder structure of the contributed model *group* (simplifed from the [CpGenie](https://github.com/kipoi/models/tree/master/CpGenie) model)
 
 ```
 cell_line_1
