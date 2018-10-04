@@ -721,7 +721,7 @@ class Dependencies(RelatedConfigMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -752,6 +752,11 @@ class ModelDescription(RelatedLoadSaveMixin):
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
+
+        # parse args
+        for k in self.args:
+            if isinstance(self.args[k], dict) and "url" in self.args[k]:
+                self.args[k] = RemoteFile.from_config(self.args[k])
 
 
 def example_kwargs(dl_args):

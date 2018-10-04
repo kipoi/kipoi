@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.specs import ModelDescription
+from kipoi.specs import ModelDescription, RemoteFile
 from related import from_yaml
 import six
 
@@ -17,7 +17,9 @@ GOOD_EXAMPLES = ["""
 type: keras
 args:
     arch: model/model.json
-    weights: model/weights.h5
+    weights:
+      url: https://github.com/kipoi/models/raw/825acc0749fec82f965fc1ac1c31181d7613cdca/rbp_eclip/AARS/model_files/model.h5
+      md5: 7324fd25fb6760666d2148c6bec34944
     custom_objects: model/custom_keras_objects.py
 default_dataloader: dataloader.yaml # shall we call it just dataloader?
 info:
@@ -70,6 +72,9 @@ def test_parse_correct_info(info_str):
     info_str = inp_targ + info_str  # add the input: targets headers
     # loading works
     info = CLS.from_config(from_yaml(info_str))
+
+    assert isinstance(info.args['arch'], str)
+    assert isinstance(info.args['weights'], RemoteFile)
 
     # cfg works
     cfg = info.get_config()
