@@ -17,7 +17,6 @@ from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_i
 import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
-from kipoi.external.keras.data_utils import validate_file, get_file
 from kipoi.metadata import GenomicRanges
 from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
 
@@ -497,6 +496,7 @@ class RemoteFile(RelatedConfigMixin):
     def validate(self, path):
         """Validate if the path complies with the provided md5 hash
         """
+        from kipoi.external.keras.data_utils import validate_file
         if self.md5 is None:
             # unable to determine it. Raising one warning in
             # the __init__ is enough.
@@ -508,6 +508,8 @@ class RemoteFile(RelatedConfigMixin):
         """Download the remote file to cache_dir and return
         the file path to it
         """
+        from kipoi.external.keras.data_utils import get_file
+
         if self.md5:
             file_hash = self.md5
         else:

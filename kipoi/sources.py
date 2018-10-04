@@ -9,7 +9,6 @@ import subprocess
 import logging
 from collections import OrderedDict
 from .utils import unique_list, lfs_installed, get_file_path, cd, list_files_recursively
-from .specs import ModelDescription, DataLoaderDescription
 import pandas as pd
 import kipoi
 logger = logging.getLogger(__name__)
@@ -53,6 +52,8 @@ def list_softlink_realpaths(root_dir):
 def load_component_descr(component_path, which="model"):
     """Return the parsed yaml file
     """
+    from kipoi.specs import ModelDescription, DataLoaderDescription
+
     with cd(os.path.dirname(component_path)):
         if which == "model":
             return ModelDescription.load(os.path.basename(component_path))
