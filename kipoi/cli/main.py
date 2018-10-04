@@ -40,8 +40,8 @@ def cli_test(command, raw_args):
     # setup the arg-parsing
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description='script to test model zoo submissions. Example usage:\n'
-                                                  '`kipoi test model/directory`, where `model/directory` is the '
-                                                  'path to a directory containing a model.yaml file.' )
+                                     '`kipoi test model/directory`, where `model/directory` is the '
+                                     'path to a directory containing a model.yaml file.')
     add_model(parser, source="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')

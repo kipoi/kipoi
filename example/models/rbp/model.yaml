@@ -1,7 +1,9 @@
 type: keras
 args:
     arch: model_files/model.json
-    weights: model_files/weights.h5
+    weights:
+      url: https://github.com/kipoi/kipoi/raw/f86a2162d15c92e72adeae2988bd1757732c79b0/example/models/rbp/model_files/weights.h5
+      md5: 6f959cf27e58c065b1a73d10002eca35
     custom_objects: model/custom_keras_objects.py
     backend: tensorflow
 default_dataloader: . # path to the directory

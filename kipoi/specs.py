@@ -482,7 +482,45 @@ class DataLoaderSchema(RelatedConfigMixin):
         return True
 
 
-@related.immutable(strict=True)
+# --------------------------------------------
+@related.immutable(strict=False)
+class RemoteFile(RelatedConfigMixin):
+
+    url = related.StringField()
+    md5 = related.StringField("", required=False)
+
+    def __attrs_post_init__(self):
+        if self.md5 == "":
+            logger.warn("md5 not specified for url: {}".format(self.url))
+
+    def validate(self, path):
+        """Validate if the path complies with the provided md5 hash
+        """
+        from kipoi.external.keras.data_utils import validate_file
+        if self.md5 is None:
+            # unable to determine it. Raising one warning in
+            # the __init__ is enough.
+            return True
+        else:
+            return validate_file(path, self.md5, algorithm='md5')
+
+    def get_file(self, local_path, extract=True):
+        """Download the remote file to cache_dir and return
+        the file path to it
+        """
+        from kipoi.external.keras.data_utils import get_file
+
+        if self.md5:
+            file_hash = self.md5
+        else:
+            file_hash = None
+        return get_file(fname=os.path.abspath(local_path),
+                        origin=self.url,
+                        file_hash=file_hash,
+                        extract=extract)
+
+
+@related.mutable(strict=True)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField("", required=False)
@@ -495,6 +533,9 @@ class DataLoaderArgument(RelatedConfigMixin):
     def __attrs_post_init__(self):
         if self.doc == "":
             logger.warn("doc empty for one of the dataloader `args` fields")
+            # parse args
+        if isinstance(self.example, dict) and "url" in self.example:
+            self.example = RemoteFile.from_config(self.example)
 
 
 @related.immutable(strict=True)
@@ -717,11 +758,41 @@ class ModelDescription(RelatedLoadSaveMixin):
                 except Exception:
                     logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
+        # parse args
+        for k in self.args:
+            if isinstance(self.args[k], dict) and "url" in self.args[k]:
+                self.args[k] = RemoteFile.from_config(self.args[k])
 
-def example_kwargs(dl_args):
-    """Return the example kwargs
+
+def example_kwargs(dl_args, cache_path=None):
+    """Return the example kwargs.
+
+    Args:
+      dl_args: dictionary of dataloader args
+      cache_path: if specified, save the examples to that directory
     """
-    return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
+    example_files = {}
+    for k, v in six.iteritems(dl_args):
+        if isinstance(v.example, UNSPECIFIED):
+            continue
+        if isinstance(v.example, RemoteFile) and cache_path is not None:
+            dl_dir = os.path.abspath(os.path.join(cache_path, "downloaded/example_files"))
+            if not os.path.exists(dl_dir):
+                os.makedirs(dl_dir)
+            path = os.path.join(dl_dir, k)
+            example_files[k] = path
+            if os.path.exists(path):
+                if v.example.validate(path):
+                    logger.info("Example file for argument {} already exists".format(k))
+                else:
+                    logger.info("Example file for argument {} doesn't match the md5 hash {}. Re-downloading".format(k))
+                    v.example.get_file(path)  # TODO
+            else:
+                v.example.get_file(path)  # TODO
+        else:
+            example_files[k] = v.example
+    return example_files
+    # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
 def print_dl_kwargs(dataloader_class, format_examples_json=False):
@@ -764,7 +835,8 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
 
     def get_example_kwargs(self):
-        return example_kwargs(self.args)
+        # return self.download_example()
+        return example_kwargs(self.args, self.path)
 
     def print_kwargs(self, format_examples_json=False):
         from kipoi.external.related.fields import UNSPECIFIED
@@ -800,6 +872,31 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warn("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
+
+    # download example files
+    # def download_example(self):
+    #     example_files = {}
+    #     for k, v in six.iteritems(self.args):
+    #         if isinstance(v.example, RemoteFile):
+    #             if self.path is None:
+    #                 raise ValueError("Unable to download example files. path attribute not specified")
+
+    #             dl_dir = os.path.join(self.path, "dataloader_files")
+    #             if not os.path.exists(dl_dir):
+    #                 os.makedirs(dl_dir)
+    #             path = os.path.join(dl_dir, k)
+    #             example_files[k] = path
+    #             if os.path.exists(path):
+    #                 if v.example.validate(path):
+    #                     logger.info("Example file for argument {} already exists".format(k))
+    #                 else:
+    #                     logger.info("Example file for argument {} doesn't match the md5 hash {}. Re-downloading".format(k))
+    #                     v.example.get_file(path)  # TODO
+    #             else:
+    #                 v.example.get_file(path)  # TODO
+    #         else:
+    #             example_files[k] = v
+    #     return example_files
 
 # ---------------------
 # Global source config

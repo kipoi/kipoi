@@ -1,9 +1,10 @@
 """Test the parsing utilities for ArraySchema
 """
+import os
 import pytest
 import six
 from pytest import raises
-from kipoi.specs import DataLoaderDescription, example_kwargs
+from kipoi.specs import DataLoaderDescription, example_kwargs, RemoteFile
 from related import from_yaml
 
 # Class to test
@@ -19,7 +20,9 @@ defined_as: dataloader.py::SeqDistDataset
 args:
     intervals_file:
         doc: tsv file with `chrom start end id score strand`
-        example: intervals.tsv
+        example:
+          url: https://github.com/kipoi/kipoi/raw/f86a2162d15c92e72adeae2988bd1757732c79b0/example/models/rbp/example_files/intervals.tsv
+          md5: 3be79e1757422fdaa337cdcde8a7b8bc
         type: str
     fasta_file:
         doc: Reference genome sequence
@@ -97,12 +100,20 @@ output_schema:
 
 
 @pytest.mark.parametrize("info_str", GOOD_EXAMPLES)
-def test_parse_correct_info(info_str):
+def test_parse_correct_info(info_str, tmpdir):
     info_str = inp_targ + info_str  # add the input: targets headers
     # loading works
     info = CLS.from_config(from_yaml(info_str))
+    info.path = str(tmpdir)
 
+    outfiles = example_kwargs(info.args, str(tmpdir))
+    assert os.path.exists(outfiles['intervals_file'])
+    assert isinstance(info.get_example_kwargs(), dict)
     assert isinstance(example_kwargs(info.args), dict)
+
+    assert isinstance(info.args["intervals_file"].example, RemoteFile)
+    assert isinstance(info.args["fasta_file"].example, str)
+
     # cfg works
     cfg = info.get_config()
     info2 = CLS.from_config(cfg)
