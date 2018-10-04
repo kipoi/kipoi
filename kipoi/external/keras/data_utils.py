@@ -238,7 +238,7 @@ def _hash_file(fpath, algorithm='sha256', chunk_size=65535):
     """Calculates a file sha256 or md5 hash.
     # Example
     ```python
-        >>> from keras.data_utils import _hash_file
+        >>> from kipoi.external.keras.data_utils import _hash_file
         >>> _hash_file('/path/to/file.zip')
         'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
     ```
