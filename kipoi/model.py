@@ -118,6 +118,19 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     # Read the Model - append methods, attributes to self
     with cd(source_dir):  # move to the model directory temporarily
+
+        # download url links if specified under args
+        for k in md.args:
+            if not isinstance(md.args[k], str):
+                output_dir = os.path.join('model_files', k)
+                logger.info("Downloading arguments {} from {}".format(k, md.args[k].url))
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+
+                # download the parameters and override the model
+                path = md.args[k].download(os.path.join(output_dir, md.args[k].md5), skip_exists=True)
+                md.args[k] = path
+
         if md.type == 'custom':
             Mod = load_model_custom(**md.args)
             assert issubclass(Mod, BaseModel)  # it should inherit from Model

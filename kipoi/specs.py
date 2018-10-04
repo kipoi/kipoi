@@ -17,6 +17,7 @@ from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_i
 import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
+from kipoi.external.keras.data_utils import validate_file, get_file
 from kipoi.metadata import GenomicRanges
 from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
 
@@ -480,6 +481,41 @@ class DataLoaderSchema(RelatedConfigMixin):
                 return False
 
         return True
+
+
+# --------------------------------------------
+@related.immutable(strict=False)
+class RemoteFile(RelatedConfigMixin):
+
+    url = related.StringField()
+    md5 = related.StringField("", required=False)
+
+    def __attrs_post_init__(self):
+        if self.md5 == "":
+            logger.warn("md5 not specified for url: {}".format(self.url))
+
+    def validate(self, path):
+        """Validate if the path complies with the provided md5 hash
+        """
+        if self.md5 is None:
+            # unable to determine it. Raising one warning in
+            # the __init__ is enough.
+            return True
+        else:
+            return validate_file(path, self.md5, algorithm='md5')
+
+    def get_file(self, local_path, extract=True):
+        """Download the remote file to cache_dir and return
+        the file path to it
+        """
+        if self.md5:
+            file_hash = self.md5
+        else:
+            file_hash = None
+        return get_file(fname=os.path.abspath(local_path),
+                        origin=self.url,
+                        file_hash=file_hash,
+                        extract=extract)
 
 
 @related.immutable(strict=True)
