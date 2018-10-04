@@ -485,8 +485,9 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     # TODO - rename?
     CustomDataLoader.source_dir = dataloader_dir
 
-    # Add init_example method
-    CustomDataLoader.example_kwargs = example_kwargs(CustomDataLoader.args)
+    # Add init_example method.
+    # example_kwargs also downloads files to {dataloader_dir}/dataloader_files
+    CustomDataLoader.example_kwargs = example_kwargs(CustomDataLoader.args, dataloader_dir)
 
     def init_example(cls):
         return cls(**cls.example_kwargs)

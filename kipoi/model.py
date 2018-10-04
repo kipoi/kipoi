@@ -10,7 +10,7 @@ import six
 import numpy as np
 import json
 
-from .specs import ModelDescription
+from .specs import ModelDescription, RemoteFile
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -121,14 +121,19 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
         # download url links if specified under args
         for k in md.args:
-            if not isinstance(md.args[k], str):
+            if isinstance(md.args[k], RemoteFile):
                 output_dir = os.path.join('model_files', k)
-                logger.info("Downloading arguments {} from {}".format(k, md.args[k].url))
+                logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
 
+                if md.args[k].md5:
+                    fname = md.args[k].md5
+                else:
+                    fname = "file"
+
                 # download the parameters and override the model
-                path = md.args[k].download(os.path.join(output_dir, md.args[k].md5), skip_exists=True)
+                path = md.args[k].get_file(os.path.join(output_dir, fname))
                 md.args[k] = path
 
         if md.type == 'custom':
