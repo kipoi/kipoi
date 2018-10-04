@@ -518,7 +518,7 @@ class RemoteFile(RelatedConfigMixin):
                         extract=extract)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField("", required=False)
@@ -531,6 +531,9 @@ class DataLoaderArgument(RelatedConfigMixin):
     def __attrs_post_init__(self):
         if self.doc == "":
             logger.warn("doc empty for one of the dataloader `args` fields")
+            # parse args
+        if isinstance(self.example, dict) and "url" in self.example:
+            self.example = RemoteFile.from_config(self.example)
 
 
 @related.immutable(strict=True)
@@ -721,7 +724,7 @@ class Dependencies(RelatedConfigMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.mutable(strict=False)
+@related.mutable(strict=True)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -842,6 +845,9 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 except Exception:
                     logger.warn("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
+    # download example files
+    def download_example_files(self):
+        pass
 # ---------------------
 # Global source config
 
