@@ -14,8 +14,10 @@ from six.moves.urllib.request import pathname2url
 
 from kipoi.external.keras.data_utils import _hash_file, get_file, validate_file
 from kipoi.external.keras.generic_utils import Progbar
+from pytest import fixture
 
 
+@fixture
 def in_tmpdir(tmpdir):
     """Runs a function in a temporary directory.
     Checks that the directory is empty afterwards.
