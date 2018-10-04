@@ -774,7 +774,7 @@ def example_kwargs(dl_args, cache_path=None):
         if isinstance(v.example, UNSPECIFIED):
             continue
         if isinstance(v.example, RemoteFile) and cache_path is not None:
-            dl_dir = os.path.abspath(os.path.join(cache_path, "example_files"))
+            dl_dir = os.path.abspath(os.path.join(cache_path, "downloaded/example_files"))
             if not os.path.exists(dl_dir):
                 os.makedirs(dl_dir)
             path = os.path.join(dl_dir, k)

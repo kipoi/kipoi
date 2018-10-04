@@ -122,7 +122,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
-                output_dir = os.path.join('model_files', k)
+                output_dir = os.path.join('downloaded/model_files', k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
