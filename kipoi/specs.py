@@ -18,7 +18,7 @@ import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt, load_obj, inherits_from, override_default_kwargs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -724,6 +724,30 @@ class Dependencies(RelatedConfigMixin):
     #     pass
 
 
+@related.mutable(strict=True)
+class DataLoaderImport(RelatedConfigMixin):
+    """Dataloader specification for the import
+    """
+    defined_as = related.StringField()
+    default_args = related.ChildField(dict, default=OrderedDict(), required=False)
+
+    def get(self):
+        """Get the dataloader
+        """
+        from kipoi.data import BaseDataLoader
+
+        obj = load_obj(self.defined_as)
+
+        # check that it inherits from BaseDataLoader
+        if not inherits_from(obj, BaseDataLoader):
+            raise ValueError("Dataloader: {} doen't inherit from kipoi.data.BaseDataLoader".format(self.defined_as))
+
+        # override the default arguments
+        override_default_kwargs(obj, self.default_args)
+
+        return obj
+
+
 # --------------------------------------------
 # Final description classes modelling the yaml files
 @related.mutable(strict=True)
@@ -734,7 +758,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     args = related.ChildField(dict)
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
-    default_dataloader = related.StringField(default='.')
+    default_dataloader = related.ChildField(AnyField)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
@@ -762,6 +786,10 @@ class ModelDescription(RelatedLoadSaveMixin):
         for k in self.args:
             if isinstance(self.args[k], dict) and "url" in self.args[k]:
                 self.args[k] = RemoteFile.from_config(self.args[k])
+
+        # parse default_dataloader
+        if isinstance(self.default_dataloader, dict):
+            self.default_dataloader = DataLoaderImport.from_config(self.default_dataloader)
 
 
 def example_kwargs(dl_args, cache_path=None):

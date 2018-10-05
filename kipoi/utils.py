@@ -78,6 +78,15 @@ def load_module(path, module_name=None):
     return module
 
 
+def inherits_from(cls, parent):
+    """Check if an object interits from the parent at some point
+    """
+    for x in inspect.getmro(cls):
+        if x == parent:
+            return True
+    return False
+
+
 def pip_install_requirements(requirements_fname):
     if os.path.exists(requirements_fname):  # install dependencies
         logger.info('Running pip install -r {}...'.format(requirements_fname))
@@ -187,6 +196,47 @@ def getargs(x):
             return set(inspect.getargspec(x.__init__).args[1:])
     else:
         return set(inspect.signature(x).parameters.keys())
+
+
+def override_default_kwargs(fn_cls, kwargs):
+    """Override default kwargs in fn_cls.
+
+    It modifies fn_cls inplace (!)
+
+    NOTE: Enjoy this function responsively
+    """
+    if sys.version_info[0] == 2:
+        getargspec = inspect.getargspec
+    else:
+        getargspec = inspect.getfullargspec
+
+    if inspect.isfunction(fn_cls):
+        args = getargspec(fn_cls).args
+        values = fn_cls.__defaults__
+    else:
+        # skip the self parameter
+        args = getargspec(fn_cls.__init__).args[1:]
+        values = fn_cls.__init__.__defaults__
+
+    # check that all kwargs are specified
+    for k in kwargs:
+        if k not in args:
+            raise ValueError("argument '{}' not specified in "
+                             "function/class.__init__ {} with args: {}".format(k, fn_cls, args))
+
+    # set the appropriate args
+    out = []
+    for i, k in enumerate(args[-len(values):]):
+        if k in kwargs:
+            out.append(kwargs[k])
+        else:
+            out.append(values[i])
+    new_values = tuple(out)
+
+    if not inspect.isfunction(fn_cls):
+        fn_cls.__init__.__defaults__ = new_values
+    else:
+        fn_cls.__defaults__ = new_values
 
 
 def read_yaml(path):
