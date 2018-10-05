@@ -1,6 +1,0 @@
-# pip requirements for circle CI
-cython
-keras
-tensorflow
-scikit-learn
-intervaltree
