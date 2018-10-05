@@ -18,6 +18,19 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def load_obj(obj_import):
+    """Load object from string
+    """
+    import importlib
+    if "." not in obj_import:
+        raise ValueError("Object descripiton needs to be of the form: "
+                         "module.submodule.Object. currently lacking a dot (.)")
+
+    module_name, obj_name = obj_import.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, obj_name)
+
+
 def load_module(path, module_name=None):
     """Load python module from file
 
