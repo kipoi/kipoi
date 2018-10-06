@@ -234,7 +234,10 @@ def override_default_kwargs(fn_cls, kwargs):
     new_values = tuple(out)
 
     if not inspect.isfunction(fn_cls):
-        fn_cls.__init__.__defaults__ = new_values
+        if sys.version_info[0] == 2:
+            fn_cls.__init__.__func__.__defaults__ = new_values
+        else:
+            fn_cls.__init__.__defaults__ = new_values
     else:
         fn_cls.__defaults__ = new_values
 

@@ -224,6 +224,8 @@ def test_kipoi_pull():
 def test_kipoi_info():
     """Test that pull indeed pulls the right model
     """
+    if sys.version_info[0] == 2:
+        pytest.skip("example not supported on python 2 ")
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "info",
             "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
