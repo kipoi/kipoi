@@ -110,9 +110,6 @@ def test_parse_correct_info(info_str):
     assert isinstance(info.args['arch'], str)
     assert isinstance(info.args['weights'], RemoteFile)
 
-    import pdb
-    pdb.set_trace()
-
     # cfg works
     cfg = info.get_config()
     info2 = CLS.from_config(cfg)

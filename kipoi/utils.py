@@ -370,3 +370,15 @@ def take_first_nested(dd):
         return take_first_nested(dd[0])
     else:
         return dd
+
+
+class classproperty(object):
+    """https://stackoverflow.com/questions/128573/using-property-on-classmethods
+    Allow using @classproperty
+    """
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)

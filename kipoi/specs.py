@@ -46,7 +46,7 @@ class Info(RelatedConfigMixin):
       name: rbp_eclip
       version: 0.1
     """
-    authors = related.SequenceField(Author, repr=True)
+    authors = related.SequenceField(Author, repr=True, required=False)
     doc = related.StringField("", required=False)  # free-text description of the model
     name = related.StringField(required=False)  # TODO - deprecate
     version = related.StringField(default="0.1", required=False)
@@ -758,7 +758,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     args = related.ChildField(dict)
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
-    default_dataloader = related.ChildField(AnyField)
+    default_dataloader = AnyField(default='.', required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
@@ -823,32 +823,6 @@ def example_kwargs(dl_args, cache_path=None):
     # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
-def print_dl_kwargs(dataloader_class, format_examples_json=False):
-    """
-    Args:
-      format_examples_json: format the results as json
-    """
-    from .external.related.fields import UNSPECIFIED
-    if not hasattr(dataloader_class, "args"):
-        logger.warn("No keyword arguments defined for the given dataloader.")
-        return None
-        print("No keyword arguments defined for the given dataloader.")
-    args = dataloader_class.args
-    for k in args:
-        print("{0}:".format(k))
-        for elm in ["doc", "type", "optional", "example"]:
-            if hasattr(args[k], elm) and \
-                    (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
-                print("    {0}: {1}".format(elm, getattr(args[k], elm)))
-    example_kwargs = dataloader_class.example_kwargs
-    print("-" * 80)
-    if hasattr(dataloader_class, "example_kwargs"):
-        if format_examples_json:
-            import json
-            example_kwargs = json.dumps(example_kwargs)
-        print("Example keyword arguments are: {0}".format(str(example_kwargs)))
-
-
 @related.mutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
@@ -856,8 +830,8 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     type = related.StringField()
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
-    info = related.ChildField(Info)
     output_schema = related.ChildField(DataLoaderSchema)
+    info = related.ChildField(Info, default=Info(), required=False)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
