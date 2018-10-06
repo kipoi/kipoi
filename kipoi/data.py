@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import re
 import os
 import abc
 import six
@@ -177,13 +178,14 @@ class kipoi_dataloader(object):
         doc = cls.__doc__
         doc = textwrap.dedent(doc)  # de-indent
 
-        if "defined_as: " not in doc:
+        if not re.match("^defined_as: ", doc):
             doc = "defined_as: {}\n".format(cls.__name__) + doc
-        if "type: " not in doc:
+        if not re.match("^type: ", doc):
             doc = "type: {}\n".format(dl_type_inferred) + doc
 
         # parse the yaml
-        dl_descr = DataLoaderDescription.from_config(related.from_yaml(doc))
+        yaml_dict = related.from_yaml(doc)
+        dl_descr = DataLoaderDescription.from_config(yaml_dict)
 
         # override parameters
         for k, v in six.iteritems(self.override):

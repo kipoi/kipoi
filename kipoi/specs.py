@@ -27,7 +27,7 @@ logger.addHandler(logging.NullHandler())
 # Common specs (model and dataloader)
 
 
-@related.mutable(strict=True)
+@related.immutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
     github = related.StringField(required=False)
