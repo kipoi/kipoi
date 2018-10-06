@@ -8,6 +8,7 @@ import os
 import sys
 import subprocess
 import numpy as np
+import functools
 import yaml
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -16,6 +17,19 @@ import logging
 import collections
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+def load_obj(obj_import):
+    """Load object from string
+    """
+    import importlib
+    if "." not in obj_import:
+        raise ValueError("Object descripiton needs to be of the form: "
+                         "module.submodule.Object. currently lacking a dot (.)")
+
+    module_name, obj_name = obj_import.rsplit(".", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, obj_name)
 
 
 def load_module(path, module_name=None):
@@ -36,7 +50,6 @@ def load_module(path, module_name=None):
         sys.path.append(os.path.join(os.path.dirname(module_name)))
         module = imp.load_source(module_name, path)
     elif sys.version_info[0] == 3:
-        # TODO: implement dynamic loading of preprocessor module for python3
         """
         import importlib.machinery
         loader = importlib.machinery.SourceFileLoader
@@ -63,6 +76,15 @@ def load_module(path, module_name=None):
             raise RuntimeError(
                 'dynamic loading of preprocessor module is not implemented for python3!')
     return module
+
+
+def inherits_from(cls, parent):
+    """Check if an object interits from the parent at some point
+    """
+    for x in inspect.getmro(cls):
+        if x == parent:
+            return True
+    return False
 
 
 def pip_install_requirements(requirements_fname):
@@ -174,6 +196,57 @@ def getargs(x):
             return set(inspect.getargspec(x.__init__).args[1:])
     else:
         return set(inspect.signature(x).parameters.keys())
+
+
+def _get_arg_name_values(fn_cls):
+    """Get the function/class argument
+    list
+    """
+    if sys.version_info[0] == 2:
+        getargspec = inspect.getargspec
+    else:
+        getargspec = inspect.getfullargspec
+
+    if inspect.isfunction(fn_cls):
+        args = getargspec(fn_cls).args
+        values = fn_cls.__defaults__
+    else:
+        # skip the self parameter
+        args = getargspec(fn_cls.__init__).args[1:]
+        values = fn_cls.__init__.__defaults__
+    return args, values
+
+
+def override_default_kwargs(fn_cls, kwargs):
+    """Override default kwargs in fn_cls.
+
+    It modifies fn_cls inplace (!)
+
+    NOTE: Enjoy this function responsively
+    """
+    args, values = _get_arg_name_values(fn_cls)
+    # check that all kwargs are specified
+    for k in kwargs:
+        if k not in args:
+            raise ValueError("argument '{}' not specified in "
+                             "function/class.__init__ {} with args: {}".format(k, fn_cls, args))
+
+    # set the appropriate args
+    out = []
+    for i, k in enumerate(args[-len(values):]):
+        if k in kwargs:
+            out.append(kwargs[k])
+        else:
+            out.append(values[i])
+    new_values = tuple(out)
+
+    if not inspect.isfunction(fn_cls):
+        if sys.version_info[0] == 2:
+            fn_cls.__init__.__func__.__defaults__ = new_values
+        else:
+            fn_cls.__init__.__defaults__ = new_values
+    else:
+        fn_cls.__defaults__ = new_values
 
 
 def read_yaml(path):
@@ -307,3 +380,34 @@ def take_first_nested(dd):
         return take_first_nested(dd[0])
     else:
         return dd
+
+
+class classproperty(object):
+    """https://stackoverflow.com/questions/128573/using-property-on-classmethods
+    Allow using @classproperty
+    """
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)
+
+
+# recursive get and setattr
+# https://stackoverflow.com/a/31174427
+def rgetattr(obj, attr, *args):
+    """Recursively get attributes:
+    rgetattr(obj, 'attr.subattr')
+    """
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+
+def rsetattr(obj, attr, val):
+    """Recursively set attributes:
+    rsetattr(obj, 'attr.subattr', 10)
+    """
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)

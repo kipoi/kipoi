@@ -1,12 +1,18 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import re
 import os
 import abc
+import six
+import textwrap
+import inspect
+from collections import OrderedDict
 
+import related
 import kipoi  # for .config module
-from kipoi.specs import DataLoaderDescription, example_kwargs, print_dl_kwargs
-from .utils import load_module, cd, getargs
+from kipoi.specs import DataLoaderDescription, Info, example_kwargs
+from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
                               DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
@@ -23,7 +29,26 @@ PREPROC_IFILE_FORMATS = ['bed3']
 
 
 class BaseDataLoader(object):
+    """Abstract Dataloader class
+    """
     __metaclass__ = abc.ABCMeta
+
+    # dataloader descriptors. Parsed from DataLoaderSchema in _add_description_factory()
+    type = None
+    defined_as = None
+    args = None
+    output_schema = None
+    info = None
+    dependencies = None
+    path = None
+    postprocessing = None
+    # optionally set in get_dataloader_factory
+    _yaml_path = None
+    source = None
+    source_dir = None
+
+    # ---------------------------------
+    # Core data-loading methods
 
     @abc.abstractmethod
     def batch_iter(self, **kwargs):
@@ -59,6 +84,132 @@ class BaseDataLoader(object):
             **kwargs: passed to batch_iter()
         """
         return numpy_collate_concat([x for x in tqdm(self.batch_iter(**kwargs))])
+
+    # ---------------------------------
+    # Book-keeping methods dealing with
+    # the annotation of the dataloader
+    @classmethod
+    def _add_description_factory(cls, descr):
+        """Factory method which populates the un-set class variables
+
+        Returns:
+          new dataloader class
+        """
+        for field in ['type', 'defined_as', 'args', 'output_schema',
+                      'info', 'dependencies', 'path', 'postprocessing']:
+            setattr(cls, field, getattr(descr, field))
+        return cls
+
+    @classproperty
+    def example_kwargs(cls):
+        if cls.args is None or cls.source_dir is None:
+            raise ValueError("Class description `args` is missing. "
+                             "Use `_add_description_factory` to annotate the class")
+        # Add init_example method.
+        # example_kwargs also downloads files to {dataloader_dir}/dataloader_files
+        return example_kwargs(cls.args, cls.source_dir)
+
+    @classmethod
+    def init_example(cls):
+        """Instantiate the class using example_kwargs
+        """
+        return cls(**cls.example_kwargs)
+
+    @classmethod
+    def print_args(cls, format_examples_json=False):
+        """Print dataloader kwargs
+
+        # Arguments
+          format_examples_json: format the results as json
+        """
+        from kipoi.external.related.fields import UNSPECIFIED
+        if not hasattr(cls, "args"):
+            logger.warn("No keyword arguments defined for the given dataloader.")
+            return None
+            print("No keyword arguments defined for the given dataloader.")
+        args = cls.args
+        for k in args:
+            print("{0}:".format(k))
+            for elm in ["doc", "type", "optional", "example"]:
+                if hasattr(args[k], elm) and \
+                        (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
+                    print("    {0}: {1}".format(elm, getattr(args[k], elm)))
+        example_kwargs = cls.example_kwargs
+        print("-" * 80)
+        if hasattr(cls, "example_kwargs"):
+            if format_examples_json:
+                import json
+                example_kwargs = json.dumps(example_kwargs)
+            print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+
+
+class kipoi_dataloader(object):
+    """Decorator for converting a Dataloader class with dataloader.yaml description in the docstring
+    into a proper Kipoi dataloader
+
+    It parses the doc-string of the class as the DataloaderDescription
+    and populates the class description attributes with it
+
+    # Arguments
+        override: dictionary containing values to override or specify in the decorated class.
+          supports nesting the attributes. example: `{'info.authors': [Author(name='name')]}`
+
+    # __call__
+        dataloader containing the descripiton specified in the yaml doc-string
+    """
+
+    def __init__(self, override=dict()):
+        self.override = override
+
+    def __call__(self, cls):
+        if inspect.isfunction(cls):
+            raise ValueError("Function-based dataloader are currently not supported with kipoi_dataloader decorator")
+
+        # figure out the right dataloader type
+        dl_type_inferred = None
+        for dl_type in reversed(AVAILABLE_DATALOADERS):
+            dl_cls = AVAILABLE_DATALOADERS[dl_type]
+            if inherits_from(cls, dl_cls):
+                dl_type_inferred = dl_type
+        if dl_type_inferred is None:
+            raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
+
+        # or not inherits_from(cls, Dataset)
+        doc = cls.__doc__
+        doc = textwrap.dedent(doc)  # de-indent
+
+        if not re.match("^defined_as: ", doc):
+            doc = "defined_as: {}\n".format(cls.__name__) + doc
+        if not re.match("^type: ", doc):
+            doc = "type: {}\n".format(dl_type_inferred) + doc
+
+        # parse the yaml
+        yaml_dict = related.from_yaml(doc)
+        dl_descr = DataLoaderDescription.from_config(yaml_dict)
+
+        # override parameters
+        for k, v in six.iteritems(self.override):
+            rsetattr(dl_descr, k, v)
+
+        # setup optional parameters
+        arg_names, default_values = _get_arg_name_values(cls)
+
+        if set(dl_descr.args) != set(arg_names):
+            raise ValueError("Described args don't exactly match the implemented arguments"
+                             "docstring: {}, actual: {}".format(list(dl_descr.args), list(arg_names)))
+
+        # properly set optional / non-optional argument values
+        for i, arg in enumerate(dl_descr.args):
+            optional = i >= len(arg_names) - len(default_values)
+            if dl_descr.args[arg].optional and not optional:
+                logger.warn("Parameter {} was specified as optional. However, there "
+                            "are no defaults for it. Specifying it as not optinal".format(arg))
+            dl_descr.args[arg].optional = optional
+
+        dl_descr.info.name = cls.__name__
+
+        # enrich the class with dataloader description
+        return cls._add_description_factory(dl_descr)
 
 # --------------------------------------------
 # Different implementations
@@ -445,64 +596,50 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     # --------------------------------------------
     # Setup dataloader description
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
-        dl = DataLoaderDescription.load(os.path.basename(yaml_path))
-        file_path, obj_name = tuple(dl.defined_as.split("::"))
+        descr = DataLoaderDescription.load(os.path.basename(yaml_path))
+        file_path, obj_name = tuple(descr.defined_as.split("::"))
         CustomDataLoader = getattr(load_module(file_path), obj_name)
 
-    # check that dl.type is correct
-    if dl.type not in AVAILABLE_DATALOADERS:
+    # check that descr.type is correct
+    if descr.type not in AVAILABLE_DATALOADERS:
         raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".
-                         format(dl.type, list(AVAILABLE_DATALOADERS.keys())))
+                         format(descr.type, list(AVAILABLE_DATALOADERS.keys())))
     # check that the extractor arguments match yaml arguments
-    if not getargs(CustomDataLoader) == set(dl.args.keys()):
+    if not getargs(CustomDataLoader) == set(descr.args.keys()):
         raise ValueError("DataLoader arguments: \n{0}\n don't match ".format(set(getargs(CustomDataLoader))) +
                          "the specification in the dataloader.yaml file:\n{0}".
-                         format(set(dl.args.keys())))
+                         format(set(descr.args.keys())))
     # check that CustomDataLoader indeed interits from the right DataLoader
-    if dl.type in DATALOADERS_AS_FUNCTIONS:
+    if descr.type in DATALOADERS_AS_FUNCTIONS:
         # transform the functions into objects
         assert isinstance(CustomDataLoader, types.FunctionType)
-        CustomDataLoader = AVAILABLE_DATALOADERS[dl.type].from_fn(CustomDataLoader)
+        CustomDataLoader = AVAILABLE_DATALOADERS[descr.type].from_fn(CustomDataLoader)
     else:
-        if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[dl.type]):
+        if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[descr.type]):
             raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
-                             format(AVAILABLE_DATALOADERS[dl.type].__name__))
+                             format(AVAILABLE_DATALOADERS[descr.type].__name__))
     logger.info('successfully loaded the dataloader from {}'.
-                format(os.path.normpath(os.path.join(dataloader_dir, dl.defined_as))))
-    # Inherit the attributes from dl
-    # TODO - make this more automatic / DRY
-    # write a method to load those things?
-    CustomDataLoader.type = dl.type
-    CustomDataLoader.defined_as = dl.defined_as
-    CustomDataLoader.args = dl.args
-    CustomDataLoader.info = dl.info
-    CustomDataLoader.output_schema = dl.output_schema
-    CustomDataLoader.dependencies = dl.dependencies
-    CustomDataLoader.postprocessing = dl.postprocessing
-    # keep it hidden?
-    CustomDataLoader._yaml_path = yaml_path
-    CustomDataLoader.source = source
-    # TODO - rename?
-    CustomDataLoader.source_dir = dataloader_dir
+                format(os.path.normpath(os.path.join(dataloader_dir, descr.defined_as))))
 
-    # Add init_example method.
-    # example_kwargs also downloads files to {dataloader_dir}/dataloader_files
-    CustomDataLoader.example_kwargs = example_kwargs(CustomDataLoader.args, dataloader_dir)
-
-    def init_example(cls):
-        return cls(**cls.example_kwargs)
-    CustomDataLoader.init_example = classmethod(init_example)
-    CustomDataLoader.print_args = classmethod(print_dl_kwargs)
-
-    return CustomDataLoader
+    # enrich the original dataloader class with description
+    Dl = CustomDataLoader._add_description_factory(descr)
+    # add other fields
+    Dl._yaml_path = yaml_path
+    Dl.source = source
+    Dl.source_dir = dataloader_dir
+    return Dl
 
 
-AVAILABLE_DATALOADERS = {"PreloadedDataset": PreloadedDataset,
-                         "Dataset": Dataset,
-                         "BatchDataset": BatchDataset,
-                         "SampleIterator": SampleIterator,
-                         "SampleGenerator": SampleGenerator,
-                         "BatchIterator": BatchIterator,
-                         "BatchGenerator": BatchGenerator}
+# NOTE: the dataloaders need to be ordered in a way they inherit from each other
+# e.g. child can't appear before the parent in the list below
+# TODO this could be automatically checked in the future
+AVAILABLE_DATALOADERS = OrderedDict([
+    ("PreloadedDataset", PreloadedDataset),
+    ("Dataset", Dataset),
+    ("BatchDataset", BatchDataset),
+    ("SampleIterator", SampleIterator),
+    ("SampleGenerator", SampleGenerator),
+    ("BatchIterator", BatchIterator),
+    ("BatchGenerator", BatchGenerator)])
 
 DATALOADERS_AS_FUNCTIONS = ["PreloadedDataset", "SampleGenerator", "BatchGenerator"]

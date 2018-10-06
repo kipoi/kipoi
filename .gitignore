@@ -77,3 +77,5 @@ examples/rbp/example_files/variants.vcf.gz.tbi
 /example/models/rbp/dataloader_files/intervals_file
 /example/models/rbp/example_files/intervals_file
 /example/models/rbp/model_files/weights/6f959cf27e58c065b1a73d10002eca35
+/example/models/rbp/downloaded/example_files/intervals_file
+**/downloaded/**

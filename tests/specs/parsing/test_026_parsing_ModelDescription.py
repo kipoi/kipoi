@@ -41,7 +41,41 @@ schema:
         binding_site:
             shape: (1, )
             doc: Predicted binding strength
+""",
+                 """
+type: keras
+args:
+    arch: model/model.json
+    weights:
+      url: https://github.com/kipoi/models/raw/825acc0749fec82f965fc1ac1c31181d7613cdca/rbp_eclip/AARS/model_files/model.h5
+      md5: 7324fd25fb6760666d2148c6bec34944
+    custom_objects: model/custom_keras_objects.py
+default_dataloader:
+    defined_as: kipoi.data.Dataset
+    default_args:
+      a: 1
+      b: "asd"
+info:
+    authors:
+        - name: Ziga Avsec
+    name: rbp_eclip
+    version: 0.1
+    doc: RBP binding prediction
+schema:
+    inputs:
+        seq:
+            shape: (4, 101)
+            special_type: DNASeq
+            doc: One-hot encoded RNA sequence
+        dist_polya_st:
+            shape: (None, 1, 10)
+            doc: Distance to poly-a site transformed with B-splines
+    targets:
+        binding_site:
+            shape: (1, )
+            doc: Predicted binding strength
 """]
+
 
 BAD_EXAMPLES = ["""
 type: keras

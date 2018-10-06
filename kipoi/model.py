@@ -10,7 +10,7 @@ import six
 import numpy as np
 import json
 
-from .specs import ModelDescription, RemoteFile
+from .specs import ModelDescription, RemoteFile, DataLoaderImport
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -101,18 +101,25 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     # TODO - validate md.default_dataloader <-> model
 
-    # attach the default dataloader already to the model
-    if ":" in md.default_dataloader:
-        dl_source, dl_path = md.default_dataloader.split(":")
-    else:
-        dl_source = source_name
-        dl_path = md.default_dataloader
-
+    # Load the dataloader
     if with_dataloader:
-        # allow to use relative and absolute paths for referring to the dataloader
-        default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-        default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
-                                                          dl_source)
+        # load from python
+        if isinstance(md.default_dataloader, DataLoaderImport):
+            default_dataloader = md.default_dataloader.get()
+        else:
+            # load from directory
+
+            # attach the default dataloader already to the model
+            if ":" in md.default_dataloader:
+                dl_source, dl_path = md.default_dataloader.split(":")
+            else:
+                dl_source = source_name
+                dl_path = md.default_dataloader
+
+            # allow to use relative and absolute paths for referring to the dataloader
+            default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+            default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
+                                                              dl_source)
     else:
         default_dataloader = None
 

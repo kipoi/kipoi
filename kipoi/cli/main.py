@@ -286,7 +286,7 @@ def cli_info(command, raw_args):
 
     print("-" * 80)
     print("Displaying keyword arguments for {0}".format(dl_info))
-    print(kipoi.print_dl_kwargs(Dl))
+    print(Dl.print_args())
     print("-" * 80)
 
 

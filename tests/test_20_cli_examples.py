@@ -208,7 +208,7 @@ def test_predict_activation_example(example, tmpdir):
             kipoi.cli.main.cli_predict("predict", args[3:])
 
 
-def test_pull_kipoi():
+def test_kipoi_pull():
     """Test that pull indeed pulls the right model
     """
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "pull",
@@ -219,3 +219,14 @@ def test_pull_kipoi():
     assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
 
     kipoi.cli.main.cli_pull("pull", ["rbp_eclip/AARS"])
+
+
+def test_kipoi_info():
+    """Test that pull indeed pulls the right model
+    """
+    if sys.version_info[0] == 2:
+        pytest.skip("example not supported on python 2 ")
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "info",
+            "rbp_eclip/AARS"]
+    returncode = subprocess.call(args=args)
+    assert returncode == 0

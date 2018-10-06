@@ -27,8 +27,6 @@ name: rbp_eclip
 version: 0.1
 doc: RBP binding prediction
 extra_field: asd
-""", """
-version: 0.1
 """]
 
 

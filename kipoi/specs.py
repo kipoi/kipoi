@@ -18,7 +18,7 @@ import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.utils import unique_list, yaml_ordered_dump, read_txt
+from kipoi.utils import unique_list, yaml_ordered_dump, read_txt, load_obj, inherits_from, override_default_kwargs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -34,7 +34,7 @@ class Author(RelatedConfigMixin):
     email = related.StringField(required=False)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
@@ -46,7 +46,7 @@ class Info(RelatedConfigMixin):
       name: rbp_eclip
       version: 0.1
     """
-    authors = related.SequenceField(Author, repr=True)
+    authors = related.SequenceField(Author, repr=True, required=False)
     doc = related.StringField("", required=False)  # free-text description of the model
     name = related.StringField(required=False)  # TODO - deprecate
     version = related.StringField(default="0.1", required=False)
@@ -58,7 +58,7 @@ class Info(RelatedConfigMixin):
             logger.warn("doc empty for the `info:` field")
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
@@ -77,7 +77,7 @@ class ArraySpecialType(enum.Enum):
     Array = "Array"
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ArraySchema(RelatedConfigMixin):
     """
 
@@ -207,7 +207,7 @@ class ArraySchema(RelatedConfigMixin):
 # --------------------------------------------
 # Model specific specs
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
@@ -309,7 +309,7 @@ class MetadataType(enum.Enum):
     # TODO - add bed3 or bed6 ranges
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class MetadataStruct(RelatedConfigMixin):
 
     doc = related.StringField()
@@ -371,7 +371,7 @@ class MetadataStruct(RelatedConfigMixin):
         return True
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
 
@@ -483,7 +483,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 
 
 # --------------------------------------------
-@related.immutable(strict=False)
+@related.mutable(strict=False)
 class RemoteFile(RelatedConfigMixin):
 
     url = related.StringField()
@@ -538,7 +538,7 @@ class DataLoaderArgument(RelatedConfigMixin):
             self.example = RemoteFile.from_config(self.example)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
@@ -724,6 +724,30 @@ class Dependencies(RelatedConfigMixin):
     #     pass
 
 
+@related.mutable(strict=True)
+class DataLoaderImport(RelatedConfigMixin):
+    """Dataloader specification for the import
+    """
+    defined_as = related.StringField()
+    default_args = related.ChildField(dict, default=OrderedDict(), required=False)
+
+    def get(self):
+        """Get the dataloader
+        """
+        from kipoi.data import BaseDataLoader
+
+        obj = load_obj(self.defined_as)
+
+        # check that it inherits from BaseDataLoader
+        if not inherits_from(obj, BaseDataLoader):
+            raise ValueError("Dataloader: {} doen't inherit from kipoi.data.BaseDataLoader".format(self.defined_as))
+
+        # override the default arguments
+        override_default_kwargs(obj, self.default_args)
+
+        return obj
+
+
 # --------------------------------------------
 # Final description classes modelling the yaml files
 @related.mutable(strict=True)
@@ -734,7 +758,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     args = related.ChildField(dict)
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
-    default_dataloader = related.StringField(default='.')
+    default_dataloader = AnyField(default='.', required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
@@ -762,6 +786,10 @@ class ModelDescription(RelatedLoadSaveMixin):
         for k in self.args:
             if isinstance(self.args[k], dict) and "url" in self.args[k]:
                 self.args[k] = RemoteFile.from_config(self.args[k])
+
+        # parse default_dataloader
+        if isinstance(self.default_dataloader, dict):
+            self.default_dataloader = DataLoaderImport.from_config(self.default_dataloader)
 
 
 def example_kwargs(dl_args, cache_path=None):
@@ -795,32 +823,6 @@ def example_kwargs(dl_args, cache_path=None):
     # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
-def print_dl_kwargs(dataloader_class, format_examples_json=False):
-    """
-    Args:
-      format_examples_json: format the results as json
-    """
-    from .external.related.fields import UNSPECIFIED
-    if not hasattr(dataloader_class, "args"):
-        logger.warn("No keyword arguments defined for the given dataloader.")
-        return None
-        print("No keyword arguments defined for the given dataloader.")
-    args = dataloader_class.args
-    for k in args:
-        print("{0}:".format(k))
-        for elm in ["doc", "type", "optional", "example"]:
-            if hasattr(args[k], elm) and \
-                    (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
-                print("    {0}: {1}".format(elm, getattr(args[k], elm)))
-    example_kwargs = dataloader_class.example_kwargs
-    print("-" * 80)
-    if hasattr(dataloader_class, "example_kwargs"):
-        if format_examples_json:
-            import json
-            example_kwargs = json.dumps(example_kwargs)
-        print("Example keyword arguments are: {0}".format(str(example_kwargs)))
-
-
 @related.mutable(strict=True)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
@@ -828,8 +830,8 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     type = related.StringField()
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
-    info = related.ChildField(Info)
     output_schema = related.ChildField(DataLoaderSchema)
+    info = related.ChildField(Info, default=Info(), required=False)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
@@ -902,12 +904,12 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 # Global source config
 
 # TODO - write a unit-test for these three
-@related.immutable
+@related.mutable
 class TestModelConfig(RelatedConfigMixin):
     batch_size = related.IntegerField(default=None, required=False)
 
 
-@related.immutable
+@related.mutable
 class TestConfig(RelatedConfigMixin):
     """Models config.yaml in the model root
     """
@@ -915,7 +917,7 @@ class TestConfig(RelatedConfigMixin):
                                        repr=True)
 
 
-@related.immutable
+@related.mutable
 class SourceConfig(RelatedLoadSaveMixin):
     test = related.ChildField(TestConfig, required=False)
 
