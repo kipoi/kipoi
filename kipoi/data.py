@@ -3,10 +3,15 @@ from __future__ import print_function
 
 import os
 import abc
+import six
+import textwrap
+import inspect
+from collections import OrderedDict
 
+import related
 import kipoi  # for .config module
 from kipoi.specs import DataLoaderDescription, Info, example_kwargs
-from .utils import load_module, cd, getargs, classproperty
+from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
                               DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
@@ -23,6 +28,8 @@ PREPROC_IFILE_FORMATS = ['bed3']
 
 
 class BaseDataLoader(object):
+    """Abstract Dataloader class
+    """
     __metaclass__ = abc.ABCMeta
 
     # dataloader descriptors. Parsed from DataLoaderSchema in _add_description_factory()
@@ -134,6 +141,73 @@ class BaseDataLoader(object):
                 example_kwargs = json.dumps(example_kwargs)
             print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
+
+class kipoi_dataloader(object):
+    """Decorator for converting a Dataloader class with dataloader.yaml description in the docstring
+    into a proper Kipoi dataloader
+
+    It parses the doc-string of the class as the DataloaderDescription
+    and populates the class description attributes with it
+
+    # Arguments
+        override: dictionary containing values to override or specify in the decorated class.
+          supports nesting the attributes. example: `{'info.authors': [Author(name='name')]}`
+
+    # __call__
+        dataloader containing the descripiton specified in the yaml doc-string
+    """
+
+    def __init__(self, override=dict()):
+        self.override = override
+
+    def __call__(self, cls):
+        if inspect.isfunction(cls):
+            raise ValueError("Function-based dataloader are currently not supported with kipoi_dataloader decorator")
+
+        # figure out the right dataloader type
+        dl_type_inferred = None
+        for dl_type in reversed(AVAILABLE_DATALOADERS):
+            dl_cls = AVAILABLE_DATALOADERS[dl_type]
+            if inherits_from(cls, dl_cls):
+                dl_type_inferred = dl_type
+        if dl_type_inferred is None:
+            raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
+
+        # or not inherits_from(cls, Dataset)
+        doc = cls.__doc__
+        doc = textwrap.dedent(doc)  # de-indent
+
+        if "defined_as: " not in doc:
+            doc = "defined_as: {}\n".format(cls.__name__) + doc
+        if "type: " not in doc:
+            doc = "type: {}\n".format(dl_type_inferred) + doc
+
+        # parse the yaml
+        dl_descr = DataLoaderDescription.from_config(related.from_yaml(doc))
+
+        # override parameters
+        for k, v in six.iteritems(self.override):
+            rsetattr(dl_descr, k, v)
+
+        # setup optional parameters
+        arg_names, default_values = _get_arg_name_values(cls)
+
+        if set(dl_descr.args) != set(arg_names):
+            raise ValueError("Described args don't exactly match the implemented arguments"
+                             "docstring: {}, actual: {}".format(list(dl_descr.args), list(arg_names)))
+
+        # properly set optional / non-optional argument values
+        for i, arg in enumerate(dl_descr.args):
+            optional = i >= len(arg_names) - len(default_values)
+            if dl_descr.args[arg].optional and not optional:
+                logger.warn("Parameter {} was specified as optional. However, there "
+                            "are no defaults for it. Specifying it as not optinal".format(arg))
+            dl_descr.args[arg].optional = optional
+
+        dl_descr.info.name = cls.__name__
+
+        # enrich the class with dataloader description
+        return cls._add_description_factory(dl_descr)
 
 # --------------------------------------------
 # Different implementations
@@ -554,12 +628,16 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     return Dl
 
 
-AVAILABLE_DATALOADERS = {"PreloadedDataset": PreloadedDataset,
-                         "Dataset": Dataset,
-                         "BatchDataset": BatchDataset,
-                         "SampleIterator": SampleIterator,
-                         "SampleGenerator": SampleGenerator,
-                         "BatchIterator": BatchIterator,
-                         "BatchGenerator": BatchGenerator}
+# NOTE: the dataloaders need to be ordered in a way they inherit from each other
+# e.g. child can't appear before the parent in the list below
+# TODO this could be automatically checked in the future
+AVAILABLE_DATALOADERS = OrderedDict([
+    ("PreloadedDataset", PreloadedDataset),
+    ("Dataset", Dataset),
+    ("BatchDataset", BatchDataset),
+    ("SampleIterator", SampleIterator),
+    ("SampleGenerator", SampleGenerator),
+    ("BatchIterator", BatchIterator),
+    ("BatchGenerator", BatchGenerator)])
 
 DATALOADERS_AS_FUNCTIONS = ["PreloadedDataset", "SampleGenerator", "BatchGenerator"]

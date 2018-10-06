@@ -8,6 +8,7 @@ import os
 import sys
 import subprocess
 import numpy as np
+import functools
 import yaml
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -49,7 +50,6 @@ def load_module(path, module_name=None):
         sys.path.append(os.path.join(os.path.dirname(module_name)))
         module = imp.load_source(module_name, path)
     elif sys.version_info[0] == 3:
-        # TODO: implement dynamic loading of preprocessor module for python3
         """
         import importlib.machinery
         loader = importlib.machinery.SourceFileLoader
@@ -198,12 +198,9 @@ def getargs(x):
         return set(inspect.signature(x).parameters.keys())
 
 
-def override_default_kwargs(fn_cls, kwargs):
-    """Override default kwargs in fn_cls.
-
-    It modifies fn_cls inplace (!)
-
-    NOTE: Enjoy this function responsively
+def _get_arg_name_values(fn_cls):
+    """Get the function/class argument
+    list
     """
     if sys.version_info[0] == 2:
         getargspec = inspect.getargspec
@@ -217,7 +214,17 @@ def override_default_kwargs(fn_cls, kwargs):
         # skip the self parameter
         args = getargspec(fn_cls.__init__).args[1:]
         values = fn_cls.__init__.__defaults__
+    return args, values
 
+
+def override_default_kwargs(fn_cls, kwargs):
+    """Override default kwargs in fn_cls.
+
+    It modifies fn_cls inplace (!)
+
+    NOTE: Enjoy this function responsively
+    """
+    args, values = _get_arg_name_values(fn_cls)
     # check that all kwargs are specified
     for k in kwargs:
         if k not in args:
@@ -385,3 +392,22 @@ class classproperty(object):
 
     def __get__(self, owner_self, owner_cls):
         return self.fget(owner_cls)
+
+
+# recursive get and setattr
+# https://stackoverflow.com/a/31174427
+def rgetattr(obj, attr, *args):
+    """Recursively get attributes:
+    rgetattr(obj, 'attr.subattr')
+    """
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+
+def rsetattr(obj, attr, val):
+    """Recursively set attributes:
+    rsetattr(obj, 'attr.subattr', 10)
+    """
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)

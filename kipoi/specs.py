@@ -27,14 +27,14 @@ logger.addHandler(logging.NullHandler())
 # Common specs (model and dataloader)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class Author(RelatedConfigMixin):
     name = related.StringField()
     github = related.StringField(required=False)
     email = related.StringField(required=False)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
@@ -58,7 +58,7 @@ class Info(RelatedConfigMixin):
             logger.warn("doc empty for the `info:` field")
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
@@ -77,7 +77,7 @@ class ArraySpecialType(enum.Enum):
     Array = "Array"
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ArraySchema(RelatedConfigMixin):
     """
 
@@ -207,7 +207,7 @@ class ArraySchema(RelatedConfigMixin):
 # --------------------------------------------
 # Model specific specs
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
@@ -309,7 +309,7 @@ class MetadataType(enum.Enum):
     # TODO - add bed3 or bed6 ranges
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class MetadataStruct(RelatedConfigMixin):
 
     doc = related.StringField()
@@ -371,7 +371,7 @@ class MetadataStruct(RelatedConfigMixin):
         return True
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
 
@@ -483,7 +483,7 @@ class DataLoaderSchema(RelatedConfigMixin):
 
 
 # --------------------------------------------
-@related.immutable(strict=False)
+@related.mutable(strict=False)
 class RemoteFile(RelatedConfigMixin):
 
     url = related.StringField()
@@ -538,7 +538,7 @@ class DataLoaderArgument(RelatedConfigMixin):
             self.example = RemoteFile.from_config(self.example)
 
 
-@related.immutable(strict=True)
+@related.mutable(strict=True)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
@@ -904,12 +904,12 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 # Global source config
 
 # TODO - write a unit-test for these three
-@related.immutable
+@related.mutable
 class TestModelConfig(RelatedConfigMixin):
     batch_size = related.IntegerField(default=None, required=False)
 
 
-@related.immutable
+@related.mutable
 class TestConfig(RelatedConfigMixin):
     """Models config.yaml in the model root
     """
@@ -917,7 +917,7 @@ class TestConfig(RelatedConfigMixin):
                                        repr=True)
 
 
-@related.immutable
+@related.mutable
 class SourceConfig(RelatedLoadSaveMixin):
     test = related.ChildField(TestConfig, required=False)
 
