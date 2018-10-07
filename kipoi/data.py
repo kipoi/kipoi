@@ -143,7 +143,7 @@ class BaseDataLoader(object):
             print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
 
-class kipoi_dataloader(object):
+def kipoi_dataloader(override=dict()):
     """Decorator for converting a Dataloader class with dataloader.yaml description in the docstring
     into a proper Kipoi dataloader
 
@@ -158,10 +158,7 @@ class kipoi_dataloader(object):
         dataloader containing the descripiton specified in the yaml doc-string
     """
 
-    def __init__(self, override=dict()):
-        self.override = override
-
-    def __call__(self, cls):
+    def wrap(cls):
         if inspect.isfunction(cls):
             raise ValueError("Function-based dataloader are currently not supported with kipoi_dataloader decorator")
 
@@ -188,7 +185,7 @@ class kipoi_dataloader(object):
         dl_descr = DataLoaderDescription.from_config(yaml_dict)
 
         # override parameters
-        for k, v in six.iteritems(self.override):
+        for k, v in six.iteritems(override):
             rsetattr(dl_descr, k, v)
 
         # setup optional parameters
@@ -210,6 +207,7 @@ class kipoi_dataloader(object):
 
         # enrich the class with dataloader description
         return cls._add_description_factory(dl_descr)
+    return wrap
 
 # --------------------------------------------
 # Different implementations

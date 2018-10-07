@@ -1,0 +1,23 @@
+type: sklearn
+args:
+    pkl_file:
+       url: https://github.com/kipoi/kipoi/raw/57734d716b8dedaffe460855e7cfe8f37ec2d48d/example/models/sklearn_iris/model_files/sklearn_model.pkl
+       md5: 4609135861a995f2a370734ee7fd5587
+    predict_method: predict_proba
+default_dataloader:
+    defined_as: dataloader.MyDataset
+info:
+    authors:
+        - name: Your Name
+          github: your_github_username
+    doc: Model predicting the Iris species
+dependencies:
+    pip:
+      - scikit-learn
+schema:
+    inputs:
+      shape: (4,)
+      doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+    targets:
+      shape: (3,)
+      doc: "One-hot encoded array of classes: setosa, versicolor, virginica."

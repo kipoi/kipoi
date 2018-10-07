@@ -18,7 +18,7 @@ else:
     INSTALL_FLAG = ""
 
 EXAMPLES_TO_RUN = ["rbp", "extended_coda", "sklearn_iris", "iris_model_template",
-                   "non_bedinput_model", "pyt", "iris_tensorflow"]
+                   "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
 
 predict_activation_layers = {
     "rbp": "concatenate_6",
@@ -68,7 +68,7 @@ def test_preproc_example(example, tmpdir):
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
-    if example in {"extended_coda"}:
+    if example in {"extended_coda", "kipoi_dataloader_decorator"}:
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
 
@@ -126,6 +126,9 @@ def test_predict_example(example, tmpdir):
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
+    if example in {'kipoi_dataloader_decorator'}:
+        pytest.skip("Automatically-dowloaded input files skipped for prediction")
+
     example_dir = "example/models/{0}".format(example)
 
     if example == "rbp":
@@ -176,6 +179,8 @@ def test_predict_activation_example(example, tmpdir):
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
+    if example in {'kipoi_dataloader_decorator'}:
+        pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
     example_dir = "example/models/{0}".format(example)
 
