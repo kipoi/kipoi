@@ -102,9 +102,13 @@ class BaseDataLoader(object):
 
     @classproperty
     def example_kwargs(cls):
-        if cls.args is None or cls.source_dir is None:
+        if cls.args is None:
             raise ValueError("Class description `args` is missing. "
                              "Use `_add_description_factory` to annotate the class")
+        if cls.source_dir is None:
+            logger.info("Using current directory for source_dir")
+            cls.source_dir = os.getcwd()
+
         # Add init_example method.
         # example_kwargs also downloads files to {dataloader_dir}/dataloader_files
         return example_kwargs(cls.args, cls.source_dir)
