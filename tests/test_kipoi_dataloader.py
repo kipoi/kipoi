@@ -26,7 +26,8 @@ class Dl(Dataset):
     output_schema:
         inputs:
             name: seq
-            shape: (10,)
+            shape: (10,4)
+            special_type: DNASeq
             doc: inputs doc
         targets:
             name: targets
@@ -43,7 +44,7 @@ class Dl(Dataset):
 
     def __getitem__(self, idx):
         return {
-            "inputs": np.arange(10),
+            "inputs": np.arange((10, 4)),
             "targets": np.arange(self.arg1)
         }
 
@@ -156,7 +157,7 @@ def test_dependencies():
 def test_output_schema():
     # inputs
     assert Dl.output_schema.inputs.name == 'seq'
-    assert Dl.output_schema.inputs.shape == (10,)
+    assert Dl.output_schema.inputs.shape == (10, 4)
     assert Dl.output_schema.inputs.doc == 'inputs doc'
 
     # targets

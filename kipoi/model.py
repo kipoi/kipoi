@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import os
 import yaml
 import kipoi  # for .config module
@@ -89,7 +90,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     # pull the model & get the model directory
     yaml_path = source.pull_model(model)
-    source_dir = os.path.dirname(yaml_path)
+    source_dir = os.path.abspath(os.path.dirname(yaml_path))
 
     # Setup model description
     with cd(source_dir):
@@ -105,7 +106,9 @@ def get_model(model, source="kipoi", with_dataloader=True):
     if with_dataloader:
         # load from python
         if isinstance(md.default_dataloader, DataLoaderImport):
+            sys.path.append(source_dir)
             default_dataloader = md.default_dataloader.get()
+            default_dataloader.source_dir = source_dir
         else:
             # load from directory
 
