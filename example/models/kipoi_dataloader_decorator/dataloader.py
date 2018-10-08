@@ -38,6 +38,9 @@ class MyDataset(Dataset):
               url: https://github.com/kipoi/kipoi/raw/57734d716b8dedaffe460855e7cfe8f37ec2d48d/example/models/sklearn_iris/example_files/targets.csv
               md5: 54e058d31d05897836302cd6961212a1
             optional: True
+        dummy:
+            doc: dummy argument
+            example: 5
     info:
         authors:
             - name: Your Name
@@ -63,9 +66,10 @@ class MyDataset(Dataset):
                 doc: Just an example metadata column
     """
 
-    def __init__(self, features_file, targets_file=None):
+    def __init__(self, features_file, targets_file=None, dummy=None):
         self.features_file = features_file
         self.targets_file = targets_file
+        self.dummy = dummy
 
         base_url = "https://github.com/kipoi/kipoi/raw/57734d716b8dedaffe460855e7cfe8f37ec2d48d/example/models/sklearn_iris/dataloader_files"
         outdir = os.path.abspath(os.path.join(this_path, "downloaded/dataloader_files"))
