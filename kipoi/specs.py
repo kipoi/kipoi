@@ -745,6 +745,10 @@ class DataLoaderImport(RelatedConfigMixin):
         # override the default arguments
         override_default_kwargs(obj, self.default_args)
 
+        # override also the values in the example
+        for k, v in six.iteritems(self.default_args):
+            obj.args[k].example = v
+
         return obj
 
 

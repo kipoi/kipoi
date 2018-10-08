@@ -6,6 +6,8 @@ args:
     predict_method: predict_proba
 default_dataloader:
     defined_as: dataloader.MyDataset
+    default_args:
+      dummy: 10
 info:
     authors:
         - name: Your Name
