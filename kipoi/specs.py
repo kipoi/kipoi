@@ -813,7 +813,7 @@ def example_kwargs(dl_args, cache_path=None):
                 if v.example.validate(path):
                     logger.info("Example file for argument {} already exists".format(k))
                 else:
-                    logger.info("Example file for argument {} doesn't match the md5 hash {}. Re-downloading".format(k))
+                    logger.info("Example file for argument {} doesn't match the md5 hash {}. Re-downloading".format(k, v.example.md5))
                     v.example.get_file(path)  # TODO
             else:
                 v.example.get_file(path)  # TODO
