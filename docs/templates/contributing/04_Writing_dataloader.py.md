@@ -1,5 +1,11 @@
 ## Dataloader
 
+<aside class="warning">
+Before writing a dataloader yourself please check whether the same functionality can be achieved using a ready-made 
+dataloader in [kipoiseq](https://github.com/kipoi/kipoiseq).
+</aside>
+
+
 The main aim of a dataloader is to generate batches of data with which a model can be run. It therefore has to return a dictionary with three keys:
 
 - `inputs`

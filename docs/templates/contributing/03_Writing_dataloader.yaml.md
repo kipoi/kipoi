@@ -1,8 +1,17 @@
 # dataloader.yaml
 
-The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read [Writing dataloader.py](./04_Writing_dataloader.py.md).
+<aside class="warning">
+Before writing a dataloader yourself please check whether the same functionality can be achieved using a ready-made 
+dataloader in [kipoiseq](https://github.com/kipoi/kipoiseq).
+</aside>
 
-To help understand the synthax of YAML please take a look at: [YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
+The dataloader.yaml file describes how a dataloader for a certain model can be created and how it has to be set up. 
+A model without functional dataloader is as bad as a model that doesn't work, so the correct setup of the 
+dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read 
+[Writing dataloader.py](./04_Writing_dataloader.py.md).
+
+To help understand the synthax of YAML please take a look at: 
+[YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 
 Here is an example `dataloader.yaml`:
 
@@ -16,13 +25,17 @@ args:
           Csv file of the Iris Plants Database from
           http://archive.ics.uci.edu/ml/datasets/Iris features.
         type: str
-        example: example_files/features.csv  # example files
+        example: 
+            url: https://zenodo.org/path/to/example_files/features.csv  # example file
+            md5: 7a6s5d76as5d76a5sd7
     targets_file:
         doc: >
           Csv file of the Iris Plants Database targets.
           Not required for making the prediction.
         type: str
-        example: example_files/targets.csv
+        example:
+            url: https://zenodo.org/path/to/example_files/targets.csv  # example file
+            md5: 76sd8f7687sd6fs68a67
         optional: True  # if not present, the `targets` field will not be present in the dataloader output
 info:
     authors: 
@@ -49,7 +62,8 @@ output_schema:
         example_row_number:
             type: int
             doc: Just an example metadata column
-```			
+```
+
 
 ## type
 
@@ -65,13 +79,17 @@ The type of the dataloader indicates from which class the dataloader is inherits
 
 ## defined_as
 
-`defined_as` indicates where the dataloader class can be found. It is a string value of `path/to/file.py::class_name` with a the relative path from where the dataloader.yaml lies. E.g.: `model_files/dataloader.py::MyDataLoader`.
+`defined_as` indicates where the dataloader class can be found. It is a string value of `path/to/file.py::class_name` 
+with a the relative path from where the dataloader.yaml lies. E.g.: `model_files/dataloader.py::MyDataLoader`.
 
-This class will then be instantiated by Kipoi with keyword arguments that have to be mentioned explicitely in `args` (see below).
+This class will then be instantiated by Kipoi with keyword arguments that have to be mentioned explicitely in 
+`args` (see below).
 
 ## args
 
-A dataloader will always require arguments, they might for example be a path to the reference genome fasta file, a bed file that defines which regions should be investigated, etc. Dataloader arguments are given defined as a yaml dictionary with argument names as keys, e.g.:
+A dataloader will always require arguments, they might for example be a path to the reference genome fasta file, a 
+bed file that defines which regions should be investigated, etc. Dataloader arguments are given defined as a yaml 
+dictionary with argument names as keys, e.g.:
 
 ```yaml
 args:
@@ -84,7 +102,10 @@ args:
 An argument has the following fields:
 
 * `doc`: A free text field describing the argument
-* `example`: A value that can be used to demonstrate the functionality of the dataloader and of the entire model. Those example files are very useful for users and for automatic testing procedures. For example the command line call `kipoi test` uses the exmaple values given for dataloader arguments to assess that a model can be used and is functional. It is therefore important to submit all necessary example files with the model.
+* `example`: A value that can be used to demonstrate the functionality of the dataloader and of the entire model. 
+Those example files are very useful for users and for automatic testing procedures. For example the command line 
+call `kipoi test` uses the exmaple values given for dataloader arguments to assess that a model can be used and 
+is functional. It is therefore important to submit the URLs of all necessary example files with the model.
 * `type`: Optional: datatype of the argument (`str`, `bool`, `int`, `float`)
 * `optional`: Optional: Boolean flag (`true` / `false`) for an argument if it is optional.
 
@@ -92,7 +113,8 @@ An argument has the following fields:
 
 The `info` field of a dataloader.yaml file contains general information about the model.
 
-* `authors`: a list of authors with the field: `name`, and the optional fields: `github` and `email`. Where the `github` name is the github user id of the respective author
+* `authors`: a list of authors with the field: `name`, and the optional fields: `github` and `email`. Where the 
+`github` name is the github user id of the respective author
 * `doc`: Free text documentation of the dataloader. A short description of what it does.
 * `version`: Version of the dataloader
 * `license`: String indicating the license, if not defined it defaults to `MIT`
@@ -116,11 +138,17 @@ info:
 
 ## output_schema
 
-`output_schema` defines what the dataloader outputs are, what they consist in, what the dimensions are and some additional meta data.
+`output_schema` defines what the dataloader outputs are, what they consist in, what the dimensions are and some 
+additional meta data.
 
-`output_schema` contains three categories `inputs`, `targets` and `metadata`. `inputs` and `targets` each specify the shapes of data generated for the model input and model. Offering the `targets` option enables the opportunity to possibly train models with the same dataloader.
+`output_schema` contains three categories `inputs`, `targets` and `metadata`. `inputs` and `targets` each specify the 
+shapes of data generated for the model input and model. Offering the `targets` option enables the opportunity to 
+possibly train models with the same dataloader.
 
-In general model inputs and outputs can either be a numpy array, a list of numpy arrays or a dictionary (or `OrderedDict`) of numpy arrays. Whatever format is defined in the schema is expected to be produced by the dataloader and is expected to be accepted as input by the model. The three different kinds are represented by the single entries, lists or dictionaries in the yaml definition:
+In general model inputs and outputs can either be a numpy array, a list of numpy arrays or a dictionary (or 
+`OrderedDict`) of numpy arrays. Whatever format is defined in the schema is expected to be produced by the dataloader 
+and is expected to be accepted as input by the model. The three different kinds are represented by the single entries, 
+lists or dictionaries in the yaml definition:
 
 * A single numpy array as input or target:
 
