@@ -7,6 +7,7 @@ import pytest
 from kipoi.specs import DataLoaderImport
 import kipoi
 from kipoi.utils import inherits_from
+from uuid import uuid4
 
 
 def cp_tmpdir(example, tmpdir):
