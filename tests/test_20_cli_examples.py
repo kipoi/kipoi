@@ -12,6 +12,7 @@ import config
 import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np
+from uuid import uuid4
 
 if config.install_req:
     INSTALL_FLAG = "--install_req"
@@ -29,8 +30,9 @@ ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 
 def cp_tmpdir(example, tmpdir):
-    shutil.copytree(example, str(tmpdir))
-    return os.path.join(str(tmpdir), example)
+    tdir = str(tmpdir.mkdir(str(uuid4())))
+    shutil.copytree(example, tdir)
+    return os.path.join(tdir, example)
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

@@ -7,7 +7,6 @@ import pytest
 from kipoi.specs import DataLoaderImport
 import kipoi
 from kipoi.utils import inherits_from
-from config import is_master
 
 
 def dont_test_DataLoaderImport():
