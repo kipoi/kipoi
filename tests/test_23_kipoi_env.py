@@ -5,6 +5,7 @@ import os
 from kipoi.utils import read_yaml
 from kipoi.cli.env import get_env_name, export_env, merge_deps
 from kipoi.sources import list_subcomponents
+from kipoi.specs import Dependencies
 
 
 def test_env_name():
@@ -115,3 +116,10 @@ def test_list_submodules():
 
 def test_deps():
     assert merge_deps(["MaxEntScan"]) == merge_deps(["MaxEntScan/5prime"])
+
+
+def test_decorator_env_loading():
+    assert merge_deps(["example/models/kipoi_dataloader_decorator"], source='dir') == \
+        Dependencies(conda=['python=2.7', 'scikit-learn'],
+                     pip=['kipoi', 'scikit-learn', 'tqdm'],
+                     conda_channels=['defaults'])

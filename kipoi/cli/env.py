@@ -3,13 +3,14 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 from sys import platform
 import os
 import argparse
 import subprocess
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.specs import Dependencies
+from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.sources import list_subcomponents
 import logging
 logger = logging.getLogger(__name__)
@@ -101,11 +102,16 @@ def merge_deps(models,
 
             # handle the dataloader=None case
             if dataloaders is None or not dataloaders:
-                dataloader = os.path.normpath(os.path.join(sub_model,
-                                                           model_descr.default_dataloader))
-                logger.info("Inferred dataloader name: {0} from".format(dataloader) +
-                            " the model.")
-                dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
+                if isinstance(model_descr.default_dataloader, DataLoaderImport):
+                    # add also the directory
+                    sys.path.append(os.path.dirname(model_descr.path))
+                    dataloader_descr = model_descr.default_dataloader.get()
+                else:
+                    dataloader = os.path.normpath(os.path.join(sub_model,
+                                                               str(model_descr.default_dataloader)))
+                    logger.info("Inferred dataloader name: {0} from".format(dataloader) +
+                                " the model.")
+                    dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
                 deps = deps.merge(dataloader_descr.dependencies)
     if dataloaders is not None or dataloaders:
         for dataloader in dataloaders:

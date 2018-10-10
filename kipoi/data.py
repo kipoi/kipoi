@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import re
 import os
 import abc
@@ -11,7 +12,7 @@ from collections import OrderedDict
 
 import related
 import kipoi  # for .config module
-from kipoi.specs import DataLoaderDescription, Info, example_kwargs
+from kipoi.specs import DataLoaderDescription, Info, example_kwargs, DataLoaderImport
 from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
@@ -589,6 +590,10 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     - **postprocessing** (dict): dictionary of loaded plugin specifications
     - **example_kwargs** (dict): kwargs for running the provided example
     """
+    # if source == 'py':
+    #     # load it from the python object
+    #     sys.path.append(os.path.getcwd())
+    #     return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
     source = kipoi.config.get_source(source)
