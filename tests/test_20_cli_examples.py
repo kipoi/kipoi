@@ -1,5 +1,6 @@
 """Run the example scripts
 """
+import shutil
 import pytest
 import subprocess
 import sys
@@ -27,15 +28,20 @@ predict_activation_layers = {
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 
+def cp_tmpdir(example, tmpdir):
+    shutil.copytree(example, str(tmpdir))
+    return os.path.join(str(tmpdir), example)
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
-def test_test_example(example):
+def test_test_example(example, tmpdir):
     """kipoi test ...
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
             and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
 
     args = ["python", "./kipoi/__main__.py", "test",
             "--batch_size=4",
@@ -68,11 +74,12 @@ def test_preproc_example(example, tmpdir):
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
-    if example in {"extended_coda", "kipoi_dataloader_decorator"}:
+    if example in {"extended_coda"}:  # , "kipoi_dataloader_decorator"}:
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
     tmpfile = str(tmpdir.mkdir("example", ).join("out.h5"))
 
@@ -129,7 +136,8 @@ def test_predict_example(example, tmpdir):
     if example in {'kipoi_dataloader_decorator'}:
         pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
     if example == "rbp":
         file_format = "tsv"
@@ -182,7 +190,8 @@ def test_predict_activation_example(example, tmpdir):
     if example in {'kipoi_dataloader_decorator'}:
         pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
     print(example)
     print("tmpdir: {0}".format(tmpdir))
