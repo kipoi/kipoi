@@ -1,6 +1,5 @@
 """Run the example scripts
 """
-import shutil
 import pytest
 import subprocess
 import sys
@@ -12,7 +11,7 @@ import config
 import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np
-from uuid import uuid4
+from utils import cp_tmpdir
 
 if config.install_req:
     INSTALL_FLAG = "--install_req"
@@ -27,12 +26,6 @@ predict_activation_layers = {
     "pyt": "3"  # two before the last layer
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
-
-
-def cp_tmpdir(example, tmpdir):
-    tdir = os.path.join(str(tmpdir), example, str(uuid4()))
-    shutil.copytree(example, tdir)
-    return tdir
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)

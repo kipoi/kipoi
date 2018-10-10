@@ -1,3 +1,6 @@
+import os
+from uuid import uuid4
+import shutil
 import cyvcf2
 import numpy as np
 
@@ -15,3 +18,9 @@ def compare_vcfs(fpath1, fpath2):
             assert np.round(float(i1[k]), min_round) == np.round(float(i2[k]), min_round)
     fh2.close()
     fh1.close()
+
+
+def cp_tmpdir(example, tmpdir):
+    tdir = os.path.join(str(tmpdir), example, str(uuid4()))
+    shutil.copytree(example, tdir)
+    return tdir
