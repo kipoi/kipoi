@@ -1,7 +1,7 @@
 type: pytorch
 args:
     file: model_files/pyt.py
-    build_fn: get_model
+    model: simple_model
     weights: model_files/only_weights.pth
 default_dataloader: . # path to the directory
 info:

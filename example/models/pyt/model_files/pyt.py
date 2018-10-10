@@ -27,6 +27,8 @@ def get_model():
     )
     return model
 
+simple_model = get_model()
+
 
 def generate_exmaple_model():
     # get model
@@ -59,12 +61,6 @@ def generate_exmaple_model():
 
     torch.save(model, "model_files/full_model.pth")
     torch.save(model.state_dict(), "model_files/only_weights.pth")
-
-
-def get_model_w_weights():
-    model = get_model()
-    model.load_state_dict(torch.load("model_files/only_weights.pth"))
-    return model
 
 
 def test_same_weights(dict1, dict2):
