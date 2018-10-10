@@ -69,3 +69,6 @@ def test_override_default_args():
         override_default_kwargs(A, dict(c=4))
 
 
+def test_sequential_model_loading():
+    m = kipoi.get_model("example/models/kipoi_dataloader_decorator", source='dir')
+    m = kipoi.get_model("example/models/extended_coda", source='dir')

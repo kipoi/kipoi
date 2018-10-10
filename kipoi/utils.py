@@ -44,9 +44,11 @@ def load_obj(obj_import):
 
     with add_sys_path(os.getcwd()):
         module_name, obj_name = obj_import.rsplit(".", 1)
+        if module_name in sys.modules:
+            # make sure this module hasn't been loaded before
+            del sys.modules[module_name]
         module = importlib.import_module(module_name)
         obj = getattr(module, obj_name)
-    del sys.modules[module_name]
     return obj
 
 
