@@ -5,13 +5,13 @@ import sys
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd, merge_dicts, read_pickle
+from .utils import load_module, cd, merge_dicts, read_pickle, override_default_kwargs
 import abc
 import six
 import numpy as np
 import json
 
-from .specs import ModelDescription, RemoteFile, DataLoaderImport
+from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -106,12 +106,16 @@ def get_model(model, source="kipoi", with_dataloader=True):
     if with_dataloader:
         # load from python
         if isinstance(md.default_dataloader, DataLoaderImport):
-            sys.path.append(source_dir)
-            default_dataloader = md.default_dataloader.get()
+            with cd(source_dir):
+                default_dataloader = md.default_dataloader.get()
             default_dataloader.source_dir = source_dir
+            # download util links if specified under default & override the default parameters
+            override = download_default_args(default_dataloader.args, source_dir)
+            if override:
+                # override default arguments specified under default
+                override_default_kwargs(default_dataloader, override)
         else:
             # load from directory
-
             # attach the default dataloader already to the model
             if ":" in md.default_dataloader:
                 dl_source, dl_path = md.default_dataloader.split(":")

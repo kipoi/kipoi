@@ -12,8 +12,9 @@ from collections import OrderedDict
 
 import related
 import kipoi  # for .config module
-from kipoi.specs import DataLoaderDescription, Info, example_kwargs
-from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values, load_obj, infer_parent_class
+from kipoi.specs import DataLoaderDescription, Info, example_kwargs, RemoteFile, download_default_args
+from .utils import (load_module, cd, getargs, classproperty, inherits_from, rsetattr,
+                    _get_arg_name_values, load_obj, infer_parent_class, override_default_kwargs)
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
                               DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
@@ -590,7 +591,7 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     # pull the dataloader & get the dataloader directory
     source = kipoi.config.get_source(source)
     yaml_path = source.pull_dataloader(dataloader)
-    dataloader_dir = os.path.dirname(yaml_path)
+    dataloader_dir = os.path.abspath(os.path.dirname(yaml_path))
 
     # TODO - allow source=py
 
@@ -604,8 +605,14 @@ def get_dataloader_factory(dataloader, source="kipoi"):
             CustomDataLoader = getattr(load_module(file_path), obj_name)
         else:
             # new API - directly specify the object
-            sys.path.append(os.getcwd())
+            # prepend sys path
             CustomDataLoader = load_obj(descr.defined_as)
+
+    # download util links if specified under default & override the default parameters
+    override = download_default_args(descr.args, dataloader_dir)
+    if override:
+        # override default arguments specified under default
+        override_default_kwargs(CustomDataLoader, override)
 
     # infer the type
     if descr.type is None:

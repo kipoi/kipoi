@@ -525,6 +525,7 @@ class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField("", required=False)
     example = AnyField(required=False)
+    default = AnyField(required=False)
     name = related.StringField(required=False)
     type = related.StringField(default='str', required=False)
     optional = related.BooleanField(default=False, required=False)
@@ -536,7 +537,8 @@ class DataLoaderArgument(RelatedConfigMixin):
             # parse args
         if isinstance(self.example, dict) and "url" in self.example:
             self.example = RemoteFile.from_config(self.example)
-
+        if isinstance(self.default, dict) and "url" in self.default:
+            self.default = RemoteFile.from_config(self.default)
 
 @related.mutable(strict=True)
 class Dependencies(RelatedConfigMixin):
@@ -825,6 +827,30 @@ def example_kwargs(dl_args, cache_path=None):
             example_files[k] = v.example
     return example_files
     # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
+
+
+def download_default_args(args, base_output_dir='.'):
+    """Download the default files
+    """
+    override = {}
+    for k in args:
+        # arg.default is None
+        if args[k].default is not None and isinstance(args[k].default, RemoteFile):
+            # specify the file name and create the directory
+            output_dir = os.path.join(base_output_dir, 'downloaded/dataloader_files', k)
+            logger.info("Downloading dataloader default arguments {} from {}".format(k, args[k].default.url))
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            if args[k].default.md5:
+                fname = args[k].default.md5
+            else:
+                fname = "file"
+
+            # download the parameters and override the model
+            path = args[k].default.get_file(os.path.join(output_dir, fname))
+            args[k].default = path
+            override[k] = path
+    return override
 
 
 @related.mutable(strict=True)

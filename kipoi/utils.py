@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# temporarily add an object to path
+class add_sys_path(object):
+    """
+    """
+
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        sys.path.insert(0, self.path)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sys.path.remove(self.path)
+
+
 def load_obj(obj_import):
     """Load object from string
     """
@@ -27,9 +42,12 @@ def load_obj(obj_import):
         raise ValueError("Object descripiton needs to be of the form: "
                          "module.submodule.Object. currently lacking a dot (.)")
 
-    module_name, obj_name = obj_import.rsplit(".", 1)
-    module = importlib.import_module(module_name)
-    return getattr(module, obj_name)
+    with add_sys_path(os.getcwd()):
+        module_name, obj_name = obj_import.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        obj = getattr(module, obj_name)
+    del sys.modules[module_name]
+    return obj
 
 
 def load_module(path, module_name=None):
@@ -47,8 +65,8 @@ def load_module(path, module_name=None):
     if sys.version_info[0] == 2:
         import imp
         # add the directory to system's path - allows loading submodules
-        sys.path.append(os.path.join(os.path.dirname(module_name)))
-        module = imp.load_source(module_name, path)
+        with add_sys_path(os.path.join(os.path.dirname(module_name))):
+            module = imp.load_source(module_name, path)
     elif sys.version_info[0] == 3:
         """
         import importlib.machinery
