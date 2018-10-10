@@ -53,7 +53,6 @@ def load_obj(obj_import):
         try:
             module = imp.load_module(module_name, fp, pathname, description)
             obj = getattr(module, obj_name)
-            return obj
         except Exception:
             obj = None
         finally:
