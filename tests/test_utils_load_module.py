@@ -69,6 +69,14 @@ def test_override_default_args():
         override_default_kwargs(A, dict(c=4))
 
 
+def test_load_obj():
+    with pytest.raises(ImportError):
+        load_obj("asd.dsa")
+
+    with pytest.raises(ImportError):
+        load_obj("keras.dsa")
+
+
 def test_sequential_model_loading():
     m2 = kipoi.get_model("example/models/extended_coda", source='dir')
     m1 = kipoi.get_model("example/models/kipoi_dataloader_decorator", source='dir')

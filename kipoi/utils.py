@@ -20,6 +20,25 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# recursive get and setattr
+# https://stackoverflow.com/a/31174427
+def rgetattr(obj, attr, *args):
+    """Recursively get attributes:
+    rgetattr(obj, 'attr.subattr')
+    """
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+
+def rsetattr(obj, attr, val):
+    """Recursively set attributes:
+    rsetattr(obj, 'attr.subattr', 10)
+    """
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
 # temporarily add an object to path
 class add_sys_path(object):
     """
@@ -38,21 +57,20 @@ class add_sys_path(object):
 def load_obj(obj_import):
     """Load object from string
     """
-    # import importlib
+    import importlib
     if "." not in obj_import:
         raise ValueError("Object descripiton needs to be of the form: "
                          "module.submodule.Object. currently lacking a dot (.)")
 
     with add_sys_path(os.getcwd()):
-        module_name, obj_name = obj_import.rsplit(".", 1)
-
+        module_name, obj_name = obj_import.split(".", 1)
         # manually run the import (don't rely on importlib.import_module)
         # the latter was caching modules which caused trouble when
         # loading multiple modules of the same kind
         fp, pathname, description = imp.find_module(module_name)
         try:
             module = imp.load_module(module_name, fp, pathname, description)
-            obj = getattr(module, obj_name)
+            obj = rgetattr(module, obj_name)  # recursively get the module
         except Exception:
             obj = None
         finally:
@@ -60,6 +78,8 @@ def load_obj(obj_import):
             if fp:
                 fp.close()
         # module = importlib.import_module(module_name)
+    if obj is None:
+        raise ImportError("object {} couldn't be imported".format(obj_import))
     return obj
 
 
@@ -434,22 +454,3 @@ class classproperty(object):
 
     def __get__(self, owner_self, owner_cls):
         return self.fget(owner_cls)
-
-
-# recursive get and setattr
-# https://stackoverflow.com/a/31174427
-def rgetattr(obj, attr, *args):
-    """Recursively get attributes:
-    rgetattr(obj, 'attr.subattr')
-    """
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-    return functools.reduce(_getattr, [obj] + attr.split('.'))
-
-
-def rsetattr(obj, attr, val):
-    """Recursively set attributes:
-    rsetattr(obj, 'attr.subattr', 10)
-    """
-    pre, _, post = attr.rpartition('.')
-    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
