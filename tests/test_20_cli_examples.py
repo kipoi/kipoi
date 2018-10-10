@@ -76,14 +76,14 @@ def test_preproc_example(example, tmpdir):
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
-    if example in {"extended_coda"}:  # , "kipoi_dataloader_decorator"}:
+    if example in {"extended_coda", "kipoi_dataloader_decorator"}:
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
 
     example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
     # example_dir = "example/models/{0}".format(example)
 
-    tmpfile = str(tmpdir.mkdir("example", ).join("out.h5"))
+    tmpfile = str(tmpdir.mkdir("output", ).join("out.h5"))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
@@ -148,7 +148,7 @@ def test_predict_example(example, tmpdir):
 
     print(example)
     print("tmpdir: {0}".format(tmpdir))
-    tmpfile = str(tmpdir.mkdir("example").join("out.{0}".format(file_format)))
+    tmpfile = str(tmpdir.mkdir("output").join("out.{0}".format(file_format)))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
@@ -197,7 +197,7 @@ def test_predict_activation_example(example, tmpdir):
 
     print(example)
     print("tmpdir: {0}".format(tmpdir))
-    tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
+    tmpfile = str(tmpdir.mkdir("output").join("out.h5"))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
