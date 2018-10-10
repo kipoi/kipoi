@@ -30,9 +30,9 @@ ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 
 def cp_tmpdir(example, tmpdir):
-    tdir = str(tmpdir.mkdir(str(uuid4())))
+    tdir = os.path.join(str(tmpdir), example, str(uuid4()))
     shutil.copytree(example, tdir)
-    return os.path.join(tdir, example)
+    return tdir
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
