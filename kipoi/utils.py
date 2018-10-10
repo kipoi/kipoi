@@ -87,6 +87,17 @@ def inherits_from(cls, parent):
     return False
 
 
+def infer_parent_class(cls, class_dict):
+    """Figure out the parent class
+    """
+    type_inferred = None
+    for dl_type in reversed(class_dict):
+        dl_cls = class_dict[dl_type]
+        if inherits_from(cls, dl_cls):
+            return dl_type
+    return type_inferred
+
+
 def pip_install_requirements(requirements_fname):
     if os.path.exists(requirements_fname):  # install dependencies
         logger.info('Running pip install -r {}...'.format(requirements_fname))

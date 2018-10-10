@@ -831,10 +831,10 @@ def example_kwargs(dl_args, cache_path=None):
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
     """
-    type = related.StringField()
     defined_as = related.StringField()
     args = related.MappingField(DataLoaderArgument, "name")
     output_schema = related.ChildField(DataLoaderSchema)
+    type = related.StringField(required=False)
     info = related.ChildField(Info, default=Info(), required=False)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import sys
 import re
 import os
 import abc
@@ -12,7 +13,7 @@ from collections import OrderedDict
 import related
 import kipoi  # for .config module
 from kipoi.specs import DataLoaderDescription, Info, example_kwargs
-from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values
+from .utils import load_module, cd, getargs, classproperty, inherits_from, rsetattr, _get_arg_name_values, load_obj, infer_parent_class
 from .external.torch.data import DataLoader
 from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
                               DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
@@ -167,11 +168,7 @@ def kipoi_dataloader(override=dict()):
             raise ValueError("Function-based dataloader are currently not supported with kipoi_dataloader decorator")
 
         # figure out the right dataloader type
-        dl_type_inferred = None
-        for dl_type in reversed(AVAILABLE_DATALOADERS):
-            dl_cls = AVAILABLE_DATALOADERS[dl_type]
-            if inherits_from(cls, dl_cls):
-                dl_type_inferred = dl_type
+        dl_type_inferred = infer_parent_class(cls, AVAILABLE_DATALOADERS)
         if dl_type_inferred is None:
             raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
 
@@ -595,22 +592,42 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     yaml_path = source.pull_dataloader(dataloader)
     dataloader_dir = os.path.dirname(yaml_path)
 
+    # TODO - allow source=py
+
     # --------------------------------------------
     # Setup dataloader description
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
         descr = DataLoaderDescription.load(os.path.basename(yaml_path))
-        file_path, obj_name = tuple(descr.defined_as.split("::"))
-        CustomDataLoader = getattr(load_module(file_path), obj_name)
+        if "::" in descr.defined_as:
+            # old API
+            file_path, obj_name = tuple(descr.defined_as.split("::"))
+            CustomDataLoader = getattr(load_module(file_path), obj_name)
+        else:
+            # new API - directly specify the object
+            sys.path.append(os.getcwd())
+            CustomDataLoader = load_obj(descr.defined_as)
 
-    # check that descr.type is correct
+    # infer the type
+    if descr.type is None:
+        if inspect.isfunction(CustomDataLoader):
+            raise ValueError("Datalodaers implemented as functions/generator need to specify the type flag in dataloader.yaml")
+        else:
+            # figure out the right dataloader type
+            descr.type = infer_parent_class(CustomDataLoader, AVAILABLE_DATALOADERS)
+            if descr.type is None:
+                raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
+
+        # check that descr.type is correct
     if descr.type not in AVAILABLE_DATALOADERS:
         raise ValueError("dataloader type: {0} is not in supported dataloaders:{1}".
                          format(descr.type, list(AVAILABLE_DATALOADERS.keys())))
+
     # check that the extractor arguments match yaml arguments
     if not getargs(CustomDataLoader) == set(descr.args.keys()):
         raise ValueError("DataLoader arguments: \n{0}\n don't match ".format(set(getargs(CustomDataLoader))) +
                          "the specification in the dataloader.yaml file:\n{0}".
                          format(set(descr.args.keys())))
+
     # check that CustomDataLoader indeed interits from the right DataLoader
     if descr.type in DATALOADERS_AS_FUNCTIONS:
         # transform the functions into objects
