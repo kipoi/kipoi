@@ -1,0 +1,39 @@
+name: kipoi-py35
+channels:
+  - bioconda
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.5   # or 2.7
+  # general packages
+  # - git-lfs 
+  # General
+  - numpy
+  - pandas
+  - pytest
+  - h5py
+  - scipy
+  # Bio
+  - pybigwig
+  - pybedtools
+  - pyvcf
+  - pysam
+  - pyfaidx
+  - cyvcf2
+  - bedtools
+  - htslib
+  - genomelake
+  # ML
+  - scikit-learn
+  - tensorflow
+  - pytorch-cpu
+  - pip:
+    - cython
+    # - bcolz>=1.1  # specified by genomelake
+    # - tqdm # specified by kipoi
+    - keras==2.0.4
+    - concise
+    - matplotlib
+    - pytest-xdist
+    - pytest-sugar
