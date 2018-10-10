@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import imp
 import six
 import pickle
 import glob
@@ -37,18 +38,29 @@ class add_sys_path(object):
 def load_obj(obj_import):
     """Load object from string
     """
-    import importlib
+    # import importlib
     if "." not in obj_import:
         raise ValueError("Object descripiton needs to be of the form: "
                          "module.submodule.Object. currently lacking a dot (.)")
 
     with add_sys_path(os.getcwd()):
         module_name, obj_name = obj_import.rsplit(".", 1)
-        if module_name in sys.modules:
-            # make sure this module hasn't been loaded before
-            del sys.modules[module_name]
-        module = importlib.import_module(module_name)
-        obj = getattr(module, obj_name)
+
+        # manually run the import (don't rely on importlib.import_module)
+        # the latter was caching modules which caused trouble when
+        # loading multiple modules of the same kind
+        fp, pathname, description = imp.find_module(module_name)
+        try:
+            module = imp.load_module(module_name, fp, pathname, description)
+            obj = getattr(module, obj_name)
+            return obj
+        except Exception:
+            obj = None
+        finally:
+            # Since we may exit via an exception, close fp explicitly.
+            if fp:
+                fp.close()
+        # module = importlib.import_module(module_name)
     return obj
 
 
@@ -57,7 +69,7 @@ def load_module(path, module_name=None):
 
     Args:
        path: python file path
-       module_name: import as `module_name` name. If none, use `path[:3]`
+       module_name: import as `module_name` name. If none, use `path[:-3]`
     """
     assert path.endswith(".py")
     if module_name is None:
