@@ -1,5 +1,4 @@
 import os
-from uuid import uuid4
 import shutil
 import cyvcf2
 import numpy as np
@@ -21,6 +20,7 @@ def compare_vcfs(fpath1, fpath2):
 
 
 def cp_tmpdir(example, tmpdir):
+    from uuid import uuid4
     tdir = os.path.join(str(tmpdir), example, str(uuid4()))
     shutil.copytree(example, tdir)
     return tdir
