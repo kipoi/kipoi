@@ -1,5 +1,6 @@
 """Run the example scripts
 """
+import shutil
 import pytest
 import subprocess
 import sys
@@ -26,6 +27,12 @@ predict_activation_layers = {
     "pyt": "3"  # two before the last layer
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
+
+
+def cp_tmpdir(example, tmpdir):
+    tdir = os.path.join(str(tmpdir), example, str(uuid4()))
+    shutil.copytree(example, tdir)
+    return tdir
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
