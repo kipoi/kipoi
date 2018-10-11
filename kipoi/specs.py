@@ -840,6 +840,8 @@ def download_default_args(args, base_output_dir='.'):
     for k in args:
         # arg.default is None
         if args[k].default is not None:
+            if isinstance(args[k].default, UNSPECIFIED):
+                continue
             if isinstance(args[k].default, RemoteFile):
                 # if it's a remote file, download it
                 # and set the default to the file path
