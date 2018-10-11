@@ -12,6 +12,7 @@ import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
 from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.sources import list_subcomponents
+from kipoi.utils import cd
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -104,8 +105,8 @@ def merge_deps(models,
             if dataloaders is None or not dataloaders:
                 if isinstance(model_descr.default_dataloader, DataLoaderImport):
                     # add also the directory
-                    sys.path.append(os.path.dirname(model_descr.path))
-                    dataloader_descr = model_descr.default_dataloader.get()
+                    with cd(os.path.dirname(model_descr.path)):
+                        dataloader_descr = model_descr.default_dataloader.get()
                 else:
                     dataloader = os.path.normpath(os.path.join(sub_model,
                                                                str(model_descr.default_dataloader)))
