@@ -1,17 +1,18 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+from collections import OrderedDict
 import sys
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd, merge_dicts, read_pickle
+from .utils import load_module, cd, merge_dicts, read_pickle, override_default_kwargs, load_obj, inherits_from, infer_parent_class
 import abc
 import six
 import numpy as np
 import json
 
-from .specs import ModelDescription, RemoteFile, DataLoaderImport
+from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -106,12 +107,16 @@ def get_model(model, source="kipoi", with_dataloader=True):
     if with_dataloader:
         # load from python
         if isinstance(md.default_dataloader, DataLoaderImport):
-            sys.path.append(source_dir)
-            default_dataloader = md.default_dataloader.get()
+            with cd(source_dir):
+                default_dataloader = md.default_dataloader.get()
             default_dataloader.source_dir = source_dir
+            # download util links if specified under default & override the default parameters
+            override = download_default_args(default_dataloader.args, source_dir)
+            if override:
+                # override default arguments specified under default
+                override_default_kwargs(default_dataloader, override)
         else:
             # load from directory
-
             # attach the default dataloader already to the model
             if ":" in md.default_dataloader:
                 dl_source, dl_path = md.default_dataloader.split(":")
@@ -146,18 +151,40 @@ def get_model(model, source="kipoi", with_dataloader=True):
                 path = md.args[k].get_file(os.path.join(output_dir, fname))
                 md.args[k] = path
 
-        if md.type == 'custom':
-            Mod = load_model_custom(**md.args)
-            assert issubclass(Mod, BaseModel)  # it should inherit from Model
-            mod = Mod()
-        elif md.type in AVAILABLE_MODELS:
-            # TODO - this doesn't seem to work
-            mod = AVAILABLE_MODELS[md.type](**md.args)
+        if md.type is not None:
+            # old API
+            if md.type == 'custom':
+                Mod = load_model_custom(**md.args)
+                assert issubclass(Mod, BaseModel)  # it should inherit from Model
+                mod = Mod()
+            elif md.type in AVAILABLE_MODELS:
+                # TODO - this doesn't seem to work
+                mod = AVAILABLE_MODELS[md.type](**md.args)
+            else:
+                raise ValueError("Unsupported model type: {0}. " +
+                                 "Model type needs to be one of: {1}".
+                                 format(md.type,
+                                        ['custom'] + list(AVAILABLE_MODELS.keys())))
         else:
-            raise ValueError("Unsupported model type: {0}. " +
-                             "Model type needs to be one of: {1}".
-                             format(md.type,
-                                    ['custom'] + list(AVAILABLE_MODELS.keys())))
+            # new API
+            try:
+                Mod = load_obj(md.defined_as)
+            except ImportError:
+                if md.defined_as.startswith("kipoi.model."):
+                    # user tried importing some of the available models
+                    logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
+                        md.defined_as,
+                        ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
+                    ))
+                raise ImportError("Unable to import {}".format(md.defined_as))
+            if not inherits_from(Mod, BaseModel):
+                raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+            mod = Mod(**md.args)
+            for k, v in six.iteritems(AVAILABLE_MODELS):
+                if isinstance(mod, v):
+                    md.type = k
+            if md.type is None:
+                md.type = 'custom'
 
     # populate the returned class
     mod.type = md.type
@@ -231,14 +258,14 @@ class LayerActivationMixin():
     @abc.abstractmethod
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
         """
-        Get predictions based on layer output. 
+        Get predictions based on layer output.
 
         Arguments:
             x: model inputs from dataloader batch
             layer: layer identifier / name. can be integer or string.
             pre_nonlinearity: Assure that output is returned from before the non-linearity. This feature does
             not have to be implemented always (not possible). If not implemented and set to True either raise
-            Error or at least warn! 
+            Error or at least warn!
         """
         raise NotImplementedError
 
@@ -733,7 +760,7 @@ pt_type_conversions = {pre + k: v for pre in ["torch.", "torch.cuda."] for k, v 
 
 
 class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
-    """Loads a pytorch model. 
+    """Loads a pytorch model.
 
     """
 
@@ -745,14 +772,14 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
         `gen_fn`: Either callable or path to callable that returns a pytorch model object. If `weights` is not None
         then the model weights will be loaded from that file, otherwise it is assumed that the weights are already set
-        after execution of `gen_fn()` or the function defined in `gen_fn`.  
+        after execution of `gen_fn()` or the function defined in `gen_fn`.
 
         Models can be loaded in 2 ways:
         If the model was saved:
 
         * `torch.save(model, ...)` then the model will be loaded by calling `torch.load(weights)`
         * `torch.save(model.state_dict(), ...)` then another callable has to be passed to arch which returns the
-        `model` object, on then `model.load_state_dict(torch.load(weights))` will then be called. 
+        `model` object, on then `model.load_state_dict(torch.load(weights))` will then be called.
 
         Where `weights` is the parameter of this function.
         Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
@@ -1050,7 +1077,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     def _register_fwd_hook(self, layer):
         """
         Install a forward hook on the given layer index
-        Returns a PytorchFwdHook object that contains a 
+        Returns a PytorchFwdHook object that contains a
         """
         fwd_hook_obj = PyTorchFwdHook()
         removable_hook_obj = layer.register_forward_hook(fwd_hook_obj.run_forward_hook)
@@ -1122,8 +1149,8 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             avg_func: String name of averaging function to be applied across filters in layer `layer`
             layer: layer from which backwards the gradient should be calculated
             final_layer: Use the final (classification) layer as `layer`
-            selected_fwd_node: None or integer. If a layer is re-used models may support that the gradient is 
-            calculated only with respect to one of the incoming edges / nodes. 
+            selected_fwd_node: None or integer. If a layer is re-used models may support that the gradient is
+            calculated only with respect to one of the incoming edges / nodes.
             pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
             automatic way)
         """
@@ -1509,7 +1536,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
         """
-        Get predictions based on layer output. 
+        Get predictions based on layer output.
 
         Arguments:
             x: model inputs from dataloader batch
@@ -1522,8 +1549,8 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
                              feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
 
 
-AVAILABLE_MODELS = {"keras": KerasModel,
-                    "pytorch": PyTorchModel,
-                    "sklearn": SklearnModel,
-                    "tensorflow": TensorFlowModel}
+AVAILABLE_MODELS = OrderedDict([("keras", KerasModel),
+                                ("pytorch", PyTorchModel),
+                                ("sklearn", SklearnModel),
+                                ("tensorflow", TensorFlowModel)])
 # "custom": load_model_custom}

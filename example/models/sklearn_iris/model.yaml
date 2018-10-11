@@ -1,4 +1,4 @@
-type: sklearn
+defined_as: kipoi.model.SklearnModel
 args:
     pkl_file: model_files/sklearn_model.pkl
     predict_method: predict_proba
