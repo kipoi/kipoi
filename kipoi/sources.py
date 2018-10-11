@@ -31,7 +31,6 @@ def list_subcomponents(component, source, which="model"):
                 if x.startswith(component) and "/template" not in x]
 
 # TODO - optionally don't pull the recent files?
-
 def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
@@ -56,9 +55,9 @@ def load_component_descr(component_path, which="model"):
 
     with cd(os.path.dirname(component_path)):
         if which == "model":
-            return ModelDescription.load(os.path.basename(component_path))
+            return ModelDescription.load(os.path.abspath(os.path.basename(component_path)))
         elif which == "dataloader":
-            return DataLoaderDescription.load(os.path.basename(component_path))
+            return DataLoaderDescription.load(os.path.abspath(os.path.basename(component_path)))
         else:
             raise ValueError("which needs to be from {'model', 'dataloader'}")
 

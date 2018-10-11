@@ -587,6 +587,10 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     - **postprocessing** (dict): dictionary of loaded plugin specifications
     - **example_kwargs** (dict): kwargs for running the provided example
     """
+    # if source == 'py':
+    #     # load it from the python object
+    #     sys.path.append(os.path.getcwd())
+    #     return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
     source = kipoi.config.get_source(source)
