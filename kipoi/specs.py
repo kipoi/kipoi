@@ -760,10 +760,11 @@ class DataLoaderImport(RelatedConfigMixin):
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
-    type = related.StringField()
     args = related.ChildField(dict)
     info = related.ChildField(ModelInfo)
     schema = related.ChildField(ModelSchema)
+    defined_as = related.StringField(required=False)
+    type = related.StringField(required=False)
     default_dataloader = AnyField(default='.', required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
@@ -773,6 +774,8 @@ class ModelDescription(RelatedLoadSaveMixin):
     # TODO - add after loading validation for the arguments class?
 
     def __attrs_post_init__(self):
+        if self.defined_as is None and self.type is None:
+            raise ValueError("Either defined_as or type need to be specified")
         # load additional objects
         for k in self.postprocessing:
             k_observed = k
