@@ -5,12 +5,12 @@ architecture, input / output schema, general information and more. Correct defin
 full use of Kipoi features and make sure that a model can be executed at any point in future.
 
 To help understand the syntax of YAML please take a look at: 
-[YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
+[YAML Syntax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 
 Here is an example `model.yaml`:
 
 ```yaml
-type: keras  # use `kipoi.model.KerasModel`
+type: kipoi.model.KerasModel  
 args:  # arguments of `kipoi.model.KerasModel`
     arch:
         url: https://zenodo.org/path/to/my/architecture/file
@@ -18,7 +18,7 @@ args:  # arguments of `kipoi.model.KerasModel`
     weights:
         url: https://zenodo.org/path/to/my/model/weights.h5
         md5: 1234567890abc
-default_dataloader: . # path to the dataloader directory. Or to the dataloader class, e.g.: kipoiseq.datasets.SeqDataset
+default_dataloader: . # path to the dataloader directory. Or to the dataloader class, e.g.: `kipoiseq.datasets.SeqDataset
 info: # General information about the model
     authors: 
         - name: Your Name
@@ -52,8 +52,11 @@ The model.yaml file has the following mandatory fields:
 ## type
 
 The model type refers to base framework which the model was defined in. Kipoi comes with a support for Keras, PyTorch, 
-SciKit-learn and tensorflow models. To indicate which kind of model will be used the following values for `type` 
-are allowed: `keras`, `pytorch`, `sklearn`, `tensorflow`, and `custom`.
+SciKit-learn and tensorflow models. To indicate which kind of model will be used the respective class name in Kipoi
+ has to be used. Therefore  `type` can be one of the followinf values: `kipoi.model.KerasModel`, 
+ `kipoi.model.PyTorchModel`, `kipoi.model.SklearnModel`, and `kipoi.model.TensorFlowModel`. If you wrote your own Kipoi
+  model class, you called it `MyModel`, and you defined it in the file `my_model.py`, then the `type` field would be:
+ `my_model.MyModel`.
 
 The model type is required to find the right internal prepresentation of a model within Kipoi, which enables loading 
 weights and architecture correctly and offers to have a unified API across frameworks.
@@ -61,7 +64,7 @@ weights and architecture correctly and offers to have a unified API across frame
 In the model.yaml file the definition of a Keras model would like this:
 
 ```yaml
-type: keras
+type: kipoi.model.KerasModel  
 ```
 
 ## args
@@ -70,7 +73,7 @@ of `args` will contain links to zenodo or figshare downloads. The correct
 definition of `args` depends on the model `type` that was selected:
 
 
-### `keras` models
+### `kipoi.model.KerasModel` models
 
 For Keras models the following args are available:
 
@@ -86,7 +89,7 @@ The Keras framework offers different ways to store model architecture and weight
 * Architecture and weights can be stored separately:
 
 ```yaml
-type: keras
+type: kipoi.model.KerasModel
 args:
     arch: 
         url: https://zenodo.org/path/to/my/architecture/file
@@ -99,7 +102,7 @@ args:
 * The architecture can be stored together with the weights:
 
 ```yaml
-type: keras
+type: kipoi.model.KerasModel
 args:
     weights:
         url: https://zenodo.org/path/to/my/model/weights.h5
@@ -120,70 +123,61 @@ OBJECTS = {"SplineT": SplineT}
 
 Example of the corresponding model.yaml entry:
 ```yaml
-type: keras
+type: kipoi.model.KerasModel
 args:
     ...
-    custom_objects:
-        url: https://zenodo.org/path/to/my/model/custom_keras_objects.py
-        md5: 1234567890abc
+    custom_objects: custom_keras_objects.py
 ```
 Here all the objects present in `custom_keras_objects.py` will be made available to Keras when loading the model.
 
 
-### `pytorch` models
+### `kipoi.model.PyTorchModel` models
 
 Pytorch offers much freedom as to how the model is stored. In Kipoi a pytorch model has the following `args`: 
-`file`, `build_fn`, `weights`. If `cuda` is available the model will automatically be switched to cuda mode, so the 
-user does not have to take care of that and the `build_fn` should not attempt to do this conversion. The following 
-ways of instantiating a model are supported:
+`file`, `build_fn`, `weights`.
+PyTorch models require python code in which the model is defined and instantiated, for example the pytorch model 
+definition could be in a file `my_pytorch_model.py`:
+```python
+from torch import nn
 
-* Build function: In the example below Kipoi expects that when calling `get_full_model()` (which is defined in 
-`model_def.py`) A pytorch model is returned for which the weights have already been loaded.
+class DummyModel(nn.Module):
+    def __init__(self, x, y, z):
+        super(DummyModel, self).__init__()
+        # Some code here
 
-```yaml
-type: pytorch
-args:
-    file: 
-        url: https://zenodo.org/path/to/my/model_def.py
-        md5: 1234567890abc
-    build_fn: get_full_model
+    def forward(self, x):
+        # some code here
+        return x
+        
+dummy_model = DummyModel(1,2,3)
 ```
 
-* Build function + weights: In the example below the model is instantiated by calling `get_model()` which can be found 
-in `model_files/model_def.py`. After that the weights will be loaded by executing 
-`model.load_state_dict(torch.load(weights))`.
+The `dummy_model` is therefore a pytorch model instance without loaded weights. That is what is needed for 
+`kipoi.model.PyTorchModel`. The weights will be loaded by `kipoi.model.PyTorchModel`. The yaml file corresponding to
+the above model is: 
 
 ```yaml
-type: pytorch
+type: kipoi.model.PyTorchModel
 args:
-    file: 
-        url: https://zenodo.org/path/to/my/model_def.py
-        md5: 1234567890abc
-    build_fn: get_model
+    file: my_pytorch_model.py
+    model: dummy_model
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
 ```
 
-* Architecture and weights in one file: In this case Kipoi assumes that `model = torch.load(weights)` will be a valid 
-pytorch model. Care has to be taken when storing the architecture a model this way as only standard pytorch layers 
-will be loaded correctly, please see the pytorch documentation for details.
+The weights are loaded using the `model.load_state_dict(torch.load(weights))` command.
 
-```yaml
-type: pytorch
-args:
-    weights:
-        url: https://zenodo.org/path/to/my/model.pth
-        md5: 1234567890abc
-```
+If `cuda` is available on the system then the model will automatically be switched to cuda mode, so the 
+user does not have to take care of that. 
 
-### `sklearn` models
+### `kipoi.model.SklearnModel` models
 
 SciKit-learn models can be loaded from a pickle file as defined below. The command used for loading is: 
 `joblib.load(pkl_file)`
 
 ```yaml
-type: sklearn
+type: kipoi.model.SklearnModel
 args:
   pkl_file: 
       url: https://zenodo.org/path/to/my/model.pkl
@@ -191,14 +185,14 @@ args:
   predict_method: predict_proba  # Optional. predict by default. Available: predict, predict_proba, predict_log_proba
 ```
 
-### `tensorflow` models
+### `kipoi.model.TensorFlowModel` models
 Tensorflow models are expected to be stored by calling `saver = tf.train.Saver(); saver.save(checkpoint_path)`. The 
 `input_nodes` argument is then a string, list of strings or dictionary of strings that define the input node names. 
 The `target_nodes` argument is a string, list of strings or dictionary of strings that define the model target node 
 names.
 
 ```yaml
-type: tensorflow
+type: kipoi.model.TensorFlowModel
 args:
   input_nodes: "inputs"
   target_nodes: "preds"
@@ -214,7 +208,7 @@ what is given in `const_feed_dict_pkl`.
 
 ```yaml
 
-type: tensorflow
+type: kipoi.model.TensorFlowModel
 args:
   ...
   const_feed_dict_pkl:
@@ -222,7 +216,7 @@ args:
       md5: 1234567890abc
 ```
 
-### `custom` models
+### custom models
 
 It is possible to defined a model class independent of the ones which are made available in Kipoi. In that case the 
 contributor-defined `Model` class must be a subclass of `BaseModel` defined in `kipoi.model`. Custom models should 
@@ -233,17 +227,37 @@ Kipoi zoo!
 If for example a custom model class definition (`MyModel`) is in a file `my_model.py`, then the model.yaml will contain:
 
 ```yaml
-type: custom
-args:
-  file: 
-      url: https://zenodo.org/path/to/my/my_model.py
-      md5: 1234567890abc
-  object: MyModel
+type: my_model.MyModel
 ```
 
 Kipoi will then use an instance of MyModel as a model. Keep in mind that MyModel has to be subclass of `BaseModel`, 
 which in other words means that `def predict_on_batch(self, x)` has to be implemented. So if `batch` is for example 
 what the dataloader returns for a batch then `predict_on_batch(batch['inputs'])` has to work.
+
+It is likely that `MyModel` will require additional files to work. The Kipoi way of using such files is by defining 
+Model in the following way:
+
+```python
+from kipoi.model import BaseModel
+
+class MyModel(BaseModel):
+    def __init__(self, external_file):
+        self.data = read_my_file(external_file)
+        #...
+```
+
+The file will be downloaded from zenodo or figshare automatically and assigned to the `external_file` argument if the
+`model.yaml` contains:
+
+```yaml
+type: my_model.MyModel
+args:
+  external_file:
+    default:
+        url: https://zenodo.org/path/to/my/data
+        md5: 1234567890abc
+```
+
 
 
 

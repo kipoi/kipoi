@@ -6,7 +6,7 @@ Also, custom models should never deviate from using only numpy arrays, lists the
 
 The use of a custom model requires definition of a Kipoi-compliant model object, which can then be referred to by the model.yaml file. The model class has to be a subclass of `BaseModel` defined in `kipoi.model`, which in other words means that `def predict_on_batch(self, x)` has to be implemented. So for example if `batch` is  what the dataloader returns for a batch then `predict_on_batch(batch['inputs'])` has to run the model prediction on the given input.
 
-A very simple version of such a model definition that can be stored in for example `model_files/model.py` may be:
+A very simple version of such a model definition that can be stored in for example `model.py` may be:
 
 ```python
 from kipoi.model import BaseModel
@@ -27,9 +27,6 @@ class MyModel(BaseModel):
 This can then be integrated in the model.yaml in the following way:
 
 ```yaml
-type: custom
-args:
-  file: model_files/model.py
-  object: MyModel
+type: model.MyModel
 ...
 ```

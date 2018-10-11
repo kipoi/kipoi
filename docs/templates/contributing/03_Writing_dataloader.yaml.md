@@ -11,13 +11,13 @@ dataloader.yaml is essential for the use of a model in the zoo. Make sure you ha
 [Writing dataloader.py](./04_Writing_dataloader.py.md).
 
 To help understand the synthax of YAML please take a look at: 
-[YAML Synthax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
+[YAML Syntax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 
 Here is an example `dataloader.yaml`:
 
 ```yaml
 type: Dataset
-defined_as: dataloader.py::MyDataset  # We need to implement MyDataset class inheriting from kipoi.data.Dataset in dataloader.py
+defined_as: dataloader.MyDataset  # We need to implement MyDataset class inheriting from kipoi.data.Dataset in dataloader.py
 args:
     features_file:
         # descr: > allows multi-line fields
@@ -79,10 +79,11 @@ The type of the dataloader indicates from which class the dataloader is inherits
 
 ## defined_as
 
-`defined_as` indicates where the dataloader class can be found. It is a string value of `path/to/file.py::class_name` 
-with a the relative path from where the dataloader.yaml lies. E.g.: `model_files/dataloader.py::MyDataLoader`.
+`defined_as` indicates where the dataloader class can be found. It is a string value of `file.ClassName` where file 
+refers to file `file.py` in the same directory as `dataloader.yaml` which contains the data-loader class `ClassName`.
+ E.g.: `dataloader.MyDataLoader`.
 
-This class will then be instantiated by Kipoi with keyword arguments that have to be mentioned explicitely in 
+This class will then be instantiated by Kipoi with keyword arguments that have to be mentioned explicitly in 
 `args` (see below).
 
 ## args
@@ -94,9 +95,13 @@ dictionary with argument names as keys, e.g.:
 ```yaml
 args:
    reference_fasta:
-       example: example_files/chr22.fa
+       example:
+           url: https://zenodo.org/path/to/example_files/chr22.fa
+           md5: 765sadf876a
    argument_2:
-       example: example_files/example_input.txt
+       example:
+           url: https://zenodo.org/path/to/example_files/example_input.txt
+           md5: 786as8d7aasd
 ```
 
 An argument has the following fields:
@@ -107,7 +112,23 @@ Those example files are very useful for users and for automatic testing procedur
 call `kipoi test` uses the exmaple values given for dataloader arguments to assess that a model can be used and 
 is functional. It is therefore important to submit the URLs of all necessary example files with the model.
 * `type`: Optional: datatype of the argument (`str`, `bool`, `int`, `float`)
+* `default`: This field is used to define external zenodo or figshare links that are automatically downloaded and 
+assigned. See example below.
 * `optional`: Optional: Boolean flag (`true` / `false`) for an argument if it is optional.
+
+If your dataloader requires an external data file as for example in 
+[tutorials/contributing_models](../../tutorials/contributing_models), then the Kipoi way of automatically downloading 
+and using that file is by adding an argument to the dataloader implementation that takes the file path and assigning 
+the zenodo or figshare url as a default in the `dataloader.yaml` as follows:
+
+```yaml
+args:
+   ...
+   essential_other_file:
+       default:
+           url: https://zenodo.org/path/to/my/essential/other/file.xyz
+           md5: 765sadf876a
+```
 
 ## info
 

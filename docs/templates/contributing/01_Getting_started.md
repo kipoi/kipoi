@@ -17,8 +17,8 @@ field, such as .bed and .fasta files for genomic sequences and regions.
 To simplify the process of contributing models to Kipoi we have created [kipoiseq](https://github.com/kipoi/kipoiseq), 
 a repository that offers pre-defined dataloaders for common applications.
 
-If you can use one of the dataloaders in kipoiseq for you model then the Kipoi model will consist solely in one folder
-and a `model.yaml` file inside it:
+If you can use one of the dataloaders in kipoiseq for you model then the Kipoi model will consist solely in a folder
+and one `model.yaml` file inside it:
 
 ```
 MyModel
@@ -48,17 +48,17 @@ If the dataloaders offered in [kipoiseq](https://github.com/kipoi/kipoiseq) are 
 a new model can even be done online using github or locally as explained 
 [here](#setting-up-kipoi-for-model-contribution).
  
-##### Contribute model online
+###### Contribute model online
 You can contribute a model online on github by clicking `Create new file` in the 
-[models repository](https://github.com/kipoi/models). The filename would then be "MyModel/model.yaml". The 
+[models repository](https://github.com/kipoi/models). The filename would then be `MyModel/model.yaml`. The 
 name of folder (here: `MyModel`) which contains the [`model.yaml`](./02_Writing_model.yaml.md) 
 file. You can then select `Create a new branch for this commit and start a pull request` to attempt adding your model
-to Kipoi. If you want to test your model you have to make sure that kipoi and git are installed locally. You can test 
-your models as described [here](#how-to-test-the-model).
+to Kipoi. If you want to test your model locally you have to make sure that kipoi and git are installed locally. 
+You can test your models as described [here](#how-to-test-the-model).
 
 
 #### Defining your own dataloader
-If the pre-defined dataloaders don't cover your use-case you will have to define your own. You there have to set up 
+If the pre-defined dataloaders don't cover your use-case you will have to define your own. You therefore have to set up 
 kipoi as described [here](#setting-up-kipoi-for-model-contribution).
 
 #### Setting up Kipoi for model contribution

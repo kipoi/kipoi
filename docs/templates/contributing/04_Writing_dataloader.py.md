@@ -123,6 +123,40 @@ class SeqDataset(Dataset):
 
 Since `FastaExtractor` is not multi-processing safe, we have initialized it on the first call of `__getitem__` instead of `__init__`. The reason for this is that when we use parallel dataloading, each process will get a copy of the `SeqDataset(...)` object. Upon the first call of `__getitem__` the `fasta_extractor` and hence the underlying file-handle will be setup for each worker independently.
 
+### Required static files
+
+If your dataloader requires an external data file as for example in 
+[tutorials/contributing_models](../../tutorials/contributing_models), then the Kipoi way of automatically downloading 
+and using that file is by adding an argument to the dataloader implementation:
+
+```python
+from __future__ import absolute_import, division, print_function
+from kipoi.data import Dataset
+
+class SeqDataset(Dataset):
+    """
+    Args:
+        intervals_file: bed3 file containing intervals
+        fasta_file: file path; Genome sequence
+    """
+
+    def __init__(self, intervals_file, fasta_file, essential_other_file):
+        fh = open(essential_other_file, "r")
+        ...
+```
+ 
+Kipoi can automaticall download the required file from a zenodo or figshare url as if the url was defined as a default
+ in the `dataloader.yaml` as follows:
+
+```yaml
+args:
+   ...
+   essential_other_file:
+       default:
+           url: https://zenodo.org/path/to/my/essential/other/file.xyz
+           md5: 765sadf876a
+```
+
 ### Further examples
 
 To see examples of other dataloaders, run `kipoi init` from the command-line and choose each time a different dataloader_type.
