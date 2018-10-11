@@ -119,7 +119,12 @@ class BaseDataLoader(object):
     def init_example(cls):
         """Instantiate the class using example_kwargs
         """
-        return cls(**cls.example_kwargs)
+        if cls.source_dir is not None:
+            with cd(cls.source_dir):
+                # always init the example in the original directory
+                return cls(**cls.example_kwargs)
+        else:
+            return cls(**cls.example_kwargs)
 
     @classmethod
     def print_args(cls, format_examples_json=False):
