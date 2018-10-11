@@ -1,0 +1,3 @@
+model  model.args.dummy_add	model.info.doc	var.var1
+model1 1			"model returning one"	one
+submodel/model2	2		"model returning two"	two

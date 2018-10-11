@@ -85,9 +85,12 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     """
     # TODO - model can be a yaml file or a directory
-    source_name = source
-
-    source = kipoi.config.get_source(source)
+    if isinstance(source, str):
+        source_name = source
+        source = kipoi.config.get_source(source)
+    else:
+        source_name = 'obj'
+        source = source
 
     # pull the model & get the model directory
     yaml_path = source.pull_model(model)
@@ -121,7 +124,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
             if ":" in md.default_dataloader:
                 dl_source, dl_path = md.default_dataloader.split(":")
             else:
-                dl_source = source_name
+                dl_source = source
                 dl_path = md.default_dataloader
 
             # allow to use relative and absolute paths for referring to the dataloader

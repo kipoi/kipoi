@@ -598,7 +598,8 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     #     return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
-    source = kipoi.config.get_source(source)
+    if isinstance(source, str):
+        source = kipoi.config.get_source(source)
     yaml_path = source.pull_dataloader(dataloader)
     dataloader_dir = os.path.abspath(os.path.dirname(yaml_path))
 

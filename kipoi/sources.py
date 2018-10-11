@@ -121,6 +121,14 @@ def to_namelist(nested_dict):
         return nested_dict.name
 
 
+# ----
+# model group implementation
+# 1. detect there is a model group (needs model-template.yaml and models.tsv)
+
+
+# -----
+
+
 def list_models_by_group(df, group_filter=""):
     """Get a list of models by a group
 
@@ -182,10 +190,15 @@ def list_models_by_group(df, group_filter=""):
     return df.groupby("group").apply(fn).reset_index()
 
 
+# TODO - instead of use local path for git, gitlfs sources to prevent duplication (and maybe reuse the functions defined above)
+
+
 class Source(object):
 
     __metaclass__ = ABCMeta
 
+    # --------------------------------------------
+    # implemented by childs
     @abstractproperty
     def TYPE(self):
         pass
@@ -208,6 +221,18 @@ class Source(object):
         """Returns True if the component exists
         """
         return
+
+    @abstractmethod
+    def _get_component_descr(self, component, which="model"):
+        """Given the component name, return the description
+        """
+        pass
+
+    @abstractmethod
+    def get_config(self):
+        pass
+
+    # --------------------------------------------
 
     def pull_model(self, model):
         return self._pull_component(model, "model")
@@ -287,19 +312,11 @@ class Source(object):
         """
         return list_models_by_group(self.list_models(), group_filter)
 
-    @abstractmethod
-    def _get_component_descr(self, component, which="model"):
-        pass
-
     def get_model_descr(self, model):
         return self._get_component_descr(model, which="model")
 
     def get_dataloader_descr(self, dataloader):
         return self._get_component_descr(dataloader, which="dataloader")
-
-    @abstractmethod
-    def get_config(self):
-        pass
 
     @classmethod
     def from_config(cls, config):
