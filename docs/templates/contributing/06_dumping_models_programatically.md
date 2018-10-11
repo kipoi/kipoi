@@ -78,7 +78,7 @@ Another option is to use template engines. Template engines are heavily used in 
 
 ```yaml
 # template_model.yaml
-type: keras
+defined_as: kipoi.model.KerasModel 
 args:
     weights: model_files/model.h5
 ...

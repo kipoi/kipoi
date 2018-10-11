@@ -10,7 +10,7 @@ To help understand the syntax of YAML please take a look at:
 Here is an example `model.yaml`:
 
 ```yaml
-type: kipoi.model.KerasModel  
+defined_as: kipoi.model.KerasModel  
 args:  # arguments of `kipoi.model.KerasModel`
     arch:
         url: https://zenodo.org/path/to/my/architecture/file
@@ -49,11 +49,11 @@ schema:  # Model schema
 
 The model.yaml file has the following mandatory fields:
 
-## type
+## defined_as
 
 The model type refers to base framework which the model was defined in. Kipoi comes with a support for Keras, PyTorch, 
 SciKit-learn and tensorflow models. To indicate which kind of model will be used the respective class name in Kipoi
- has to be used. Therefore  `type` can be one of the followinf values: `kipoi.model.KerasModel`, 
+ has to be used. Therefore `defined_as` can be one of the followinf values: `kipoi.model.KerasModel`, 
  `kipoi.model.PyTorchModel`, `kipoi.model.SklearnModel`, and `kipoi.model.TensorFlowModel`. If you wrote your own Kipoi
   model class, you called it `MyModel`, and you defined it in the file `my_model.py`, then the `type` field would be:
  `my_model.MyModel`.
@@ -64,13 +64,13 @@ weights and architecture correctly and offers to have a unified API across frame
 In the model.yaml file the definition of a Keras model would like this:
 
 ```yaml
-type: kipoi.model.KerasModel  
+defined_as: kipoi.model.KerasModel  
 ```
 
 ## args
 Model arguments define where the files are files and functions are located to instantiate the model. Most entries 
 of `args` will contain links to zenodo or figshare downloads. The correct 
-definition of `args` depends on the model `type` that was selected:
+definition of `args` depends on the model `defined_as` that was selected:
 
 
 ### `kipoi.model.KerasModel` models
@@ -89,7 +89,7 @@ The Keras framework offers different ways to store model architecture and weight
 * Architecture and weights can be stored separately:
 
 ```yaml
-type: kipoi.model.KerasModel
+defined_as: kipoi.model.KerasModel
 args:
     arch: 
         url: https://zenodo.org/path/to/my/architecture/file
@@ -102,7 +102,7 @@ args:
 * The architecture can be stored together with the weights:
 
 ```yaml
-type: kipoi.model.KerasModel
+defined_as: kipoi.model.KerasModel
 args:
     weights:
         url: https://zenodo.org/path/to/my/model/weights.h5
@@ -123,7 +123,7 @@ OBJECTS = {"SplineT": SplineT}
 
 Example of the corresponding model.yaml entry:
 ```yaml
-type: kipoi.model.KerasModel
+defined_as: kipoi.model.KerasModel
 args:
     ...
     custom_objects: custom_keras_objects.py
@@ -157,7 +157,7 @@ The `dummy_model` is therefore a pytorch model instance without loaded weights. 
 the above model is: 
 
 ```yaml
-type: kipoi.model.PyTorchModel
+defined_as: kipoi.model.PyTorchModel
 args:
     file: my_pytorch_model.py
     model: dummy_model
@@ -177,7 +177,7 @@ SciKit-learn models can be loaded from a pickle file as defined below. The comma
 `joblib.load(pkl_file)`
 
 ```yaml
-type: kipoi.model.SklearnModel
+defined_as: kipoi.model.SklearnModel
 args:
   pkl_file: 
       url: https://zenodo.org/path/to/my/model.pkl
@@ -192,7 +192,7 @@ The `target_nodes` argument is a string, list of strings or dictionary of string
 names.
 
 ```yaml
-type: kipoi.model.TensorFlowModel
+defined_as: kipoi.model.TensorFlowModel
 args:
   input_nodes: "inputs"
   target_nodes: "preds"
@@ -208,7 +208,7 @@ what is given in `const_feed_dict_pkl`.
 
 ```yaml
 
-type: kipoi.model.TensorFlowModel
+defined_as: kipoi.model.TensorFlowModel
 args:
   ...
   const_feed_dict_pkl:
@@ -227,7 +227,7 @@ Kipoi zoo!
 If for example a custom model class definition (`MyModel`) is in a file `my_model.py`, then the model.yaml will contain:
 
 ```yaml
-type: my_model.MyModel
+defined_as: my_model.MyModel
 ```
 
 Kipoi will then use an instance of MyModel as a model. Keep in mind that MyModel has to be subclass of `BaseModel`, 
@@ -250,7 +250,7 @@ The file will be downloaded from zenodo or figshare automatically and assigned t
 `model.yaml` contains:
 
 ```yaml
-type: my_model.MyModel
+defined_as: my_model.MyModel
 args:
   external_file:
     default:
@@ -395,20 +395,26 @@ The `targets` fields of `schema` may be lists, dictionaries or single occurences
 ### How model types handle schemas
 The different model types handle those three different encapsulations of numpy arrays differently:
 
-#### `keras` type models
+#### `KerasModel` models
 ##### Input
-In case a Keras model is used the batch produced by the dataloader is passed on as it is to the `model.predict_on_batch()` function. So if for example a dictionary is defined in the model.yaml and that is produced by the dataloader then this dicationary is passed on to `model.predict_on_batch()`.
+In case a Keras model is used the batch produced by the dataloader is passed on as it is to the 
+`model.predict_on_batch()` function. So if for example a dictionary is defined in the model.yaml and that is produced 
+by the dataloader then this dicationary is passed on to `model.predict_on_batch()`.
 ##### Output
-The model is expected to return the schema that is defined in model.yaml. If for example a model returns a list of numpy arrays then that has to be defined correctly in the model.yaml schema.
+The model is expected to return the schema that is defined in model.yaml. If for example a model returns a list of 
+numpy arrays then that has to be defined correctly in the model.yaml schema.
 
-#### `pytorch` type models
-Pytorch needs `torch.autograd.Variable` instances to work. Hence all inputs are automatically converted into `Variable` objects and results are converted back into numpy arrays transparently. If `cuda` is available the model will automatically be used in cuda mode and also the input variables will be switched to `cuda`.
+#### `PyTorchModel` models
+Pytorch needs `torch.autograd.Variable` instances to work. Hence all inputs are automatically converted into `Variable` 
+objects and results are converted back into numpy arrays transparently. If `cuda` is available the model will 
+automatically be used in cuda mode and also the input variables will be switched to `cuda`.
 ##### Input
 For prediction the following will happen to the tree different encapsulations of input arrays:
 
 * A single array: Will be passed directly as the only argument to model call: `model(Variable(from_numpy(x)))`
 * A list of arrays: The model will be called with the list of converted array as args (e.g.: `model(*list_of_variables)`)
-* A dictionary of arrays: The model will be called with the dictionary of converted array as kwargs (e.g.: `model(**dict_of_variables)`)
+* A dictionary of arrays: The model will be called with the dictionary of converted array as kwargs 
+(e.g.: `model(**dict_of_variables)`)
 
 ##### Output
 The model return values will be converted back into encapsulations of numpy arrays, where:
@@ -416,38 +422,50 @@ The model return values will be converted back into encapsulations of numpy arra
 * a single `Variable` object will be converted into a numpy arrays
 * lists of `Variable` objects will be converted into a list of numpy arrays in the same order and
 
-#### `sklearn` type models
-The batch generated by the dataloader will be passed on directly to the SciKit-learn model using `model.predict(x)`, `model.predict_proba(x)` or `model.predict_log_proba` (depending on the `predict_method` argument).
+#### `SklearnModel` models
+The batch generated by the dataloader will be passed on directly to the SciKit-learn model using `model.predict(x)`, 
+`model.predict_proba(x)` or `model.predict_log_proba` (depending on the `predict_method` argument).
 
-#### `tensorflow` type models
+#### `TensorFlowModel` models
 ##### Input
-The `feed_dict` for running a tensorflow session is generated by converting the batch samples into the `feed_dict` using `input_nodes` defined in the `args` section of the model.yaml. For prediction the following will happen to the tree different encapsulations of input arrays:
+The `feed_dict` for running a tensorflow session is generated by converting the batch samples into the `feed_dict` 
+using `input_nodes` defined in the `args` section of the model.yaml. For prediction the following will happen to the 
+tree different encapsulations of input arrays:
 
 * If `input_nodes` is a single string the model will be fed with a dictionary `{input_ops: x}`
-* If `input_nodes` is a list then the batch is also exptected to be a list in the corresponding order and the feed dict will be created from that.
-* If `input_nodes` is a dictionary then the batch is also exptected to be a dictionary with the same keys and the feed dict will be created from that.
+* If `input_nodes` is a list then the batch is also exptected to be a list in the corresponding order and the feed 
+dict will be created from that.
+* If `input_nodes` is a dictionary then the batch is also exptected to be a dictionary with the same keys and the feed 
+dict will be created from that.
 
 ##### Output
-The return value of the tensorflow model is returned without further transformations and the model outpu schema defined in the `schema` field of model.yaml has to match that.
+The return value of the tensorflow model is returned without further transformations and the model outpu schema defined 
+in the `schema` field of model.yaml has to match that.
 
 
 ## dependencies
-One of the core elements of ensuring functionality of a model is to define software dependencies correctly and strictly. Dependencies can be defined for conda and for pip using the `conda` and `pip` sections respectively.
+One of the core elements of ensuring functionality of a model is to define software dependencies correctly and 
+strictly. Dependencies can be defined for conda and for pip using the `conda` and `pip` sections respectively.
 
 Both can either be defined as a list of packages or as a text file (ending in `.txt`) which lists the dependencies.
 
-Conda as well as pip dependencies can and should be defined with exact versions of the required packages, as defining a package version using e.g.: `package>=1.0` is very likely to break at some point in future.
+Conda as well as pip dependencies can and should be defined with exact versions of the required packages, as defining 
+a package version using e.g.: `package>=1.0` is very likely to break at some point in future.
 
-If your model is a python-based model and you have not tested whether your model works in python 2 and python 3, then make sure that you also add the correct python version as a dependency e.g.: `python=2.7`.
+If your model is a python-based model and you have not tested whether your model works in python 2 and python 3, then 
+make sure that you also add the correct python version as a dependency e.g.: `python=2.7`.
 
 ###conda
-Conda dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text must be given (ending in `.txt`).
+Conda dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text 
+must be given (ending in `.txt`).
 
 If conda packages need to be loaded from a channel then the nomenclature `channel_name::package_name` can be used.
 
 ###pip
-Pip dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text must be given (ending in `.txt`).
+Pip dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text 
+must be given (ending in `.txt`).
 
 ## postprocessing
 
-The postprocessing section of a model.yaml is necessary to indicate that a model is compatible with a certain kind of postprocessing feature available in Kipoi. At the moment only variant effect prediction is available for postprocessing. To understand how to set your model up for variant effect prediction, please take a look at the documentation of variant effect prediction.
+The postprocessing section of a model.yaml is necessary to indicate that a model is compatible with a certain kind of 
+postprocessing feature available in Kipoi. At the moment only variant effect prediction is available for postprocessing. To understand how to set your model up for variant effect prediction, please take a look at the documentation of variant effect prediction.

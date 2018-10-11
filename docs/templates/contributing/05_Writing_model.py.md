@@ -27,6 +27,6 @@ class MyModel(BaseModel):
 This can then be integrated in the model.yaml in the following way:
 
 ```yaml
-type: model.MyModel
+defined_as: model.MyModel
 ...
 ```
