@@ -1,4 +1,4 @@
-type: tensorflow
+defined_as: kipoi.model.TensorFlowModel
 args:
     input_nodes:
       features: inputs  # input = dictionary of np.arrays

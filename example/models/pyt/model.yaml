@@ -1,4 +1,4 @@
-type: pytorch
+defined_as: kipoi.model.PyTorchModel
 args:
     file: model_files/pyt.py
     build_fn: get_model

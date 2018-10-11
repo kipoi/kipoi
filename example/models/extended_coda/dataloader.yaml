@@ -1,5 +1,5 @@
 type: BatchGenerator
-defined_as: dataloader.py::extractor
+defined_as: dataloader.extractor
 args:
     intervals_file:
         doc: "tsv file with `chrom start end`"

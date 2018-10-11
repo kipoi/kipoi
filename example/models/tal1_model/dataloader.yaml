@@ -1,5 +1,4 @@
-type: Dataset
-defined_as: dataloader.py::SeqDataset
+defined_as: dataloader.SeqDataset
 args:
   intervals_file:
     doc: bed3 file with `chrom start end id score strand`

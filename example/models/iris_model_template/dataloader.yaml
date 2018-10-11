@@ -1,5 +1,4 @@
-type: Dataset
-defined_as: dataloader.py::MyDataset
+defined_as: dataloader.MyDataset
 args:
     features_file:
         doc: >

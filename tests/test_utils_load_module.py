@@ -1,8 +1,8 @@
 """Test load module
 """
 import kipoi
-from kipoi.utils import load_obj, inherits_from, override_default_kwargs
-from kipoi.data import BaseDataLoader, Dataset
+from kipoi.utils import load_obj, inherits_from, override_default_kwargs, infer_parent_class, cd
+from kipoi.data import BaseDataLoader, Dataset, AVAILABLE_DATALOADERS
 import pytest
 
 
@@ -28,6 +28,17 @@ def test_inherits_from():
     assert inherits_from(Dataset, BaseDataLoader)
     assert not inherits_from(B, BaseDataLoader)
     assert not inherits_from(B, Dataset)
+
+
+def test_infer_parent_class():
+    class A(Dataset):
+        pass
+
+    class B(object):
+        pass
+
+    assert 'Dataset' == infer_parent_class(A, AVAILABLE_DATALOADERS)
+    assert infer_parent_class(B, AVAILABLE_DATALOADERS) is None
 
 
 def test_override_default_args():
@@ -56,3 +67,21 @@ def test_override_default_args():
 
     with pytest.raises(ValueError):
         override_default_kwargs(A, dict(c=4))
+
+
+def test_load_obj():
+    with pytest.raises(ImportError):
+        load_obj("asd.dsa")
+
+    with pytest.raises(ImportError):
+        load_obj("keras.dsa")
+
+
+def test_sequential_model_loading():
+    m2 = kipoi.get_model("example/models/extended_coda", source='dir')
+    m1 = kipoi.get_model("example/models/kipoi_dataloader_decorator", source='dir')
+
+    with cd(m2.source_dir):
+        next(m2.default_dataloader.init_example().batch_iter())
+    with cd(m1.source_dir):
+        next(m1.default_dataloader.init_example().batch_iter())
