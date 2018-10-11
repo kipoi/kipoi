@@ -152,21 +152,36 @@ class DummyModel(nn.Module):
 dummy_model = DummyModel(1,2,3)
 ```
 
-The `dummy_model` is therefore a pytorch model instance without loaded weights. That is what is needed for 
+The `dummy_model` is therefore a pytorch model instance **without** loaded weights. That is what is needed for 
 `kipoi.model.PyTorchModel`. The weights will be loaded by `kipoi.model.PyTorchModel`. The yaml file corresponding to
 the above model is: 
 
 ```yaml
 defined_as: kipoi.model.PyTorchModel
 args:
-    file: my_pytorch_model.py
-    model: dummy_model
+    module_obj: my_pytorch_model.dummy_model
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
 ```
 
 The weights are loaded using the `model.load_state_dict(torch.load(weights))` command.
+
+Alternatively in the above example the module class could be handed to `kipoi.model.PyTorchModel` together with kwargs 
+in the following way to generate an equivalent model instance:
+
+```yaml
+defined_as: kipoi.model.PyTorchModel
+args:
+    module_class: my_pytorch_model.DummyModel
+    module_kwargs: "{'x':1, 'y':2, 'z':3}"
+    weights: 
+        url: https://zenodo.org/path/to/my/model/weights.pth
+        md5: 1234567890abc
+```
+
+If `module_class` does not require any argument for initialisation then `module_kwargs` doesn't have to be set.
+
 
 If `cuda` is available on the system then the model will automatically be switched to cuda mode, so the 
 user does not have to take care of that. 
