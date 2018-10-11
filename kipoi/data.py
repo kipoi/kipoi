@@ -119,7 +119,12 @@ class BaseDataLoader(object):
     def init_example(cls):
         """Instantiate the class using example_kwargs
         """
-        return cls(**cls.example_kwargs)
+        if cls.source_dir is not None:
+            with cd(cls.source_dir):
+                # always init the example in the original directory
+                return cls(**cls.example_kwargs)
+        else:
+            return cls(**cls.example_kwargs)
 
     @classmethod
     def print_args(cls, format_examples_json=False):
@@ -587,6 +592,10 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     - **postprocessing** (dict): dictionary of loaded plugin specifications
     - **example_kwargs** (dict): kwargs for running the provided example
     """
+    # if source == 'py':
+    #     # load it from the python object
+    #     sys.path.append(os.path.getcwd())
+    #     return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
     source = kipoi.config.get_source(source)

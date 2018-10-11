@@ -540,6 +540,7 @@ class DataLoaderArgument(RelatedConfigMixin):
         if isinstance(self.default, dict) and "url" in self.default:
             self.default = RemoteFile.from_config(self.default)
 
+
 @related.mutable(strict=True)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
@@ -838,21 +839,32 @@ def download_default_args(args, base_output_dir='.'):
     override = {}
     for k in args:
         # arg.default is None
-        if args[k].default is not None and isinstance(args[k].default, RemoteFile):
-            # specify the file name and create the directory
-            output_dir = os.path.join(base_output_dir, 'downloaded/dataloader_files', k)
-            logger.info("Downloading dataloader default arguments {} from {}".format(k, args[k].default.url))
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-            if args[k].default.md5:
-                fname = args[k].default.md5
-            else:
-                fname = "file"
+        if args[k].default is not None:
+            if isinstance(args[k].default, UNSPECIFIED):
+                continue
+            if isinstance(args[k].default, RemoteFile):
+                # if it's a remote file, download it
+                # and set the default to the file path
 
-            # download the parameters and override the model
-            path = args[k].default.get_file(os.path.join(output_dir, fname))
-            args[k].default = path
-            override[k] = path
+                # specify the file name and create the directory
+                output_dir = os.path.join(base_output_dir, 'downloaded/dataloader_files', k)
+                logger.info("Downloading dataloader default arguments {} from {}".format(k, args[k].default.url))
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+                if args[k].default.md5:
+                    fname = args[k].default.md5
+                else:
+                    fname = "file"
+
+                # download the parameters and override the model
+                args[k].default = args[k].default.get_file(os.path.join(output_dir, fname))
+
+            # build up a override dict from .default args
+            if os.path.exists(args[k].default):
+                # for files, make sure we are using absolute paths
+                override[k] = os.path.abspath(args[k].default)
+            else:
+                override[k] = args[k].default
     return override
 
 
