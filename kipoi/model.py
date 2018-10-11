@@ -10,6 +10,7 @@ import abc
 import six
 import numpy as np
 import json
+import yaml
 
 from .specs import ModelDescription, RemoteFile, DataLoaderImport
 from .pipeline import Pipeline
@@ -152,7 +153,11 @@ def get_model(model, source="kipoi", with_dataloader=True):
             mod = Mod()
         elif md.type in AVAILABLE_MODELS:
             # TODO - this doesn't seem to work
-            mod = AVAILABLE_MODELS[md.type](**md.args)
+            # Patch for the old way of loading pytorch models.
+            if md.type == "pytorch":
+                mod = infer_pyt_class(md.args)(**md.args)
+            else:
+                mod = AVAILABLE_MODELS[md.type](**md.args)
         else:
             raise ValueError("Unsupported model type: {0}. " +
                              "Model type needs to be one of: {1}".
@@ -731,6 +736,13 @@ pt_type_conversions = {
     "LongTensor": "long"}
 pt_type_conversions = {pre + k: v for pre in ["torch.", "torch.cuda."] for k, v in pt_type_conversions.items()}
 
+def infer_pyt_class(kwargs):
+    minimum_kwargs_new = (("weights", "module_obj"), ("weights", "module_class"))
+    given_kwargs = set(kwargs.keys())
+    if any([set(kwargs_new).issubset(given_kwargs) for kwargs_new in minimum_kwargs_new]):
+        return PyTorchModel
+    else:
+        return OldPyTorchModel
 
 class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads a pytorch model. 
@@ -739,7 +751,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, file, model, weights, auto_use_cuda=True):
+    def __init__(self, weights, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
         method of the model class that specifies the PyTorch model.
@@ -748,21 +760,28 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
          https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
         
         Arguments: 
-          file: python file defining the model class 
-          model: Instance of a PyTorch model
           weights: file in which the weights are stored
+          module_obj: definition of the PyTorch module object (model) in the `my_python_file.my_module` style.
+          module_class: definition of the PyTorch module class (model class) in the `my_python_file.MyModule` style.
+          module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here.
           auto_use_cuda: Automatically try to use CUDA if available
         """
         import torch
+        from kipoi.utils import load_obj
 
+        if (module_obj is None) and (module_class is None):
+            raise Exception("Either 'module_obj' or 'module_class' have to be defined.")
 
-        if isinstance(model, six.string_types) and file is not None:
-            model = getattr(load_module(file), model)
+        if module_class is not None:
+            kwargs = {}
+            if module_kwargs is not None:
+                if isinstance(module_kwargs, six.string_types):
+                    kwargs = yaml.load(module_kwargs)
+                else:
+                    kwargs = module_kwargs
+            self.model = load_obj(module_class)(**kwargs)
         else:
-            raise Exception("'model' has to be the name string of the "
-                            "model defined in 'file'.")
-
-        self.model = model
+            self.model = load_obj(module_obj)
 
         self.model.load_state_dict(torch.load(weights))
 
@@ -1200,6 +1219,63 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         # convert results back and return values.
         # First loop over the hook (= layers) then over the calls of the hooks (inner loop)
         return [[self.pred_to_np(fv) for fv in fho.forward_values] for fho in fwd_hook_objs]
+
+class OldPyTorchModel(PyTorchModel):
+    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
+        """
+        Load model
+        `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
+        `gen_fn`: Either callable or path to callable that returns a pytorch model object. If `weights` is not None
+        then the model weights will be loaded from that file, otherwise it is assumed that the weights are already set
+        after execution of `gen_fn()` or the function defined in `gen_fn`.
+        Models can be loaded in 2 ways:
+        If the model was saved:
+        * `torch.save(model, ...)` then the model will be loaded by calling `torch.load(weights)`
+        * `torch.save(model.state_dict(), ...)` then another callable has to be passed to arch which returns the
+        `model` object, on then `model.load_state_dict(torch.load(weights))` will then be called.
+        Where `weights` is the parameter of this function.
+        Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
+        """
+        logger.warn("You are using the old initialisation of Kipoi's pytorch models! This feature will soon be "
+                    "removed. Please convert your model to comply with the new definition of loading 'PyTorchModel's.")
+        import torch
+        if build_fn is not None:
+            if callable(build_fn):
+                gen_fn_callable = build_fn
+
+            elif isinstance(build_fn, six.string_types):
+                file_path = file
+                obj_name = build_fn
+                gen_fn_callable = getattr(load_module(file_path), obj_name)
+
+            else:
+                raise Exception("gen_fn has to be callable or a string pointing to the callable.")
+
+            # Load model using generator function
+            self.model = gen_fn_callable()
+
+            # Load weights
+            if weights is not None:
+                self.model.load_state_dict(torch.load(weights))
+
+        elif weights is not None:
+            # Architecture is stored with the weights (not recommended)
+            self.model = torch.load(weights)
+
+        else:
+            raise Exception("At least one of the arguments 'weights' or 'gen_fn' has to be set.")
+
+        if auto_use_cuda and torch.cuda.is_available():
+            self.model = self.model.cuda()
+            self.use_cuda = True
+        else:
+            self.use_cuda = False
+
+        # Assuming that model should be used for predictions only
+        self.model.eval()
+
+        # Keep all gradient hooks in a list
+        self.grad_hooks = []
 
 
 class SklearnModel(BaseModel):

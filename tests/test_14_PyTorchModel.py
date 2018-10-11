@@ -1,17 +1,20 @@
 import numpy as np
-from kipoi.model import PyTorchModel
+from kipoi.model import PyTorchModel, OldPyTorchModel, infer_pyt_class
 from kipoi.utils import cd
 import torch
 from torch import nn
 import torch.nn.functional as F
 import kipoi
 import pytest
+import os
 DUMMY_MODEL_WEIGHTS_FILE = "tests/data/pyt_dummy_model_weight.pth"
 PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE = "tests/data/pyt_sequential_model_weights.pth"
 PYT_NET_MODEL_WEIGHTS_FILE = "tests/data/pyt_net_model_weights.pth"
 PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE = "tests/data/pyt_dummy_multi_i_model_weight.pth"
 CHECKING_MODEL_WEIGHTS_FILE = "tests/data/pyt_checking_model_weight.pth"
-THISFILE = "tests/test_14_PyTorchModel.py"
+THISFILE_TRUNC = "test_14_PyTorchModel"
+THISDIR = "tests"
+CWD = os.getcwd()
 
 
 # Todo - test the kwargs argument
@@ -38,6 +41,8 @@ SimpleModel = torch.nn.Sequential(
     torch.nn.Sigmoid(),
 )
 
+def get_simple_model():
+    return SimpleModel
 
 class CheckingModel(torch.nn.Module):
     original_input = None
@@ -76,8 +81,48 @@ def get_np(var):
 # Test the loading of models
 def test_loading():
     model_path = "example/models/pyt/model_files/"
+    model_path_dotted = model_path.replace("/", ".")
     # load model and weights explcitly
-    m1 = PyTorchModel(file=model_path + "pyt.py", weights=model_path + "only_weights.pth", model="simple_model")
+    with pytest.raises(Exception):
+        m1 = PyTorchModel(weights=model_path + "only_weights.pth")
+    m1 = PyTorchModel(module_obj=model_path_dotted + "pyt.simple_model", weights=model_path + "only_weights.pth")
+    with cd(THISDIR):
+        m1 = PyTorchModel(module_class=THISFILE_TRUNC + ".PyTNet", weights="../" + PYT_NET_MODEL_WEIGHTS_FILE)
+        m1 = PyTorchModel(module_class=THISFILE_TRUNC + ".PyTNet", weights="../" + PYT_NET_MODEL_WEIGHTS_FILE,
+                          module_kwargs={})
+        m1 = PyTorchModel(module_class=THISFILE_TRUNC + ".PyTNet", weights="../" + PYT_NET_MODEL_WEIGHTS_FILE,
+                          module_kwargs="{}")
+
+# Test the loading of models
+def test_loading_old(tmpdir):
+    import torch
+    # load model in different ways...
+    with pytest.raises(Exception):
+        OldPyTorchModel()
+    OldPyTorchModel(build_fn=lambda: get_simple_model())
+    model_path = "example/models/pyt/model_files/"
+    # load model and weights explcitly
+    m1 = OldPyTorchModel(file=model_path + "pyt.py", weights=model_path + "only_weights.pth", build_fn="get_model")
+    # load model and weights through model loader
+    with cd("example/models/pyt"):
+        m2 = OldPyTorchModel(file="model_files/pyt.py", build_fn="get_model_w_weights")
+    # assert that's identical
+    check_same_weights(m1.model.state_dict(), m2.model.state_dict())
+    # now test whether loading a full model works
+    tmpfile = str(tmpdir.mkdir("pytorch").join("full_model.pth"))
+    m = get_simple_model()
+    torch.save(m, tmpfile)
+    km = OldPyTorchModel(weights=tmpfile)
+    check_same_weights(m.state_dict(), km.model.state_dict())
+
+
+def test_infer_pyt_class():
+    kwargs_list = [{"weights":""}, {"weights":"", "module_obj":""}, {"weights":"", "module_class":""},
+              {"weights":"", "build_fn":""}]
+    expected = [OldPyTorchModel, PyTorchModel, PyTorchModel, OldPyTorchModel]
+    for kwargs, exp in zip(kwargs_list, expected):
+        assert infer_pyt_class(kwargs) == exp
+
 
 
 # Test the input and prediction transformation
@@ -88,7 +133,8 @@ def test_prediction_io():
     predict_inputs["dict"] = {"in%d" % i: predict_inputs["arr"] for i in range(10)}
     for k in predict_inputs:
         m_in = predict_inputs[k]
-        m = PyTorchModel(model="checking_model", file=THISFILE, weights=CHECKING_MODEL_WEIGHTS_FILE)
+        with cd(THISDIR):
+            m = PyTorchModel(module_obj=THISFILE_TRUNC +".checking_model", weights="../" +CHECKING_MODEL_WEIGHTS_FILE)
         m.model.original_input = m_in
         pred = m.predict_on_batch(m_in)
         if isinstance(m_in, np.ndarray):
@@ -246,10 +292,13 @@ def store_pyt_net_weights(fname=PYT_NET_MODEL_WEIGHTS_FILE):
 
 
 def test_get_layer():
-    dummy_model = kipoi.model.PyTorchModel(model="dummy_model", file = THISFILE, weights=DUMMY_MODEL_WEIGHTS_FILE)
-    sequential_model = kipoi.model.PyTorchModel(model="pyt_sequential_model", file = THISFILE,
-                                                weights = PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE)
-    complex_model = kipoi.model.PyTorchModel(model="pyt_net", file = THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE)
+    with cd(THISDIR):
+        dummy_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".dummy_model",
+                                               weights="../"+DUMMY_MODEL_WEIGHTS_FILE)
+        sequential_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".pyt_sequential_model",
+                                                    weights = "../"+PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE)
+        complex_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".pyt_net",
+                                                 weights="../"+PYT_NET_MODEL_WEIGHTS_FILE)
     # test get layer
     assert dummy_model.get_layer("first") == dummy_model.model.first
     assert sequential_model.get_layer("0") == getattr(sequential_model.model, "0")
@@ -257,8 +306,11 @@ def test_get_layer():
 
 
 def test_predict_activation_on_batch():
-    dummy_model = kipoi.model.PyTorchModel(model="dummy_model", file = THISFILE, weights=DUMMY_MODEL_WEIGHTS_FILE)
-    complex_model = kipoi.model.PyTorchModel(model="pyt_net", file = THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE)
+    with cd(THISDIR):
+        dummy_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".dummy_model",
+                                               weights="../"+DUMMY_MODEL_WEIGHTS_FILE)
+        complex_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".pyt_net",
+                                                 weights="../"+PYT_NET_MODEL_WEIGHTS_FILE)
     acts_dummy = dummy_model.predict_activation_on_batch(get_dummy_model_input(), layer="first")
 
     acts = complex_model.predict_activation_on_batch(get_pyt_complex_model_input(), layer="conv1")
@@ -273,9 +325,12 @@ def test_predict_activation_on_batch():
 
 def test_gradients():
     import kipoi
-    dummy_model = kipoi.model.PyTorchModel(model="dummy_model", file = THISFILE, weights=DUMMY_MODEL_WEIGHTS_FILE)
-    assert dummy_model.input_grad(np.array([[1.0]]), avg_func="sum", layer="second")[0][0] == 0.125
-    complex_model = kipoi.model.PyTorchModel(model="pyt_net", file = THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE)
+    with cd(THISDIR):
+        dummy_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".dummy_model",
+                                               weights="../"+DUMMY_MODEL_WEIGHTS_FILE)
+        assert dummy_model.input_grad(np.array([[1.0]]), avg_func="sum", layer="second")[0][0] == 0.125
+        complex_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".pyt_net",
+                                                 weights="../"+PYT_NET_MODEL_WEIGHTS_FILE)
 
     gT2 = complex_model.input_grad(get_pyt_complex_model_input(), avg_func="sum", layer="conv1",
                                    selected_fwd_node=None)
@@ -287,8 +342,9 @@ def test_gradients():
 
 def test_returned_gradient_fmt():
     import kipoi
-    multi_input_model = kipoi.model.PyTorchModel(model="dummy_multi_input_model", file=THISFILE,
-                                                 weights=PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE)
+    with cd(THISDIR):
+        multi_input_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".dummy_multi_input_model",
+                                                     weights="../"+PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE)
     # try first whether the prediction actually works..
     sample_input = get_dummy_multi_input("list")
     grad_out = multi_input_model.input_grad(sample_input, avg_func="sum", layer="second",
@@ -305,8 +361,9 @@ def test_returned_gradient_fmt():
 
 def test_gradients_functions():
     import kipoi
-    multi_input_model = kipoi.model.PyTorchModel(model="dummy_multi_input_model", file=THISFILE,
-                                                 weights=PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE)
+    with cd(THISDIR):
+        multi_input_model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".dummy_multi_input_model",
+                                                     weights="../"+PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE)
     sample_input = get_dummy_multi_input("dict")
     multi_input_model.input_grad(sample_input, avg_func="max", layer="first", selected_fwd_node=None)
 
@@ -317,8 +374,9 @@ class DummySlice():
 
 
 def test_grad_tens_generation():
-    model = kipoi.model.PyTorchModel(model="pyt_sequential_model", file = THISFILE,
-                                     weights=PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE, auto_use_cuda=True)
+    with cd(THISDIR):
+        model = kipoi.model.PyTorchModel(module_obj=THISFILE_TRUNC +".pyt_sequential_model",
+                                         weights="../"+PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE, auto_use_cuda=True)
     fwd_hook_obj, removable_hook_obj = model._register_fwd_hook(model.get_layer("4"))
     fwd_values, x_in = model.np_run_pred(get_pyt_sequential_model_input(), requires_grad=True)
     removable_hook_obj.remove()
