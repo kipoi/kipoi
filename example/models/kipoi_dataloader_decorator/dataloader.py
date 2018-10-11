@@ -45,9 +45,7 @@ class MyDataset(Dataset):
               md5: bc1bf3c61c418b2d07506a7d0521a893
         y_transformer:
             doc: input_transformer
-            default:
-              url: https://github.com/kipoi/kipoi/raw/57734d716b8dedaffe460855e7cfe8f37ec2d48d/example/models/sklearn_iris/dataloader_files/y_transformer.pkl
-              md5: 7332d50fd461c49ac6ce24c194abbbd3
+            default: dataloader_files/y_transformer.pkl
         dummy:
             doc: dummy argument
             example: 5
