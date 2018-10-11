@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import imp
 import six
 import pickle
 import glob
@@ -19,6 +20,40 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# recursive get and setattr
+# https://stackoverflow.com/a/31174427
+def rgetattr(obj, attr, *args):
+    """Recursively get attributes:
+    rgetattr(obj, 'attr.subattr')
+    """
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+
+def rsetattr(obj, attr, val):
+    """Recursively set attributes:
+    rsetattr(obj, 'attr.subattr', 10)
+    """
+    pre, _, post = attr.rpartition('.')
+    return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
+# temporarily add an object to path
+class add_sys_path(object):
+    """
+    """
+
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        sys.path.insert(0, self.path)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sys.path.remove(self.path)
+
+
 def load_obj(obj_import):
     """Load object from string
     """
@@ -27,9 +62,25 @@ def load_obj(obj_import):
         raise ValueError("Object descripiton needs to be of the form: "
                          "module.submodule.Object. currently lacking a dot (.)")
 
-    module_name, obj_name = obj_import.rsplit(".", 1)
-    module = importlib.import_module(module_name)
-    return getattr(module, obj_name)
+    with add_sys_path(os.getcwd()):
+        module_name, obj_name = obj_import.split(".", 1)
+        # manually run the import (don't rely on importlib.import_module)
+        # the latter was caching modules which caused trouble when
+        # loading multiple modules of the same kind
+        fp, pathname, description = imp.find_module(module_name)
+        try:
+            module = imp.load_module(module_name, fp, pathname, description)
+            obj = rgetattr(module, obj_name)  # recursively get the module
+        except Exception:
+            obj = None
+        finally:
+            # Since we may exit via an exception, close fp explicitly.
+            if fp:
+                fp.close()
+        # module = importlib.import_module(module_name)
+    if obj is None:
+        raise ImportError("object {} couldn't be imported".format(obj_import))
+    return obj
 
 
 def load_module(path, module_name=None):
@@ -37,7 +88,7 @@ def load_module(path, module_name=None):
 
     Args:
        path: python file path
-       module_name: import as `module_name` name. If none, use `path[:3]`
+       module_name: import as `module_name` name. If none, use `path[:-3]`
     """
     assert path.endswith(".py")
     if module_name is None:
@@ -47,8 +98,8 @@ def load_module(path, module_name=None):
     if sys.version_info[0] == 2:
         import imp
         # add the directory to system's path - allows loading submodules
-        sys.path.append(os.path.join(os.path.dirname(module_name)))
-        module = imp.load_source(module_name, path)
+        with add_sys_path(os.path.join(os.path.dirname(module_name))):
+            module = imp.load_source(module_name, path)
     elif sys.version_info[0] == 3:
         """
         import importlib.machinery
@@ -85,6 +136,17 @@ def inherits_from(cls, parent):
         if x == parent:
             return True
     return False
+
+
+def infer_parent_class(cls, class_dict):
+    """Figure out the parent class
+    """
+    type_inferred = None
+    for dl_type in reversed(class_dict):
+        dl_cls = class_dict[dl_type]
+        if inherits_from(cls, dl_cls):
+            return dl_type
+    return type_inferred
 
 
 def pip_install_requirements(requirements_fname):
@@ -392,22 +454,3 @@ class classproperty(object):
 
     def __get__(self, owner_self, owner_cls):
         return self.fget(owner_cls)
-
-
-# recursive get and setattr
-# https://stackoverflow.com/a/31174427
-def rgetattr(obj, attr, *args):
-    """Recursively get attributes:
-    rgetattr(obj, 'attr.subattr')
-    """
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-    return functools.reduce(_getattr, [obj] + attr.split('.'))
-
-
-def rsetattr(obj, attr, val):
-    """Recursively set attributes:
-    rsetattr(obj, 'attr.subattr', 10)
-    """
-    pre, _, post = attr.rpartition('.')
-    return setattr(rgetattr(obj, pre) if pre else obj, post, val)

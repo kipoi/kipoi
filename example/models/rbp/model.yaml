@@ -1,4 +1,4 @@
-type: keras
+defined_as: kipoi.model.KerasModel
 args:
     arch: model_files/model.json
     weights:

@@ -81,11 +81,11 @@ def get_np(var):
 # Test the loading of models
 def test_loading():
     model_path = "example/models/pyt/model_files/"
-    model_path_dotted = model_path.replace("/", ".")
     # load model and weights explcitly
     with pytest.raises(Exception):
         m1 = PyTorchModel(weights=model_path + "only_weights.pth")
-    m1 = PyTorchModel(module_obj=model_path_dotted + "pyt.simple_model", weights=model_path + "only_weights.pth")
+    with cd(model_path):
+        m1 = PyTorchModel(module_obj= "pyt.simple_model", weights= "only_weights.pth")
     with cd(THISDIR):
         m1 = PyTorchModel(module_class=THISFILE_TRUNC + ".PyTNet", weights="../" + PYT_NET_MODEL_WEIGHTS_FILE)
         m1 = PyTorchModel(module_class=THISFILE_TRUNC + ".PyTNet", weights="../" + PYT_NET_MODEL_WEIGHTS_FILE,

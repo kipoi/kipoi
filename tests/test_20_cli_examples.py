@@ -1,5 +1,6 @@
 """Run the example scripts
 """
+import shutil
 import pytest
 import subprocess
 import sys
@@ -11,6 +12,7 @@ import config
 import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np
+from utils import cp_tmpdir
 
 if config.install_req:
     INSTALL_FLAG = "--install_req"
@@ -26,16 +28,15 @@ predict_activation_layers = {
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
-
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
-def test_test_example(example):
+def test_test_example(example, tmpdir):
     """kipoi test ...
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
             and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
 
     args = ["python", "./kipoi/__main__.py", "test",
             "--batch_size=4",
@@ -72,9 +73,10 @@ def test_preproc_example(example, tmpdir):
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
-    tmpfile = str(tmpdir.mkdir("example", ).join("out.h5"))
+    tmpfile = str(tmpdir.mkdir("output", ).join("out.h5"))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
@@ -129,7 +131,8 @@ def test_predict_example(example, tmpdir):
     if example in {'kipoi_dataloader_decorator'}:
         pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
     if example == "rbp":
         file_format = "tsv"
@@ -138,7 +141,7 @@ def test_predict_example(example, tmpdir):
 
     print(example)
     print("tmpdir: {0}".format(tmpdir))
-    tmpfile = str(tmpdir.mkdir("example").join("out.{0}".format(file_format)))
+    tmpfile = str(tmpdir.mkdir("output").join("out.{0}".format(file_format)))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
@@ -182,11 +185,12 @@ def test_predict_activation_example(example, tmpdir):
     if example in {'kipoi_dataloader_decorator'}:
         pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
-    example_dir = "example/models/{0}".format(example)
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
 
     print(example)
     print("tmpdir: {0}".format(tmpdir))
-    tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
+    tmpfile = str(tmpdir.mkdir("output").join("out.h5"))
 
     # run the
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",

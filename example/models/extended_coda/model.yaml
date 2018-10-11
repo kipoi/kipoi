@@ -1,4 +1,4 @@
-type: keras
+defined_as: kipoi.model.KerasModel
 args:
     weights: model_files/keras2/model.h5
     backend: tensorflow

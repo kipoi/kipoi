@@ -1,5 +1,4 @@
-type: Dataset
-defined_as: dataloader.py::SeqDistDataset
+defined_as: dataloader.SeqDistDataset
 args:
   # TODO - should we use some special file-names?
     # if any of the arguments is numeric, the type specification is mandatory

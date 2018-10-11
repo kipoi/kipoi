@@ -1,7 +1,6 @@
-type: pytorch
+defined_as: kipoi.model.PyTorchModel
 args:
-    file: model_files/pyt.py
-    model: simple_model
+    module_obj: pyt.simple_model
     weights: model_files/only_weights.pth
 default_dataloader: . # path to the directory
 info:
