@@ -55,7 +55,6 @@ def cli_test(command, raw_args):
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
-    # with cd(mh.source_dir):
     mh.pipeline.predict_example(batch_size=args.batch_size)
     # if not match:
     #     # logger.error("Expected targets don't match model predictions")

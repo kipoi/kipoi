@@ -211,14 +211,19 @@ class Source(object):
 
     @abstractmethod
     def _pull_component(self, component, which="model"):
-        """Pull/update the model locally and
-        returns a local path to it
+        """Pull/update the model locally
         """
         return
 
     @abstractmethod
     def _is_component(self, component, which='model'):
         """Returns True if the component exists
+        """
+        return
+
+    @abstractmethod
+    def _get_component_dir(self, component, which='model'):
+        """Get component directory
         """
         return
 
@@ -234,11 +239,21 @@ class Source(object):
 
     # --------------------------------------------
 
+    def assert_is_component(self, component, which='model'):
+        if not self._is_component(component, which):
+            raise ValueError("{} {} doesn't exist".format(which, component))
+
     def pull_model(self, model):
         return self._pull_component(model, "model")
 
     def pull_dataloader(self, dataloader):
         return self._pull_component(dataloader, "dataloader")
+
+    def get_model_dir(self, model):
+        return self._get_component_dir(model, 'model')
+
+    def get_dataloader_dir(self, model):
+        return self._get_component_dir(model, 'dataloader')
 
     def list_models(self):
         """List all the models as a data.frame
@@ -334,6 +349,119 @@ class Source(object):
         return "{0}({1})".format(cls_name, kwargs)
 
 
+class LocalSource(Source):
+
+    TYPE = "local"
+
+    def __init__(self, local_path):
+        """Local files
+        """
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
+        self.component_list = None
+
+    # TODO
+    def _list_components(self, which="model"):
+        return list_yamls_recursively(self.local_path, which)
+
+    def _get_component_dir(self, component, which='model'):
+        # TODO
+        pass
+
+    def cache_component_list(self, force=False):
+        if force or self.component_list is None:
+            self.component_list = dict(model=self._list_components(which="model"),
+                                       dataloader=self._list_components(which="dataloader"))
+
+    def _is_component(self, component, which="model"):
+        self.cache_component_list()
+        return component in self.component_list[which]
+
+    def _pull_component(self, component, which="model"):
+        self.assert_is_component(component, which)
+        return get_component_file(os.path.join(self.local_path, component), which)
+
+    def _get_component_descr(self, component, which="model"):
+        return load_component_descr(self._pull_component(component, which), which)
+
+    def get_config(self):
+        return OrderedDict([("type", self.TYPE),
+                            ("local_path", self.local_path)])
+
+
+class GitSource(Source):
+    TYPE = "git"
+
+    def __init__(self, remote_url, local_path):
+        """Git Source
+        """
+        self.remote_url = remote_url
+        self.local_path = os.path.join(local_path, '')  # add trailing slash
+        self._pulled = False
+
+        self.local_source = LocalSource(self.local_path)
+
+    def clone(self):
+        """Clone the self.remote_url into self.local_path
+        """
+        if os.path.exists(self.local_path) and os.listdir(self.local_path):
+            raise IOError("Directory {0} already exists and is non-empty".
+                          format(self.local_path))
+
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=self.remote_url,
+                           local=self.local_path))
+
+        subprocess.call(["git",
+                         "clone",
+                         "--depth=1",
+                         self.remote_url,
+                         self.local_path])
+        self._pulled = True
+
+    def pull_source(self):
+        """Pull/update the source
+        """
+        if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
+            return self.clone()
+
+        logger.info("Update {0}".
+                    format(self.local_path))
+        subprocess.call(["git",
+                         "pull"],
+                        cwd=self.local_path)
+        self._pulled = True
+
+    def _list_components(self, which="model"):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._list_components(which)
+
+    def _get_component_dir(self, component, which='model'):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._get_component_dir(component, which)
+
+    def _pull_component(self, component, which="model"):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._pull_component(component, which)
+
+    def _is_component(self, component, which="model"):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._is_component(component, which)
+
+    def _get_component_descr(self, component, which="model"):
+        if not self._pulled:
+            self.pull_source()
+        return self._get_component_descr(component, which)
+
+    def get_config(self):
+        return OrderedDict([("type", self.TYPE),
+                            ("remote_url", self.remote_url),
+                            ("local_path", self.local_path)])
+
+
 class GitLFSSource(Source):
 
     TYPE = "git-lfs"
@@ -346,10 +474,7 @@ class GitLFSSource(Source):
         self.local_path = os.path.join(local_path, '')  # add trailing slash
         self._pulled = False
 
-    def _list_components(self, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return list_yamls_recursively(self.local_path, which)
+        self.local_source = LocalSource(self.local_path)
 
     def clone(self, depth=1):
         """Clone the self.remote_url into self.local_path
@@ -401,6 +526,16 @@ class GitLFSSource(Source):
                         cwd=self.local_path,
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
+    def _list_components(self, which="model"):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._list_components(which)
+
+    def _get_component_dir(self, component, which='model'):
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._get_component_dir(component, which)
+
     def _pull_component(self, component, which="model"):
         lfs_installed(raise_exception=True)
         if not self._pulled:
@@ -410,12 +545,7 @@ class GitLFSSource(Source):
 
         # get a list of directories to source (relative to the local_path)
         softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
-
-        cpath = get_component_file(component_dir, which)
-        if not os.path.exists(cpath):
-            raise ValueError("{0}: {1} doesn't exist in {2}".
-                             format(component, self.remote_url))
-
+        # pull these softlinks
         for pull_dir in [component] + softlink_dirs:
             cmd = ["git-lfs",
                    "pull",
@@ -424,132 +554,22 @@ class GitLFSSource(Source):
             subprocess.call(cmd,
                             cwd=self.local_path,
                             env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
-        logger.info("{0} {1} loaded".format(which, component))
-        return cpath
+
+        return self.local_source._pull_component(component, which)
 
     def _is_component(self, component, which="model"):
-        cpath = get_component_file(os.path.join(self.local_path, component), which, raise_err=False)
-        return cpath is not None and os.path.exists(cpath)
+        if not self._pulled:
+            self.pull_source()
+        return self.local_source._is_component(component, which)
 
     def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
-
-        cpath = get_component_file(os.path.join(self.local_path, component), which)
-        if not os.path.exists(cpath):
-            raise ValueError("{0}: {1} doesn't exist in {2}".
-                             format(which, component, self.remote_url))
-
-        return load_component_descr(cpath, which)
+        return self._get_component_descr(component, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
                             ("remote_url", self.remote_url),
-                            ("local_path", self.local_path)])
-
-
-class GitSource(Source):
-    TYPE = "git"
-
-    def __init__(self, remote_url, local_path):
-        """Git Source
-        """
-        self.remote_url = remote_url
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
-        self._pulled = False
-
-    def _list_components(self, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return list_yamls_recursively(self.local_path, which)
-
-    def clone(self):
-        """Clone the self.remote_url into self.local_path
-        """
-        if os.path.exists(self.local_path) and os.listdir(self.local_path):
-            raise IOError("Directory {0} already exists and is non-empty".
-                          format(self.local_path))
-
-        logger.info("Cloning {remote} into {local}".
-                    format(remote=self.remote_url,
-                           local=self.local_path))
-
-        subprocess.call(["git",
-                         "clone",
-                         "--depth=1",
-                         self.remote_url,
-                         self.local_path])
-        self._pulled = True
-
-    def pull_source(self):
-        """Pull/update the source
-        """
-        if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
-            return self.clone()
-
-        logger.info("Update {0}".
-                    format(self.local_path))
-        subprocess.call(["git",
-                         "pull"],
-                        cwd=self.local_path)
-        self._pulled = True
-
-    def _pull_component(self, component, which="model"):
-        if not self._pulled:
-            self.pull_source()
-
-        cpath = get_component_file(os.path.join(self.local_path, component), which)
-        if not os.path.exists(cpath):
-            raise ValueError("{0} {1} doesn't exist in {2}".
-                             format(which, component, self.remote_url))
-        logger.info("{0} {1} loaded".format(which, component))
-        return cpath
-
-    def _is_component(self, component, which="model"):
-        cpath = get_component_file(os.path.join(self.local_path, component),
-                                   which,
-                                   raise_err=False)
-        return cpath is not None and os.path.exists(cpath)
-
-    def _get_component_descr(self, component, which="model"):
-        return load_component_descr(self._pull_component(component, which), which)
-
-    def get_config(self):
-        return OrderedDict([("type", self.TYPE),
-                            ("remote_url", self.remote_url),
-                            ("local_path", self.local_path)])
-
-
-class LocalSource(Source):
-
-    TYPE = "local"
-
-    def __init__(self, local_path):
-        """Local files
-        """
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
-
-    def _list_components(self, which="model"):
-        return list_yamls_recursively(self.local_path, which)
-
-    def _pull_component(self, component, which="model"):
-        cpath = get_component_file(os.path.join(self.local_path, component), which)
-        if not os.path.exists(cpath):
-            raise ValueError("{0} {1} doesn't exist".
-                             format(which, component))
-        return cpath
-
-    def _is_component(self, component, which="model"):
-        cpath = get_component_file(os.path.join(self.local_path, component),
-                                   which,
-                                   raise_err=False)
-        return cpath is not None and os.path.exists(cpath)
-
-    def _get_component_descr(self, component, which="model"):
-        return load_component_descr(self._pull_component(component, which), which)
-
-    def get_config(self):
-        return OrderedDict([("type", self.TYPE),
                             ("local_path", self.local_path)])
 
 
@@ -583,7 +603,7 @@ class GithubPermalinkSource(Source):
         # Same as for local source
         return []  # list_yamls_recursively(self.local_path, which)
 
-    def _pull_component(self, component, which="model"):
+    def get_lfs_source(self, component):
         user, repo, commit, model = self._parse_url(component)
         remote_url = "https://github.com/{user}/{repo}.git".format(user=user, repo=repo)
         lfs_source = GitLFSSource(remote_url, os.path.join(self.local_path, user, repo, commit))
@@ -593,18 +613,23 @@ class GithubPermalinkSource(Source):
             lfs_source.clone(depth=None)
             lfs_source._commit_checkout(commit)
         lfs_source._pulled = True  # Don't git-pull
+        return lfs_source
 
-        return lfs_source._pull_component(model, which=which)
+    def _get_component_dir(self, component, which='model'):
+        user, repo, commit, model = self._parse_url(component)
+        return self.get_lfs_source(component)._get_component_dir(model, which='model')
+
+    def _pull_component(self, component, which="model"):
+        user, repo, commit, model = self._parse_url(component)
+        self.get_lfs_source(component)._pull_component(model, which=which)
 
     def _is_component(self, component, which="model"):
-        try:
-            self._pull_component(component, which)
-            return True
-        except Exception:
-            return False
+        user, repo, commit, model = self._parse_url(component)
+        return self.get_lfs_source(component)._is_component(model, which)
 
     def _get_component_descr(self, component, which="model"):
-        return load_component_descr(self._pull_component(component, which), which)
+        user, repo, commit, model = self._parse_url(component)
+        return self.get_lfs_source(component)._get_component_descr(model, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
