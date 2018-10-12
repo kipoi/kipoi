@@ -159,7 +159,8 @@ the above model is:
 ```yaml
 defined_as: kipoi.model.PyTorchModel
 args:
-    module_obj: my_pytorch_model.dummy_model
+    module_file: my_pytorch_model.py
+    module_obj: dummy_model
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
@@ -173,7 +174,8 @@ in the following way to generate an equivalent model instance:
 ```yaml
 defined_as: kipoi.model.PyTorchModel
 args:
-    module_class: my_pytorch_model.DummyModel
+    module_file: my_pytorch_model.py
+    module_class: DummyModel
     module_kwargs: "{'x':1, 'y':2, 'z':3}"
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
