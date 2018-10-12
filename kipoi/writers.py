@@ -358,8 +358,6 @@ class BigWigWriter(RegionWriter):
         """
         from pybedtools import BedTool
         import pyBigWig
-        import pdb
-        pdb.set_trace()
         # close the temp file
         self.bgw.close()
         # sort the tempfile and get the path of the sorted file

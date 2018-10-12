@@ -1,22 +1,23 @@
 defined_as: model.MyModel
 args:
-  dummy_add: null  # override
+  dummy_add: {{ dummy_add }}  # override
 
 default_dataloader:
   defined_as: kipoiseq.datasets.SeqDataset
-  auto_resize_len: 10
+  default_args:
+    auto_resize_len: 10
 
 dependencies:
   pip:
     - kipoiseq
 
 info:
-  doc: override  # override
+  doc: {{ doc }}  # override
 
 schema:
   inputs:
     shape: (10, 4)
-    doc: sequence {{var.var1}}
+    doc: sequence {{ var1 }}
   targets:
-    shape: ()
+    shape: (None,)
     doc: prediction

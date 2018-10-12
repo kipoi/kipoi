@@ -11,4 +11,4 @@ def test_config_file_exists():
 
 def test_load_config():
     assert kipoi.config.model_sources()["kipoi"].local_path == \
-           os.path.join(os.path.expanduser('~'), ".kipoi/models/")
+        os.path.join(os.path.realpath(os.path.expanduser('~')), ".kipoi/models/")

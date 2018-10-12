@@ -191,7 +191,7 @@ if not os.path.exists(_config_path):
 
 
 # Add dir as a valid source
-add_source("dir", LocalSource("."))
+add_source("dir", LocalSource(None))
 
 if "github-permalink" not in model_sources():
     # backcompatibility with old versions

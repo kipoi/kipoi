@@ -64,9 +64,10 @@ def source():
     return LocalSource(source_dir)
 
 
-source = source()  # TODO - remove
+# source = source()  # TODO - remove
 
 # MODEL = 'multiple_models'
+
 
 def test_list_components(source):
     # 1. list
@@ -75,24 +76,24 @@ def test_list_components(source):
     # 4. check that the made prediction is correct
 
     # 1. instantiate the source
-    l = source._list_components("model")
+    ls = source._list_components("model")
 
     # standard models
-    assert 'pyt' in l
+    assert 'pyt' in ls
 
     # group models
-    assert 'multiple_models/model1' in l
-    assert 'multiple_models/submodel/model2' in l
+    assert 'multiple_models/model1' in ls
+    assert 'multiple_models/submodel/model2' in ls
 
     # dataloader
-    l = source._list_components("dataloader")
+    ls = source._list_components("dataloader")
 
     # standard models
-    assert 'pyt' in l
+    assert 'pyt' in ls
 
-    # group models
-    assert 'multiple_models/model1' in l
-    assert 'multiple_models/submodel/model2' in l
+    # group dataloader - not present
+    assert 'multiple_models/model1' not in ls
+    assert 'multiple_models/submodel/model2' not in ls
 
 
 def test_is_component(source):
@@ -104,23 +105,26 @@ def test_is_component(source):
     assert not source._is_component("multiple_models", 'dataloader')
 
     assert source._is_component("multiple_models/model1", 'model')
-    assert source._is_component("multiple_models/model1", 'dataloader')
+    assert not source._is_component("multiple_models/model1", 'dataloader')
+
+    assert not source._is_component("multiple_models", 'model')
+    assert not source._is_component("multiple_models", 'dataloader')
 
     assert source._is_component("multiple_models/submodel/model2", 'model')
-    assert source._is_component("multiple_models/submodel/model2", 'dataloader')
+    assert not source._is_component("multiple_models/submodel/model2", 'dataloader')
 
 
 def test_pull_component(source):
-    assert source._pull_component("pyt", 'model') == os.path.join(source.local_path, "pyt/model.yaml")
-    assert source._pull_component("pyt", 'dataloader') == os.path.join(source.local_path, "pyt/dataloader.yaml")
+    assert source._get_component_dir("pyt", 'model') == os.path.join(source.local_path, "pyt")
+    assert source._get_component_dir("pyt", 'dataloader') == os.path.join(source.local_path, "pyt")
 
     # group component
-    assert source._pull_component("multiple_models/model1", 'model') is None
-    assert source._pull_component("multiple_models/model1", 'dataloader') is None
+    assert source._get_component_dir("multiple_models/model1", 'model') == os.path.join(source.local_path, "multiple_models")
+    with pytest.raises(ValueError):
+        source._get_component_dir("multiple_models/model1", 'dataloader') is None
 
-    assert source._pull_component("multiple_models/submodel/model2", 'model') is None
-    assert source._pull_component("multiple_models/submodel/model2", 'dataloader') is None
-    # TODO - make sure you can download anything that's there
+    assert source._get_component_dir("multiple_models/submodel/model2", 'model') == \
+        os.path.join(source.local_path, "multiple_models")
 
 
 def test_get_component_descr(source):
@@ -129,32 +133,32 @@ def test_get_component_descr(source):
 
     # test overriding
     assert source._get_component_descr("multiple_models/model1", 'model').info.doc == "model returning one"
-    assert source._get_component_descr("multiple_models/submodels/model2", 'model').info.doc == "model returning two"
+    assert source._get_component_descr("multiple_models/submodel/model2", 'model').info.doc == "model returning two"
 
     # test placeholders
     assert source._get_component_descr("multiple_models/model1", 'model').schema.inputs.doc == "sequence one"
-    assert source._get_component_descr("multiple_models/submodels/model2", 'model').schema.inputs.doc == "sequence two"
+    assert source._get_component_descr("multiple_models/submodel/model2", 'model').schema.inputs.doc == "sequence two"
 
 
 def test_get_model(source):
     # model correctly instentiated
+    assert kipoi.get_dataloader_factory("pyt", source).info.doc
     assert kipoi.get_model("pyt", source).info.doc
 
-    assert kipoi.get_model("multiple_models/model1", source).dummy == 1
-    assert kipoi.get_model("multiple_models/submodels/model2", source).dummy == 2
+    assert kipoi.get_model("multiple_models/model1", source).dummy_add == 1
+    assert kipoi.get_model("multiple_models/submodel/model2", source).dummy_add == 2
 
     # model examples correctly performed
     m = kipoi.get_model("multiple_models/model1", source)
-    assert np.all(m.pipeline.predict_example()['targets'] == 1)
+    assert np.all(m.pipeline.predict_example() == 1)
 
-    m = kipoi.get_model("multiple_models/submodels/model2", source)
-    assert np.all(m.init_example().load_all()['targets'] == 2)
+    m = kipoi.get_model("multiple_models/submodel/model2", source)
+    assert np.all(m.pipeline.predict_example() == 2)
 
 
 def test_list_models(source):
     df = source.list_models()
-    assert df.model.str.contains("pyt").any()
-
-    assert not df.model.str.contains("multiple_models").any()
-    assert df.model.str.contains("multiple_models/model1").any()
-    assert df.model.str.contains("multiple_models/submodels/model2").any()
+    assert "pyt" in list(df.model)
+    assert "multiple_models" not in list(df.model)
+    assert "multiple_models/model1" in list(df.model)
+    assert "multiple_models/submodel/model2" in list(df.model)

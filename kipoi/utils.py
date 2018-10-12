@@ -1,6 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+import os.path
+import hashlib
+import errno
+from tqdm import tqdm
 import imp
 import six
 import pickle
@@ -68,10 +73,11 @@ def load_obj(obj_import):
         # the latter was caching modules which caused trouble when
         # loading multiple modules of the same kind
         fp, pathname, description = imp.find_module(module_name)
+        e = None
         try:
             module = imp.load_module(module_name, fp, pathname, description)
             obj = rgetattr(module, obj_name)  # recursively get the module
-        except Exception:
+        except Exception as e:
             obj = None
         finally:
             # Since we may exit via an exception, close fp explicitly.
@@ -79,7 +85,7 @@ def load_obj(obj_import):
                 fp.close()
         # module = importlib.import_module(module_name)
     if obj is None:
-        raise ImportError("object {} couldn't be imported".format(obj_import))
+        raise ImportError("object {} couldn't be imported. Error {}".format(obj_import, str(e)))
     return obj
 
 

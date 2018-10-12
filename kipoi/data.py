@@ -605,8 +605,8 @@ def get_dataloader(dataloader, source="kipoi"):
 
     # --------------------------------------------
     # Setup dataloader description
+    descr = source.get_dataloader_descr(dataloader)
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
-        descr = source.get_dataloader_descr()
         if "::" in descr.defined_as:
             # old API
             file_path, obj_name = tuple(descr.defined_as.split("::"))
@@ -616,7 +616,7 @@ def get_dataloader(dataloader, source="kipoi"):
             CustomDataLoader = load_obj(descr.defined_as)
 
     # download util links if specified under default & override the default parameters
-    override = download_default_args(descr.args, source.get_dataloader_download_dir())
+    override = download_default_args(descr.args, source.get_dataloader_download_dir(dataloader))
     if override:
         # override default arguments specified under default
         override_default_kwargs(CustomDataLoader, override)

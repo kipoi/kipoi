@@ -8,15 +8,14 @@ import pandas as pd
 def test_load_models_kipoi():
     k = kipoi.config.get_source("kipoi")
 
-    l = k.list_models()  # all the available models
+    ls = k.list_models()  # all the available models
 
-    assert "HAL" in list(l.model)
+    assert "HAL" in list(ls.model)
     model = "HAL"
-    mpath = k.pull_model(model)
-    m_dir = os.path.dirname(mpath)
+    k.pull_model(model)
 
     # load the model
-    kipoi.get_model(m_dir, source="dir")
+    kipoi.get_model(os.path.join(k.local_path, "HAL"), source="dir")
 
     kipoi.get_model(model, source="kipoi")
     kipoi.get_dataloader_factory(model)
@@ -65,6 +64,6 @@ def test_list_models_group():
 
 def test_github_permalink():
     link = "https://github.com/kipoi/models/tree/7d3ea7800184de414aac16811deba6c8eefef2b6/pwm_HOCOMOCO/human/CTCF"
-    m = kipoi.get_model(link, source="github-permalink")
-    d = kipoi.get_model_descr(link, source="github-permalink")
+    kipoi.get_model(link, source="github-permalink")
+    kipoi.get_model_descr(link, source="github-permalink")
     assert len(kipoi.get_source("github-permalink").list_models()) == 0

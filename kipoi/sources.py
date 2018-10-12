@@ -195,23 +195,28 @@ class LocalComponentGroup(object):
             self.template = Template(f.read())
 
         self.models_tsv = models_tsv
-        self.df = pd.read_csv(models_tsv, sep='\tsv')
+        self.df = pd.read_csv(models_tsv, sep='\t', comment='#')
+
         if 'model' not in self.df:
-            raise ValueError("Column 'model' has to exist in {}".format(models_tsv))
+            raise ValueError("Column 'model' has to exist in {}. Make "
+                             "also sure the tsv file is correctly formatted".format(models_tsv))
 
         # assert each model occurs once
         assert len(self.df.model.duplicated()) == len(self.df.model)
 
     def get_model_row(self, model):
-        if model not in self.df.model:
-            raise ValueError("model not found in {}".format(list(self.df.model)))
+        if model not in list(self.df.model):
+            raise ValueError("model {} not found in {}".format(model, list(self.df.model)))
         return self.df[self.df.model == model].iloc[0].to_dict()
 
+    def _is_component(self, component):
+        return component in self._list_components()
+
     def _list_components(self):
-        return list(self.df.name)
+        return list(self.df.model)
 
     def _get_component_descr(self, component):
-        from kipoi.specs import ModelDescription, DataloaderDescription
+        from kipoi.specs import ModelDescription, DataLoaderDescription
 
         # render the template
         rendered_yaml = self.template.render(**self.get_model_row(component))
@@ -219,7 +224,7 @@ class LocalComponentGroup(object):
         if self.which == 'model':
             return ModelDescription.from_string(rendered_yaml)
         elif self.which == 'dataloader':
-            return DataloaderDescription.from_string(rendered_yaml)
+            return DataLoaderDescription.from_string(rendered_yaml)
         else:
             raise ValueError("Unknown component {}".format(self.which))
 
@@ -285,10 +290,12 @@ class Source(object):
             raise ValueError("{} {} doesn't exist".format(which, component))
 
     def pull_model(self, model):
-        return self._pull_component(model, "model")
+        self._pull_component(model, "model")
+        return self.get_model_dir(model)
 
     def pull_dataloader(self, dataloader):
-        return self._pull_component(dataloader, "dataloader")
+        self._pull_component(dataloader, "dataloader")
+        return self.get_dataloader_dir(dataloader)
 
     def get_model_dir(self, model):
         return self._get_component_dir(model, 'model')
@@ -405,27 +412,39 @@ class LocalSource(Source):
 
     TYPE = "local"
 
-    def __init__(self, local_path):
+    def __init__(self, local_path=None):
         """Local files
         """
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
+        if local_path is not None:
+            self._local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
+        else:
+            # undetermined local path
+            self._local_path = None
         self.component_yaml_list = None
         self.component_group_list = None
+
+    @property
+    def local_path(self):
+        if self._local_path is None:
+            return os.getcwd()
+        else:
+            return self._local_path
 
     def _list_component_yamls(self, which='model'):
         return list_yamls_recursively(self.local_path, which)
 
     def _list_component_groups(self, which='model'):
-        template_files = list_yamls_recursively(self.local_path, which + '-template')
+        template_dirs = list_yamls_recursively(self.local_path, which + '-template')
+
         out = {}
-        for template_file in template_files:
-            cdir = os.path.dirname(template_file)
+        for template_dir in template_dirs:
+            cdir = os.path.join(self.local_path, template_dir)
 
             models_tsv = os.path.join(cdir, 'models.tsv')
             if not os.path.exists(models_tsv):
                 raise ValueError("models.tsv doesn't exist for {}-template.yaml in {}".format(which, cdir))
 
-            out[cdir] = LocalComponentGroup(template_file, models_tsv)
+            out[template_dir] = LocalComponentGroup(get_component_file(cdir, which + '-template'), models_tsv)
         return out
 
     def cache_component_list(self, force=False):
@@ -436,47 +455,73 @@ class LocalSource(Source):
                                              dataloader=self._list_component_groups(which="dataloader"))
 
     def _list_components(self, which="model"):
-        self.cache_component_list()
+        self.cache_component_list(force=self.local_path is None)
         return self.component_yaml_list[which] + [os.path.join(k, c)
-                                                  for k, grp in six.iteritems(self.component_group_list)
-                                                  for c in grp._list_components]
+                                                  for k, grp in six.iteritems(self.component_group_list[which])
+                                                  for c in grp._list_components()]
 
     def get_group_name(self, component, which='model'):
+        self.cache_component_list(force=self.local_path is None)
+        component = os.path.normpath(component)
         for k in self.component_group_list[which]:
             if component.startswith(os.path.join(k, "")):
                 return k
         return None
 
-    def _get_component_dir(self, component, which='model'):
-        self.cache_component_list()
-
-        if component in self.component_yaml_list[which]:
-            # component has an explicit yaml file
-            return os.path.join(self.local_path, component)
+    def _is_nongroup_component(self, component, which):
+        path = os.path.join(self.local_path, os.path.normpath(component))
+        if get_component_file(path, which=which, raise_err=False) is not None:
+            return True
         else:
+            return False
+
+    def _get_component_dir(self, component, which='model'):
+        component = os.path.normpath(component)
+
+        self.assert_is_component(component, which)
+        # special case: component can be outside of the root directory
+        if self._is_nongroup_component(component, which):
+            return os.path.join(self.local_path, os.path.normpath(component))
+        else:
+            self.cache_component_list(force=self.local_path is None)
             k = self.get_group_name(component, which)
-            if k is None:
-                raise ValueError("{} {} doesn't exist".format(which, component))
-            else:
-                return os.path.join(self.local_path, k)
+            assert k is not None
+            return os.path.join(self.local_path, k)
 
     def _get_component_download_dir(self, component, which='model'):
-        return os.path.join(self.local_path, component, "download", '{}_files'.format(which))
+        component = os.path.normpath(component)
+        path = os.path.join(self.local_path, os.path.normpath(component))
+        return os.path.join(path, "downloaded", '{}_files'.format(which))
 
     def _is_component(self, component, which="model"):
-        return component in self._list_components(which)
+        component = os.path.normpath(component)
+        if self._is_nongroup_component(component, which):
+            # it contains a {which}.y?ml
+            return True
+        else:
+            self.cache_component_list(force=self.local_path is None)
+            # it's present in one of the groups
+            k = self.get_group_name(component, which)
+            if k is not None:
+                # check that it's indeed found in one of the components
+                return component in self._list_components(which)
+            else:
+                return False
 
     def _get_component_descr(self, component, which="model"):
-        self.cache_component_list()
-        if component in self.component_yaml_list[which]:
+        component = os.path.normpath(component)
+        self.assert_is_component(component, which)
+
+        if self._is_nongroup_component(component, which):
             # component has an explicit yaml file
             return load_component_descr(os.path.join(self.local_path, component), which)
         else:
+            self.cache_component_list(force=self.local_path is None)
             k = self.get_group_name(component, which)
             if k is None:
                 raise ValueError("{} {} doesn't exist".format(which, component))
             else:
-                return self.component_yaml_list[which]._get_component_descr(relative_path(component, k))
+                return self.component_group_list[which][k]._get_component_descr(relative_path(component, k))
 
     def _pull_component(self, component, which="model"):
         self.assert_is_component(component, which)
@@ -493,7 +538,7 @@ class GitSource(Source):
         """Git Source
         """
         self.remote_url = remote_url
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
+        self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
         self._pulled = False
 
         self.local_source = LocalSource(self.local_path)
@@ -557,7 +602,7 @@ class GitSource(Source):
     def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
-        return self._get_component_descr(component, which)
+        return self.local_source._get_component_descr(component, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -574,11 +619,9 @@ class GitLFSSource(Source):
         """
         lfs_installed(raise_exception=False)
         self.remote_url = remote_url
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
-        self._pulled = False
-
+        self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
         self.local_source = LocalSource(self.local_path)
-
+        self._pulled = False
         # TODO - check that downloded should be in .gitignore
 
     def clone(self, depth=1):
@@ -675,7 +718,7 @@ class GitLFSSource(Source):
     def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
-        return self._get_component_descr(component, which)
+        return self.local_source._get_component_descr(component, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
@@ -690,7 +733,8 @@ class GithubPermalinkSource(Source):
     def __init__(self, local_path):
         """Local files
         """
-        self.local_path = os.path.join(local_path, '')  # add trailing slash
+
+        self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
 
     @classmethod
     def _parse_url(cls, url):
@@ -728,6 +772,10 @@ class GithubPermalinkSource(Source):
     def _get_component_dir(self, component, which='model'):
         user, repo, commit, model = self._parse_url(component)
         return self.get_lfs_source(component)._get_component_dir(model, which='model')
+
+    def _get_component_download_dir(self, component, which='model'):
+        user, repo, commit, model = self._parse_url(component)
+        return self.get_lfs_source(component)._get_component_download_dir(model, which='model')
 
     def _pull_component(self, component, which="model"):
         user, repo, commit, model = self._parse_url(component)
