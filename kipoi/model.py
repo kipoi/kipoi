@@ -775,7 +775,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, weights, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
+    def __init__(self, module_file, weights, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
         method of the model class that specifies the PyTorch model.
@@ -784,9 +784,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
          https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
         
         Arguments: 
+          module_file: path to the python file defining either `module_obj` or `module_class`
           weights: file in which the weights are stored
-          module_obj: definition of the PyTorch module object (model) in the `my_python_file.my_module` style.
-          module_class: definition of the PyTorch module class (model class) in the `my_python_file.MyModule` style.
+          module_obj: name of the PyTorch module object ("model") defined in the `module_file` file.
+          module_class: name of the PyTorch module class (model class) defined in the `module_file` file.
           module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here.
           auto_use_cuda: Automatically try to use CUDA if available
         """
@@ -803,9 +804,9 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                     kwargs = yaml.load(module_kwargs)
                 else:
                     kwargs = module_kwargs
-            self.model = load_obj(module_class)(**kwargs)
+            self.model = getattr(load_module(module_file), module_class)(**kwargs)
         else:
-            self.model = load_obj(module_obj)
+            self.model = getattr(load_module(module_file), module_obj)
 
         self.model.load_state_dict(torch.load(weights))
 
