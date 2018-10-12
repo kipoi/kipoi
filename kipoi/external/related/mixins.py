@@ -65,6 +65,17 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
             raise Exception("Unable to load file {0} into class {1}.\nError: \n{2}".
                             format(os.path.abspath(path), cls, str(e)))
 
+    @classmethod
+    def from_string(cls, string):
+        """Loads model from a yaml file
+        """
+        parsed_dict = related.from_yaml(string)
+        try:
+            return cls.from_config(parsed_dict)
+        except Exception as e:
+            raise Exception("Unable to load yaml string: {0} into class {1}.\nError: \n{2}".
+                            format(os.path.abspath(string), cls, str(e)))
+
     def dump(self, path):
         """Dump the object to a yaml file
         """

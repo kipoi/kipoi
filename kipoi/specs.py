@@ -833,7 +833,7 @@ def example_kwargs(dl_args, cache_path=None):
     # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
-def download_default_args(args, base_output_dir='.'):
+def download_default_args(args, output_dir):
     """Download the default files
     """
     override = {}
@@ -847,7 +847,6 @@ def download_default_args(args, base_output_dir='.'):
                 # and set the default to the file path
 
                 # specify the file name and create the directory
-                output_dir = os.path.join(base_output_dir, 'downloaded/dataloader_files', k)
                 logger.info("Downloading dataloader default arguments {} from {}".format(k, args[k].default.url))
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
