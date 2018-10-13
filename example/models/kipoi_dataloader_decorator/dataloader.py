@@ -2,7 +2,6 @@
 """
 import pickle
 from kipoi.data import Dataset, kipoi_dataloader
-from kipoi.external.keras.data_utils import get_file
 import pandas as pd
 import numpy as np
 import os

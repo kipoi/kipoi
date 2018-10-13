@@ -85,17 +85,20 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     """
     # TODO - model can be a yaml file or a directory
-    source_name = source
+    if isinstance(source, str):
+        source_name = source
+        source = kipoi.config.get_source(source)
+    else:
+        source_name = 'obj'
+        source = source
 
-    source = kipoi.config.get_source(source)
+    # pull the model
+    source.pull_model(model)
+    # get the model directory
+    source_dir = source.get_model_dir(model)
+    # get model description
+    md = source.get_model_descr(model)
 
-    # pull the model & get the model directory
-    yaml_path = source.pull_model(model)
-    source_dir = os.path.abspath(os.path.dirname(yaml_path))
-
-    # Setup model description
-    with cd(source_dir):
-        md = ModelDescription.load(os.path.basename(yaml_path))
     # TODO - is there a way to prevent code duplication here?
     # TODO - possible to inherit from both classes and call the corresponding inits?
     # --------------------------------------------
@@ -111,7 +114,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
                 default_dataloader = md.default_dataloader.get()
             default_dataloader.source_dir = source_dir
             # download util links if specified under default & override the default parameters
-            override = download_default_args(default_dataloader.args, source_dir)
+            override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
             if override:
                 # override default arguments specified under default
                 override_default_kwargs(default_dataloader, override)
@@ -121,7 +124,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
             if ":" in md.default_dataloader:
                 dl_source, dl_path = md.default_dataloader.split(":")
             else:
-                dl_source = source_name
+                dl_source = source
                 dl_path = md.default_dataloader
 
             # allow to use relative and absolute paths for referring to the dataloader
@@ -137,7 +140,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
-                output_dir = os.path.join('downloaded/model_files', k)
+                output_dir = os.path.join(source.get_model_download_dir(model), k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)

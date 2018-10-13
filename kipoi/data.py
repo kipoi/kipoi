@@ -45,7 +45,6 @@ class BaseDataLoader(object):
     path = None
     postprocessing = None
     # optionally set in get_dataloader_factory
-    _yaml_path = None
     source = None
     source_dir = None
 
@@ -539,7 +538,7 @@ class BatchGenerator(BaseDataLoader):
 # --------------------------------------------
 
 
-def get_dataloader_factory(dataloader, source="kipoi"):
+def get_dataloader(dataloader, source="kipoi"):
     """Loads the dataloader
 
     # Arguments
@@ -596,29 +595,28 @@ def get_dataloader_factory(dataloader, source="kipoi"):
     #     # load it from the python object
     #     sys.path.append(os.path.getcwd())
     #     return DataLoaderImport(defined_as=dataloader).get()
+    # TODO - allow source=py
 
     # pull the dataloader & get the dataloader directory
-    source = kipoi.config.get_source(source)
-    yaml_path = source.pull_dataloader(dataloader)
-    dataloader_dir = os.path.abspath(os.path.dirname(yaml_path))
-
-    # TODO - allow source=py
+    if isinstance(source, str):
+        source = kipoi.config.get_source(source)
+    source.pull_dataloader(dataloader)
+    dataloader_dir = source.get_dataloader_dir(dataloader)
 
     # --------------------------------------------
     # Setup dataloader description
+    descr = source.get_dataloader_descr(dataloader)
     with cd(dataloader_dir):  # move to the dataloader directory temporarily
-        descr = DataLoaderDescription.load(os.path.basename(yaml_path))
         if "::" in descr.defined_as:
             # old API
             file_path, obj_name = tuple(descr.defined_as.split("::"))
             CustomDataLoader = getattr(load_module(file_path), obj_name)
         else:
             # new API - directly specify the object
-            # prepend sys path
             CustomDataLoader = load_obj(descr.defined_as)
 
     # download util links if specified under default & override the default parameters
-    override = download_default_args(descr.args, dataloader_dir)
+    override = download_default_args(descr.args, source.get_dataloader_download_dir(dataloader))
     if override:
         # override default arguments specified under default
         override_default_kwargs(CustomDataLoader, override)
@@ -653,17 +651,19 @@ def get_dataloader_factory(dataloader, source="kipoi"):
         if not issubclass(CustomDataLoader, AVAILABLE_DATALOADERS[descr.type]):
             raise ValueError("DataLoader does't inherit from the specified dataloader: {0}".
                              format(AVAILABLE_DATALOADERS[descr.type].__name__))
-    logger.info('successfully loaded the dataloader from {}'.
-                format(os.path.normpath(os.path.join(dataloader_dir, descr.defined_as))))
+    logger.info('successfully loaded the dataloader {} from {}'.
+                format(dataloader, os.path.normpath(os.path.join(dataloader_dir, descr.defined_as))))
 
     # enrich the original dataloader class with description
     Dl = CustomDataLoader._add_description_factory(descr)
     # add other fields
-    Dl._yaml_path = yaml_path
     Dl.source = source
     Dl.source_dir = dataloader_dir
     return Dl
 
+
+# simplify - alias
+get_dataloader_factory = get_dataloader
 
 # NOTE: the dataloaders need to be ordered in a way they inherit from each other
 # e.g. child can't appear before the parent in the list below

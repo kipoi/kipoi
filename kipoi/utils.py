@@ -1,6 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import os
+import os.path
+import hashlib
+import errno
+from tqdm import tqdm
 import imp
 import six
 import pickle
@@ -68,18 +73,19 @@ def load_obj(obj_import):
         # the latter was caching modules which caused trouble when
         # loading multiple modules of the same kind
         fp, pathname, description = imp.find_module(module_name)
+        e = None
         try:
             module = imp.load_module(module_name, fp, pathname, description)
             obj = rgetattr(module, obj_name)  # recursively get the module
-        except Exception:
-            obj = None
+        except Exception as e:
+            if fp:
+                fp.close()
+            raise ImportError("object {} couldn't be imported. Error {}".format(obj_import, str(e)))
         finally:
             # Since we may exit via an exception, close fp explicitly.
             if fp:
                 fp.close()
         # module = importlib.import_module(module_name)
-    if obj is None:
-        raise ImportError("object {} couldn't be imported".format(obj_import))
     return obj
 
 
@@ -454,3 +460,42 @@ class classproperty(object):
 
     def __get__(self, owner_self, owner_cls):
         return self.fget(owner_cls)
+
+
+def is_subdir(path, directory):
+    """Check if the path is in a particular directory
+
+    Example:
+
+    In [102]: is_subdir("/a/b/c", '/a/b')
+    Out[105]: True
+
+    In [106]: is_subdir("/a/b/c", '/a/c')
+    Out[106]: False
+    """
+    path = os.path.realpath(path)
+    directory = os.path.realpath(directory)
+    relative = os.path.relpath(path, directory)
+    return not (relative == os.pardir or relative.startswith(os.pardir + os.sep))
+
+
+def relative_path(full_path, parent_subpath):
+    """Get the relative path
+
+    Args:
+      path: long path: example /a/b/c
+      parent_subpath: sub-directory.
+
+    Example:
+
+    In [78]: relative_path("/a/b/c", '/a')
+    Out[78]: 'b/c'
+
+    In [79]: relative_path("/a/b/c", '/a/')
+    Out[79]: 'b/c'
+    """
+    full_path = os.path.realpath(full_path)
+    assert parent_subpath != ""
+    parent_subpath = os.path.realpath(parent_subpath)
+    relative = os.path.relpath(full_path, parent_subpath)
+    return relative

@@ -496,28 +496,23 @@ class RemoteFile(RelatedConfigMixin):
     def validate(self, path):
         """Validate if the path complies with the provided md5 hash
         """
-        from kipoi.external.keras.data_utils import validate_file
-        if self.md5 is None:
-            # unable to determine it. Raising one warning in
-            # the __init__ is enough.
-            return True
-        else:
-            return validate_file(path, self.md5, algorithm='md5')
+        from kipoi.external.torchvision.dataset_utils import check_integrity
+        return check_integrity(path, self.md5)
 
-    def get_file(self, local_path, extract=True):
+    def get_file(self, path, extract=True):
         """Download the remote file to cache_dir and return
         the file path to it
         """
-        from kipoi.external.keras.data_utils import get_file
+        from kipoi.external.torchvision.dataset_utils import download_url
 
         if self.md5:
             file_hash = self.md5
         else:
             file_hash = None
-        return get_file(fname=os.path.abspath(local_path),
-                        origin=self.url,
-                        file_hash=file_hash,
-                        extract=extract)
+        root, filename = os.path.dirname(path), os.path.basename(path)
+        root = os.path.abspath(root)
+        download_url(self.url, root, filename, file_hash)
+        return os.path.join(root, filename)
 
 
 @related.mutable(strict=True)
@@ -833,7 +828,7 @@ def example_kwargs(dl_args, cache_path=None):
     # return {k: v.example for k, v in six.iteritems(dl_args) if not isinstance(v.example, UNSPECIFIED)}
 
 
-def download_default_args(args, base_output_dir='.'):
+def download_default_args(args, output_dir):
     """Download the default files
     """
     override = {}
@@ -847,7 +842,6 @@ def download_default_args(args, base_output_dir='.'):
                 # and set the default to the file path
 
                 # specify the file name and create the directory
-                output_dir = os.path.join(base_output_dir, 'downloaded/dataloader_files', k)
                 logger.info("Downloading dataloader default arguments {} from {}".format(k, args[k].default.url))
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
