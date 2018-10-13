@@ -775,7 +775,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, module_file, weights, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
+    def __init__(self, weights, module_file=None, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
         method of the model class that specifies the PyTorch model.
@@ -784,11 +784,15 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
          https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
         
         Arguments: 
-          module_file: path to the python file defining either `module_obj` or `module_class`
           weights: file in which the weights are stored
-          module_obj: name of the PyTorch module object ("model") defined in the `module_file` file.
-          module_class: name of the PyTorch module class (model class) defined in the `module_file` file.
-          module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here.
+          module_file: path to the python file defining either `module_obj` or `module_class`
+          module_obj: name of the PyTorch module object ("model") defined in the `module_file` file. Also
+            the `my_module_file.MyModule` is allowed where `my_module_file.py` resides in the same folder as the 
+           `model.yaml`.
+          module_class: name of the PyTorch module class (model class) defined in the `module_file` file. Also the 
+           `my_module_file.MyModuleClass` is allowed where `my_module_file.py` resides in the same folder as the 
+           `model.yaml`.
+          module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here. 
           auto_use_cuda: Automatically try to use CUDA if available
         """
         import torch
@@ -797,6 +801,21 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         if (module_obj is None) and (module_class is None):
             raise Exception("Either 'module_obj' or 'module_class' have to be defined.")
 
+        obj_name = module_class
+        if module_obj is not None:
+            obj_name = module_obj
+
+        if module_file is not None:
+            obj = getattr(load_module(module_file), obj_name)
+        else:
+            try:
+                obj = load_obj(obj_name)
+            except ValueError as e:
+                raise ValueError("The module file either has to be defined explicitly in `module_file` or implicitly "
+                                 "in the `module_class` or `module_obj` arguments. Loading the PyTorchModel failed "
+                                 "with: %s"%e.message)
+
+        self.model = obj
         if module_class is not None:
             kwargs = {}
             if module_kwargs is not None:
@@ -804,9 +823,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                     kwargs = yaml.load(module_kwargs)
                 else:
                     kwargs = module_kwargs
-            self.model = getattr(load_module(module_file), module_class)(**kwargs)
-        else:
-            self.model = getattr(load_module(module_file), module_obj)
+            self.model = obj(**kwargs)
 
         self.model.load_state_dict(torch.load(weights))
 

@@ -83,6 +83,8 @@ def test_loading():
     with pytest.raises(Exception):
         m1 = PyTorchModel(weights=model_path + "only_weights.pth")
         m1 = PyTorchModel(module_file=model_path + "pyt.py", weights=model_path + "only_weights.pth")
+    with cd(model_path):
+        m1 = PyTorchModel(module_obj="pyt.simple_model", weights="only_weights.pth")
     m1 = PyTorchModel(module_file=model_path + "pyt.py", weights=model_path + "only_weights.pth", module_obj="simple_model")
     m1 = PyTorchModel(module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet")
     m1 = PyTorchModel(module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs={})
