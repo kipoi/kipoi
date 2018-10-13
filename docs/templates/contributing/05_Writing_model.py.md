@@ -11,14 +11,10 @@ A very simple version of such a model definition that can be stored in for examp
 ```python
 from kipoi.model import BaseModel
 
-def load_my_model(file_path):
-    # Loading code here
-    return model
-
 class MyModel(BaseModel):
     def __init__(self, file_path):
         self.file_path = file_path
-        self.model = load_my_model(file_path)
+        self.model = load_model_parameters(file_path)
 
     # Execute model prediction for input data
     def predict_on_batch(self, x):
