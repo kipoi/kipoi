@@ -25,7 +25,6 @@ info: # General information about the model
           github: your_github_username
           email: your_email@host.org
     doc: Model predicting the Iris species
-    version: 0.1  # optional 
     cite_as: https://doi.org:/... # preferably a doi url to the paper
     trained_on: Iris species dataset (http://archive.ics.uci.edu/ml/datasets/Iris) # short dataset description
     license: MIT # Software License - defaults to MIT
@@ -287,7 +286,6 @@ The `info` field of a model.yaml file contains general information about the mod
 * `authors`: a list of authors with the field: `name`, and the optional fields: `github` and `email`. Where the 
 `github` name is the github user id of the respective author
 * `doc`: Free text documentation of the model. A short description of what it does and what it is designed for.
-* `version`: Model version
 * `license`: String indicating the license, if not defined it defaults to `MIT`
 * `tags`: A list of key words describing the model and its use cases
 * `cite_as`: Link to the journal, arXiv, ...
@@ -303,8 +301,7 @@ info:
       github: myGithubName
       email: my@email.com
     - name: Second Author
-  doc: My fancy model description
-  version: 1.0
+  doc: My model description
   license: GNU
   tags:
     - TFBS
