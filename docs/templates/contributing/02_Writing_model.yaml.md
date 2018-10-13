@@ -183,6 +183,8 @@ args:
 ```
 
 If `module_class` does not require any argument for initialisation then `module_kwargs` doesn't have to be set.
+Also, the `module_file` argument is not required if the name of the module file is included in the `module_class` 
+or the `module_object` argument in the following way: `my_pytorch_model.dummy_model` or `my_pytorch_model.DummyModel`.  
 
 
 If `cuda` is available on the system then the model will automatically be switched to cuda mode, so the 
