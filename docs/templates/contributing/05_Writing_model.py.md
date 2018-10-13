@@ -13,7 +13,7 @@ from kipoi.model import BaseModel
 
 class MyModel(BaseModel):
     def __init__(self, file_path):
-        self.file_path = file_path
+        ...
         self.model = load_model_parameters(file_path)
 
     # Execute model prediction for input data
