@@ -81,15 +81,14 @@ def load_component_descr(component_dir, which="model"):
     """
     from kipoi.specs import ModelDescription, DataLoaderDescription
 
-    with cd(component_dir):
-        fname = get_component_file(".", which, raise_err=True)
+    fname = get_component_file(os.path.abspath(component_dir), which, raise_err=True)
 
-        if which == "model":
-            return ModelDescription.load(fname)
-        elif which == "dataloader":
-            return DataLoaderDescription.load(fname)
-        else:
-            raise ValueError("which needs to be from {'model', 'dataloader'}")
+    if which == "model":
+        return ModelDescription.load(fname)
+    elif which == "dataloader":
+        return DataLoaderDescription.load(fname)
+    else:
+        raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
 def list_softlink_dependencies(component_dir, source_path):

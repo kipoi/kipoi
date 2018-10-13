@@ -78,14 +78,14 @@ def load_obj(obj_import):
             module = imp.load_module(module_name, fp, pathname, description)
             obj = rgetattr(module, obj_name)  # recursively get the module
         except Exception as e:
-            obj = None
+            if fp:
+                fp.close()
+            raise ImportError("object {} couldn't be imported. Error {}".format(obj_import, str(e)))
         finally:
             # Since we may exit via an exception, close fp explicitly.
             if fp:
                 fp.close()
         # module = importlib.import_module(module_name)
-    if obj is None:
-        raise ImportError("object {} couldn't be imported. Error {}".format(obj_import, str(e)))
     return obj
 
 
