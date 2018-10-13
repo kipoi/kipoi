@@ -16,7 +16,6 @@ To help understand the synthax of YAML please take a look at:
 Here is an example `dataloader.yaml`:
 
 ```yaml
-type: Dataset
 defined_as: dataloader.MyDataset  # We need to implement MyDataset class inheriting from kipoi.data.Dataset in dataloader.py
 args:
     features_file:
@@ -42,7 +41,6 @@ info:
         - name: Your Name
           github: your_github_account
           email: your_email@host.org
-    version: 0.1
     doc: Model predicting the Iris species
 dependencies:
     conda:
@@ -116,18 +114,19 @@ is functional. It is therefore important to submit the URLs of all necessary exa
 assigned. See example below.
 * `optional`: Optional: Boolean flag (`true` / `false`) for an argument if it is optional.
 
-If your dataloader requires an external data file as for example in 
-[tutorials/contributing_models](../../tutorials/contributing_models), then the Kipoi way of automatically downloading 
-and using that file is by adding an argument to the dataloader implementation that takes the file path and assigning 
-the zenodo or figshare url as a default in the `dataloader.yaml` as follows:
+If your dataloader requires an external data file at runtime which are not example/test files, you can specify these using the `default` attribute. `default` will override the default arguments of the dataloader init method (e.g. `dataloader.MyDataloader.__init__`). Example:
 
 ```yaml
+defined_as: dataloader.MyDataset
 args:
    ...
+   override_me:
+       default: 10
    essential_other_file:
-       default:
+       default:  # download and replace with the path on the local filesystem
            url: https://zenodo.org/path/to/my/essential/other/file.xyz
            md5: 765sadf876a
+...
 ```
 
 ## info
