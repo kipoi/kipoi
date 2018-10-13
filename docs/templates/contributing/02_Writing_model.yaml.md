@@ -133,9 +133,12 @@ Here all the objects present in `custom_keras_objects.py` will be made available
 ### `kipoi.model.PyTorchModel` models
 
 Pytorch offers much freedom as to how the model is stored. In Kipoi a pytorch model has the following `args`: 
-`file`, `build_fn`, `weights`.
-PyTorch models require python code in which the model is defined and instantiated, for example the pytorch model 
-definition could be in a file `my_pytorch_model.py`:
+`weights`, `module_class`, `module_kwargs`, `module_obj`.
+PyTorch models require python code in which the model is defined. The code that defines the model should **not** 
+attempt load the weights, as this is done inside the `PyTorchModel` class in Kipoi using the 
+`model.load_state_dict(torch.load(weights))` command.
+
+For example the pytorch model definition could be in a file `my_pytorch_model.py`:
 ```python
 from torch import nn
 
@@ -147,43 +150,44 @@ class DummyModel(nn.Module):
     def forward(self, x):
         # some code here
         return x
-        
-dummy_model = DummyModel(1,2,3)
 ```
 
-The `dummy_model` is therefore a pytorch model instance **without** loaded weights. That is what is needed for 
-`kipoi.model.PyTorchModel`. The weights will be loaded by `kipoi.model.PyTorchModel`. The yaml file corresponding to
-the above model is: 
+Assuming that the `my_pytorch_model.py` file lies in the same folder as the `model.yaml`, the default way for loading 
+this model in Kiopi is then as follows:
 
 ```yaml
 defined_as: kipoi.model.PyTorchModel
 args:
-    module_file: my_pytorch_model.py
-    module_obj: dummy_model
+    module_class: my_pytorch_model.DummyModel
+    module_kwargs: 
+      x: 1
+      y: 2
+      z: 3
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
 ```
 
-The weights are loaded using the `model.load_state_dict(torch.load(weights))` command.
-
-Alternatively in the above example the module class could be handed to `kipoi.model.PyTorchModel` together with kwargs 
-in the following way to generate an equivalent model instance:
-
+If the module class does not have any arguments then `module_kwargs` can be omitted.
+ 
+If you use Sequential models (`torch.nn.Sequential`) or you generate a module instance in your `my_sequential.py` file, 
+then you can use the `module_obj` in `model.yaml` to load that module:
+  
 ```yaml
 defined_as: kipoi.model.PyTorchModel
 args:
-    module_file: my_pytorch_model.py
-    module_class: DummyModel
-    module_kwargs: "{'x':1, 'y':2, 'z':3}"
+    module_obj: my_sequential.sequential_model
     weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
 ```
 
-If `module_class` does not require any argument for initialisation then `module_kwargs` doesn't have to be set.
-Also, the `module_file` argument is not required if the name of the module file is included in the `module_class` 
-or the `module_object` argument in the following way: `my_pytorch_model.dummy_model` or `my_pytorch_model.DummyModel`.  
+where `my_sequential.py` for example contains:
+
+```python
+import torch
+sequential_model = torch.nn.Sequential(...)
+```
 
 
 If `cuda` is available on the system then the model will automatically be switched to cuda mode, so the 
