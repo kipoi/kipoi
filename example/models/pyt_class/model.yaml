@@ -1,0 +1,31 @@
+defined_as: kipoi.model.PyTorchModel
+args:
+    module_file: model_files/pyt.py
+    module_class: PyTNet
+    module_kwargs:
+      a: 1
+      b: 2
+      c: 3
+    weights: model_files/pyt_net_model_weights.pth
+default_dataloader: . # path to the directory
+info:
+    authors:
+        - name: Roman Kreuzhuber
+          github: krrome
+    doc: Simple testing model for pytorch
+dependencies:
+    conda:
+        - pytorch::pytorch>=0.2.0
+schema:
+    inputs:
+        name: input
+        shape: (1000, 4)
+        special_type: DNASeq
+        doc: DNA sequence
+        # associated_metadata: ranges # --> has to be defined in dataloader.yaml.
+        #                                   This field is ignored in model.yaml.
+    targets:
+        shape: (1, )
+        doc: Predicted binding strength
+        column_labels:
+            - some_probability

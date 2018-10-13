@@ -778,7 +778,8 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, weights, module_file=None, module_obj=None, module_class=None, module_kwargs=None, auto_use_cuda=True):
+    def __init__(self, weights, module_class=None, module_kwargs=None, module_obj=None,  module_file=None,
+                 auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
         method of the model class that specifies the PyTorch model.
@@ -788,14 +789,14 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         
         Arguments: 
           weights: file in which the weights are stored
-          module_file: path to the python file defining either `module_obj` or `module_class`
-          module_obj: name of the PyTorch module object ("model") defined in the `module_file` file. Also
-            the `my_module_file.MyModule` is allowed where `my_module_file.py` resides in the same folder as the 
-           `model.yaml`.
           module_class: name of the PyTorch module class (model class) defined in the `module_file` file. Also the 
            `my_module_file.MyModuleClass` is allowed where `my_module_file.py` resides in the same folder as the 
            `model.yaml`.
-          module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here. 
+          module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here.
+          module_obj: name of the PyTorch module object ("model") defined in the `module_file` file. Also
+            the `my_module_file.MyModule` is allowed where `my_module_file.py` resides in the same folder as the 
+           `model.yaml`.
+          module_file: path to the python file defining either `module_obj` or `module_class`
           auto_use_cuda: Automatically try to use CUDA if available
         """
         import torch

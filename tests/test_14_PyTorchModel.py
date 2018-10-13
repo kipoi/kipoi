@@ -79,6 +79,7 @@ def get_np(var):
 # Test the loading of models
 def test_loading():
     model_path = "example/models/pyt/model_files/"
+    model_path_class_model = "example/models/pyt_class/"
     # load model and weights explcitly
     with pytest.raises(Exception):
         m1 = PyTorchModel(weights=model_path + "only_weights.pth")
@@ -89,6 +90,10 @@ def test_loading():
     m1 = PyTorchModel(module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet")
     m1 = PyTorchModel(module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs={})
     m1 = PyTorchModel(module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs="{}")
+    # test loading class from full yaml definition with module_kargs:
+    mh = kipoi.get_model(model_path_class_model, "dir")
+    # Load the test files from model source
+    mh.pipeline.predict_example(batch_size=3)
 
 # Test the loading of models
 def test_loading_old(tmpdir):

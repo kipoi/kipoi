@@ -1,0 +1,11 @@
+defined_as: dataloader.SeqDataset
+args:
+  dummy:
+    doc: "Dummy"
+dependencies:
+  conda:
+    - numpy
+output_schema:
+  inputs:
+    name: input
+    shape: (1, 10)
