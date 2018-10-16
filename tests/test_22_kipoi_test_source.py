@@ -162,3 +162,10 @@ def test_list_models(source):
     assert "multiple_models" not in list(df.model)
     assert "multiple_models/model1" in list(df.model)
     assert "multiple_models/submodel/model2" in list(df.model)
+
+
+def test_loading_target(source):
+    # tests that the column names
+    # were loaded correctly
+    md = kipoi.get_model_descr("Basset")
+    assert len(md.schema.targets.column_labels) > 1
