@@ -83,12 +83,13 @@ def load_component_descr(component_dir, which="model"):
 
     fname = get_component_file(os.path.abspath(component_dir), which, raise_err=True)
 
-    if which == "model":
-        return ModelDescription.load(fname)
-    elif which == "dataloader":
-        return DataLoaderDescription.load(fname)
-    else:
-        raise ValueError("which needs to be from {'model', 'dataloader'}")
+    with cd(os.path.dirname(fname)):
+        if which == "model":
+            return ModelDescription.load(fname)
+        elif which == "dataloader":
+            return DataLoaderDescription.load(fname)
+        else:
+            raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 
 def list_softlink_dependencies(component_dir, source_path):
@@ -468,11 +469,11 @@ class LocalSource(Source):
             return self._local_path
 
     def _list_component_yamls(self, which='model'):
-        return list_yamls_recursively(self.local_path, which)
+        return list_yamls_recursively(self.local_path, which)  # , skip='downloaded|.*_files')
 
     def _list_component_groups(self, which='model'):
         return {tdir: LocalComponentGroup.load(os.path.join(self.local_path, tdir), which)
-                for tdir in list_yamls_recursively(self.local_path, which + '-template')}
+                for tdir in list_yamls_recursively(self.local_path, which + '-template')}  # , skip='downloaded|.*_files')}
 
     def cache_component_list(self, force=False):
         if force or self.component_yaml_list is None or self.component_group_list is None:
@@ -547,6 +548,8 @@ class LocalSource(Source):
 
         if self._is_nongroup_component(component, which):
             # component has an explicit yaml file
+
+            # TODO - move into the component directory when loading
             return load_component_descr(os.path.join(self.local_path, component), which)
         else:
             k = self.get_group_name(component, which)
