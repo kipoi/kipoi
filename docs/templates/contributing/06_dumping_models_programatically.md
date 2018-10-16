@@ -1,32 +1,25 @@
 ## Contributing multiple very similar models
 
-Consider an example where multiple models were trained, each for a different cell-lines (case for CpGenie). Here is the final folder structure of the contributed model *group* (simplifed from the [CpGenie](https://github.com/kipoi/models/tree/master/CpGenie) model)
+Consider an example where multiple models were trained, each for a different cell-lines (case for CpGenie). Here is 
+the final folder structure of the contributed model *group* (simplifed from the 
+[CpGenie](https://github.com/kipoi/models/tree/master/CpGenie) model)
 
 ```
 cell_line_1
 ├── dataloader.py -> ../template/dataloader.py
 ├── dataloader.yaml -> ../template/dataloader.yaml
-├── example_files -> ../template/example_files
-├── model_files
-│   └── model.h5
-└── model.yaml -> ../template/model.yaml
+└── model.yaml # could be generated from ../template/model.yaml jinja template
 
 cell_line_2
 ├── dataloader.py -> ../template/dataloader.py
 ├── dataloader.yaml -> ../template/dataloader.yaml
-├── example_files -> ../template/example_files
-├── model_files
-│   └── model.h5
-└── model.yaml -> ../template/model.yaml
+└── model.yaml # could be generated from ../template/model.yaml jinja template
 
 template
 ├── dataloader.py
 ├── dataloader.yaml
-├── example_files
-│   ├── hg38_chr22.fa
-│   ├── hg38_chr22.fa.fai
-│   └── intervals.bed
 └── model.yaml
+
 Makefile
 test_subset.txt
 ```
@@ -37,7 +30,10 @@ The `template/` folder should contain all the common files or templates. This di
 
 ### Softlinks
 
-One option to prevent code duplication is to use soft-links. In the simplest case (as shown above), all files except model weights can be shared accross models. When selectively downloading files from git-lfs, Kipoi also considers soft-links and downloads the original files (e.g. when running `kipoi predict my_model/cell_line_1 ...`, the git-lfs files in `my_model/template` will also get downloaded).
+One option to prevent code duplication is to use soft-links. In the simplest case (as shown above), all files 
+except model weights can be shared accross models. When selectively downloading files from git-lfs, Kipoi also 
+considers soft-links and downloads the original files (e.g. when running `kipoi predict my_model/cell_line_1 ...`, 
+the git-lfs files in `my_model/template` will also get downloaded).
 
 **Note** Make sure you are using **relative** soft-links (as shown above). 
 
@@ -82,7 +78,7 @@ Another option is to use template engines. Template engines are heavily used in 
 
 ```yaml
 # template_model.yaml
-type: keras
+defined_as: kipoi.model.KerasModel 
 args:
     weights: model_files/model.h5
 ...
@@ -157,8 +153,10 @@ class SpecificModel(TemplateModel):
 
 ## `test_subset.txt` - Testing only some models
 
-Since many models are essentially the same, the automatic tests should only test one or few models. To specify which models to test,
-write the `test_subset.txt` file in the same directory level as the `template/` folder and list the models you want to test.
+Since many models are essentially the same, the automatic tests should only test one or few models. To specify which 
+models to test,
+write the `test_subset.txt` file in the same directory level as the `template/` folder and list the models you want to 
+test.
 
 Examples:
 
@@ -176,7 +174,9 @@ AARS
 
 ## Reproducible script
 
-Regardless of which approch you choose to take, consider writing a single script/Makefile in the model-group root (at the same directory level as `template/`). The script/Makefile should generate or softlink all the files given the template folder, making it easier to update the files later.
+Regardless of which approch you choose to take, consider writing a single script/Makefile in the model-group root (at 
+the same directory level as `template/`). The script/Makefile should generate or softlink all the files given the 
+template folder, making it easier to update the files later.
 
 <!-- - `generate.bash` -->
 <!-- - `make all` -->
