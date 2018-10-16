@@ -295,5 +295,24 @@ def cli_list_plugins(command, raw_args):
     assert command == "list_plugins"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Lists available pluging")
-    args = parser.parse_args(raw_args)
+    parser.parse_args(raw_args)
     print(kipoi.list_plugins().to_string(index=False, justify="unset"))
+
+
+def cli_ls(command, raw_args):
+    """List all kipoi models
+    """
+    assert command == "ls"
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description="Lists available models")
+    # parser.add_argument("--tsv", action='store_true',
+    #                     help="Print the output in the tsv format.")
+    add_source(parser)
+    args = parser.parse_args(raw_args)
+
+    dtm = kipoi.get_source(args.source).list_models()
+    # if args.tsv:
+    #     dtm[['model', 'doc']].to_csv(sys.stdout, sep='\t', index=False)
+    # else:
+    for m in list(dtm.model):
+        print(m)
