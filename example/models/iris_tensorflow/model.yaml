@@ -15,6 +15,11 @@ args:
         url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow/model_files/model.ckpt.data-00000-of-00001?raw=true
         md5: fc1e7daac0c122dac59e1988f2ba3422
 
+    # NOTE when files are local, you can use:
+    # ---
+    # checkpoint_path: model_files/model.ckpt
+    # ------------------------
+
     const_feed_dict_pkl: model_files/const_feed_dict.pkl
     # const_feed_dict_pkl - dict with additional inputs not provided by dataloader
 default_dataloader: . # path to the directory
