@@ -227,6 +227,44 @@ class LocalComponentGroup(object):
         else:
             raise ValueError("Unknown component {}".format(self.which))
 
+    # --------------------------------------------
+    # class methods
+
+    @classmethod
+    def is_group(cls, path, which='model'):
+        models_tsv = os.path.join(path, 'models.tsv')
+        yaml_template = get_component_file(path, which + '-template', raise_err=False)
+        if yaml_template is None:
+            return False
+        return os.path.exists(models_tsv) and os.path.exists(yaml_template)
+
+    @classmethod
+    def group_path(cls, component_path, which='model'):
+        """Get the path of the group given the component
+
+        if None is returned, then the component was not found
+        """
+        tmp_path = component_path
+        while tmp_path not in ['', '/']:
+            if cls.is_group(tmp_path, which):
+                return tmp_path
+            else:
+                tmp_path = os.path.dirname(tmp_path)
+        return None
+
+    @classmethod
+    def load(cls, path, which='model'):
+        """Load the component group from the directory
+        """
+        models_tsv = os.path.join(path, 'models.tsv')
+        yaml_template = get_component_file(path, which + '-template')
+
+        if not os.path.exists(models_tsv):
+            raise ValueError("models.tsv doesn't exist in model group {}".format(path))
+        if not os.path.exists(yaml_template):
+            raise ValueError("{}-template.yaml doesn't exist in model group {}".format(which, path))
+        return cls(yaml_template, models_tsv, which)
+
 # --------------------------------------------
 
 # Source abstract class
@@ -433,18 +471,8 @@ class LocalSource(Source):
         return list_yamls_recursively(self.local_path, which)
 
     def _list_component_groups(self, which='model'):
-        template_dirs = list_yamls_recursively(self.local_path, which + '-template')
-
-        out = {}
-        for template_dir in template_dirs:
-            cdir = os.path.join(self.local_path, template_dir)
-
-            models_tsv = os.path.join(cdir, 'models.tsv')
-            if not os.path.exists(models_tsv):
-                raise ValueError("models.tsv doesn't exist for {}-template.yaml in {}".format(which, cdir))
-
-            out[template_dir] = LocalComponentGroup(get_component_file(cdir, which + '-template'), models_tsv)
-        return out
+        return {tdir: LocalComponentGroup.load(os.path.join(self.local_path, tdir), which)
+                for tdir in list_yamls_recursively(self.local_path, which + '-template')}
 
     def cache_component_list(self, force=False):
         if force or self.component_yaml_list is None or self.component_group_list is None:
@@ -454,18 +482,21 @@ class LocalSource(Source):
                                              dataloader=self._list_component_groups(which="dataloader"))
 
     def _list_components(self, which="model"):
-        self.cache_component_list(force=self.local_path is None)
+        self.cache_component_list(force=self._local_path is None)
         return self.component_yaml_list[which] + [os.path.join(k, c)
                                                   for k, grp in six.iteritems(self.component_group_list[which])
                                                   for c in grp._list_components()]
 
     def get_group_name(self, component, which='model'):
-        self.cache_component_list(force=self.local_path is None)
         component = os.path.normpath(component)
-        for k in self.component_group_list[which]:
-            if component.startswith(os.path.join(k, "")):
-                return k
-        return None
+        if self._local_path is not None:
+            self.cache_component_list()
+            for k in self.component_group_list[which]:
+                if component.startswith(os.path.join(k, "")):
+                    return k
+            return None
+        else:
+            return LocalComponentGroup.group_path(component, which)
 
     def _is_nongroup_component(self, component, which):
         path = os.path.join(self.local_path, os.path.normpath(component))
@@ -482,7 +513,6 @@ class LocalSource(Source):
         if self._is_nongroup_component(component, which):
             return os.path.join(self.local_path, os.path.normpath(component))
         else:
-            self.cache_component_list(force=self.local_path is None)
             k = self.get_group_name(component, which)
             assert k is not None
             return os.path.join(self.local_path, k)
@@ -498,12 +528,16 @@ class LocalSource(Source):
             # it contains a {which}.y?ml
             return True
         else:
-            self.cache_component_list(force=self.local_path is None)
             # it's present in one of the groups
             k = self.get_group_name(component, which)
             if k is not None:
                 # check that it's indeed found in one of the components
-                return component in self._list_components(which)
+                if self._local_path is not None:
+                    self.cache_component_list()
+                    return component in self._list_components(which)
+                else:
+                    grp = LocalComponentGroup.load(os.path.join(self.local_path, k), which)
+                    return grp._is_component(relative_path(component, k))
             else:
                 return False
 
@@ -515,12 +549,16 @@ class LocalSource(Source):
             # component has an explicit yaml file
             return load_component_descr(os.path.join(self.local_path, component), which)
         else:
-            self.cache_component_list(force=self.local_path is None)
             k = self.get_group_name(component, which)
             if k is None:
                 raise ValueError("{} {} doesn't exist".format(which, component))
             else:
-                return self.component_group_list[which][k]._get_component_descr(relative_path(component, k))
+                if self._local_path is not None:
+                    self.cache_component_list()
+                    return self.component_group_list[which][k]._get_component_descr(relative_path(component, k))
+                else:
+                    grp = LocalComponentGroup.load(os.path.join(self.local_path, k), which)
+                    return grp._get_component_descr(relative_path(component, k))
 
     def _pull_component(self, component, which="model"):
         self.assert_is_component(component, which)
@@ -693,12 +731,12 @@ class GitLFSSource(Source):
         if not self._pulled:
             self.pull_source()
 
-        component_dir = os.path.join(self.local_path, component)
+        component_dir = self.local_source._get_component_dir(component, which)
 
         # get a list of directories to source (relative to the local_path)
         softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
         # pull these softlinks
-        for pull_dir in [component] + softlink_dirs:
+        for pull_dir in [component, relative_path(component_dir, self.local_path)] + softlink_dirs:
             cmd = ["git-lfs",
                    "pull",
                    "-I {0}/**".format(pull_dir)]

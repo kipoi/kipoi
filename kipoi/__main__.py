@@ -28,7 +28,7 @@ command_functions = {
     'preproc': cli.main.cli_preproc,
     'predict': cli.main.cli_predict,
     'pull': cli.main.cli_pull,
-    'ls': cli.ls.cli_ls,
+    'ls': cli.main.cli_ls,
     'list_plugins': cli.main.cli_list_plugins,
     'info': cli.main.cli_info,
     # further sub-commands
