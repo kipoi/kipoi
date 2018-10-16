@@ -410,7 +410,6 @@ def list_files_recursively(root_dir, basename, suffix='y?ml'):
     """search for filenames matching the pattern: {root_dir}/**/{basename}.{suffix}
     """
     root_dir = os.path.join(root_dir, "")  # make sure root dir ends with "/"
-
     # TODO - implement skip
     if sys.version_info >= (3, 5):
         return [filename[len(root_dir):] for filename in
