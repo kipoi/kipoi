@@ -336,7 +336,7 @@ def ls_helper(df, group_filter='', tsv=False):
             dfg[['group', 'N_models', 'N_subgroups']].to_csv(sys.stdout, sep='\t', index=False)
         else:
             for i, row in dfg.iterrows():
-                if row.N_subgroups == 0:
+                if row.N_subgroups == 0 and row.N_models == 1:
                     print("{}".format(row.group))
                 else:
                     print("{} ({})".format(row.group, row.N_models))
