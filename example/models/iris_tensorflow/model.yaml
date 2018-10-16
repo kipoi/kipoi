@@ -3,7 +3,23 @@ args:
     input_nodes:
       features: inputs  # input = dictionary of np.arrays
     target_nodes: probas  # output = np.array
-    checkpoint_path: model_files/model.ckpt
+    checkpoint_path:
+      # explicitly provide each individual file
+      meta:
+        url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow/model_files/model.ckpt.meta?raw=true
+        md5: 38760b7242b10111af97dcfc00f1acd7
+      index:
+        url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow/model_files/model.ckpt.index?raw=true
+        md5: 1eba18803dc1d799a0464f8fc7c0c90a
+      data:
+        url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow/model_files/model.ckpt.data-00000-of-00001?raw=true
+        md5: fc1e7daac0c122dac59e1988f2ba3422
+
+    # NOTE when files are local, you can use:
+    # ---
+    # checkpoint_path: model_files/model.ckpt
+    # ------------------------
+
     const_feed_dict_pkl: model_files/const_feed_dict.pkl
     # const_feed_dict_pkl - dict with additional inputs not provided by dataloader
 default_dataloader: . # path to the directory

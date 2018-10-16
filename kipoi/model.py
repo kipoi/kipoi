@@ -1,12 +1,13 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
 import sys
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import load_module, cd, merge_dicts, read_pickle, override_default_kwargs, load_obj, inherits_from, infer_parent_class
+from .utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
+                    load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 import abc
 import six
 import numpy as np
@@ -138,13 +139,17 @@ def get_model(model, source="kipoi", with_dataloader=True):
     # Read the Model - append methods, attributes to self
     with cd(source_dir):  # move to the model directory temporarily
 
+        # explicitly handle downloading files for TensorFlowModel
+        if md.type == 'tensorflow' or md.defined_as == 'kipoi.model.TensorFlowModel':
+            output_dir = os.path.join(source.get_model_download_dir(model), "ckp")
+            md.args['checkpoint_path'] = _parse_tensorflow_checkpoint_path(md.args['checkpoint_path'], output_dir)
+
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
                 output_dir = os.path.join(source.get_model_download_dir(model), k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
-                if not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
+                makedir_exist_ok(output_dir)
 
                 if md.args[k].md5:
                     fname = md.args[k].md5
@@ -778,23 +783,23 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "pytorch"
 
-    def __init__(self, weights, module_class=None, module_kwargs=None, module_obj=None,  module_file=None,
+    def __init__(self, weights, module_class=None, module_kwargs=None, module_obj=None, module_file=None,
                  auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
         method of the model class that specifies the PyTorch model.
-        
+
         This is in agreement with:
          https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
-        
-        Arguments: 
+
+        Arguments:
           weights: file in which the weights are stored
-          module_class: name of the PyTorch module class (model class) defined in the `module_file` file. Also the 
-           `my_module_file.MyModuleClass` is allowed where `my_module_file.py` resides in the same folder as the 
+          module_class: name of the PyTorch module class (model class) defined in the `module_file` file. Also the
+           `my_module_file.MyModuleClass` is allowed where `my_module_file.py` resides in the same folder as the
            `model.yaml`.
           module_kwargs: If `module_class` is used then kwargs for the module initialisation can be defined here.
           module_obj: name of the PyTorch module object ("model") defined in the `module_file` file. Also
-            the `my_module_file.MyModule` is allowed where `my_module_file.py` resides in the same folder as the 
+            the `my_module_file.MyModule` is allowed where `my_module_file.py` resides in the same folder as the
            `model.yaml`.
           module_file: path to the python file defining either `module_obj` or `module_class`
           auto_use_cuda: Automatically try to use CUDA if available
@@ -817,7 +822,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             except ValueError as e:
                 raise ValueError("The module file either has to be defined explicitly in `module_file` or implicitly "
                                  "in the `module_class` or `module_obj` arguments. Loading the PyTorchModel failed "
-                                 "with: %s"%e.message)
+                                 "with: %s" % e.message)
 
         self.model = obj
         if module_class is not None:
@@ -1624,6 +1629,52 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
         new_target_ops = get_op_outputs(self.graph, layer)
         return self.sess.run(new_target_ops,
                              feed_dict=merge_dicts(feed_dict, self.const_feed_dict))
+
+
+def _parse_tensorflow_checkpoint_path(ckp_path, output_dir):
+    """Parse and download tensorflow's checkpoint_path
+    """
+    if not isinstance(ckp_path, str):
+        # need to handle the special case
+        error_message = "checkpoint_path needs to be either a string " + \
+                        "checkpoint_path needs to be either or a dictionary with " + \
+                        "keys: meta, index, data"
+        if not isinstance(ckp_path, Mapping):
+            raise ValueError(error_message + "\n detected class {}".format(type(ckp_path)))
+        if set(ckp_path.keys()) != {'meta', 'index', 'data'}:
+            raise ValueError(error_message + "\n detected keys {}".format(set(ckp_path.keys())))
+
+        # either all are string or all are remote paths
+        types = {type(ckp_path[k]) for k in ckp_path}
+        if len(types) != 1:
+            raise ValueError("All types in checkpoint_path need to be the same. Found: {}".format(types))
+        if not (isinstance(ckp_path['meta'], str) or isinstance(ckp_path['meta'], RemoteFile)):
+            raise ValueError("Values of the checkpoint_path ckp_path need to be either "
+                             "str or RemoteFile. Found: {}".format(ckp_path['meta']))
+        if isinstance(ckp_path['meta'], RemoteFile):
+            # download files
+            makedir_exist_ok(output_dir)
+            ckp_path['meta'] = ckp_path['meta'].get_file(os.path.join(output_dir, "model.meta"))
+            ckp_path['index'] = ckp_path['index'].get_file(os.path.join(output_dir, "model.index"))
+            ckp_path['data'] = ckp_path['data'].get_file(os.path.join(output_dir, "model.data-00000-of-00001"))
+
+        if isinstance(ckp_path['meta'], str):
+            assert ckp_path['meta'].endswith(".meta")
+            assert ckp_path['index'].endswith(".index")
+            assert ckp_path['data'].endswith(".data-00000-of-00001")
+            # figure out the prefix
+            ckp_path_prefix = ckp_path['meta'][:-5]
+            assert ckp_path['data'].startswith(ckp_path_prefix)
+            assert ckp_path['index'].startswith(ckp_path_prefix)
+
+            return ckp_path_prefix
+        else:
+            raise ValueError("Values of the checkpoint_path ckp_path need to be either "
+                             "str or RemoteFile. Found: {}".format(ckp_path['meta']))
+    else:
+        return ckp_path
+
+# --------------------------------------------
 
 
 AVAILABLE_MODELS = OrderedDict([("keras", KerasModel),

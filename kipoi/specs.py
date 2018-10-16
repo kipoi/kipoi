@@ -18,7 +18,8 @@ import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.utils import unique_list, yaml_ordered_dump, read_txt, load_obj, inherits_from, override_default_kwargs
+from kipoi.utils import (unique_list, yaml_ordered_dump, read_txt,
+                         load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -530,10 +531,8 @@ class DataLoaderArgument(RelatedConfigMixin):
         if self.doc == "":
             logger.warn("doc empty for one of the dataloader `args` fields")
             # parse args
-        if isinstance(self.example, dict) and "url" in self.example:
-            self.example = RemoteFile.from_config(self.example)
-        if isinstance(self.default, dict) and "url" in self.default:
-            self.default = RemoteFile.from_config(self.default)
+        self.example = recursive_dict_parse(self.example, 'url', RemoteFile.from_config)
+        self.default = recursive_dict_parse(self.default, 'url', RemoteFile.from_config)
 
 
 @related.mutable(strict=True)
@@ -788,9 +787,7 @@ class ModelDescription(RelatedLoadSaveMixin):
                     logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
         # parse args
-        for k in self.args:
-            if isinstance(self.args[k], dict) and "url" in self.args[k]:
-                self.args[k] = RemoteFile.from_config(self.args[k])
+        self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
 
         # parse default_dataloader
         if isinstance(self.default_dataloader, dict):
