@@ -339,4 +339,4 @@ def ls_helper(df, group_filter='', tsv=False):
                 if row.N_subgroups == 0 and row.N_models == 1:
                     print("{}".format(row.group))
                 else:
-                    print("{} ({})".format(row.group, row.N_models))
+                    print("{}/ ({})".format(row.group, row.N_models))
