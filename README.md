@@ -166,7 +166,7 @@ Kipoi supports plug-ins which are published as additional python packages. Two p
 
 ### [kipoi_veff](https://github.com/kipoi/kipoi-veff)
 
-Variant effect prediction plugin compatible with (DNA) sequence based models. It allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new VCF file. For more information see [tutorials/variant_effect_prediction_simple/](https://github.com/kipoi/kipoi/blob/master/notebooks/variant_effect_prediction_simple.ipynb) or [tutorials/variant_effect_prediction/](http://kipoi.org/docs/tutorials/variant_effect_prediction/).
+Variant effect prediction plugin compatible with (DNA) sequence based models. It allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new VCF file. For more information see <https://kipoi.org/veff-docs/>.
 
 ```bash
 pip install kipoi_veff
