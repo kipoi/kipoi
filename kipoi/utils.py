@@ -499,3 +499,37 @@ def relative_path(full_path, parent_subpath):
     parent_subpath = os.path.realpath(parent_subpath)
     relative = os.path.relpath(full_path, parent_subpath)
     return relative
+
+
+def recursive_dict_parse(d, key, fn):
+    """Recursively parse the dictionary and apply
+    fn once a child dictionary with a key has been observed
+
+    Args:
+      d: nested data structure
+      key: dictionary key to watch.
+      fn: when a dict with `key` is found, apply a function
+         to this dictionary
+    """
+    if isinstance(d, collections.Mapping):
+        if key in d:
+            return fn(d)
+        else:
+            return OrderedDict([(k, recursive_dict_parse(v, key, fn)) for k, v in six.iteritems(d)])
+    elif isinstance(d, list):
+        return [recursive_dict_parse(v, key, fn) for v in d]
+    else:
+        # nothing to iterate over. stop recursion
+        return d
+
+
+def makedir_exist_ok(dirpath):
+    """Python2 support for os.makedirs(.., exist_ok=True)
+    """
+    try:
+        os.makedirs(dirpath)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise OSError(str(e))
