@@ -168,4 +168,4 @@ def test_loading_target(source):
     # tests that the column names
     # were loaded correctly
     md = kipoi.get_model_descr("Basset")
-    assert len(md.schema.targets) > 1
+    assert len(md.schema.targets.column_labels) > 1
