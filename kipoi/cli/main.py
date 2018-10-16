@@ -305,14 +305,38 @@ def cli_ls(command, raw_args):
     assert command == "ls"
     parser = argparse.ArgumentParser('kipoi {}'.format(command),
                                      description="Lists available models")
-    # parser.add_argument("--tsv", action='store_true',
-    #                     help="Print the output in the tsv format.")
+    parser.add_argument("group_filter", nargs='?', default='',
+                        help="A relative path to the model group used to subset the model list. Use 'all' to show all models")
+    parser.add_argument("--tsv", action='store_true',
+                        help="Print the output in the tsv format.")
     add_source(parser)
     args = parser.parse_args(raw_args)
+    grp = kipoi.get_source(args.source)
+    df = grp.list_models()
+    ls_helper(df, args.group_filter, args.tsv)
 
-    dtm = kipoi.get_source(args.source).list_models()
-    # if args.tsv:
-    #     dtm[['model', 'doc']].to_csv(sys.stdout, sep='\t', index=False)
-    # else:
-    for m in list(dtm.model):
-        print(m)
+
+#  split it up for easier testing
+
+def ls_helper(df, group_filter='', tsv=False):
+    if group_filter == 'all':
+        for m in list(df.model):
+            print(m)
+    else:
+        from kipoi.sources import list_models_by_group
+        dfg = list_models_by_group(df, group_filter)
+        if dfg is None:
+            # print the model list
+            models = df.model[df.model.str.contains(group_filter)]
+            for m in models:
+                print(m)
+            sys.exit(0)
+
+        if tsv:
+            dfg[['group', 'N_models', 'N_subgroups']].to_csv(sys.stdout, sep='\t', index=False)
+        else:
+            for i, row in dfg.iterrows():
+                if row.N_subgroups == 0:
+                    print("{}".format(row.group))
+                else:
+                    print("{} ({})".format(row.group, row.N_models))
