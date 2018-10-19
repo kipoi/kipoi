@@ -490,6 +490,7 @@ class LocalSource(Source):
 
     def get_group_name(self, component, which='model'):
         component = os.path.normpath(component)
+
         if self.component_group_list is not None:
             # already cached
             for k in self.component_group_list[which]:
@@ -497,7 +498,11 @@ class LocalSource(Source):
                     return k
             return None
         else:
-            return LocalComponentGroup.group_path(component, which)
+            group_path = LocalComponentGroup.group_path(os.path.join(self.local_path, component), which)
+            if group_path is None:
+                return None
+            else:
+                return relative_path(group_path, self.local_path)
 
     def _is_nongroup_component(self, component, which):
         path = os.path.join(self.local_path, os.path.normpath(component))
@@ -530,6 +535,7 @@ class LocalSource(Source):
             return True
         else:
             # it's present in one of the groups
+
             k = self.get_group_name(component, which)
             if k is not None:
                 # check that it's indeed found in one of the components
