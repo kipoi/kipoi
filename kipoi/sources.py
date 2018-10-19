@@ -520,8 +520,20 @@ class LocalSource(Source):
 
     def _get_component_download_dir(self, component, which='model'):
         component = os.path.normpath(component)
-        path = os.path.join(self.local_path, os.path.normpath(component))
-        return os.path.join(path, "downloaded", '{}_files'.format(which))
+
+        insert_path = os.path.join("downloaded", '{}_files'.format(which))
+
+        # special case: component can be outside of the root directory
+        if self._is_nongroup_component(component, which):
+            return os.path.join(self.local_path, os.path.normpath(component), insert_path)
+        else:
+            k = self.get_group_name(component, which)
+            if k is None and which == 'dataloader':
+                # fallback: try to get model's download directory
+                k = self.get_group_name(component, 'model')
+
+            assert k is not None
+            return os.path.join(self.local_path, k, insert_path, relative_path(component, k))
 
     def _is_component(self, component, which="model"):
         component = os.path.normpath(component)
