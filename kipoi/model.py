@@ -136,18 +136,19 @@ def get_model(model, source="kipoi", with_dataloader=True):
     else:
         default_dataloader = None
 
+    model_download_dir = source.get_model_download_dir(model)
     # Read the Model - append methods, attributes to self
     with cd(source_dir):  # move to the model directory temporarily
 
         # explicitly handle downloading files for TensorFlowModel
         if md.type == 'tensorflow' or md.defined_as == 'kipoi.model.TensorFlowModel':
-            output_dir = os.path.join(source.get_model_download_dir(model), "ckp")
+            output_dir = os.path.join(model_download_dir, "ckp")
             md.args['checkpoint_path'] = _parse_tensorflow_checkpoint_path(md.args['checkpoint_path'], output_dir)
 
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
-                output_dir = os.path.join(source.get_model_download_dir(model), k)
+                output_dir = os.path.join(model_download_dir, k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 makedir_exist_ok(output_dir)
 
