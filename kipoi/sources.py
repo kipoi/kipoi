@@ -490,14 +490,19 @@ class LocalSource(Source):
 
     def get_group_name(self, component, which='model'):
         component = os.path.normpath(component)
-        if self._local_path is not None:
-            self.cache_component_list()
+
+        if self.component_group_list is not None:
+            # already cached
             for k in self.component_group_list[which]:
                 if component.startswith(os.path.join(k, "")):
                     return k
             return None
         else:
-            return LocalComponentGroup.group_path(component, which)
+            group_path = LocalComponentGroup.group_path(os.path.join(self.local_path, component), which)
+            if group_path is None:
+                return None
+            else:
+                return relative_path(group_path, self.local_path)
 
     def _is_nongroup_component(self, component, which):
         path = os.path.join(self.local_path, os.path.normpath(component))
@@ -530,11 +535,12 @@ class LocalSource(Source):
             return True
         else:
             # it's present in one of the groups
+
             k = self.get_group_name(component, which)
             if k is not None:
                 # check that it's indeed found in one of the components
-                if self._local_path is not None:
-                    self.cache_component_list()
+                if self.component_group_list is not None:
+                    # already cached
                     return component in self._list_components(which)
                 else:
                     grp = LocalComponentGroup.load(os.path.join(self.local_path, k), which)
@@ -556,8 +562,8 @@ class LocalSource(Source):
             if k is None:
                 raise ValueError("{} {} doesn't exist".format(which, component))
             else:
-                if self._local_path is not None:
-                    self.cache_component_list()
+                if self.component_group_list is not None:
+                    # already cached
                     return self.component_group_list[which][k]._get_component_descr(relative_path(component, k))
                 else:
                     grp = LocalComponentGroup.load(os.path.join(self.local_path, k), which)
