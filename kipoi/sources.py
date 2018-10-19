@@ -523,10 +523,25 @@ class LocalSource(Source):
             assert k is not None
             return os.path.join(self.local_path, k)
 
-    def _get_component_download_dir(self, component, which='model'):
+    def _get_component_download_dir(self, component, which='model', name=None):
         component = os.path.normpath(component)
-        path = os.path.join(self.local_path, os.path.normpath(component))
-        return os.path.join(path, "downloaded", '{}_files'.format(which))
+
+        if name is None:
+            name = which
+        insert_path = os.path.join("downloaded", '{}_files'.format(name))
+
+        # special case: component can be outside of the root directory
+        if self._is_nongroup_component(component, which):
+            return os.path.join(self.local_path, os.path.normpath(component), insert_path)
+        else:
+            k = self.get_group_name(component, which)
+            if k is None and which == 'dataloader':
+                # fallback: get model's download directory
+                return self._get_component_download_dir(component, which='model', name='dataloader')
+            if k is None:
+                raise ValueError("Couldn't get {} download_dir. Model"
+                                 " or group doesn't exist for {}".format(which, component))
+            return os.path.join(self.local_path, k, insert_path, relative_path(component, k))
 
     def _is_component(self, component, which="model"):
         component = os.path.normpath(component)
