@@ -267,8 +267,11 @@ def getargs(x):
 
 
 def _get_arg_name_values(fn_cls):
-    """Get the function/class argument
-    list
+    """Get the function/class default argument list (and their values)
+
+    Args:
+      fn_cls: function or a class. In the class case,
+          arguments for  `__init__` are returned
     """
     if sys.version_info[0] == 2:
         getargspec = inspect.getargspec
@@ -283,6 +286,15 @@ def _get_arg_name_values(fn_cls):
         args = getargspec(fn_cls.__init__).args[1:]
         values = fn_cls.__init__.__defaults__
     return args, values
+
+
+def default_kwargs(fn_cls):
+    """Get the default kwargs of a function
+    """
+    args, values = _get_arg_name_values(fn_cls)
+    if values is None:
+        return {}
+    return {args[-i - 1]: values[-i - 1] for i in range(len(values))}
 
 
 def override_default_kwargs(fn_cls, kwargs):

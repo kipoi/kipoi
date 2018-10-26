@@ -1,7 +1,7 @@
 """Test load module
 """
 import kipoi
-from kipoi.utils import load_obj, inherits_from, override_default_kwargs, infer_parent_class, cd
+from kipoi.utils import load_obj, inherits_from, override_default_kwargs, infer_parent_class, cd, default_kwargs
 from kipoi.data import BaseDataLoader, Dataset, AVAILABLE_DATALOADERS
 import pytest
 
@@ -39,6 +39,30 @@ def test_infer_parent_class():
 
     assert 'Dataset' == infer_parent_class(A, AVAILABLE_DATALOADERS)
     assert infer_parent_class(B, AVAILABLE_DATALOADERS) is None
+
+
+def test_default_kwargs():
+    class A(object):
+        def __init__(self, a, b=2):
+            self.a = a
+            self.b = b
+
+        def get_values(self):
+            return self.a, self.b
+
+    assert default_kwargs(A) == {"b": 2}
+
+    def fn(a, b=2):
+        return a, b
+    assert default_kwargs(fn) == {"b": 2}
+
+    def fn(b=2):
+        return b
+    assert default_kwargs(fn) == {"b": 2}
+
+    def fn(b):
+        return b
+    assert default_kwargs(fn) == {}
 
 
 def test_override_default_args():
