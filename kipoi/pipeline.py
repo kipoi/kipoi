@@ -86,7 +86,7 @@ class Pipeline(object):
         self.dataloader_cls = dataloader_cls
 
         # validate if model and datalaoder_cls are compatible
-        if not self.model.schema.compatible_with_schema(self.dataloader_cls.output_schema):
+        if not self.model.schema.compatible_with_schema(self.dataloader_cls.get_output_schema()):
             logger.warn("dataloader.output_schema is not compatible with model.schema")
         else:
             logger.info("dataloader.output_schema is compatible with model.schema")
@@ -110,7 +110,7 @@ class Pipeline(object):
             # test that all predictions go through
             pred_list = []
             for i, batch in enumerate(tqdm(it)):
-                if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+                if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warn("First batch of data is not compatible with the dataloader schema.")
                 pred_list.append(self.model.predict_on_batch(batch['inputs']))
 

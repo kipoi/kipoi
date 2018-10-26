@@ -95,7 +95,7 @@ def cli_preproc(command, raw_args):
 
     for i, batch in enumerate(tqdm(it)):
         # check that the first batch was indeed correct
-        if i == 0 and not Dataloader.output_schema.compatible_with_batch(batch):
+        if i == 0 and not Dataloader.get_output_schema().compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
         writer.batch_write(batch)
 
@@ -177,7 +177,7 @@ def cli_predict(command, raw_args):
     # Loop through the data, make predictions, save the output
     for i, batch in enumerate(tqdm(it)):
         # validate the data schema in the first iteration
-        if i == 0 and not Dl.output_schema.compatible_with_batch(batch):
+        if i == 0 and not Dl.get_output_schema().compatible_with_batch(batch):
             logger.warn("First batch of data is not compatible with the dataloader schema.")
 
         # make the prediction

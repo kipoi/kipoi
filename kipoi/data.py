@@ -152,6 +152,10 @@ class BaseDataLoader(object):
                 example_kwargs = json.dumps(example_kwargs)
             print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
+    @classmethod
+    def get_output_schema(cls):
+        return cls.output_schema
+
 
 def kipoi_dataloader(override=dict()):
     """Decorator for converting a Dataloader class with dataloader.yaml description in the docstring
