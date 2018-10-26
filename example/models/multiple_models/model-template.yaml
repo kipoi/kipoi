@@ -6,10 +6,9 @@ default_dataloader:
   defined_as: kipoiseq.datasets.SeqDataset
   default_args:
     auto_resize_len: 10
-
-dependencies:
-  pip:
-    - kipoiseq
+  dependencies:
+    pip:
+      - kipoiseq
 
 info:
   doc: {{ doc }}  # override
