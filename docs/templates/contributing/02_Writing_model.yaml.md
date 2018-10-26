@@ -164,8 +164,8 @@ args:
       y: 2
       z: 3
     weights: 
-        url: https://zenodo.org/path/to/my/model/weights.pth
-        md5: 1234567890abc
+	    url: https://zenodo.org/path/to/my/model/weights.pth
+	    md5: 1234567890abc
 ```
 
 If the module class does not have any arguments then `module_kwargs` can be omitted.
@@ -177,7 +177,7 @@ then you can use the `module_obj` in `model.yaml` to load that module:
 defined_as: kipoi.model.PyTorchModel
 args:
     module_obj: my_sequential.sequential_model
-    weights: 
+	weights: 
         url: https://zenodo.org/path/to/my/model/weights.pth
         md5: 1234567890abc
 ```
@@ -189,6 +189,18 @@ import torch
 sequential_model = torch.nn.Sequential(...)
 ```
 
+If you have trouble with the imports or if you would like to
+import a module from a parent directory you can explicitly specify the python file path:
+
+```python
+defined_as: kipoi.model.PyTorchModel
+args:
+    module_file: ./my_sequential.py
+    module_obj: sequential_model
+	weights: 
+        url: https://zenodo.org/path/to/my/model/weights.pth
+        md5: 1234567890abc
+```
 
 If `cuda` is available on the system then the model will automatically be switched to cuda mode, so the 
 user does not have to take care of that. 
