@@ -727,6 +727,12 @@ class DataLoaderImport(RelatedConfigMixin):
     """
     defined_as = related.StringField()
     default_args = related.ChildField(dict, default=OrderedDict(), required=False)
+    # specify also dataloader dependencies explicitly
+    dependencies = related.ChildField(Dependencies,
+                                      default=Dependencies(),
+                                      required=False)
+    # whether to parse the dependencies from the dataloader when installing it
+    parse_dependencies = related.BooleanField(default=True, required=False)
 
     def get(self):
         """Get the dataloader

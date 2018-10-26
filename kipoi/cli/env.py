@@ -67,7 +67,7 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
 # Website compatibility
 conda_env_name = get_env_name
 
-
+# constant dependencies
 KIPOI_DEPS = Dependencies(pip=["kipoi"])
 # TODO - update once kipoi_veff will be on bioconda
 VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
@@ -75,6 +75,8 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
                         pip=["kipoi_veff"])
+# Hard-code kipoi-seq dataloaders
+KIPOISEQ_DEPS = Dependencies(conda=['bioconda::pybedtools', 'bioconda::pyfaidx', 'numpy', 'pandas'], pip=['kipoiseq'])
 
 
 def merge_deps(models,
@@ -104,16 +106,32 @@ def merge_deps(models,
             # handle the dataloader=None case
             if dataloaders is None or not dataloaders:
                 if isinstance(model_descr.default_dataloader, DataLoaderImport):
-                    # add also the directory
-                    with cd(os.path.dirname(model_descr.path)):
-                        dataloader_descr = model_descr.default_dataloader.get()
+                    # dataloader specified by the import
+                    deps = deps.merge(model_descr.default_dataloader.dependencies)
+                    if model_descr.default_dataloader.parse_dependencies:
+                        # add dependencies specified in the yaml file
+                        # load from the dataloader description if you can
+                        try:
+                            with cd(os.path.dirname(model_descr.path)):
+                                dataloader_descr = model_descr.default_dataloader.get()
+                            deps = deps.merge(dataloader_descr.dependencies)
+                        except ImportError as e:
+                            # package providing the dataloader is not installed yet
+                            if model_descr.default_dataloader.defined_as.startswith("kipoiseq."):
+                                logger.info("kipoiseq not installed. Using default kipoiseq dependencies for the dataloader: {}"
+                                            .format(model_descr.default_dataloader.defined_as))
+                                deps = deps.merge(KIPOISEQ_DEPS)
+                            else:
+                                logger.warn("Unable to extract dataloader description. "
+                                            "Make sure the package containing the dataloader `{}` is installed".
+                                            format(model_descr.default_dataloader.defined_as))
                 else:
                     dataloader = os.path.normpath(os.path.join(sub_model,
                                                                str(model_descr.default_dataloader)))
                     logger.info("Inferred dataloader name: {0} from".format(dataloader) +
                                 " the model.")
                     dataloader_descr = kipoi.get_dataloader_descr(dataloader, parsed_source)
-                deps = deps.merge(dataloader_descr.dependencies)
+                    deps = deps.merge(dataloader_descr.dependencies)
     if dataloaders is not None or dataloaders:
         for dataloader in dataloaders:
             parsed_source, parsed_dataloader = parse_source_name(source, dataloader)
