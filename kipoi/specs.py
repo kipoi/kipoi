@@ -287,10 +287,12 @@ class ModelSchema(RelatedConfigMixin):
             return False
 
         if (isinstance(dataloader_schema.targets, ArraySchema) or
-            len(dataloader_schema.targets) > 0) and not compatible_nestedmapping(dataloader_schema.targets,
-                                                                                 self.targets,
-                                                                                 ArraySchema,
-                                                                                 verbose):
+            (dataloader_schema.targets is not None and
+             len(dataloader_schema.targets) > 0) and
+            not compatible_nestedmapping(dataloader_schema.targets,
+                                         self.targets,
+                                         ArraySchema,
+                                         verbose)):
             return False
 
         return True
@@ -500,7 +502,7 @@ class RemoteFile(RelatedConfigMixin):
         from kipoi.external.torchvision.dataset_utils import check_integrity
         return check_integrity(path, self.md5)
 
-    def get_file(self, path, extract=True):
+    def get_file(self, path):
         """Download the remote file to cache_dir and return
         the file path to it
         """
