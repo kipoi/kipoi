@@ -18,7 +18,7 @@ args:  # arguments of `kipoi.model.KerasModel`
     weights:
         url: https://zenodo.org/path/to/my/model/weights.h5
         md5: 1234567890abc
-default_dataloader: . # path to the dataloader directory. Or to the dataloader class, e.g.: `kipoiseq.datasets.SeqDataset
+default_dataloader: . # path to the dataloader directory. Or to the dataloader class, e.g.: `kipoiseq.dataloaders.SeqIntervalDl
 info: # General information about the model
     authors: 
         - name: Your Name
@@ -340,7 +340,7 @@ then please follow the instructions on [kipoiseq](https://github.com/kipoi/kipoi
 
 ```yaml
 default_dataloader:
-  defined_as: kipoiseq.datasets.SeqDataset
+  defined_as: kipoiseq.dataloaders.SeqIntervalDl
   default_args:
     auto_resize_len: 1000
     alphabet_axis: 0

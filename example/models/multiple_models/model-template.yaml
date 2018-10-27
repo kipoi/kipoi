@@ -3,7 +3,7 @@ args:
   dummy_add: {{ dummy_add }}  # override
 
 default_dataloader:
-  defined_as: kipoiseq.datasets.SeqDataset
+  defined_as: kipoiseq.dataloaders.SeqIntervalDl
   default_args:
     auto_resize_len: 10
   dependencies:

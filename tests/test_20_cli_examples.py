@@ -28,6 +28,7 @@ predict_activation_layers = {
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example, tmpdir):
     """kipoi test ...
@@ -224,8 +225,9 @@ def test_kipoi_pull():
             "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model.yaml'))
-    assert os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5'))
+    # obsolete - not using the git-lfs source anymore
+    # assert (os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/downloaded/AARS/model_files/model.h5')) or
+    #         os.path.exists(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS/model_files/model.h5')))
 
     kipoi.cli.main.cli_pull("pull", ["rbp_eclip/AARS"])
 
