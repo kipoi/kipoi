@@ -44,7 +44,7 @@ def makedir_exist_ok(dirpath):
             raise
 
 
-def download_url(url, root, filename, md5):
+def download_url(url, root, filename, md5=''):
     from six.moves import urllib
 
     root = os.path.expanduser(root)

@@ -14,12 +14,12 @@ def test_list_softlink_dependencies():
     """Test if finding model dependencies works
     """
     component_dir = kipoi.get_source("kipoi").local_path
-    assert list_softlink_dependencies(os.path.join(component_dir, 'rbp_eclip/UPF1'),
-                                      component_dir) == {'rbp_eclip/template'}
-    assert list_softlink_dependencies(os.path.join(component_dir, 'HAL'),
-                                      component_dir) == {'MaxEntScan/template',
-                                                         'MaxEntScan/template/example_files',
-                                                         'labranchor/example_files'}
+    deps = list_softlink_dependencies(os.path.join(component_dir, 'HAL'),
+                                      component_dir)
+    # one of these two, depending on the model source
+    assert (deps == {'MaxEntScan/template'}) or (deps == {'MaxEntScan/template',
+                                                          'MaxEntScan/template/example_files',
+                                                          'labranchor/example_files'})
     assert list_softlink_dependencies(os.path.join(component_dir, 'deepTarget'),
                                       component_dir) == set()
 
