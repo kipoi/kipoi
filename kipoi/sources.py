@@ -321,6 +321,9 @@ class Source(object):
     def get_config(self):
         pass
 
+    @abstractmethod
+    def get_group_name(self, component, which='model'):
+        pass
     # --------------------------------------------
 
     def assert_is_component(self, component, which='model'):
@@ -665,6 +668,9 @@ class GitSource(Source):
             self.pull_source()
         return self.local_source._get_component_descr(component, which)
 
+    def get_group_name(self, component, which='model'):
+        return self.local_source.get_group_name(component, which)
+
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
                             ("remote_url", self.remote_url),
@@ -776,6 +782,9 @@ class GitLFSSource(Source):
             self.pull_source()
         return self.local_source._is_component(component, which)
 
+    def get_group_name(self, component, which='model'):
+        return self.local_source.get_group_name(component, which)
+
     def _get_component_descr(self, component, which="model"):
         if not self._pulled:
             self.pull_source()
@@ -845,6 +854,10 @@ class GithubPermalinkSource(Source):
     def _is_component(self, component, which="model"):
         user, repo, commit, model = self._parse_url(component)
         return self.get_lfs_source(component)._is_component(model, which)
+
+    def get_group_name(self, component, which='model'):
+        user, repo, commit, model = self._parse_url(component)
+        return self.get_lfs_source(component).get_group_name(component, which)
 
     def _get_component_descr(self, component, which="model"):
         user, repo, commit, model = self._parse_url(component)
