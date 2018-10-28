@@ -336,7 +336,8 @@ def override_default_kwargs(fn_cls, kwargs):
             class NewClass(BaseClass):
                 __init__ = copy_func(BaseClass.__init__)
             NewClass.__name__ = "Overridden" + BaseClass.__name__
-            NewClass.__qualname__ = "Overridden" + BaseClass.__qualname__
+            if sys.version_info[0] == 3:
+                NewClass.__qualname__ = "Overridden" + BaseClass.__qualname__
             return NewClass
         fn_cls = factory(fn_cls)
 
