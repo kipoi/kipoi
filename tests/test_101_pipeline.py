@@ -32,6 +32,7 @@ def test_predict_to_file(tmpdir):
     h5_tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
     model = kipoi.get_model("Basset", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
-    model.pipeline.predict_to_file(h5_tmpfile, dl_kwargs)
+    with cd(model.source_dir):
+        model.pipeline.predict_to_file(h5_tmpfile, dl_kwargs)
     preds = kipoi.readers.HDF5Reader.load(h5_tmpfile)
     assert 'preds' in preds
