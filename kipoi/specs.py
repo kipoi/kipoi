@@ -742,7 +742,7 @@ class DataLoaderImport(RelatedConfigMixin):
         """Get the dataloader
         """
         from kipoi.data import BaseDataLoader
-
+        from copy import deepcopy
         obj = load_obj(self.defined_as)
 
         # check that it inherits from BaseDataLoader
@@ -750,7 +750,8 @@ class DataLoaderImport(RelatedConfigMixin):
             raise ValueError("Dataloader: {} doen't inherit from kipoi.data.BaseDataLoader".format(self.defined_as))
 
         # override the default arguments
-        override_default_kwargs(obj, self.default_args)
+        if self.default_args:
+            obj = override_default_kwargs(obj, self.default_args)
 
         # override also the values in the example
         for k, v in six.iteritems(self.default_args):

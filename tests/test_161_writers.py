@@ -1,9 +1,10 @@
 """Test kipoi.writers
 """
+import os
 import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
-from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter, BedGraphWriter
+from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter
 from kipoi.readers import HDF5Reader
 from kipoi.cli.main import prepare_batch
 import numpy as np
@@ -117,6 +118,30 @@ def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
         assert np.all(out['preds'][0][:3] == pred_batch_list[0])
 
 
+def test_MultipleBatchWriter(dl_batch, pred_batch_array, tmpdir):
+    tmpdir = tmpdir.mkdir("example")
+    h5_tmpfile = str(tmpdir.join("out.h5"))
+    tsv_tmpfile = str(tmpdir.join("out.tsv"))
+    batch = prepare_batch(dl_batch, pred_batch_array)
+    writer = MultipleBatchWriter([TsvBatchWriter(tsv_tmpfile), HDF5BatchWriter(h5_tmpfile)])
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    assert os.path.exists(h5_tmpfile)
+    assert os.path.exists(tsv_tmpfile)
+    df = pd.read_csv(tsv_tmpfile, sep="\t")
+    assert set(list(df.columns)) == {'metadata/ranges/id',
+                                     'metadata/ranges/strand',
+                                     'metadata/ranges/chr',
+                                     'metadata/ranges/start',
+                                     'metadata/ranges/end',
+                                     'metadata/gene_id',
+                                     'preds/0',
+                                     'preds/1',
+                                     'preds/2'}
+    assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]
+
+
 def test_BedBatchWriter(dl_batch, pred_batch_array, metadata_schema, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = BedBatchWriter(tmpfile, metadata_schema=metadata_schema)
@@ -156,6 +181,7 @@ def test_bigwigwriter():
             reg = {k: v[i] for k, v in regions.items()}
             bww.region_write(reg, [val])
             assert bww_2.entries(reg["chr"], reg["start"], reg["end"])[0][2] == val
+
 
 def test_bedgraphwriter():
     import os

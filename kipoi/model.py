@@ -119,7 +119,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
             override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
             if override:
                 # override default arguments specified under default
-                override_default_kwargs(default_dataloader, override)
+                default_dataloader = override_default_kwargs(default_dataloader, override)
         else:
             # load from directory
             # attach the default dataloader already to the model

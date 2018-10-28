@@ -10,9 +10,8 @@ from .data import numpy_collate_concat
 # import h5py
 import six
 from tqdm import tqdm
-import logging
 import six
-
+import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -114,15 +113,6 @@ class Pipeline(object):
                     logger.warn("First batch of data is not compatible with the dataloader schema.")
                 pred_list.append(self.model.predict_on_batch(batch['inputs']))
 
-        # TODO - check that the predicted values match the model targets
-
-        #     if test_equal:
-        #         match.append(compare_numpy_dict(y_pred, batch['targets'], exact=False))
-        # if not all(match):
-        #     logger.warning("For {0}/{1} batch samples: target != model(inputs)")
-        # else:
-        #     logger.info("All target values match model predictions")
-
         logger.info('predict_example done!')
         return numpy_collate_concat(pred_list)
 
@@ -145,7 +135,7 @@ class Pipeline(object):
         # Arguments
             dataloader_kwargs: Keyword arguments passed to the dataloader
             batch_size: Size of batches produced by the dataloader
-            layer: If not None activation of specified layer will be returned. Only possible for models that are a 
+            layer: If not None activation of specified layer will be returned. Only possible for models that are a
             subclass of `LayerActivationMixin`.
             **kwargs: Further arguments passed to batch_iter
 
@@ -163,12 +153,40 @@ class Pipeline(object):
                             " is not a subclass of `LayerActivationMixin`.")
 
         for i, batch in enumerate(it):
-            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+            if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warn("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
                 yield self.model.predict_on_batch(batch['inputs'])
             else:
                 yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
+
+    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, **kwargs):
+        """Make predictions and write them iteratively to a file
+
+        # Arguments
+            output_file: output file path. File format is inferred from the file path ending. Available file formats are:
+                 'bed', 'h5', 'hdf5', 'tsv'
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            keep_inputs: if True, inputs and targets will also be written to the output file.
+            **kwargs: Further arguments passed to batch_iter
+        """
+        from kipoi.writers import get_writer
+        from kipoi.cli.main import prepare_batch
+
+        # setup dataloader
+        validate_kwargs(self.dataloader_cls, dataloader_kwargs)
+        dl = self.dataloader_cls(**dataloader_kwargs)
+        it = dl.batch_iter(batch_size=batch_size, **kwargs)
+        writer = get_writer(output_file, dl.get_output_schema().metadata)
+
+        for i, batch in enumerate(tqdm(it)):
+            if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
+                logger.warn("First batch of data is not compatible with the dataloader schema.")
+            pred_batch = self.model.predict_on_batch(batch['inputs'])
+            output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs)
+            writer.batch_write(output_batch)
+        writer.close()
 
     def input_grad(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
                    final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
@@ -224,7 +242,7 @@ class Pipeline(object):
         it = self.dataloader_cls(**dataloader_kwargs).batch_iter(batch_size=batch_size, **kwargs)
 
         for i, batch in enumerate(it):
-            if i == 0 and not self.dataloader_cls.output_schema.compatible_with_batch(batch):
+            if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warn("First batch of data is not compatible with the dataloader schema.")
 
             pred = self.model.input_grad(batch['inputs'], filter_idx, avg_func, layer, final_layer,

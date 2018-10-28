@@ -297,13 +297,50 @@ def default_kwargs(fn_cls):
     return {args[-i - 1]: values[-i - 1] for i in range(len(values))}
 
 
-def override_default_kwargs(fn_cls, kwargs):
-    """Override default kwargs in fn_cls.
+def copy_func(f, name=None):
+    """Return a function with same code, globals, defaults, closure, and name (or provide a new name)
+    Implemented by: https://stackoverflow.com/a/30714299/7529152
 
-    It modifies fn_cls inplace (!)
+    # Arguments
+      f: function
+      name: new function name
 
-    NOTE: Enjoy this function responsively
+    # Returns
+      function  copy
     """
+    import types
+    fn = types.FunctionType(f.__code__, f.__globals__, name or f.__name__,
+                            f.__defaults__, f.__closure__)
+    # in case f was given attrs (note this dict is a shallow copy):
+    fn.__dict__.update(f.__dict__)
+    return fn
+
+
+def override_default_kwargs(fn_cls, kwargs):
+    """Override default kwargs in fn_cls. It keeps the original
+    function / class intact.
+
+    # Arguments
+      fn_cls: function or a class
+
+    # Returns
+      new function or a class with the original attributes overriden
+    """
+    if inspect.isfunction(fn_cls):
+        # make a copy of the object
+        fn_cls = copy_func(fn_cls)
+    else:
+        def factory(BaseClass):
+            """Copy the class and copy also the __init__
+            """
+            class NewClass(BaseClass):
+                __init__ = copy_func(BaseClass.__init__)
+            NewClass.__name__ = "Overridden" + BaseClass.__name__
+            if sys.version_info[0] == 3:
+                NewClass.__qualname__ = "Overridden" + BaseClass.__qualname__
+            return NewClass
+        fn_cls = factory(fn_cls)
+
     args, values = _get_arg_name_values(fn_cls)
     # check that all kwargs are specified
     for k in kwargs:
@@ -327,6 +364,7 @@ def override_default_kwargs(fn_cls, kwargs):
             fn_cls.__init__.__defaults__ = new_values
     else:
         fn_cls.__defaults__ = new_values
+    return fn_cls
 
 
 def read_yaml(path):
