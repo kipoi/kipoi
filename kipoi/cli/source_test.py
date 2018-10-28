@@ -164,6 +164,14 @@ def restrict_models_to_test(all_models, source, git_range):
                 if y.startswith(x + os.sep) or x == y:
                     return True
             return False
+
+        # if model is from a model group, test if any of the files were modified
+        group_name = source.get_group_name(model_name, which='model')
+        if group_name is not None:
+            # Test if any files required by the group were modified
+            if contains_any(group_name, modified_files):
+                return True
+
         # get all the dependency directories
         dep_dirs = list_softlink_dependencies(os.path.join(source.local_path,
                                                            model_name),
