@@ -156,23 +156,13 @@ def cli_predict(command, raw_args):
     # Setup the writers
     use_writers = []
     for output in args.output:
-        ending = output.split('.')[-1]
-        W = writers.FILE_SUFFIX_MAP[ending]
-        logger.info("Using {0} for file {1}".format(W.__name__, output))
-        if ending == "tsv":
-            assert W == writers.TsvBatchWriter
-            use_writers.append(writers.TsvBatchWriter(file_path=output, nested_sep="/"))
-        elif ending == "bed":
-            assert W == writers.BedBatchWriter
-            use_writers.append(writers.BedBatchWriter(file_path=output,
-                                                      dataloader_schema=dl.output_schema.metadata,
-                                                      header=True))
-        elif ending in ["hdf5", "h5"]:
-            assert W == writers.HDF5BatchWriter
-            use_writers.append(writers.HDF5BatchWriter(file_path=output))
-        else:
+        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata)
+        if writer is None:
             logger.error("Unknown file format: {0}".format(ending))
-            sys.exit(1)
+            sys.exit()
+        else:
+            use_writers.append(writer)
+    output_writers = writers.MultipleBatchWriter(use_writers)
 
     # Loop through the data, make predictions, save the output
     for i, batch in enumerate(tqdm(it)):
@@ -188,11 +178,9 @@ def cli_predict(command, raw_args):
 
         # write out the predictions, metadata (, inputs, targets)
         output_batch = prepare_batch(batch, pred_batch, keep_inputs=args.keep_inputs)
-        for writer in use_writers:
-            writer.batch_write(output_batch)
+        output_writers.batch_write(output_batch)
 
-    for writer in use_writers:
-        writer.close()
+    output_writers.close()
     logger.info('Done! Predictions stored in {0}'.format(",".join(args.output)))
 
 

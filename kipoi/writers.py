@@ -20,6 +20,9 @@ from kipoi.utils import map_nested
 from kipoi.data_utils import flatten_batch, numpy_collate_concat
 from kipoi.external.flatten_json import flatten
 from kipoi.specs import MetadataType
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class BatchWriter(object):
@@ -37,6 +40,36 @@ class BatchWriter(object):
         """Close the file
         """
         pass
+
+
+class MultipleBatchWriter(BatchWriter):
+    """A container holding multiple batch writers
+
+    # Arguments
+      batch_writers: a list of BatchWriters
+    """
+
+    def __init__(self, batch_writers):
+        assert isinstance(batch_writers, list) or isinstance(batch_writers, set)
+        for bw in batch_writers:
+            if not isinstance(bw, BatchWriter):
+                raise ValueError("{} doesn't inherit from kipoi.writers.BatchWriter".format(bw))
+        self.batch_writers = batch_writers
+
+    def batch_write(self, batch):
+        """Write a batch of data to multiple files
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
+        for bw in self.batch_writers:
+            bw.batch_write(batch)
+
+    def close(self):
+        """Close the batch writers
+        """
+        for bw in self.batch_writers:
+            bw.close()
 
 
 # --------------------------------------------
@@ -251,13 +284,42 @@ FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
                    "bed": BedBatchWriter}
 
 
+def get_writer(output_file, metadata_schema=None, **kwargs):
+    """Given the output file suffix, get the appropriate writer
+
+    # Arguments
+      output_file: file path string
+      dl: (optinal) dataloader metadata_schema
+      **kwargs: additional kwargs passed to the batch_writer
+
+    # Returns
+      BatchWriter object
+    """
+    ending = output_file.split('.')[-1]
+    W = FILE_SUFFIX_MAP.get(ending, None)
+    if ending == "tsv":
+        assert W == TsvBatchWriter
+        return TsvBatchWriter(file_path=output_file, nested_sep="/", **kwargs)
+    elif ending == "bed":
+        assert W == BedBatchWriter
+        if metadata_schema is None:
+            raise ValueError("metadata_schema needs to be specified for BedBatchWriter")
+        return BedBatchWriter(file_path=output_file,
+                              dataloader_schema=metadata_schema,
+                              header=True, **kwargs)
+    elif ending in ["hdf5", "h5"]:
+        return HDF5BatchWriter(file_path=output_file, **kwargs)
+    else:
+        return None
+
+
 class RegionWriter(object):
     @abstractmethod
     def region_write(self, region, data):
         """Write a single batch of data
 
         # Arguments
-          region: a `kipoi.metadata.GenomicRanges` object or a dictionary with at least keys: "chr", "start", "end" and list-values 
+          region: a `kipoi.metadata.GenomicRanges` object or a dictionary with at least keys: "chr", "start", "end" and list-values
             of length 1
           data: a 1D-array of values to be written - where the 0th entry is at 0-based "start"
         """
