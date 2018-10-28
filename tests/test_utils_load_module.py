@@ -69,12 +69,13 @@ def test_override_default_args():
     def fn(a, b=2):
         return a, b
     assert fn(1) == (1, 2)
-    override_default_kwargs(fn, {})
-    assert fn(1) == (1, 2)
+    assert override_default_kwargs(fn, {})(1) == (1, 2)
 
-    override_default_kwargs(fn, dict(b=4))
-    assert fn(1) == (1, 4)
-    assert fn(1, 3) == (1, 3)
+    fn2 = override_default_kwargs(fn, {"b": 4})
+    assert fn2(1) == (1, 4)
+    assert fn2(1, 3) == (1, 3)
+    # original function unchangd
+    assert fn(1) == (1, 2)
 
     class A(object):
         def __init__(self, a, b=2):
@@ -85,9 +86,11 @@ def test_override_default_args():
             return self.a, self.b
 
     assert A(1).get_values() == (1, 2)
-    override_default_kwargs(A, dict(b=4))
-    assert A(1).get_values() == (1, 4)
-    assert A(1, 3).get_values() == (1, 3)
+    B = override_default_kwargs(A, dict(b=4))
+    assert B(1).get_values() == (1, 4)
+    # original class unchangd
+    assert A(1).get_values() == (1, 2)
+    assert B(1, 3).get_values() == (1, 3)
 
     with pytest.raises(ValueError):
         override_default_kwargs(A, dict(c=4))

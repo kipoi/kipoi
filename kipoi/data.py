@@ -623,7 +623,7 @@ def get_dataloader(dataloader, source="kipoi"):
     override = download_default_args(descr.args, source.get_dataloader_download_dir(dataloader))
     if override:
         # override default arguments specified under default
-        override_default_kwargs(CustomDataLoader, override)
+        CustomDataLoader = override_default_kwargs(CustomDataLoader, override)
 
     # infer the type
     if descr.type is None:
