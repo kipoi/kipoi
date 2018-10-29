@@ -6,7 +6,7 @@ from __future__ import print_function
 import argparse
 import sys
 import os
-from ..utils import parse_json_file_str, cd
+from ..utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
 import kipoi  # for .config module
 from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_dataloader_main, file_exists, dir_exists
 from kipoi.sources import list_subcomponents
@@ -47,6 +47,11 @@ def cli_test(command, raw_args):
                         help='Batch size to use in prediction')
     parser.add_argument("-o", "--output", default=None, required=False,
                         help="Output hdf5 file")
+    parser.add_argument("-s", "--skip-expect", action='store_true',
+                        help="Skip validating the expected predictions if test.expect field is specified under model.yaml")
+    parser.add_argument("-e", "--expect", default=None,
+                        help="File path to the hdf5 file of predictions produced by kipoi test -o file.h5 "
+                        "or kipoi predict -o file.h5 --keep_inputs. Overrides test.expect in model.yaml")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     mh = kipoi.get_model(args.model, args.source)
@@ -58,10 +63,40 @@ def cli_test(command, raw_args):
 
     # Load the test files from model source
     mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output)
-    # if not match:
-    #     # logger.error("Expected targets don't match model predictions")
-    #     raise Exception("Expected targets don't match model predictions")
 
+    if (mh.test.expect is not None or args.expect is not None) \
+            and not args.skip_expect and args.output is None:
+        if args.expect is not None:
+            # `expect` specified from the CLI
+            expect = args.expect
+        else:
+            # `expect` taken from model.yaml
+            if isinstance(mh.test.expect, kipoi.specs.RemoteFile):
+                # download the file
+                output_dir = kipoi.get_source(args.source).get_model_download_dir(args.model)
+                makedir_exist_ok(output_dir)
+                mh.test.expect = mh.test.expect.get_file(os.path.join(output_dir, 'test.expect.h5'))
+            expect = mh.test.expect
+        logger.info('Testing if the predictions match the expected ones in the file: {}'.format(expect))
+
+        # iteratively load the expected file
+        expected = kipoi.readers.HDF5Reader(expect)
+        expected.open()
+        for i, batch in enumerate(expected.batch_iter(batch_size=args.batch_size)):
+            if i == 0 and ('inputs' not in batch or 'preds' not in batch):
+                raise ValueError("test.expect file requires 'inputs' and 'preds' "
+                                 "to be specified. Available keys: {}".format(list(expected)))
+            pred_batch = mh.predict_on_batch(batch['inputs'])
+            # compare to the predictions
+            try:
+                compare_numpy_dict(batch['preds'], pred_batch, exact=False)
+            except Exception as e:
+                logger.error("Model predictions don't match the expected predictions."
+                             "expected: {}\nobserved: {}. Exception: {}".format(batch['preds'], pred_batch, e))
+                expected.close()
+                sys.exit(1)
+        expected.close()
+        logger.info('All predictions match')
     logger.info('Successfully ran test_predict')
 
 

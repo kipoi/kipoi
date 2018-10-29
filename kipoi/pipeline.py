@@ -105,7 +105,8 @@ class Pipeline(object):
 
         if output_file is not None:
             output_file = os.path.abspath(output_file)
-
+            if os.path.exists(output_file):
+                raise ValueError("Output file: {} already exists.".format(output_file))
         with cd(self.dataloader_cls.source_dir):
             # init the dataloader
             dl = self.dataloader_cls.init_example()

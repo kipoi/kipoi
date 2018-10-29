@@ -203,6 +203,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.info = md.info
     mod.schema = md.schema
     mod.dependencies = md.dependencies
+    mod.test = md.test
     mod.default_dataloader = default_dataloader
     mod.name = model
     mod.source = source

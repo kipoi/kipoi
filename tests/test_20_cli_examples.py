@@ -59,6 +59,28 @@ def test_test_example(example, tmpdir):
         assert 'preds' in preds
 
 
+def test_cli_test_expect(tmpdir):
+    """kipoi test - check that the expected predictions also match
+    """
+    example = 'pyt'
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+
+    # fail the test
+    args = ["python", "./kipoi/__main__.py", "test",
+            "--batch_size=4",
+            "-e", os.path.join(example_dir, "wrong.pred.h5"),
+            example_dir]
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+    returncode = subprocess.call(args=args)
+    assert returncode == 1
+
+    # succeed
+    kipoi.cli.main.cli_test("test", ["--batch_size=4",
+                                     "-e", os.path.join(example_dir, "expected.pred.h5"),
+                                     example_dir])
+
+
 def test_postproc_cli_fail():
     """kipoi test ...
     """
