@@ -45,6 +45,8 @@ def cli_test(command, raw_args):
     add_model(parser, source="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
+    parser.add_argument("-o", "--output", default=None, required=False,
+                        help="Output hdf5 file")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     mh = kipoi.get_model(args.model, args.source)
@@ -55,7 +57,7 @@ def cli_test(command, raw_args):
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
-    mh.pipeline.predict_example(batch_size=args.batch_size)
+    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output)
     # if not match:
     #     # logger.error("Expected targets don't match model predictions")
     #     raise Exception("Expected targets don't match model predictions")

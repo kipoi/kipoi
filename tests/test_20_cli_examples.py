@@ -31,7 +31,7 @@ ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example, tmpdir):
-    """kipoi test ...
+    """kipoi test ..., add also output file writing
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
             and sys.version_info[0] == 2:
@@ -48,7 +48,15 @@ def test_test_example(example, tmpdir):
     assert returncode == 0
 
     if example == 'pyt':
-        kipoi.cli.main.cli_test("test", args[3:])
+        # python interface, write also the output file
+        output_file = os.path.join(example_dir, 'preds.h5')
+        kipoi.cli.main.cli_test("test", args[3:] + ["-o", output_file])
+
+        assert os.path.exists(output_file)
+        preds = HDF5Reader.load(output_file)
+        assert 'inputs' in preds
+        assert 'metadata' in preds
+        assert 'preds' in preds
 
 
 def test_postproc_cli_fail():
