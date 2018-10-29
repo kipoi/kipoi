@@ -90,19 +90,30 @@ class Pipeline(object):
         else:
             logger.info("dataloader.output_schema is compatible with model.schema")
 
-    def predict_example(self, batch_size=32, test_equal=False):
+    def predict_example(self, batch_size=32, output_file=None):
         """Run model prediction for the example file
 
         # Arguments
             batch_size: batch_size
-            test_equal: currently not implemented
+            output_file: if not None, inputs and predictions are stored to `output_file` path
             **kwargs: Further arguments passed to batch_iter
         """
         logger.info('Initialized data generator. Running batches...')
 
+        from kipoi.writers import get_writer
+        from kipoi.cli.main import prepare_batch
+
+        if output_file is not None:
+            output_file = os.path.abspath(output_file)
+            if os.path.exists(output_file):
+                raise ValueError("Output file: {} already exists.".format(output_file))
         with cd(self.dataloader_cls.source_dir):
+            # init the dataloader
             dl = self.dataloader_cls.init_example()
             logger.info('Returned data schema correct')
+
+            if output_file is not None:
+                writer = get_writer(output_file, dl.get_output_schema().metadata)
 
             it = dl.batch_iter(batch_size=batch_size)
 
@@ -111,7 +122,15 @@ class Pipeline(object):
             for i, batch in enumerate(tqdm(it)):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warn("First batch of data is not compatible with the dataloader schema.")
-                pred_list.append(self.model.predict_on_batch(batch['inputs']))
+                pred_batch = self.model.predict_on_batch(batch['inputs'])
+                pred_list.append(pred_batch)
+
+                if output_file is not None:
+                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+                    writer.batch_write(output_batch)
+
+            if output_file is not None:
+                writer.close()
 
         logger.info('predict_example done!')
         return numpy_collate_concat(pred_list)

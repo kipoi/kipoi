@@ -31,7 +31,7 @@ ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example, tmpdir):
-    """kipoi test ...
+    """kipoi test ..., add also output file writing
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} \
             and sys.version_info[0] == 2:
@@ -48,7 +48,37 @@ def test_test_example(example, tmpdir):
     assert returncode == 0
 
     if example == 'pyt':
-        kipoi.cli.main.cli_test("test", args[3:])
+        # python interface, write also the output file
+        output_file = os.path.join(example_dir, 'preds.h5')
+        kipoi.cli.main.cli_test("test", args[3:] + ["-o", output_file])
+
+        assert os.path.exists(output_file)
+        preds = HDF5Reader.load(output_file)
+        assert 'inputs' in preds
+        assert 'metadata' in preds
+        assert 'preds' in preds
+
+
+def test_cli_test_expect(tmpdir):
+    """kipoi test - check that the expected predictions also match
+    """
+    example = 'pyt'
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+
+    # fail the test
+    args = ["python", "./kipoi/__main__.py", "test",
+            "--batch_size=4",
+            "-e", os.path.join(example_dir, "wrong.pred.h5"),
+            example_dir]
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+    returncode = subprocess.call(args=args)
+    assert returncode == 1
+
+    # succeed
+    kipoi.cli.main.cli_test("test", ["--batch_size=4",
+                                     "-e", os.path.join(example_dir, "expected.pred.h5"),
+                                     example_dir])
 
 
 def test_postproc_cli_fail():

@@ -760,6 +760,20 @@ class DataLoaderImport(RelatedConfigMixin):
         return obj
 
 
+@related.mutable(strict=True)
+class ModelTest(RelatedLoadSaveMixin):
+    # predictions = related.
+    expect = AnyField(default=None, required=False)
+
+    def __attrs_post_init__(self):
+        if self.expect is not None:
+            if not isinstance(self.expect, str):
+                # it has to be the url
+                if not (isinstance(self.expect, dict) and "url" in self.expect):
+                    raise ValueError("expect is not a file path, expecting a url field with entries: url and md5")
+                self.expect = RemoteFile.from_config(self.expect)
+
+
 # --------------------------------------------
 # Final description classes modelling the yaml files
 @related.mutable(strict=True)
@@ -776,6 +790,9 @@ class ModelDescription(RelatedLoadSaveMixin):
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
+    test = related.ChildField(ModelTest,
+                              default=ModelTest(),
+                              required=False)
     path = related.StringField(required=False)
     # TODO - add after loading validation for the arguments class?
 
@@ -949,6 +966,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
 # ---------------------
 # Global source config
+
 
 # TODO - write a unit-test for these three
 @related.mutable
