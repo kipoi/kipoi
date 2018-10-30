@@ -764,6 +764,10 @@ class DataLoaderImport(RelatedConfigMixin):
 class ModelTest(RelatedLoadSaveMixin):
     # predictions = related.
     expect = AnyField(default=None, required=False)
+    precision_decimal = related.IntegerField(default=7, required=False)
+    # Arrays should be almost equal to `precision_decimal` places
+    # https://docs.scipy.org/doc/numpy-1.15.1/reference/generated/numpy.testing.assert_almost_equal.html
+    # abs(desired-actual) < 1.5 * 10**(-precision_decimal)
 
     def __attrs_post_init__(self):
         if self.expect is not None:
