@@ -101,6 +101,7 @@ def merge_deps(models,
 
         for sub_model in sub_models:
             model_descr = kipoi.get_model_descr(sub_model, parsed_source)
+            model_dir = kipoi.get_source(parsed_source).get_model_dir(sub_model)
             deps = deps.merge(model_descr.dependencies)
 
             # handle the dataloader=None case
@@ -112,7 +113,7 @@ def merge_deps(models,
                         # add dependencies specified in the yaml file
                         # load from the dataloader description if you can
                         try:
-                            with cd(os.path.dirname(model_descr.path)):
+                            with cd(model_dir):
                                 dataloader_descr = model_descr.default_dataloader.get()
                             deps = deps.merge(dataloader_descr.dependencies)
                         except ImportError as e:
