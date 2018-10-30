@@ -163,7 +163,7 @@ def pip_install_requirements(requirements_fname):
         logger.info('requirements.txt not found under {}'.format(requirements_fname))
 
 
-def compare_numpy_dict(a, b, exact=True):
+def compare_numpy_dict(a, b, exact=True, decimal=7):
     """
     Compare two recursive numpy dictionaries or lists
     """
@@ -192,7 +192,7 @@ def compare_numpy_dict(a, b, exact=True):
         if exact:
             return (a == b).all()
         else:
-            return np.testing.assert_almost_equal(a, b)
+            return np.testing.assert_almost_equal(a, b, decimal=decimal)
 
     if a is None and b is None:
         return True

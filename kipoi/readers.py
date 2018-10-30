@@ -81,8 +81,7 @@ class HDF5Reader(Reader):
             **kwargs: ignored argument. Used for consistency with other dataloaders
         """
         datasets = self.ls()
-        size = datasets[0][1].shape[0]
-        n_batches = int(np.ceil(size / batch_size))
+        n_batches = int(np.ceil(len(self) / batch_size))
         for i in range(n_batches):
             d = dict()
             for k, v in datasets:
@@ -92,6 +91,10 @@ class HDF5Reader(Reader):
                 else:
                     d[k] = v[(i * batch_size):((i + 1) * batch_size)]
             yield unflatten_list(d, "/")
+
+    def __len__(self):
+        datasets = self.ls()
+        return datasets[0][1].shape[0]
 
     def __enter__(self):
         import h5py
