@@ -23,8 +23,7 @@ extra_field: asd
 
 BAD_EXAMPLES = ["""
 authors:
-    - name: Ziga Avsec
-ame: rbp_eclip
+    - nam: Ziga Avsec
 version: 0.1
 doc: RBP binding prediction
 """]
