@@ -28,14 +28,14 @@ logger.addHandler(logging.NullHandler())
 # Common specs (model and dataloader)
 
 
-@related.immutable(strict=True)
+@related.immutable(strict=False)
 class Author(RelatedConfigMixin):
     name = related.StringField()
     github = related.StringField(required=False)
     email = related.StringField(required=False)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
@@ -59,7 +59,7 @@ class Info(RelatedConfigMixin):
             logger.warn("doc empty for the `info:` field")
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
@@ -78,7 +78,7 @@ class ArraySpecialType(enum.Enum):
     Array = "Array"
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ArraySchema(RelatedConfigMixin):
     """
 
@@ -208,7 +208,7 @@ class ArraySchema(RelatedConfigMixin):
 # --------------------------------------------
 # Model specific specs
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
@@ -314,7 +314,7 @@ class MetadataType(enum.Enum):
     # TODO - add bed3 or bed6 ranges
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class MetadataStruct(RelatedConfigMixin):
 
     doc = related.StringField()
@@ -376,7 +376,7 @@ class MetadataStruct(RelatedConfigMixin):
         return True
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
 
@@ -520,7 +520,7 @@ class RemoteFile(RelatedConfigMixin):
         return os.path.join(root, filename)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField("", required=False)
@@ -539,7 +539,7 @@ class DataLoaderArgument(RelatedConfigMixin):
         self.default = recursive_dict_parse(self.default, 'url', RemoteFile.from_config)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
@@ -751,7 +751,7 @@ class Dependencies(RelatedConfigMixin):
     #     pass
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderImport(RelatedConfigMixin):
     """Dataloader specification for the import
     """
@@ -786,7 +786,7 @@ class DataLoaderImport(RelatedConfigMixin):
         return obj
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelTest(RelatedLoadSaveMixin):
     # predictions = related.
     expect = AnyField(default=None, required=False)
@@ -806,7 +806,7 @@ class ModelTest(RelatedLoadSaveMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -917,7 +917,7 @@ def download_default_args(args, output_dir):
     return override
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
     """

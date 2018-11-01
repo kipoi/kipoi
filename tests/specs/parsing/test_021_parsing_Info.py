@@ -18,15 +18,15 @@ name: rbp_eclip
 version: 0.1
 # doc: RBP binding prediction
 tags: ['var_interpretation']
+extra_field: asd
 """]
 
 BAD_EXAMPLES = ["""
 authors:
     - name: Ziga Avsec
-name: rbp_eclip
+ame: rbp_eclip
 version: 0.1
 doc: RBP binding prediction
-extra_field: asd
 """]
 
 

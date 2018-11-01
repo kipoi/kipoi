@@ -192,7 +192,10 @@ class LocalComponentGroup(object):
 
         self.component_template_yaml = component_template_yaml
         with open(self.component_template_yaml, "r") as f:
-            self.template = Template(f.read())
+            template_str = f.read()
+            if sys.version_info[0] == 2:
+                template_str = template_str.decode("utf-8")
+            self.template = Template(template_str)
 
         self.models_tsv = models_tsv
         self.df = pd.read_csv(models_tsv, sep='\t', comment='#')
