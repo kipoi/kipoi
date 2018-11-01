@@ -453,14 +453,35 @@ class LocalSource(Source):
 
     TYPE = "local"
 
-    def __init__(self, local_path=None):
+    def __init__(self, local_path=None, name=None):
         """Local files
         """
+        self.name = name
         if local_path is not None:
             self._local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
+
+            # load the config file
+            config_file = os.path.join(self._local_path, 'config.yaml')
+            if os.path.exists(config_file):
+                from kipoi.specs import SourceConfig
+                self.config = SourceConfig.load(config_file)
+
+                if not self.config.dependencies.all_installed(verbose=False):
+                    import colorlog
+                    print(colorlog.escape_codes['red'])
+                    print("WARNING: Dependencies for model source '{}' stored at local_path {} not satisfied.: \n---".
+                          format(self.name, self._local_path))
+                    self.config.dependencies.all_installed(verbose=True)
+                    print("---\ninstall or update the missing packages")
+                    print(colorlog.escape_codes['reset'])
+                    print("Note: If you don't want to auto_update the model source, \n"
+                          "add `auto_update: False` to ~/.kipoi/config.yaml\n")
+            else:
+                self.config = None
         else:
             # undetermined local path
             self._local_path = None
+            self.config = None
         self.component_yaml_list = None
         self.component_group_list = None
 
@@ -599,12 +620,13 @@ class GitSource(Source):
 
     TYPE = "git"
 
-    def __init__(self, remote_url, local_path, auto_update=True, use_lfs=False):
+    def __init__(self, remote_url, local_path, auto_update=True, use_lfs=False, name=None):
         """Git Source
         """
+        self.name = name
         self.remote_url = remote_url
         self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
-        self.local_source = LocalSource(self.local_path)
+        self.local_source = LocalSource(self.local_path, name=name)
 
         self.auto_update = auto_update
         self._pulled = False
@@ -739,23 +761,24 @@ class GitSource(Source):
 class GitLFSSource(GitSource):
     TYPE = 'git-lfs'
 
-    def __init__(self, remote_url, local_path, auto_update=True):
+    def __init__(self, remote_url, local_path, auto_update=True, name=None):
         """Git-LFS Source
         """
         super(GitLFSSource, self).__init__(remote_url=remote_url,
                                            local_path=local_path,
                                            auto_update=auto_update,
-                                           use_lfs=True)
+                                           use_lfs=True,
+                                           name=name)
 
 
 class GithubPermalinkSource(Source):
 
     TYPE = "github-permalink"
 
-    def __init__(self, local_path):
+    def __init__(self, local_path, name=None):
         """Local files
         """
-
+        self.name = name
         self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
 
     @classmethod
@@ -827,7 +850,7 @@ class GithubPermalinkSource(Source):
 source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource]
 
 
-def load_source(config):
+def load_source(config, name):
     """Load the source from config
     """
     type_cls = {cls.TYPE: cls for cls in source_classes}
@@ -849,5 +872,7 @@ def load_source(config):
                 logger.info("Using 'type: git'")
             config['type'] = 'git'
 
+    # add name
+    config['name'] = name
     cls = type_cls[config["type"]]
     return cls.from_config(config)

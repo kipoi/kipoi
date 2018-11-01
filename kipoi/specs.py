@@ -55,7 +55,7 @@ class Info(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)
 
     def __attrs_post_init__(self):
-        if self.doc == "":
+        if self.authors and self.doc == "":
             logger.warn("doc empty for the `info:` field")
 
 
@@ -562,6 +562,32 @@ class Dependencies(RelatedConfigMixin):
             # found a pip txt file
             object.__setattr__(self, "pip", read_txt(self.pip[0]))
 
+    def all_installed(self, verbose=False):
+        """Validate if all the dependencies are installed as requested
+
+        Args:
+          verbose: if True, display warnings if the dependencies are not installed
+
+        Returns:
+          (bool): True if all the required package versions are installed
+            and False otherwise
+        """
+        norm = self.normalized()
+        for pkg in list(norm.conda) + list(norm.pip):
+            if not kconda.is_installed(pkg):
+                if verbose:
+                    pkg_name, req_version = kconda.version_split(pkg)
+                    found_version = kconda.get_package_version(pkg_name)
+                    if found_version is None:
+                        print("Package '{}' is not installed".
+                              format(pkg_name))
+                    else:
+                        print("Installed package '{}={}' doesn't "
+                              "comply with '{}'".
+                              format(pkg_name, found_version, pkg))
+                return False
+        return True
+
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
         print(self.pip)
@@ -589,10 +615,10 @@ class Dependencies(RelatedConfigMixin):
         Use case: merging the dependencies of model and dataloader
 
         Args:
-          dependencies: Dependencies instance
+            dependencies: Dependencies instance
 
         Returns:
-          new Dependencies instance
+            new Dependencies instance
         """
         return Dependencies(
             conda=unique_list(list(self.conda) + list(dependencies.conda)),
@@ -615,7 +641,7 @@ class Dependencies(RelatedConfigMixin):
             conda_channels=channels)
 
     def _get_channels_packages(self):
-        """Get conda channels and packages separated from each other (by '::')
+        """Get conda channels and packages separated from each other(by '::')
         """
         if len(self.conda) == 0:
             return self.conda_channels, self.conda
@@ -677,7 +703,7 @@ class Dependencies(RelatedConfigMixin):
                                       default_flow_style=False))
 
     def gpu(self):
-        """Get the gpu-version of the dependencies
+        """Get the gpu - version of the dependencies
         """
         def replace_gpu(dep):
             if dep.startswith("tensorflow") and "gpu" not in dep:
@@ -697,7 +723,7 @@ class Dependencies(RelatedConfigMixin):
             conda_channels=deps.conda_channels)
 
     def osx(self):
-        """Get the os-x compatible dependencies
+        """Get the os - x compatible dependencies
         """
         from sys import platform
         if platform != 'darwin':
@@ -989,6 +1015,11 @@ class TestConfig(RelatedConfigMixin):
 @related.mutable
 class SourceConfig(RelatedLoadSaveMixin):
     test = related.ChildField(TestConfig, required=False)
+    # default dependencies
+    dependencies = related.ChildField(Dependencies,
+                                      default=Dependencies(),
+                                      required=False)
+    path = related.StringField(required=False)
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)
