@@ -779,9 +779,11 @@ class DataLoaderImport(RelatedConfigMixin):
         if self.default_args:
             obj = override_default_kwargs(obj, self.default_args)
 
-        # override also the values in the example
+        # override also the values in the example in case
+        # they were previously specified
         for k, v in six.iteritems(self.default_args):
-            obj.args[k].example = v
+            if not isinstance(obj.args[k].example, UNSPECIFIED):
+                obj.args[k].example = v
 
         return obj
 
@@ -852,7 +854,7 @@ class ModelDescription(RelatedLoadSaveMixin):
             self.default_dataloader = DataLoaderImport.from_config(self.default_dataloader)
 
 
-def example_kwargs(dl_args, cache_path=None):
+def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
     """Return the example kwargs.
 
     Args:
@@ -864,7 +866,10 @@ def example_kwargs(dl_args, cache_path=None):
         if isinstance(v.example, UNSPECIFIED):
             continue
         if isinstance(v.example, RemoteFile) and cache_path is not None:
-            dl_dir = os.path.abspath(os.path.join(cache_path, "downloaded/example_files"))
+            if absolute_path:
+                dl_dir = os.path.abspath(cache_path)
+            else:
+                dl_dir = cache_path
             if not os.path.exists(dl_dir):
                 os.makedirs(dl_dir)
             path = os.path.join(dl_dir, k)
@@ -873,10 +878,13 @@ def example_kwargs(dl_args, cache_path=None):
                 if v.example.validate(path):
                     logger.info("Example file for argument {} already exists".format(k))
                 else:
-                    logger.info("Example file for argument {} doesn't match the md5 hash {}. Re-downloading".format(k, v.example.md5))
-                    v.example.get_file(path)  # TODO
+                    logger.info("Example file for argument {} doesn't match the md5 "
+                                "hash {}. Re-downloading".format(k, v.example.md5))
+                    if not dry_run:
+                        v.example.get_file(path)  # TODO
             else:
-                v.example.get_file(path)  # TODO
+                if not dry_run:
+                    v.example.get_file(path)  # TODO
         else:
             example_files[k] = v.example
     return example_files
@@ -932,7 +940,13 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
     def get_example_kwargs(self):
         # return self.download_example()
-        return example_kwargs(self.args, self.path)
+        return example_kwargs(self.args, os.path.join(self.path, "downloaded/example_files"))
+
+    def download_example(self, output_dir, absolute_path=False, dry_run=False):
+        return example_kwargs(self.args,
+                              output_dir,
+                              absolute_path=absolute_path,
+                              dry_run=dry_run)
 
     def print_kwargs(self, format_examples_json=False):
         from kipoi.external.related.fields import UNSPECIFIED

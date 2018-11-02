@@ -35,6 +35,7 @@ command_functions = {
     'env': cli.env.cli_main,
     # Contributing
     'test': cli.main.cli_test,
+    "get-example": cli.main.cli_get_example,
     'test-source': cli.source_test.cli_test_source,
     'init': cli.main.cli_init,
 }
@@ -51,6 +52,7 @@ parser = argparse.ArgumentParser(
     ls               List all the available models
     list_plugins     List all the available plugins
     info             Print dataloader keyword argument info
+    get-example      Download example files
     predict          Run the model prediction
     pull             Download the directory associated with the model
     preproc          Run the dataloader and save the results to an hdf5 array

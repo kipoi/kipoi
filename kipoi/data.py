@@ -112,7 +112,23 @@ class BaseDataLoader(object):
 
         # Add init_example method.
         # example_kwargs also downloads files to {dataloader_dir}/dataloader_files
-        return example_kwargs(cls.args, cls.source_dir)
+        return example_kwargs(cls.args, os.path.join(cls.source_dir, "downloaded/example_files"))
+
+    @classmethod
+    def download_example(cls, output_dir, absolute_path=False, dry_run=False):
+        """Download the example files to the desired directory
+
+        # Arguments
+          output_dir: output directory where to store the file
+          absolute_path: if True, return absolute paths to the
+            output directories
+          dry_run: if True, return only the file paths without
+            actually downloading the files
+
+        # Returns
+          dictionary of keyword arguments for the dataloader
+        """
+        return example_kwargs(cls.args, output_dir, absolute_path=absolute_path, dry_run=dry_run)
 
     @classmethod
     def init_example(cls):
