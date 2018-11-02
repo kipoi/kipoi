@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
+import json
 import sys
 import os
 from ..utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
@@ -102,6 +103,27 @@ def cli_test(command, raw_args):
         expected.close()
         logger.info('All predictions match')
     logger.info('Successfully ran test_predict')
+
+
+def cli_get_example(command, raw_args):
+    """Downloads the example files to the desired directory
+    """
+    assert command == "get-example"
+    # setup the arg-parsing
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description='Get example files')
+    add_model(parser, source="kipoi")
+    parser.add_argument("-o", "--output", default="example", required=False,
+                        help="Output directory where to store the examples. Default: 'example'")
+    args = parser.parse_args(raw_args)
+    # --------------------------------------------
+    mh = kipoi.get_model(args.model, args.source)
+
+    kwargs = mh.default_dataloader.download_example(output_dir=args.output, dry_run=False)
+
+    logger.info("Example files downloaded to: {}".format(args.output))
+    logger.info("use the following dataloader kwargs:")
+    print(json.dumps(kwargs))
 
 
 def cli_preproc(command, raw_args):
