@@ -29,6 +29,21 @@ predict_activation_layers = {
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
 
+def test_cli_get_example(tmpdir):
+    """kipoi test ..., add also output file writing
+    """
+    example = "kipoi_dataloader_decorator"
+    example_dir = "example/models/{0}".format(example)
+
+    outdir = os.path.join(str(tmpdir), example)
+    args = ["python", "./kipoi/__main__.py", "get-example",
+            example_dir,
+            "--source", 'dir',
+            "-o", outdir]
+    kipoi.cli.main.cli_get_example("get-example", args[3:])
+    assert os.path.exists(os.path.join(outdir, "targets_file"))
+
+
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_test_example(example, tmpdir):
     """kipoi test ..., add also output file writing
@@ -271,24 +286,3 @@ def test_kipoi_info():
             "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
-
-
-def test_cli_get_example(tmpdir):
-    """kipoi test ..., add also output file writing
-    """
-    example = "kipoi_dataloader_decorator"
-    example_dir = "example/models/{0}".format(example)
-
-    outdir = os.path.join(str(tmpdir), example)
-    args = ["python", "./kipoi/__main__.py", "get-example",
-            example_dir,
-            "--source", 'dir',
-            "-o", outdir]
-    if INSTALL_FLAG:
-        args.append(INSTALL_FLAG)
-    returncode = subprocess.call(args=args)
-    assert returncode == 0
-
-    assert os.path.exists(os.path.join(outdir, "targets_file"))
-    kipoi.cli.main.cli_get_example("get-example", args[3:])
-    assert os.path.exists(os.path.join(outdir, "targets_file"))
