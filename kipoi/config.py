@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .sources import load_source, GitLFSSource, GithubPermalinkSource, LocalSource
+from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 logger = logging.getLogger(__name__)
@@ -24,16 +24,21 @@ if not os.access(_kipoi_base_dir, os.W_OK):
 
 _kipoi_dir = os.path.join(_kipoi_base_dir, '.kipoi')
 
-# default model_sources
-_MODEL_SOURCES = {
-    "kipoi": GitLFSSource(remote_url="https://github.com/kipoi/models.git",
-                          local_path=os.path.join(_kipoi_dir, "models/")),
-    "github-permalink": GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")),
-}
+# model source container
+_MODEL_SOURCES = {}
 
 
 def model_sources():
-    return _MODEL_SOURCES
+    if _MODEL_SOURCES:
+        return _MODEL_SOURCES
+    else:
+        # default model source
+        return {
+            "kipoi": GitSource(remote_url="https://github.com/kipoi/models.git",
+                               local_path=os.path.join(_kipoi_dir, "models/"),
+                               auto_update=True),
+            "github-permalink": GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")),
+        }
 
 
 def model_sources_dict():
@@ -74,7 +79,7 @@ def add_source(name, obj):
     """
     if isinstance(obj, dict):
         # parse the object
-        obj = load_source(obj)
+        obj = load_source(obj, name)
     c_dict = model_sources()
     c_dict.update({name: obj})
     set_model_sources(c_dict)
@@ -161,7 +166,7 @@ if os.path.exists(_config_path):
         raise ValueError("'dir' is a protected key name in model_sources" +
                          " and hence can't be used")
 
-    _model_sources = OrderedDict([(k, load_source(v))
+    _model_sources = OrderedDict([(k, load_source(v, k))
                                   for k, v in six.iteritems(_model_sources)])
     assert isinstance(_model_sources, OrderedDict)
     set_model_sources(_model_sources)

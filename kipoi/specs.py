@@ -28,14 +28,14 @@ logger.addHandler(logging.NullHandler())
 # Common specs (model and dataloader)
 
 
-@related.immutable(strict=True)
+@related.immutable(strict=False)
 class Author(RelatedConfigMixin):
     name = related.StringField()
     github = related.StringField(required=False)
     email = related.StringField(required=False)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class Info(RelatedConfigMixin):
     """Class holding information about the component.
     Parses the info section in component.yaml:
@@ -55,11 +55,11 @@ class Info(RelatedConfigMixin):
     tags = StrSequenceField(str, default=[], required=False)
 
     def __attrs_post_init__(self):
-        if self.doc == "":
+        if self.authors and self.doc == "":
             logger.warn("doc empty for the `info:` field")
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
@@ -78,7 +78,7 @@ class ArraySpecialType(enum.Enum):
     Array = "Array"
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ArraySchema(RelatedConfigMixin):
     """
 
@@ -208,7 +208,7 @@ class ArraySchema(RelatedConfigMixin):
 # --------------------------------------------
 # Model specific specs
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelSchema(RelatedConfigMixin):
     """Describes the model schema
     """
@@ -314,7 +314,7 @@ class MetadataType(enum.Enum):
     # TODO - add bed3 or bed6 ranges
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class MetadataStruct(RelatedConfigMixin):
 
     doc = related.StringField()
@@ -376,7 +376,7 @@ class MetadataStruct(RelatedConfigMixin):
         return True
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderSchema(RelatedConfigMixin):
     """Describes the model schema
 
@@ -520,7 +520,7 @@ class RemoteFile(RelatedConfigMixin):
         return os.path.join(root, filename)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderArgument(RelatedConfigMixin):
     # MAYBE - make this a general argument class
     doc = related.StringField("", required=False)
@@ -539,7 +539,7 @@ class DataLoaderArgument(RelatedConfigMixin):
         self.default = recursive_dict_parse(self.default, 'url', RemoteFile.from_config)
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class Dependencies(RelatedConfigMixin):
     conda = StrSequenceField(str, default=[], required=False, repr=True)
     pip = StrSequenceField(str, default=[], required=False, repr=True)
@@ -561,6 +561,32 @@ class Dependencies(RelatedConfigMixin):
            os.path.exists(self.pip[0]):
             # found a pip txt file
             object.__setattr__(self, "pip", read_txt(self.pip[0]))
+
+    def all_installed(self, verbose=False):
+        """Validate if all the dependencies are installed as requested
+
+        Args:
+          verbose: if True, display warnings if the dependencies are not installed
+
+        Returns:
+          (bool): True if all the required package versions are installed
+            and False otherwise
+        """
+        norm = self.normalized()
+        for pkg in list(norm.conda) + list(norm.pip):
+            if not kconda.is_installed(pkg):
+                if verbose:
+                    pkg_name, req_version = kconda.version_split(pkg)
+                    found_version = kconda.get_package_version(pkg_name)
+                    if found_version is None:
+                        print("Package '{}' is not installed".
+                              format(pkg_name))
+                    else:
+                        print("Installed package '{}={}' doesn't "
+                              "comply with '{}'".
+                              format(pkg_name, found_version, pkg))
+                return False
+        return True
 
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
@@ -589,10 +615,10 @@ class Dependencies(RelatedConfigMixin):
         Use case: merging the dependencies of model and dataloader
 
         Args:
-          dependencies: Dependencies instance
+            dependencies: Dependencies instance
 
         Returns:
-          new Dependencies instance
+            new Dependencies instance
         """
         return Dependencies(
             conda=unique_list(list(self.conda) + list(dependencies.conda)),
@@ -615,7 +641,7 @@ class Dependencies(RelatedConfigMixin):
             conda_channels=channels)
 
     def _get_channels_packages(self):
-        """Get conda channels and packages separated from each other (by '::')
+        """Get conda channels and packages separated from each other(by '::')
         """
         if len(self.conda) == 0:
             return self.conda_channels, self.conda
@@ -677,7 +703,7 @@ class Dependencies(RelatedConfigMixin):
                                       default_flow_style=False))
 
     def gpu(self):
-        """Get the gpu-version of the dependencies
+        """Get the gpu - version of the dependencies
         """
         def replace_gpu(dep):
             if dep.startswith("tensorflow") and "gpu" not in dep:
@@ -697,7 +723,7 @@ class Dependencies(RelatedConfigMixin):
             conda_channels=deps.conda_channels)
 
     def osx(self):
-        """Get the os-x compatible dependencies
+        """Get the os - x compatible dependencies
         """
         from sys import platform
         if platform != 'darwin':
@@ -725,7 +751,7 @@ class Dependencies(RelatedConfigMixin):
     #     pass
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderImport(RelatedConfigMixin):
     """Dataloader specification for the import
     """
@@ -760,7 +786,7 @@ class DataLoaderImport(RelatedConfigMixin):
         return obj
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelTest(RelatedLoadSaveMixin):
     # predictions = related.
     expect = AnyField(default=None, required=False)
@@ -780,7 +806,7 @@ class ModelTest(RelatedLoadSaveMixin):
 
 # --------------------------------------------
 # Final description classes modelling the yaml files
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class ModelDescription(RelatedLoadSaveMixin):
     """Class representation of model.yaml
     """
@@ -891,7 +917,7 @@ def download_default_args(args, output_dir):
     return override
 
 
-@related.mutable(strict=True)
+@related.mutable(strict=False)
 class DataLoaderDescription(RelatedLoadSaveMixin):
     """Class representation of dataloader.yaml
     """
@@ -989,6 +1015,11 @@ class TestConfig(RelatedConfigMixin):
 @related.mutable
 class SourceConfig(RelatedLoadSaveMixin):
     test = related.ChildField(TestConfig, required=False)
+    # default dependencies
+    dependencies = related.ChildField(Dependencies,
+                                      default=Dependencies(),
+                                      required=False)
+    path = related.StringField(required=False)
 
 # TODO - special metadata classes should just extend the dictionary field
 # (to be fully compatible with batching etc)

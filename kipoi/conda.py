@@ -194,6 +194,25 @@ def parse_conda_package(dep):
         return ("defaults", dep)
 
 
+def version_split(s, delimiters={"=", ">", "<", "~"}):
+    """Split the string by the version:
+    mypacakge<=2.4,==2.4 -> (mypacakge, <=2.4,==2.4)
+
+    In [40]: version_split("asdsda>=2.4,==2")
+    Out[40]: ('asdsda', ['>=2.4', '==2'])
+
+    In [41]: version_split("asdsda>=2.4")
+    Out[41]: ('asdsda', ['>=2.4'])
+
+    In [42]: version_split("asdsda")
+    Out[42]: ('asdsda', [])
+    """
+    for i, c in enumerate(s):
+        if c in delimiters:
+            return (s[:i], s[i:].split(","))
+    return (s, [])
+
+
 def normalize_pip(pip_list):
     """Normalize a list of pip dependencies
 
@@ -203,23 +222,6 @@ def normalize_pip(pip_list):
     Returns:
       normalized pip
     """
-    def version_split(s, delimiters={"=", ">", "<"}):
-        """Split the string by the version:
-        mypacakge<=2.4,==2.4 -> (mypacakge, <=2.4,==2.4)
-
-        In [40]: version_split("asdsda>=2.4,==2")
-        Out[40]: ('asdsda', ['>=2.4', '==2'])
-
-        In [41]: version_split("asdsda>=2.4")
-        Out[41]: ('asdsda', ['>=2.4'])
-
-        In [42]: version_split("asdsda")
-        Out[42]: ('asdsda', [])
-        """
-        for i, c in enumerate(s):
-            if c in delimiters:
-                return (s[:i], s[i:].split(","))
-        return (s, [])
 
     d_list = OrderedDict()
     for d in pip_list:
@@ -229,3 +231,54 @@ def normalize_pip(pip_list):
         else:
             d_list[package] = versions
     return [package + ",".join(versions) for package, versions in six.iteritems(d_list)]
+
+
+def get_package_version(package):
+    """Get installed package version
+
+    # Arguments
+      package: package name. Example: `kipoi`
+
+    # Returns
+      (str) if the package is installed and None otherwise
+    """
+    import pkg_resources
+    try:
+        return pkg_resources.get_distribution(package).version
+    except pkg_resources.DistributionNotFound:
+        return None
+
+
+def compatible_versions(installed_version, req_version):
+    from pkg_resources import parse_version
+    installed_version = parse_version(installed_version)
+    if req_version.startswith(">="):
+        return installed_version >= parse_version(req_version[2:])
+    elif req_version.startswith("<="):
+        return installed_version <= parse_version(req_version[2:])
+    elif req_version.startswith("=="):
+        return installed_version == parse_version(req_version[2:])
+    elif req_version.startswith("<"):
+        return installed_version < parse_version(req_version[1:])
+    elif req_version.startswith(">"):
+        return installed_version > parse_version(req_version[1:])
+    else:
+        raise ValueError("Package prefix {} needs to be from >=,<=, ==, >, <".
+                         format(req_version))
+
+
+def is_installed(package):
+    """Test if the package is installed
+
+    # Arguments
+      package: package string, can also contain version: mypacakge<=2.4,==2.4
+    """
+    package, required_versions = version_split(package)
+    installed_version = get_package_version(package)
+    if installed_version is None:
+        # package is for sure not installed
+        return False
+    else:
+        for req_version in required_versions:
+            return compatible_versions(installed_version, req_version)
+        return True
