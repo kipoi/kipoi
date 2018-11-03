@@ -9,13 +9,18 @@ import os
 import argparse
 import subprocess
 import kipoi
+import time
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
 from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.sources import list_subcomponents
 from kipoi.utils import cd
+from kipoi.cli.env_db import get_model_env_db, save_model_env_db
+from kipoi.conda import remove_env
 import logging
+import yaml
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+SPECIAL_ENV_PREFIX = "shared/envs/"
 
 
 def _replace_slash(s, replace_with="__"):
@@ -78,6 +83,15 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
 # Hard-code kipoi-seq dataloaders
 KIPOISEQ_DEPS = Dependencies(conda=['bioconda::pybedtools', 'bioconda::pyfaidx', 'numpy', 'pandas'], pip=['kipoiseq'])
 
+def split_models_special_envs(models):
+    special_envs = []  # handcrafted environments
+    only_models = []  # actual models excluding handcrafted environments
+    for model in models:
+        if SPECIAL_ENV_PREFIX in model:
+            special_envs.append(model)
+        else:
+            only_models.append(model)
+    return special_envs, only_models
 
 def merge_deps(models,
                dataloaders=None,
@@ -86,8 +100,26 @@ def merge_deps(models,
                gpu=False):
     """Setup the dependencies
     """
+
+    special_envs, only_models = split_models_special_envs(models)
     deps = Dependencies()
-    for model in models:
+
+    # Treat the handcrafted environments differently
+    for special_env in special_envs:
+        from related import from_yaml
+        logger.info("Loading environment definition: {0}".format(special_env))
+
+        # Load and merge the handcrafted deps.
+        yaml_path = os.path.join(kipoi.get_source(source).local_path, special_env + ".yaml")
+
+        if not os.path.exists(yaml_path):
+            raise ValueError("Envirnment definition file {0} not found in source {1}".format(yaml_path, source))
+
+        with open(yaml_path, "r") as fh:
+            special_env_deps = Dependencies.from_env_dict(from_yaml(fh))
+        deps = deps.merge(special_env_deps)
+
+    for model in only_models:
         logger.info("Loading model: {0} description".format(model))
 
         parsed_source, parsed_model = parse_source_name(source, model)
@@ -243,10 +275,80 @@ def cli_export(cmd, raw_args):
     print("conda env create --file {0}".format(env_file))
 
 
+def delete_env_conda(entry):
+    remove_env(entry.create_args.env)
+
+
+def delete_envs(to_delete, delete_fn = delete_env_conda):
+    db = get_model_env_db()
+    for e in to_delete:
+        try:
+            delete_fn(e)
+            db.remove(e)
+            db.save()
+        except Exception as err:
+            logger.warn("Conda delete of environment {0} failed with error: {1}. This environment entry was not "
+                        "removed from the database.".format(e.create_args.env, str(err)))
+
+
+def get_envs_by_model(models, source, only_most_recent = True, only_valid = False):
+    source_path = kipoi.get_source(source).local_path
+    entries = []
+    db = get_model_env_db()
+    for m in models:
+        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent =only_most_recent)
+        if only_most_recent:
+            entries.append(res)
+        else:
+            entries.extend(res)
+    entries = [e for e in entries if e is not None]
+    if only_valid:
+        entries = [e for e in entries if e.successful and os.path.exists(e.cli_path)]
+    return entries
+
+
+
+def generate_env_db_entry(args):
+    from collections import OrderedDict
+    from kipoi.cli.env_db import EnvDbEntry
+    from kipoi.conda import get_conda_version
+
+    special_envs, only_models = split_models_special_envs(args.model)
+
+    sub_models = []
+    for model in only_models:
+        parsed_source, parsed_model = parse_source_name(args.source, model)
+        source_path = kipoi.get_source(parsed_source).local_path
+        models = list_subcomponents(parsed_model, parsed_source, "model")
+        sub_models.extend([os.path.join(source_path, m) for m in models])
+
+    if len(special_envs) != 0:
+        # for the special envs load the corresponding models:
+        for special_env in special_envs:
+            special_env_folder = "/".join(special_env.rstrip("/").split("/")[:-1])
+            with open(os.path.join(special_env_folder, "models.yaml"), "r") as fh:
+                special_env_models = yaml.load(fh)
+            # extend the sub_models by all the submodels covered by the handcrafted environments (special_envs)
+            # Those models **always** refer to the kipoi source
+            for model_group_name in special_env_models[os.path.basename(special_env)]:
+                source_path = kipoi.get_source("kipoi").local_path
+                models = list_subcomponents(model_group_name, "kipoi", "model")
+                sub_models.extend([os.path.join(source_path, m) for m in models])
+
+    db_entry = {}
+    db_entry['conda_version'] = get_conda_version()
+    db_entry['kipoi_version'] = kipoi.__version__
+    db_entry['timestamp'] = time.time()
+    db_entry['compatible_models'] = sub_models
+    db_entry['create_args'] = OrderedDict(args._get_kwargs())
+    entry = EnvDbEntry.from_config(db_entry)
+    return entry
+
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
     import uuid
+    from kipoi.conda import get_cli_path
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -269,6 +371,11 @@ def cli_create(cmd, raw_args):
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
+
+    env_db_entry = generate_env_db_entry(args)
+    get_model_env_db().append(env_db_entry)
+    save_model_env_db()
+
     env, env_file = export_env(args.model,
                                args.dataloader,
                                args.source,
@@ -281,14 +388,133 @@ def cli_create(cmd, raw_args):
     # setup the conda env from file
     logger.info("Creating conda env from file: {0}".format(env_file))
     kipoi.conda.create_env_from_file(env_file)
+    env_db_entry.successful = True
+    # env is environment name
+    env_db_entry.cli_path = get_cli_path(env)
+    save_model_env_db()
     logger.info("Done!")
     print("\nActivate the environment via:")
     print("source activate {0}".format(env))
+
+def confirm(message):
+    answer = ""
+    while answer not in ["y", "n"]:
+        answer = raw_input(message+" [Y/N]? ").lower()
+    return answer == "y"
+
+def ask_and_delete_envs(to_delete, args):
+    db = get_model_env_db()
+    del_only_db = False
+    if "db" in dir(args) and args.db:
+        del_only_db = True
+
+    if not del_only_db:
+        warn_msg = "Are you sure you want to delete the following environments:\n"
+    else:
+        warn_msg = "Are you sure you want to delete the following environments from the database ONLY:\n"
+    warn_msg += "\n".join(["{0} ({1})".format(e.create_args.env, e.cli_path) for e in to_delete])
+    warn_msg += "\n"
+
+    if args.yes or confirm(warn_msg):
+        if not del_only_db:
+            delete_envs(to_delete)
+        else:
+            for e in to_delete:
+                db.remove(e)
+                db.save()
+
+def cli_get(cmd, raw_args):
+    """Print a conda environment name for a model
+    """
+    import uuid
+    from kipoi.conda import get_cli_path
+    parser = argparse.ArgumentParser(
+        'kipoi env {}'.format(cmd),
+        description='Print conda environment name for specific model.'
+    )
+    add_env_args(parser)
+    parser.add_argument('-a', '--all', action='store_true',
+                        help="If set all environments compatible with this model will be printed!")
+    args = parser.parse_args(raw_args)
+
+    entries = get_envs_by_model(models, source, only_most_recent= not args.all, only_valid=True)
+
+    print("\n".join([e.create_args.env for e in entries]))
+
+def cli_get_cli(cmd, raw_args):
+    """Print a kipoi cli path for a model
+    """
+    import uuid
+    from kipoi.conda import get_cli_path
+    parser = argparse.ArgumentParser(
+        'kipoi env {}'.format(cmd),
+        description='Print kipoi cli path for specific model.'
+    )
+    add_env_args(parser)
+    parser.add_argument('-a', '--all', action='store_true',
+                        help="If set all environments compatible with this model will be printed!")
+    args = parser.parse_args(raw_args)
+
+    entries = get_envs_by_model(models, source, only_most_recent=not args.all, only_valid=True)
+
+    print("\n".join([e.cli_path for e in entries]))
+
+def cli_cleanup(cmd, raw_args):
+    """Remove all environments that have failed during setup. Or remove all environments
+    """
+    parser = argparse.ArgumentParser(
+        'kipoi env {}'.format(cmd),
+        description='Clean-up conda environments.'
+    )
+    parser.add_argument('-a', '--all', action='store_true',
+                        help="If set all environments will be removed!")
+    parser.add_argument('-d', '--db', action='store_true',
+                        help="Clean-up DB only. Make sure that you run this only if `kipoi env cleanup` has been "
+                             "executed first. Running this will remove environments only from the kipoi database and "
+                             "will NOT attempt to remove conda environments")
+    parser.add_argument('-y', '--yes', action='store_true',
+                        help="If set then do NOT ask before deleting environments.")
+    args = parser.parse_args(raw_args)
+
+    db = get_model_env_db()
+    if not all:
+        to_delete = db.get_all_unfinished()
+    else:
+        to_delete = db.get_all()
+
+    ask_and_delete_envs(to_delete, args)
+    logger.info("Done!")
+
+
+def cli_remove(cmd, raw_args):
+    """Remove a conda environment for a model
+    """
+    import uuid
+    from kipoi.conda import get_cli_path
+    parser = argparse.ArgumentParser(
+        'kipoi env {}'.format(cmd),
+        description='Remove environment compatible with this model. If `--all` is not set then only remove the most '
+                    'recently generated environment compatible with this model.'
+    )
+    add_env_args(parser)
+    parser.add_argument('-a', '--all', action='store_true',
+                        help="Remove all environments every created that are compatible with this model")
+    parser.add_argument('-y', '--yes', action='store_true',
+                        help="If set then do NOT ask before deleting environments.")
+    args = parser.parse_args(raw_args)
+
+    db = get_model_env_db()
+    to_delete = get_envs_by_model(m, args.source, only_most_recent= not args.all)
+
+    ask_and_delete_envs(to_delete, args)
+    logger.info("Done!")
+
 
 
 def cli_list(cmd, raw_args):
     """List all kipoi-induced conda environments
     """
+    # todo update this to use the environment database
     print("# Kipoi environments:")
     subprocess.call("conda env list | grep ^kipoi | cut -f 1 -d ' '", shell=True)
 
@@ -328,7 +554,11 @@ def cli_name(cmd, raw_args):
 command_functions = {
     'export': cli_export,
     'create': cli_create,
+    'cleanup': cli_cleanup,
+    'remove': cli_remove,
     'list': cli_list,
+    'get': cli_get,
+    'get_cli': cli_get_cli,
     'install': cli_install,
     'name': cli_name,
 }
@@ -341,7 +571,11 @@ parser = argparse.ArgumentParser(
     # Available sub-commands:
     export       Export the environment.yaml file for a specific model
     create       Create a conda environment for a model
+    cleanup      Remove environments that failed during installation
+    remove       Remove environment compatible with a model
     list         List all kipoi-induced conda environments
+    get          Get environment name for given model
+    get_cli      Get path to Kipoi CLI for a given model
     install      Install all the dependencies for a model into the current conda environment
     ''')
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))

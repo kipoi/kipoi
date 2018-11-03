@@ -1,0 +1,23 @@
+kipoi-MMSplice:
+- MMSplice
+kipoi-py27-keras1.2: []
+kipoi-py27-keras2: []
+kipoi-py3-keras1.2:
+- CpGenie
+- DeepCpG_DNA
+- Divergent421
+kipoi-py3-keras2:
+- Basenji
+- Basset
+- DeepBind
+- DeepSEA
+- FactorNet
+- HAL
+- KipoiSplice
+- MaxEntScan
+- SiSp
+- labranchor
+- lsgkm-SVM
+- pwm_HOCOMOCO
+- rbp_eclip
+- CleTimer

@@ -650,6 +650,20 @@ class Dependencies(RelatedConfigMixin):
         )
         return env_dict
 
+    @classmethod
+    def from_env_dict(self, dict):
+        cfg = {}
+        cfg["conda_channels"] = dict['channels']
+        cfg["conda"] = [el for el in dict['dependencies'] if not isinstance(el, OrderedDict)]
+        pip = [el for el in dict['dependencies'] if isinstance(el, OrderedDict)]
+        if len(pip) == 1:
+            cfg["pip"] = pip[0]['pip']
+        elif len(pip) > 1:
+            raise Exception("Malformatted conda environment yaml!")
+        return self.from_config(cfg)
+
+
+
     def to_env_file(self, env_name, path):
         """Dump the dependencies to a file
         """

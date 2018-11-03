@@ -13,6 +13,9 @@ import kipoi
 from kipoi.readers import HDF5Reader
 import numpy as np
 from utils import cp_tmpdir
+from contextlib import contextmanager
+from kipoi.cli.env_db import EnvDbEntry
+import copy
 
 if config.install_req:
     INSTALL_FLAG = "--install_req"
@@ -27,6 +30,17 @@ predict_activation_layers = {
     "pyt": "3"  # two before the last layer
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
+
+@contextmanager
+def change_env(new_env):
+    _environ = dict(os.environ)  # or os.environ.copy()
+    os.environ.clear()
+    os.environ.update(new_env)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(_environ)
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -271,3 +285,73 @@ def test_kipoi_info():
             "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
     assert returncode == 0
+
+def assert_rec(a, b):
+    if isinstance(a, dict):
+        assert set(a.keys()) == set(b.keys())
+        for k in a:
+            assert_rec(a[k], b[k])
+    elif isinstance(a, list):
+        assert len(a) == len(b)
+        for a_el, b_el in zip(a,b):
+            assert_rec(a_el, b_el)
+    else:
+        assert a == b
+
+def test_kipoi_env_create_cleanup_remove(tmpdir):
+    env_vars = dict(os.environ)
+    # don't touch the existing DB
+    tempfile = os.path.join(tmpdir, "envs.json")
+    env_vars['KIPOI_ENV_DB_PATH'] = tempfile
+    #with change_env(env_vars):
+
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
+           "kipoi-testenv", "example/models/pyt"]
+    returncode = subprocess.call(args=args)
+    assert returncode == 0
+    # make sure the successful flag is set and the kipoi-cli exists
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_envs()
+    source_path = kipoi.get_source("dir").local_path
+
+    entry = db.get_entry_by_model(os.path.join(source_path, "example/models/pyt"))
+    assert entry.successful
+    assert os.path.exists(entry.cli_path)
+
+    import pdb
+    pdb.set_trace()
+
+    # add a new entry that does not exist in conda:
+    cfg = entry.get_config()
+    cfg["create_args"]["env"] += "____AAAAAA_____"
+    cfg["cli_path"] += "____AAAAAA_____"
+    db.append(EnvDbEntry.from_config(cfg))
+
+    # pretend also the first installation didn't work
+    entry.successful = False
+    first_config = entry.get_config()
+    db.save()
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "cleanup", "--all", '--yes']
+    returncode = subprocess.call(args=args)
+    assert returncode == 0
+
+    # now
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_envs()
+    assert len(db.entries) == 1
+    assert assert_rec(db.entries[0].get_config(), cfg)
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "cleanup", "--all", "--db", '--yes']
+    returncode = subprocess.call(args=args)
+    assert returncode == 0
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_envs()
+    assert len(db.entries) == 0
+
+    os.unlink(tempfile)
+
+
+
+
+

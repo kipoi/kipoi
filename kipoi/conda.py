@@ -77,6 +77,36 @@ def create_env_from_file(env_file):
     cmd_list = ["env", "create", "--file", env_file]
     return _call_conda(cmd_list, use_stdout=True)
 
+def get_conda_version():
+    ret_code, stdout = _call_conda(["--version"], use_stdout=True, return_logs_with_stdout = True)
+    if ret_code != 0:
+        raise Exception("Could not retrieve conda version. Please check conda installation.")
+    return stdout[0]
+
+def get_cli_path(env):
+    import tempfile
+    tempfile_env = tempfile.mkstemp()[1]
+
+    # Compile query for location of kipoi cli
+    query = "source activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env)
+    if os.name == 'nt':
+        # Windows query
+        query = "activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)
+
+    # Query system. Can't use Popen as environment has to be activated first
+    ret_code = os.system(query)
+
+    # Check it has worked
+    if (ret_code != 0) or not os.path.exists(tempfile_env):
+        raise Exception("Could not retrieve list of conda environments. Please check conda installation.")
+
+    # Read output
+    with open(tempfile_env, "r") as fh:
+        cli_path = fh.readlines()[0].rstrip()
+
+    # Delete tempfile
+    os.unlink(tempfile_env)
+    return cli_path
 
 def install_conda(conda_deps, channels=["defaults"]):
     """Install conda packages
@@ -158,8 +188,8 @@ def _call_command(cmd, extra_args, use_stdout=False,
     return p.communicate()
 
 
-def _call_conda(extra_args, use_stdout=False):
-    return _call_command("conda", extra_args, use_stdout)
+def _call_conda(extra_args, use_stdout=False, return_logs_with_stdout = False):
+    return _call_command("conda", extra_args, use_stdout, return_logs_with_stdout)
 
 
 def _call_pip(extra_args, use_stdout=False):

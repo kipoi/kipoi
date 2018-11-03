@@ -1,0 +1,22 @@
+name: kipoi-py3-keras1.2
+channels:
+- bioconda
+- conda-forge
+- defaults
+dependencies:
+- pyvcf
+- cyvcf2
+- pybedtools
+- pysam
+- python=3.5
+- h5py
+- genomelake
+- numpy
+- pandas
+- cython
+- pip:
+  - kipoi_veff
+  - kipoi
+  - tensorflow==1.4.1
+  - keras==1.2.2
+  - deepcpg==1.0.4

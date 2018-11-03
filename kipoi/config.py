@@ -148,6 +148,8 @@ def list_dataloaders(sources=None):
 
 # Attempt to read Kipoi config file.
 _config_path = os.path.expanduser(os.path.join(_kipoi_dir, 'config.yaml'))
+# Set the env DB path
+_env_db_path = os.path.join(_kipoi_dir, 'envs.json')
 if os.path.exists(_config_path):
     try:
         _config = yaml_ordered_load(open(_config_path))
@@ -156,6 +158,8 @@ if os.path.exists(_config_path):
         _model_sources = model_sources()
     else:
         _model_sources = _config['model_sources']
+        # Try to load DB path from ~/.kipoi/config.yaml
+        _env_db_path = os.path.expanduser(_config['env_db_path'])
     # dict  -> Source class
     if "dir" in _model_sources:
         raise ValueError("'dir' is a protected key name in model_sources" +
@@ -165,6 +169,9 @@ if os.path.exists(_config_path):
                                   for k, v in six.iteritems(_model_sources)])
     assert isinstance(_model_sources, OrderedDict)
     set_model_sources(_model_sources)
+
+if 'KIPOI_ENV_DB_PATH' in os.environ:
+    _env_db_path = os.path.expanduser(os.environ['KIPOI_ENV_DB_PATH'])
 
 
 # Save config file, if possible.
