@@ -100,12 +100,16 @@ def get_cli_path(env):
     if (ret_code != 0) or not os.path.exists(tempfile_env):
         raise Exception("Could not retrieve list of conda environments. Please check conda installation.")
 
-    # Read output
-    with open(tempfile_env, "r") as fh:
-        cli_path = fh.readlines()[0].rstrip()
+    try:
+        # Read output
+        with open(tempfile_env, "r") as fh:
+            cli_path = fh.readlines()[0].rstrip()
+    except IndexError:
+        cli_path = None
+    finally:
+        # Delete tempfile
+        os.unlink(tempfile_env)
 
-    # Delete tempfile
-    os.unlink(tempfile_env)
     return cli_path
 
 def install_conda(conda_deps, channels=["defaults"]):

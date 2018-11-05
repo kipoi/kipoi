@@ -159,7 +159,8 @@ if os.path.exists(_config_path):
     else:
         _model_sources = _config['model_sources']
         # Try to load DB path from ~/.kipoi/config.yaml
-        _env_db_path = os.path.expanduser(_config['env_db_path'])
+        if 'env_db_path' in _config:
+            _env_db_path = os.path.expanduser(_config['env_db_path'])
     # dict  -> Source class
     if "dir" in _model_sources:
         raise ValueError("'dir' is a protected key name in model_sources" +

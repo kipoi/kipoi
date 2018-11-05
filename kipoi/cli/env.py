@@ -2,6 +2,7 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
+from builtins import input
 
 import sys
 from sys import platform
@@ -15,7 +16,6 @@ from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.sources import list_subcomponents
 from kipoi.utils import cd
 from kipoi.cli.env_db import get_model_env_db, save_model_env_db
-from kipoi.conda import remove_env
 import logging
 import yaml
 logger = logging.getLogger(__name__)
@@ -275,15 +275,12 @@ def cli_export(cmd, raw_args):
     print("conda env create --file {0}".format(env_file))
 
 
-def delete_env_conda(entry):
-    remove_env(entry.create_args.env)
 
-
-def delete_envs(to_delete, delete_fn = delete_env_conda):
+def delete_envs(to_delete):
     db = get_model_env_db()
     for e in to_delete:
         try:
-            delete_fn(e)
+            kipoi.conda.remove_env(e.create_args.env)
             db.remove(e)
             db.save()
         except Exception as err:
@@ -296,14 +293,13 @@ def get_envs_by_model(models, source, only_most_recent = True, only_valid = Fals
     entries = []
     db = get_model_env_db()
     for m in models:
-        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent =only_most_recent)
+        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent =only_most_recent,
+                                    only_valid=only_valid)
         if only_most_recent:
             entries.append(res)
         else:
             entries.extend(res)
     entries = [e for e in entries if e is not None]
-    if only_valid:
-        entries = [e for e in entries if e.successful and os.path.exists(e.cli_path)]
     return entries
 
 
@@ -399,7 +395,7 @@ def cli_create(cmd, raw_args):
 def confirm(message):
     answer = ""
     while answer not in ["y", "n"]:
-        answer = raw_input(message+" [Y/N]? ").lower()
+        answer = input(message+" [Y/N]? ").lower()
     return answer == "y"
 
 def ask_and_delete_envs(to_delete, args):
@@ -423,6 +419,12 @@ def ask_and_delete_envs(to_delete, args):
                 db.remove(e)
                 db.save()
 
+def print_env_names(entries):
+    print("\n".join([e.create_args.env for e in entries]))
+
+def print_env_cli_paths(entries):
+    print("\n".join([e.cli_path for e in entries]))
+
 def cli_get(cmd, raw_args):
     """Print a conda environment name for a model
     """
@@ -437,9 +439,9 @@ def cli_get(cmd, raw_args):
                         help="If set all environments compatible with this model will be printed!")
     args = parser.parse_args(raw_args)
 
-    entries = get_envs_by_model(models, source, only_most_recent= not args.all, only_valid=True)
+    entries = get_envs_by_model(args.model, args.source, only_most_recent= not args.all, only_valid=True)
 
-    print("\n".join([e.create_args.env for e in entries]))
+    print_env_names(entries)
 
 def cli_get_cli(cmd, raw_args):
     """Print a kipoi cli path for a model
@@ -455,9 +457,9 @@ def cli_get_cli(cmd, raw_args):
                         help="If set all environments compatible with this model will be printed!")
     args = parser.parse_args(raw_args)
 
-    entries = get_envs_by_model(models, source, only_most_recent=not args.all, only_valid=True)
+    entries = get_envs_by_model(args.model, args.source, only_most_recent=not args.all, only_valid=True)
 
-    print("\n".join([e.cli_path for e in entries]))
+    print_env_cli_paths(entries)
 
 def cli_cleanup(cmd, raw_args):
     """Remove all environments that have failed during setup. Or remove all environments
@@ -475,14 +477,18 @@ def cli_cleanup(cmd, raw_args):
     parser.add_argument('-y', '--yes', action='store_true',
                         help="If set then do NOT ask before deleting environments.")
     args = parser.parse_args(raw_args)
-
     db = get_model_env_db()
-    if not all:
+
+    if not args.all:
         to_delete = db.get_all_unfinished()
     else:
         to_delete = db.get_all()
 
-    ask_and_delete_envs(to_delete, args)
+    if len(to_delete) != 0:
+        ask_and_delete_envs(to_delete, args)
+    else:
+        logger.info("Nothing to clean up!")
+
     logger.info("Done!")
 
 
@@ -503,19 +509,34 @@ def cli_remove(cmd, raw_args):
                         help="If set then do NOT ask before deleting environments.")
     args = parser.parse_args(raw_args)
 
-    db = get_model_env_db()
-    to_delete = get_envs_by_model(m, args.source, only_most_recent= not args.all)
+    to_delete = get_envs_by_model(args.model, args.source, only_most_recent= not args.all)
 
-    ask_and_delete_envs(to_delete, args)
+    if len(to_delete) != 0:
+        ask_and_delete_envs(to_delete, args)
+    else:
+        logger.info("Nothing to remove!")
+
     logger.info("Done!")
 
 
+print_valid_env_names = print_env_names
+print_invalid_env_names = print_env_names
 
 def cli_list(cmd, raw_args):
     """List all kipoi-induced conda environments
     """
     # todo update this to use the environment database
-    print("# Kipoi environments:")
+    entries = get_model_env_db().get_all(only_valid=True)
+    if len(entries) != 0:
+        print("# Functional kipoi environments:")
+        print_valid_env_names(entries)
+
+    invalid_entries = get_model_env_db().get_all_unfinished()
+    if len(invalid_entries) != 0:
+        print("# Non-Functional kipoi environments:")
+        print_invalid_env_names(invalid_entries)
+
+    print("# Conda environments starting with kipoi:")
     subprocess.call("conda env list | grep ^kipoi | cut -f 1 -d ' '", shell=True)
 
 

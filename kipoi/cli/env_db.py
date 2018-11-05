@@ -2,26 +2,19 @@ from kipoi.external.related.mixins import RelatedConfigMixin
 from kipoi.external.related.fields import StrSequenceField
 from tinydb import TinyDB, Query
 import os
-from kipoi.config import _env_db_path
+import kipoi
 import related
 import logging
 from collections import OrderedDict
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-
-"""
-'BooleanField', 'ChildField', 'DateField', 'DateTimeField', 'FloatField',\
-'ImmutableDict', 'IntegerField', 'MappingField', 'RegexField', 'SequenceField',\
-'SetField', 'StringField', 'TimeField', 'TypedMapping', 'TypedSequence', 'TypedSet', 'URLField', 'UUIDField'
-"""
-
 _MODEL_ENV_DB = None
 
 def get_model_env_db():
     global _MODEL_ENV_DB
     if _MODEL_ENV_DB is None:
-        _MODEL_ENV_DB = EnvDb(_env_db_path)
+        _MODEL_ENV_DB = EnvDb(kipoi.config._env_db_path)
     return _MODEL_ENV_DB
 
 def reload_model_env_db():
@@ -35,7 +28,7 @@ def save_model_env_db():
     if _MODEL_ENV_DB is not None:
         _MODEL_ENV_DB.save()
     else:
-        raise Exception("_MODEL_ENV_DB is None, please run get_model_envs() prior to save_model_envs().")
+        raise Exception("_MODEL_ENV_DB is None, please run get_model_env_db() prior to save_model_env_db().")
 
 
 @related.mutable
@@ -92,7 +85,7 @@ class EnvDb:
                 logger.warn("Could not load entry with cli path {0} due to: {1}. "
                             "Skipping...".format(str(db_entry), str(e)))
 
-    def get_entry_by_model(self, model_name, only_most_recent = True):
+    def get_entry_by_model(self, model_name, only_most_recent=True, only_valid=False):
         # iterate over all the entries and select the ones where the model_name is part of one of the listed models
         # For checking split the model_name by "/" as well as the env-compatible model names and then check equality.
         # Select the one with the most recent timestamp
@@ -100,7 +93,7 @@ class EnvDb:
         norm_model_name = norm_name(model_name)
         query_model_tk_len = len(norm_model_name.split("/"))
         sel_entries = {}
-        for entry in self.entries:
+        for entry in self.get_all(only_valid=only_valid):
             pre_sel = [m for m in entry.compatible_models if model_name in m]
             sel = [m for m in pre_sel if "/".join(norm_name(m).split("/")[:query_model_tk_len]) == norm_model_name]
             if len(sel) != 0:
@@ -118,15 +111,19 @@ class EnvDb:
     def get_all_unfinished(self):
         unfinished = []
         for e in self.entries:
-            if not e.successful or not os.path.exists(e.cli_path):
+            if not e.successful or e.cli_path is None or not os.path.exists(e.cli_path):
                 unfinished.append(e)
         return unfinished
 
     def db_remove_unfinished(self):
         [self.remove(e) for e in self.get_all_unfinished()]
 
-    def get_all(self):
-        return self.entries
+    def get_all(self, only_valid=False):
+        entries = self.entries
+        if only_valid:
+            invalid = self.get_all_unfinished()
+            entries = [e for e in entries if e not in invalid]
+        return entries
 
     def remove(self, entry):
         self.entries = [e for e in self.entries if e != entry]

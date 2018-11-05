@@ -31,16 +31,6 @@ predict_activation_layers = {
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
-@contextmanager
-def change_env(new_env):
-    _environ = dict(os.environ)  # or os.environ.copy()
-    os.environ.clear()
-    os.environ.update(new_env)
-    try:
-        yield
-    finally:
-        os.environ.clear()
-        os.environ.update(_environ)
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
@@ -298,58 +288,171 @@ def assert_rec(a, b):
     else:
         assert a == b
 
-def test_kipoi_env_create_cleanup_remove(tmpdir):
-    env_vars = dict(os.environ)
-    # don't touch the existing DB
+def process_args(args):
+    raw_args = args[4:]
+    cmd = " ".join(args)
+    return cmd, raw_args
+
+
+def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
+    from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
     tempfile = os.path.join(tmpdir, "envs.json")
-    env_vars['KIPOI_ENV_DB_PATH'] = tempfile
-    #with change_env(env_vars):
 
 
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
-           "kipoi-testenv", "example/models/pyt"]
-    returncode = subprocess.call(args=args)
-    assert returncode == 0
-    # make sure the successful flag is set and the kipoi-cli exists
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_envs()
+    # Define things necessary for monkeypatching
+    class PseudoConda:
+        def __init__(self):
+            self.existing_envs = {}
+
+        @staticmethod
+        def strip_yaml_suffix(env):
+            env = env.split("/")[-1]
+            if env.endswith(".yaml"):
+                return env[:-len(".yaml")]
+            else:
+                return env
+
+        def add_env(self, env):
+            env = self.strip_yaml_suffix(env)
+            if env in self.existing_envs:
+                return 1
+
+            kipoi_cli_path = os.path.join(tmpdir, "kipoi_cli_" + env)
+            with open(kipoi_cli_path, "w") as ofh:
+                ofh.write("kipoi")
+            self.existing_envs[env] = kipoi_cli_path
+            return 0
+
+        def get_cli(self,env):
+            env = self.strip_yaml_suffix(env)
+            if env not in self.existing_envs:
+                return None
+            return self.existing_envs[env]
+
+        def delete_env(self, env):
+            env = self.strip_yaml_suffix(env)
+            if env in self.existing_envs:
+                self.existing_envs.pop(env)
+                return 0
+            else:
+                raise Exception("Failed")
+
+    def get_assert_env(equals):
+        def assert_to(val):
+            assert len(val) == len(equals)
+            assert all([v.create_args.env == e for v, e in zip(val, equals)])
+        return assert_to
+
+    def get_assert_env_cli(equals):
+        def assert_to(val):
+            assert len(val) == len(equals)
+            assert all([v.cli_path == e for v, e in zip(val, equals)])
+        return assert_to
+
+    # pseudo kipoi CLI executable
+    conda = PseudoConda()
+
+    if os.path.exists(tempfile):
+        os.unlink(tempfile)
+
+    test_model = "example/models/pyt"
+    test_env_name = "kipoi-testenv"
     source_path = kipoi.get_source("dir").local_path
 
-    entry = db.get_entry_by_model(os.path.join(source_path, "example/models/pyt"))
+    # monkeypatch:
+    old_env_db_path = kipoi.config._env_db_path
+    monkeypatch.setattr(kipoi.config, '_env_db_path', tempfile)
+    monkeypatch.setattr(kipoi.conda, 'create_env_from_file', conda.add_env)
+    monkeypatch.setattr(kipoi.conda, 'remove_env', conda.delete_env)
+    monkeypatch.setattr(kipoi.conda, 'get_cli_path', conda.get_cli)
+    monkeypatch.setattr(kipoi.cli.env, 'print_env_names', get_assert_env([test_env_name]))
+    # load the db from the new path
+    kipoi.cli.env_db.reload_model_env_db()
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
+           test_env_name, test_model]
+
+    # pretend to run the CLI
+    cli_create(*process_args(args))
+
+    # make sure the successful flag is set and the kipoi-cli exists
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_env_db()
+
+    entry = db.get_entry_by_model(os.path.join(source_path, test_model))
     assert entry.successful
     assert os.path.exists(entry.cli_path)
 
-    import pdb
-    pdb.set_trace()
-
-    # add a new entry that does not exist in conda:
+    # add a new entry that does not exist:
     cfg = entry.get_config()
     cfg["create_args"]["env"] += "____AAAAAA_____"
     cfg["cli_path"] += "____AAAAAA_____"
     db.append(EnvDbEntry.from_config(cfg))
 
+
+    # now test the get environment name and the get_cli
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get", "--source", "dir", test_model]
+    cli_get(*process_args(args))
+
+    monkeypatch.setattr(kipoi.cli.env, 'print_env_cli_paths', get_assert_env_cli([conda.get_cli(test_env_name)]))
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_cli", "--source", "dir", test_model]
+    cli_get_cli(*process_args(args))
+
+
+    # list environments:
+    monkeypatch.setattr(kipoi.cli.env, 'print_valid_env_names', get_assert_env([test_env_name]))
+    monkeypatch.setattr(kipoi.cli.env, 'print_invalid_env_names', get_assert_env([test_env_name + "____AAAAAA_____"]))
+    monkeypatch.setattr(subprocess, 'call', lambda *args, **kwargs: None)
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "list"]
+    cli_list(*process_args(args))
+
+
     # pretend also the first installation didn't work
     entry.successful = False
     first_config = entry.get_config()
     db.save()
+
+
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "cleanup", "--all", '--yes']
-    returncode = subprocess.call(args=args)
-    assert returncode == 0
+    print(conda.existing_envs)
+    print(db.entries)
+    # pretend to run the CLI
+    cli_cleanup(*process_args(args))
 
     # now
     kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_envs()
+    db = kipoi.cli.env_db.get_model_env_db()
     assert len(db.entries) == 1
-    assert assert_rec(db.entries[0].get_config(), cfg)
+    assert_rec(db.entries[0].get_config(), cfg)
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "cleanup", "--all", "--db", '--yes']
-    returncode = subprocess.call(args=args)
-    assert returncode == 0
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_envs()
-    assert len(db.entries) == 0
+    # pretend to run the CLI
+    cli_cleanup(*process_args(args))
 
-    os.unlink(tempfile)
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_env_db()
+    assert len(db.entries) == 0
+    assert len(conda.existing_envs) == 0
+
+
+    # now final test of creating and removing an environment:
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
+            test_env_name, test_model]
+    # pretend to run the CLI
+    cli_create(*process_args(args))
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "remove", "--source", "dir", test_model, '--yes']
+    cli_remove(*process_args(args))
+
+    kipoi.cli.env_db.reload_model_env_db()
+    db = kipoi.cli.env_db.get_model_env_db()
+    assert len(db.entries) == 0
+    assert len(conda.existing_envs) == 0
+
+
+    # just make sure this resets after the test.
+    kipoi.config._env_db_path = old_env_db_path
+    kipoi.cli.env_db.reload_model_env_db()
 
 
 

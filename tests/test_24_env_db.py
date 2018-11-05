@@ -4,6 +4,7 @@ from kipoi.cli.env import generate_env_db_entry
 import os
 import json
 import warnings
+import kipoi
 
 
 def get_args(def_kwargs):
@@ -31,20 +32,40 @@ def assert_rec(a, b):
 
 def test_env_db(tmpdir):
     json_file = os.path.join(tmpdir, "db.json")
+    sample_cli_path = os.path.join(tmpdir, "sample")
+    with open(sample_cli_path, "w") as fh:
+        fh.write("")
+
     db = EnvDb(json_file)
     kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
               "tmpdir": "something", "vep": True}
 
     entries = []
+    source_path = kipoi.get_source("dir").local_path
+    kipoi_path = kipoi.get_source("kipoi").local_path
     for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:
         kwargs['model'] = model
         db_entry = generate_env_db_entry(get_args(kwargs)())
         db.append(db_entry)
         entries.append(db_entry)
 
-    assert db.get_entry_by_model("example/models/pyt") == entries[1]
-    assert db.get_entry_by_model("example/models/pyt_class") is None
-    assert db.get_entry_by_model("example/models/pyt", only_most_recent = False) == entries[::-1]
+    pyt_query_name = os.path.join(source_path, "example/models/pyt")
+
+    assert db.get_entry_by_model(pyt_query_name) == entries[1]
+    assert db.get_entry_by_model(pyt_query_name + "_class") is None
+    assert db.get_entry_by_model(pyt_query_name, only_most_recent = False) == entries[::-1]
+
+    # test if the viability check is ok:
+    entry = db.get_entry_by_model(pyt_query_name)
+    entry.successful = True
+    entry.cli_path = sample_cli_path
+    assert db.get_entry_by_model(pyt_query_name, only_most_recent=False, only_valid=True) == [entry]
+    entry.successful = False
+    assert len(db.get_entry_by_model(pyt_query_name, only_most_recent=False, only_valid=True)) == 0
+    entry.successful = True
+    entry.cli_path = None
+    assert len(db.get_entry_by_model(pyt_query_name, only_most_recent=False, only_valid=True)) == 0
+
 
     db.save()
     del db
@@ -52,8 +73,8 @@ def test_env_db(tmpdir):
     # Test if loading is fine
     db2 = EnvDb(json_file)
     # test dict identity
-    assert_rec(db2.get_entry_by_model("example/models/pyt").get_config(), entries[1].get_config())
-    assert db2.get_entry_by_model("example/models/pyt_class") is None
+    assert_rec(db2.get_entry_by_model(pyt_query_name).get_config(), entries[1].get_config())
+    assert db2.get_entry_by_model(pyt_query_name + "_class") is None
 
     del db2
 

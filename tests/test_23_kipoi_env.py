@@ -152,6 +152,8 @@ def test_generate_env_db_entry():
     from kipoi.cli.parser_utils import parse_source_name
     kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
               "tmpdir": "something", "vep" : True}
+    source_path = kipoi.get_source("dir").local_path
+    kipoi_path = kipoi.get_source("kipoi").local_path
     for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:
         kwargs['model'] = model
         db_entry = generate_env_db_entry(get_args(kwargs)())
@@ -162,14 +164,15 @@ def test_generate_env_db_entry():
         sub_models = []
         for model in only_models:
             parsed_source, parsed_model = parse_source_name(kwargs["source"], model)
-            sub_models.extend(list_subcomponents(parsed_model, parsed_source, "model"))
+            sub_models.extend([os.path.join(source_path, e) for e in
+                               list_subcomponents(parsed_model, parsed_source, "model")])
         if len(special_envs) != 0:
             with open("example/models/shared/envs/models.yaml", "r") as fh:
                 special_env_models = yaml.load(fh)
             for special_env in special_envs:
                 for model_group_name in special_env_models[os.path.basename(special_env)]:
-                    sub_models.extend(list_subcomponents(model_group_name, "kipoi", "model"))
-
+                    sub_models.extend([os.path.join(kipoi_path, e) for e in
+                                       list_subcomponents(model_group_name, "kipoi", "model")])
 
         assert set(db_entry.compatible_models) == set(sub_models)
         assert db_entry.cli_path is None
