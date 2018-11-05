@@ -322,7 +322,8 @@ def generate_env_db_entry(args):
         # for the special envs load the corresponding models:
         for special_env in special_envs:
             special_env_folder = "/".join(special_env.rstrip("/").split("/")[:-1])
-            with open(os.path.join(special_env_folder, "models.yaml"), "r") as fh:
+            source_path = kipoi.get_source(args.source).local_path
+            with open(os.path.join(source_path, special_env_folder, "models.yaml"), "r") as fh:
                 special_env_models = yaml.load(fh)
             # extend the sub_models by all the submodels covered by the handcrafted environments (special_envs)
             # Those models **always** refer to the kipoi source
@@ -525,7 +526,6 @@ print_invalid_env_names = print_env_names
 def cli_list(cmd, raw_args):
     """List all kipoi-induced conda environments
     """
-    # todo update this to use the environment database
     entries = get_model_env_db().get_all(only_valid=True)
     if len(entries) != 0:
         print("# Functional kipoi environments:")

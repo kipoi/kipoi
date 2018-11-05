@@ -309,7 +309,7 @@ def process_args(args):
 
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
-    tempfile = os.path.join(tmpdir, "envs.json")
+    tempfile = os.path.join(str(tmpdir), "envs.json")
 
 
     # Define things necessary for monkeypatching
@@ -330,7 +330,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
             if env in self.existing_envs:
                 return 1
 
-            kipoi_cli_path = os.path.join(tmpdir, "kipoi_cli_" + env)
+            kipoi_cli_path = os.path.join(str(tmpdir), "kipoi_cli_" + env)
             with open(kipoi_cli_path, "w") as ofh:
                 ofh.write("kipoi")
             self.existing_envs[env] = kipoi_cli_path

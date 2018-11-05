@@ -31,8 +31,8 @@ def assert_rec(a, b):
         assert a == b
 
 def test_env_db(tmpdir):
-    json_file = os.path.join(tmpdir, "db.json")
-    sample_cli_path = os.path.join(tmpdir, "sample")
+    json_file = os.path.join(str(tmpdir), "db.json")
+    sample_cli_path = os.path.join(str(tmpdir), "sample")
     with open(sample_cli_path, "w") as fh:
         fh.write("")
 
@@ -42,7 +42,6 @@ def test_env_db(tmpdir):
 
     entries = []
     source_path = kipoi.get_source("dir").local_path
-    kipoi_path = kipoi.get_source("kipoi").local_path
     for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:
         kwargs['model'] = model
         db_entry = generate_env_db_entry(get_args(kwargs)())

@@ -78,10 +78,25 @@ def create_env_from_file(env_file):
     return _call_conda(cmd_list, use_stdout=True)
 
 def get_conda_version():
-    ret_code, stdout = _call_conda(["--version"], use_stdout=True, return_logs_with_stdout = True)
-    if ret_code != 0:
+    #ret_code, stdout = _call_conda(["--version"], use_stdout=True, return_logs_with_stdout = True)
+    p = Popen(["conda", "--version"], stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    # Poll process for new output until finished
+    sout = []
+    serr = []
+    for stdout_line in iter(p.stdout.readline, ""):
+        sout.append(stdout_line.rstrip())
+    p.stdout.close()
+    for stderr_line in iter(p.stderr.readline, ""):
+        serr.append(stderr_line.rstrip())
+    p.stderr.close()
+    return_code = p.wait()
+    out = sout
+    if len(sout) == 0:
+       out = serr
+
+    if return_code != 0 or len(out) != 1:
         raise Exception("Could not retrieve conda version. Please check conda installation.")
-    return stdout[0]
+    return out[0]
 
 def get_cli_path(env):
     import tempfile
