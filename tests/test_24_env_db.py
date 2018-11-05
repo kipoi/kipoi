@@ -17,6 +17,7 @@ def get_args(def_kwargs):
 
     return dummy_args
 
+
 def assert_rec(a, b):
     if isinstance(a, dict):
         assert set(a.keys()) == set(b.keys())
@@ -24,10 +25,11 @@ def assert_rec(a, b):
             assert_rec(a[k], b[k])
     elif isinstance(a, list):
         assert len(a) == len(b)
-        for a_el, b_el in zip(a,b):
+        for a_el, b_el in zip(a, b):
             assert_rec(a_el, b_el)
     else:
         assert a == b
+
 
 def test_env_db(tmpdir):
     json_file = os.path.join(str(tmpdir), "db.json")
@@ -51,7 +53,7 @@ def test_env_db(tmpdir):
 
     assert db.get_entry_by_model(pyt_query_name) == entries[1]
     assert db.get_entry_by_model(pyt_query_name + "_class") is None
-    assert db.get_entry_by_model(pyt_query_name, only_most_recent = False) == entries[::-1]
+    assert db.get_entry_by_model(pyt_query_name, only_most_recent=False) == entries[::-1]
 
     # test if the viability check is ok:
     entry = db.get_entry_by_model(pyt_query_name)
@@ -63,7 +65,6 @@ def test_env_db(tmpdir):
     entry.successful = True
     entry.cli_path = None
     assert len(db.get_entry_by_model(pyt_query_name, only_most_recent=False, only_valid=True)) == 0
-
 
     db.save()
     del db
@@ -81,14 +82,14 @@ def test_env_db(tmpdir):
         db_dict = json.load(fh)
 
     # Add a bad entry:
-    new_key = max([int(k) for k in db_dict["_default"]])+1
+    new_key = max([int(k) for k in db_dict["_default"]]) + 1
     db_dict["_default"][str(new_key)] = {"conda_version": "conda 4.5.4", "kipoi_version": "0.5.6"}
 
     with open(json_file, "w") as fh:
         json.dump(db_dict, fh)
 
     # Check if there is a warning
-    #with pytest.warns(UserWarning): # There seems to be a general problem with warnings...
+    # with pytest.warns(UserWarning): # There seems to be a general problem with warnings...
     db_warns = EnvDb(json_file)
 
     assert len(db_warns.entries) == 2
@@ -109,4 +110,3 @@ def test_env_db(tmpdir):
     assert found == 0
 
     os.unlink(json_file)
-

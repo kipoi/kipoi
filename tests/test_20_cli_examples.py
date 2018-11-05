@@ -29,6 +29,7 @@ predict_activation_layers = {
 }
 ACTIVATION_EXAMPLES = ['rbp', 'pyt']
 
+
 def test_cli_get_example(tmpdir):
     """kipoi test ..., add also output file writing
     """
@@ -287,6 +288,7 @@ def test_kipoi_info():
     returncode = subprocess.call(args=args)
     assert returncode == 0
 
+
 def assert_rec(a, b):
     if isinstance(a, dict):
         assert set(a.keys()) == set(b.keys())
@@ -294,10 +296,11 @@ def assert_rec(a, b):
             assert_rec(a[k], b[k])
     elif isinstance(a, list):
         assert len(a) == len(b)
-        for a_el, b_el in zip(a,b):
+        for a_el, b_el in zip(a, b):
             assert_rec(a_el, b_el)
     else:
         assert a == b
+
 
 def process_args(args):
     raw_args = args[4:]
@@ -308,7 +311,6 @@ def process_args(args):
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
     tempfile = os.path.join(str(tmpdir), "envs.json")
-
 
     # Define things necessary for monkeypatching
     class PseudoConda:
@@ -334,7 +336,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
             self.existing_envs[env] = kipoi_cli_path
             return 0
 
-        def get_cli(self,env):
+        def get_cli(self, env):
             env = self.strip_yaml_suffix(env)
             if env not in self.existing_envs:
                 return None
@@ -352,12 +354,14 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
         def assert_to(val):
             assert len(val) == len(equals)
             assert all([v.create_args.env == e for v, e in zip(val, equals)])
+
         return assert_to
 
     def get_assert_env_cli(equals):
         def assert_to(val):
             assert len(val) == len(equals)
             assert all([v.cli_path == e for v, e in zip(val, equals)])
+
         return assert_to
 
     # pseudo kipoi CLI executable
@@ -381,7 +385,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     kipoi.conda.env_db.reload_model_env_db()
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
-           test_env_name, test_model]
+            test_env_name, test_model]
 
     # pretend to run the CLI
     cli_create(*process_args(args))
@@ -400,7 +404,6 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     cfg["cli_path"] += "____AAAAAA_____"
     db.append(EnvDbEntry.from_config(cfg))
 
-
     # now test the get environment name and the get_cli
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get", "--source", "dir", test_model]
     cli_get(*process_args(args))
@@ -409,7 +412,6 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_cli", "--source", "dir", test_model]
     cli_get_cli(*process_args(args))
 
-
     # list environments:
     monkeypatch.setattr(kipoi.cli.env, 'print_valid_env_names', get_assert_env([test_env_name]))
     monkeypatch.setattr(kipoi.cli.env, 'print_invalid_env_names', get_assert_env([test_env_name + "____AAAAAA_____"]))
@@ -417,12 +419,10 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "list"]
     cli_list(*process_args(args))
 
-
     # pretend also the first installation didn't work
     entry.successful = False
     first_config = entry.get_config()
     db.save()
-
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "cleanup", "--all", '--yes']
     print(conda.existing_envs)
@@ -445,7 +445,6 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     assert len(db.entries) == 0
     assert len(conda.existing_envs) == 0
 
-
     # now final test of creating and removing an environment:
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
@@ -460,12 +459,6 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     assert len(db.entries) == 0
     assert len(conda.existing_envs) == 0
 
-
     # just make sure this resets after the test.
     kipoi.config._env_db_path = old_env_db_path
     kipoi.conda.env_db.reload_model_env_db()
-
-
-
-
-

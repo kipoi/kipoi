@@ -14,6 +14,7 @@ from collections import OrderedDict
 from kipoi.utils import yaml_ordered_dump, unique_list
 import six
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -77,8 +78,9 @@ def create_env_from_file(env_file):
     cmd_list = ["env", "create", "--file", env_file]
     return _call_conda(cmd_list, use_stdout=True)
 
+
 def get_conda_version():
-    #ret_code, stdout = _call_conda(["--version"], use_stdout=True, return_logs_with_stdout = True)
+    # ret_code, stdout = _call_conda(["--version"], use_stdout=True, return_logs_with_stdout = True)
     p = Popen(["conda", "--version"], stdout=PIPE, stderr=PIPE, universal_newlines=True)
     # Poll process for new output until finished
     sout = []
@@ -92,11 +94,12 @@ def get_conda_version():
     return_code = p.wait()
     out = sout
     if len(sout) == 0:
-       out = serr
+        out = serr
 
     if return_code != 0 or len(out) != 1:
         raise Exception("Could not retrieve conda version. Please check conda installation.")
     return out[0]
+
 
 def get_cli_path(env):
     import tempfile
@@ -108,7 +111,6 @@ def get_cli_path(env):
     queries["unix"].append(". activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
     queries["unix"].append("conda activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
     queries["nt"] = ["activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)]
-
 
     # Compile query for location of kipoi cli
     sel_queries = queries["unix"]
@@ -140,6 +142,7 @@ def get_cli_path(env):
         os.unlink(tempfile_env)
 
     return cli_path
+
 
 def install_conda(conda_deps, channels=["defaults"]):
     """Install conda packages
@@ -221,7 +224,7 @@ def _call_command(cmd, extra_args, use_stdout=False,
     return p.communicate()
 
 
-def _call_conda(extra_args, use_stdout=False, return_logs_with_stdout = False):
+def _call_conda(extra_args, use_stdout=False, return_logs_with_stdout=False):
     return _call_command("conda", extra_args, use_stdout, return_logs_with_stdout)
 
 

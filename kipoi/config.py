@@ -13,6 +13,7 @@ import six
 from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
 from .utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 # --------------------------------------------
@@ -88,6 +89,7 @@ def add_source(name, obj):
 def list_sources():
     """Returns a `pandas.DataFrame` of possible sources
     """
+
     def src2dict(k, s):
         lm = s.list_models()
         return OrderedDict([("source", k),
@@ -98,6 +100,7 @@ def list_sources():
                             ("n_dataloaders", len(lm)),  # TODO - update
                             # last_updated=TODO - implement?
                             ])
+
     return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources()) if k != "dir"])
 
 
@@ -110,6 +113,7 @@ def list_models(sources=None):
     # Returns
         pandas.DataFrame
     """
+
     def get_df(source_name, source):
         df = source.list_models()
         df.insert(0, "source", source_name)
@@ -135,6 +139,7 @@ def list_dataloaders(sources=None):
     # Returns
         pandas.DataFrame
     """
+
     def get_df(source_name, source):
         df = source.list_dataloaders()
         df.insert(0, "source", source_name)
@@ -179,7 +184,6 @@ if os.path.exists(_config_path):
 if 'KIPOI_ENV_DB_PATH' in os.environ:
     _env_db_path = os.path.expanduser(os.environ['KIPOI_ENV_DB_PATH'])
 
-
 # Save config file, if possible.
 if not os.path.exists(_kipoi_dir):
     try:
@@ -201,7 +205,6 @@ if not os.path.exists(_config_path):
     except IOError:
         # Except permission denied.
         pass
-
 
 # Add dir as a valid source
 add_source("dir", LocalSource(None))

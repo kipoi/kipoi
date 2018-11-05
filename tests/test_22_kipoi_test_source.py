@@ -119,12 +119,13 @@ def test_pull_component(source):
     assert source._get_component_dir("pyt", 'dataloader') == os.path.join(source.local_path, "pyt")
 
     # group component
-    assert source._get_component_dir("multiple_models/model1", 'model') == os.path.join(source.local_path, "multiple_models")
+    assert source._get_component_dir("multiple_models/model1", 'model') == os.path.join(source.local_path,
+                                                                                        "multiple_models")
     with pytest.raises(ValueError):
         source._get_component_dir("multiple_models/model1", 'dataloader') is None
 
     assert source._get_component_dir("multiple_models/submodel/model2", 'model') == \
-        os.path.join(source.local_path, "multiple_models")
+           os.path.join(source.local_path, "multiple_models")
 
 
 def test_get_component_descr(source):

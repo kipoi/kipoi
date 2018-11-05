@@ -85,6 +85,7 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
 # Hard-code kipoi-seq dataloaders
 KIPOISEQ_DEPS = Dependencies(conda=['bioconda::pybedtools', 'bioconda::pyfaidx', 'numpy', 'pandas'], pip=['kipoiseq'])
 
+
 def split_models_special_envs(models):
     special_envs = []  # handcrafted environments
     only_models = []  # actual models excluding handcrafted environments
@@ -94,6 +95,7 @@ def split_models_special_envs(models):
         else:
             only_models.append(model)
     return special_envs, only_models
+
 
 def merge_deps(models,
                dataloaders=None,
@@ -153,8 +155,9 @@ def merge_deps(models,
                         except ImportError as e:
                             # package providing the dataloader is not installed yet
                             if model_descr.default_dataloader.defined_as.startswith("kipoiseq."):
-                                logger.info("kipoiseq not installed. Using default kipoiseq dependencies for the dataloader: {}"
-                                            .format(model_descr.default_dataloader.defined_as))
+                                logger.info(
+                                    "kipoiseq not installed. Using default kipoiseq dependencies for the dataloader: {}"
+                                    .format(model_descr.default_dataloader.defined_as))
                                 deps = deps.merge(KIPOISEQ_DEPS)
                             else:
                                 logger.warn("Unable to extract dataloader description. "
@@ -277,7 +280,6 @@ def cli_export(cmd, raw_args):
     print("conda env create --file {0}".format(env_file))
 
 
-
 def delete_envs(to_delete):
     db = get_model_env_db()
     for e in to_delete:
@@ -290,12 +292,12 @@ def delete_envs(to_delete):
                         "removed from the database.".format(e.create_args.env, str(err)))
 
 
-def get_envs_by_model(models, source, only_most_recent = True, only_valid = False):
+def get_envs_by_model(models, source, only_most_recent=True, only_valid=False):
     source_path = kipoi.get_source(source).local_path
     entries = []
     db = get_model_env_db()
     for m in models:
-        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent =only_most_recent,
+        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent=only_most_recent,
                                     only_valid=only_valid)
         if only_most_recent:
             entries.append(res)
@@ -305,8 +307,7 @@ def get_envs_by_model(models, source, only_most_recent = True, only_valid = Fals
     return entries
 
 
-
-def generate_env_db_entry(args, args_env_overload = None):
+def generate_env_db_entry(args, args_env_overload=None):
     from collections import OrderedDict
     from kipoi.conda.env_db import EnvDbEntry
     from kipoi.conda import get_conda_version
@@ -345,6 +346,7 @@ def generate_env_db_entry(args, args_env_overload = None):
     entry = EnvDbEntry.from_config(db_entry)
     return entry
 
+
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
@@ -359,7 +361,7 @@ def cli_create(cmd, raw_args):
                         help="Special environment name. default: kipoi-<model>[-<dataloader>]")
     parser.add_argument('-t', '--tmpdir', default=None,
                         help="Temporary directory path where to create the conda environment file" +
-                        "Defaults to /tmp/kipoi/envfiles/<uuid>/")
+                             "Defaults to /tmp/kipoi/envfiles/<uuid>/")
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
@@ -372,7 +374,6 @@ def cli_create(cmd, raw_args):
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
-
 
     env, env_file = export_env(args.model,
                                args.dataloader,
@@ -398,11 +399,13 @@ def cli_create(cmd, raw_args):
     print("\nActivate the environment via:")
     print("source activate {0}".format(env))
 
+
 def confirm(message):
     answer = ""
     while answer not in ["y", "n"]:
-        answer = input(message+" [Y/N]? ").lower()
+        answer = input(message + " [Y/N]? ").lower()
     return answer == "y"
+
 
 def ask_and_delete_envs(to_delete, args):
     db = get_model_env_db()
@@ -425,11 +428,14 @@ def ask_and_delete_envs(to_delete, args):
                 db.remove(e)
                 db.save()
 
+
 def print_env_names(entries):
     print("\n".join([e.create_args.env for e in entries]))
 
+
 def print_env_cli_paths(entries):
     print("\n".join([e.cli_path for e in entries]))
+
 
 def cli_get(cmd, raw_args):
     """Print a conda environment name for a model
@@ -443,9 +449,10 @@ def cli_get(cmd, raw_args):
                         help="If set all environments compatible with this model will be printed!")
     args = parser.parse_args(raw_args)
 
-    entries = get_envs_by_model(args.model, args.source, only_most_recent= not args.all, only_valid=True)
+    entries = get_envs_by_model(args.model, args.source, only_most_recent=not args.all, only_valid=True)
 
     print_env_names(entries)
+
 
 def cli_get_cli(cmd, raw_args):
     """Print a kipoi cli path for a model
@@ -462,6 +469,7 @@ def cli_get_cli(cmd, raw_args):
     entries = get_envs_by_model(args.model, args.source, only_most_recent=not args.all, only_valid=True)
 
     print_env_cli_paths(entries)
+
 
 def cli_cleanup(cmd, raw_args):
     """Remove all environments that have failed during setup. Or remove all environments
@@ -509,7 +517,7 @@ def cli_remove(cmd, raw_args):
                         help="If set then do NOT ask before deleting environments.")
     args = parser.parse_args(raw_args)
 
-    to_delete = get_envs_by_model(args.model, args.source, only_most_recent= not args.all)
+    to_delete = get_envs_by_model(args.model, args.source, only_most_recent=not args.all)
 
     if len(to_delete) != 0:
         ask_and_delete_envs(to_delete, args)
@@ -521,6 +529,7 @@ def cli_remove(cmd, raw_args):
 
 print_valid_env_names = print_env_names
 print_invalid_env_names = print_env_names
+
 
 def cli_list(cmd, raw_args):
     """List all kipoi-induced conda environments

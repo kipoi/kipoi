@@ -1,15 +1,16 @@
 from kipoi.external.related.mixins import RelatedConfigMixin
 from kipoi.external.related.fields import StrSequenceField
-from tinydb import TinyDB, Query
 import os
 import kipoi
 import related
 import logging
 from collections import OrderedDict
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 _MODEL_ENV_DB = None
+
 
 def get_model_env_db():
     global _MODEL_ENV_DB
@@ -17,12 +18,14 @@ def get_model_env_db():
         _MODEL_ENV_DB = EnvDb(kipoi.config._env_db_path)
     return _MODEL_ENV_DB
 
+
 def reload_model_env_db():
     global _MODEL_ENV_DB
     if _MODEL_ENV_DB is not None:
         del _MODEL_ENV_DB
     _MODEL_ENV_DB = None
     get_model_env_db()
+
 
 def save_model_env_db():
     if _MODEL_ENV_DB is not None:
@@ -42,8 +45,6 @@ class EnvCreateArgs(RelatedConfigMixin):
     vep = related.BooleanField(default=False, required=False)
 
 
-
-
 @related.mutable
 class EnvDbEntry(RelatedConfigMixin):
     """
@@ -58,22 +59,21 @@ class EnvDbEntry(RelatedConfigMixin):
     conda_version = related.StringField(required=True)
     kipoi_version = related.StringField(required=True)
     timestamp = related.FloatField(required=True)
-    compatible_models = related.SequenceField(str,required=True)
+    compatible_models = related.SequenceField(str, required=True)
     create_args = related.ChildField(EnvCreateArgs,
-                                      required=True)
-    successful =  related.BooleanField(default=False, required=False)
+                                     required=True)
+    successful = related.BooleanField(default=False, required=False)
     cli_path = related.StringField(default=None, required=False)
-
 
 
 class EnvDb:
     def __init__(self, db_path):
+        from tinydb import TinyDB
         self.entries = []
         self.db = TinyDB(db_path)
         # There is a main problem with querying the way it is done here. The content of the DB is only loaded once
         # and therefore the DB is not used as a DB and the object must the re-instantiated to update the entries.
         self._load_entries()
-
 
     def _load_entries(self):
         self.entries = []
@@ -138,4 +138,3 @@ class EnvDb:
 
     def __del__(self):
         self.db.close()
-

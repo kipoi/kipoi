@@ -120,7 +120,7 @@ def test_deps():
     assert merge_deps(["MaxEntScan"]) == merge_deps(["MaxEntScan/5prime"])
 
     # test mix of special environments and models
-    merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2"], source = "dir")
+    merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2"], source="dir")
     with pytest.raises(ValueError):
         merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2.yaml"], source="dir")
 
@@ -151,7 +151,7 @@ def test_generate_env_db_entry():
     import time
     from kipoi.cli.parser_utils import parse_source_name
     kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
-              "tmpdir": "something", "vep" : True}
+              "tmpdir": "something", "vep": True}
     source_path = kipoi.get_source("dir").local_path
     kipoi_path = kipoi.get_source("kipoi").local_path
     for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:
@@ -181,8 +181,6 @@ def test_generate_env_db_entry():
         assert db_entry.timestamp < time.time()
 
 
-
-
 def test_split_models_special_envs():
     # simple test if splitting works:
     special = ["example/models/shared/envs/py3.5-keras1.2"]
@@ -191,9 +189,10 @@ def test_split_models_special_envs():
     assert special_envs == special
     assert only_models == conventional
 
+
 def test_decorator_env_loading(tmpdir):
     mdir = cp_tmpdir("example/models/kipoi_dataloader_decorator", tmpdir)
     assert merge_deps([mdir], source='dir') == \
-        Dependencies(conda=['python=2.7', 'scikit-learn'],
-                     pip=['kipoi', 'scikit-learn', 'tqdm'],
-                     conda_channels=['defaults'])
+           Dependencies(conda=['python=2.7', 'scikit-learn'],
+                        pip=['kipoi', 'scikit-learn', 'tqdm'],
+                        conda_channels=['defaults'])
