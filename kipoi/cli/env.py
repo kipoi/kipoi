@@ -341,9 +341,9 @@ def generate_env_db_entry(args, args_env_overload=None):
     db_entry['timestamp'] = time.time()
     db_entry['compatible_models'] = sub_models
     db_entry['create_args'] = OrderedDict(args._get_kwargs())
-    if args_env_overload is not None:
-        db_entry['create_args'].env = args_env_overload
     entry = EnvDbEntry.from_config(db_entry)
+    if args_env_overload is not None:
+        entry.create_args.env = args_env_overload
     return entry
 
 
@@ -430,11 +430,13 @@ def ask_and_delete_envs(to_delete, args):
 
 
 def print_env_names(entries):
-    print("\n".join([e.create_args.env for e in entries]))
+    if len(entries) != 0:
+        print("\n".join([e.create_args.env for e in entries]))
 
 
 def print_env_cli_paths(entries):
-    print("\n".join([e.cli_path for e in entries]))
+    if len(entries) != 0:
+        print("\n".join([e.cli_path for e in entries]))
 
 
 def cli_get(cmd, raw_args):
