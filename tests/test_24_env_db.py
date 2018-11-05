@@ -1,10 +1,9 @@
-import pytest
-from kipoi.cli.env_db import EnvDb
-from kipoi.cli.env import generate_env_db_entry
-import os
 import json
-import warnings
+import os
+
 import kipoi
+from kipoi.cli.env import generate_env_db_entry
+from kipoi.conda.env_db import EnvDb
 
 
 def get_args(def_kwargs):

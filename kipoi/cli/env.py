@@ -2,22 +2,24 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
-from builtins import input
 
-import sys
-from sys import platform
-import os
 import argparse
-import subprocess
-import kipoi
-import time
-from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.specs import Dependencies, DataLoaderImport
-from kipoi.sources import list_subcomponents
-from kipoi.utils import cd
-from kipoi.cli.env_db import get_model_env_db, save_model_env_db
 import logging
+import os
+import subprocess
+import time
+from builtins import input
+from sys import platform
+
 import yaml
+
+import kipoi
+from kipoi.cli.parser_utils import add_env_args, parse_source_name
+from kipoi.conda.env_db import get_model_env_db, save_model_env_db
+from kipoi.sources import list_subcomponents
+from kipoi.specs import Dependencies, DataLoaderImport
+from kipoi.utils import cd
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 SPECIAL_ENV_PREFIX = "shared/envs/"
@@ -306,7 +308,7 @@ def get_envs_by_model(models, source, only_most_recent = True, only_valid = Fals
 
 def generate_env_db_entry(args, args_env_overload = None):
     from collections import OrderedDict
-    from kipoi.cli.env_db import EnvDbEntry
+    from kipoi.conda.env_db import EnvDbEntry
     from kipoi.conda import get_conda_version
 
     special_envs, only_models = split_models_special_envs(args.model)
@@ -432,8 +434,6 @@ def print_env_cli_paths(entries):
 def cli_get(cmd, raw_args):
     """Print a conda environment name for a model
     """
-    import uuid
-    from kipoi.conda import get_cli_path
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Print conda environment name for specific model.'
@@ -450,7 +450,6 @@ def cli_get(cmd, raw_args):
 def cli_get_cli(cmd, raw_args):
     """Print a kipoi cli path for a model
     """
-    import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Print kipoi cli path for specific model.'
@@ -498,8 +497,6 @@ def cli_cleanup(cmd, raw_args):
 def cli_remove(cmd, raw_args):
     """Remove a conda environment for a model
     """
-    import uuid
-    from kipoi.conda import get_cli_path
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Remove environment compatible with this model. If `--all` is not set then only remove the most '

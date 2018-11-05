@@ -102,17 +102,31 @@ def get_cli_path(env):
     import tempfile
     tempfile_env = tempfile.mkstemp()[1]
 
+    queries = {}
+    queries["unix"] = []
+    queries["unix"].append("source activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+    queries["unix"].append(". activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+    queries["unix"].append("conda activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+    queries["nt"] = ["activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)]
+
+
     # Compile query for location of kipoi cli
-    query = "source activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env)
+    sel_queries = queries["unix"]
     if os.name == 'nt':
         # Windows query
-        query = "activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)
+        sel_queries = queries["nt"]
 
-    # Query system. Can't use Popen as environment has to be activated first
-    ret_code = os.system(query)
+    success = False
+    for q in sel_queries:
+        # Query system. Can't use Popen as environment has to be activated first
+        ret_code = os.system(q)
 
-    # Check it has worked
-    if (ret_code != 0) or not os.path.exists(tempfile_env):
+        # Check it has worked
+        if (ret_code == 0) and os.path.exists(tempfile_env):
+            success = True
+            break
+
+    if not success:
         raise Exception("Could not retrieve list of conda environments. Please check conda installation.")
 
     try:

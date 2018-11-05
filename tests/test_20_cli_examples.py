@@ -1,21 +1,19 @@
 """Run the example scripts
 """
-import shutil
-import pytest
+import os
 import subprocess
 import sys
-import os
-import yaml
+
 import pandas as pd
+import pytest
+import yaml
+
 import config
 # import filecmp
 import kipoi
+from kipoi.conda.env_db import EnvDbEntry
 from kipoi.readers import HDF5Reader
-import numpy as np
 from utils import cp_tmpdir
-from contextlib import contextmanager
-from kipoi.cli.env_db import EnvDbEntry
-import copy
 
 if config.install_req:
     INSTALL_FLAG = "--install_req"
@@ -380,7 +378,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     monkeypatch.setattr(kipoi.conda, 'get_cli_path', conda.get_cli)
     monkeypatch.setattr(kipoi.cli.env, 'print_env_names', get_assert_env([test_env_name]))
     # load the db from the new path
-    kipoi.cli.env_db.reload_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "--source", "dir", "--env",
            test_env_name, test_model]
@@ -389,8 +387,8 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     cli_create(*process_args(args))
 
     # make sure the successful flag is set and the kipoi-cli exists
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
+    db = kipoi.conda.env_db.get_model_env_db()
 
     entry = db.get_entry_by_model(os.path.join(source_path, test_model))
     assert entry.successful
@@ -433,8 +431,8 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     cli_cleanup(*process_args(args))
 
     # now
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
+    db = kipoi.conda.env_db.get_model_env_db()
     assert len(db.entries) == 1
     assert_rec(db.entries[0].get_config(), cfg)
 
@@ -442,8 +440,8 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     # pretend to run the CLI
     cli_cleanup(*process_args(args))
 
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
+    db = kipoi.conda.env_db.get_model_env_db()
     assert len(db.entries) == 0
     assert len(conda.existing_envs) == 0
 
@@ -457,15 +455,15 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "remove", "--source", "dir", test_model, '--yes']
     cli_remove(*process_args(args))
 
-    kipoi.cli.env_db.reload_model_env_db()
-    db = kipoi.cli.env_db.get_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
+    db = kipoi.conda.env_db.get_model_env_db()
     assert len(db.entries) == 0
     assert len(conda.existing_envs) == 0
 
 
     # just make sure this resets after the test.
     kipoi.config._env_db_path = old_env_db_path
-    kipoi.cli.env_db.reload_model_env_db()
+    kipoi.conda.env_db.reload_model_env_db()
 
 
 
