@@ -309,7 +309,8 @@ def process_args(args):
 
 
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
-    from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_kipoi_bin, cli_list
+    from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_list
+    from kipoi.conda.utils import get_kipoi_bin
     tempfile = os.path.join(str(tmpdir), "envs.json")
 
     # Define things necessary for monkeypatching
@@ -410,7 +411,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
 
     monkeypatch.setattr(kipoi.cli.env, 'print_env_cli_paths', get_assert_env_cli([conda.get_kipoi_bin(test_env_name)]))
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_kipoi_bin", "--source", "dir", test_model]
-    cli_get_kipoi_bin(*process_args(args))
+    get_kipoi_bin(*process_args(args))
 
     # list environments:
     monkeypatch.setattr(kipoi.cli.env, 'print_valid_env_names', get_assert_env([test_env_name]))
