@@ -37,3 +37,4 @@ dependencies:
     - matplotlib
     - pytest-xdist
     - pytest-sugar
+    - tinydb

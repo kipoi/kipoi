@@ -3,10 +3,11 @@
 import subprocess
 import os
 from kipoi.utils import read_yaml
-from kipoi.cli.env import get_env_name, export_env, merge_deps
+from kipoi.cli.env import get_env_name, export_env, merge_deps, split_models_special_envs, generate_env_db_entry
 from kipoi.sources import list_subcomponents
 from kipoi.specs import Dependencies
 from utils import cp_tmpdir
+import pytest
 
 
 def test_env_name():
@@ -118,10 +119,80 @@ def test_list_submodules():
 def test_deps():
     assert merge_deps(["MaxEntScan"]) == merge_deps(["MaxEntScan/5prime"])
 
+    # test mix of special environments and models
+    merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2"], source="dir")
+    with pytest.raises(ValueError):
+        merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2.yaml"], source="dir")
+
+    with pytest.raises(Exception):
+        merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2_bad"], source="dir")
+
+    deps = merge_deps(["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"], source="dir")
+    assert len([el for el in deps.conda if "pytorch" in el]) == 1
+
+
+def get_args(def_kwargs):
+    class dummy_args:
+        kwargs = def_kwargs
+        model = kwargs["model"]
+        source = kwargs["source"]
+
+        def _get_kwargs(self):
+            return self.kwargs
+
+    return dummy_args
+
+
+def test_generate_env_db_entry():
+    # test in general and test whether the automatic generation of sub-models works, also in combination
+    # with a clearly defined model
+    import yaml
+    import kipoi
+    import time
+    from kipoi.cli.parser_utils import parse_source_name
+    kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
+              "tmpdir": "something", "vep": True}
+    source_path = kipoi.get_source("dir").local_path
+    kipoi_path = kipoi.get_source("kipoi").local_path
+    for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:
+        kwargs['model'] = model
+        db_entry = generate_env_db_entry(get_args(kwargs)())
+        assert all([kwargs[k] == getattr(db_entry.create_args, k) for k in kwargs])
+
+        # generate the reference output
+        special_envs, only_models = split_models_special_envs(model)
+        sub_models = []
+        for model in only_models:
+            parsed_source, parsed_model = parse_source_name(kwargs["source"], model)
+            sub_models.extend([os.path.join(source_path, e) for e in
+                               list_subcomponents(parsed_model, parsed_source, "model")])
+        if len(special_envs) != 0:
+            with open("example/models/shared/envs/models.yaml", "r") as fh:
+                special_env_models = yaml.load(fh)
+            for special_env in special_envs:
+                for model_group_name in special_env_models[os.path.basename(special_env)]:
+                    sub_models.extend([os.path.join(kipoi_path, e) for e in
+                                       list_subcomponents(model_group_name, "kipoi", "model")])
+
+        assert set(db_entry.compatible_models) == set(sub_models)
+        assert db_entry.cli_path is None
+        assert db_entry.successful == False
+        assert db_entry.kipoi_version == kipoi.__version__
+        assert db_entry.timestamp < time.time()
+
+
+def test_split_models_special_envs():
+    # simple test if splitting works:
+    special = ["example/models/shared/envs/py3.5-keras1.2"]
+    conventional = ["example/models/pyt"]
+    special_envs, only_models = split_models_special_envs(special + conventional)
+    assert special_envs == special
+    assert only_models == conventional
+
 
 def test_decorator_env_loading(tmpdir):
     mdir = cp_tmpdir("example/models/kipoi_dataloader_decorator", tmpdir)
     assert merge_deps([mdir], source='dir') == \
-        Dependencies(conda=['python=2.7', 'scikit-learn'],
-                     pip=['kipoi', 'scikit-learn', 'tqdm'],
-                     conda_channels=['defaults'])
+           Dependencies(conda=['python=2.7', 'scikit-learn'],
+                        pip=['kipoi', 'scikit-learn', 'tqdm'],
+                        conda_channels=['defaults'])

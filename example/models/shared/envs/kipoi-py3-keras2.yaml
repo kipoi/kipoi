@@ -1,0 +1,40 @@
+name: kipoi-py3-keras2
+channels:
+- bioconda
+- conda-forge
+- pytorch
+- defaults
+dependencies:
+- pyvcf
+- cyvcf2
+- pybedtools
+- pysam
+- genomelake
+- numpy
+- cython
+- h5py
+- pytorch-cpu>=0.2.0
+- pandas
+- bedtools
+- maxentpy
+- tabix
+- ls-gkm=0.0.1
+- pybigwig
+- gtfparse>=1.0.7
+- scikit-learn==0.18.1
+- pip:
+  - kipoi_veff
+  - kipoi
+  - tensorflow==1.4.1
+  - keras==2.1.6
+  - pyfaidx
+  # - scikit-learn
+  - pyvcf
+  - intervaltree
+  - deepdish
+  - joblib
+  - sklearn-pandas
+  - tqdm
+  - mmsplice
+  - numpy>=1.13.3
+  - concise>=0.6.6
