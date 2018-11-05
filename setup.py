@@ -34,7 +34,8 @@ test_requirements = [
     "scikit-learn",
     "cython",
     "keras",
-    "tensorflow"
+    "tensorflow",
+    "tinydb"  # circle-ci says that tinydb is not available
 ]
 
 setup(
