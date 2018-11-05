@@ -15,7 +15,8 @@ import yaml
 
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.conda.env_db import get_model_env_db, save_model_env_db
+from kipoi.conda.utils import get_kipoi_bin
+from kipoi.conda.env_db import get_model_env_db
 from kipoi.sources import list_subcomponents
 from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.utils import cd
@@ -35,7 +36,7 @@ def _replace_slash(s, replace_with="__"):
 def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
     """Create a conda env name
 
-    Args:
+    # Arguments
       model_name: String or a list of strings
       dataloader_name: String or a list of strings
       source: source name
@@ -335,13 +336,13 @@ def generate_env_db_entry(args, args_env_overload=None):
                 models = list_subcomponents(model_group_name, "kipoi", "model")
                 sub_models.extend([os.path.join(source_path, m) for m in models])
 
-    db_entry = {}
-    db_entry['conda_version'] = get_conda_version()
-    db_entry['kipoi_version'] = kipoi.__version__
-    db_entry['timestamp'] = time.time()
-    db_entry['compatible_models'] = sub_models
-    db_entry['create_args'] = OrderedDict(args._get_kwargs())
-    entry = EnvDbEntry.from_config(db_entry)
+    entry = EnvDbEntry(
+        conda_version=get_conda_version(),
+        kipoi_version=kipoi.__version__,
+        timestamp=time.time(),
+        compatible_models=sub_models,
+        create_args=OrderedDict(args._get_kwargs())
+    )
     if args_env_overload is not None:
         entry.create_args.env = args_env_overload
     return entry
@@ -351,7 +352,6 @@ def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
     import uuid
-    from kipoi.conda import get_cli_path
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Create a conda environment for a specific model.'
@@ -385,16 +385,18 @@ def cli_create(cmd, raw_args):
                                gpu=args.gpu)
 
     env_db_entry = generate_env_db_entry(args, args_env_overload=env)
-    get_model_env_db().append(env_db_entry)
-    save_model_env_db()
+    envdb = get_model_env_db()
+    envdb.append(env_db_entry)
+    envdb.save()
 
     # setup the conda env from file
     logger.info("Creating conda env from file: {0}".format(env_file))
     kipoi.conda.create_env_from_file(env_file)
     env_db_entry.successful = True
+
     # env is environment name
-    env_db_entry.cli_path = get_cli_path(env)
-    save_model_env_db()
+    env_db_entry.cli_path = get_kipoi_bin(env)
+    get_model_env_db().save()
     logger.info("Done!")
     print("\nActivate the environment via:")
     print("source activate {0}".format(env))

@@ -27,13 +27,6 @@ def reload_model_env_db():
     get_model_env_db()
 
 
-def save_model_env_db():
-    if _MODEL_ENV_DB is not None:
-        _MODEL_ENV_DB.save()
-    else:
-        raise Exception("_MODEL_ENV_DB is None, please run get_model_env_db() prior to save_model_env_db().")
-
-
 @related.mutable
 class EnvCreateArgs(RelatedConfigMixin):
     model = StrSequenceField(str, required=True)

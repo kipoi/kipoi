@@ -309,7 +309,7 @@ def process_args(args):
 
 
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
-    from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
+    from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_kipoi_bin, cli_list
     tempfile = os.path.join(str(tmpdir), "envs.json")
 
     # Define things necessary for monkeypatching
@@ -336,7 +336,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
             self.existing_envs[env] = kipoi_cli_path
             return 0
 
-        def get_cli(self, env):
+        def get_kipoi_bin(self, env):
             env = self.strip_yaml_suffix(env)
             if env not in self.existing_envs:
                 return None
@@ -379,7 +379,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     monkeypatch.setattr(kipoi.config, '_env_db_path', tempfile)
     monkeypatch.setattr(kipoi.conda, 'create_env_from_file', conda.add_env)
     monkeypatch.setattr(kipoi.conda, 'remove_env', conda.delete_env)
-    monkeypatch.setattr(kipoi.conda, 'get_cli_path', conda.get_cli)
+    monkeypatch.setattr(kipoi.conda, 'get_kipoi_bin', conda.get_kipoi_bin)
     monkeypatch.setattr(kipoi.cli.env, 'print_env_names', get_assert_env([test_env_name]))
     # load the db from the new path
     kipoi.conda.env_db.reload_model_env_db()
@@ -404,13 +404,13 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     cfg["cli_path"] += "____AAAAAA_____"
     db.append(EnvDbEntry.from_config(cfg))
 
-    # now test the get environment name and the get_cli
+    # now test the get environment name and the get_kipoi_bin
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get", "--source", "dir", test_model]
     cli_get(*process_args(args))
 
-    monkeypatch.setattr(kipoi.cli.env, 'print_env_cli_paths', get_assert_env_cli([conda.get_cli(test_env_name)]))
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_cli", "--source", "dir", test_model]
-    cli_get_cli(*process_args(args))
+    monkeypatch.setattr(kipoi.cli.env, 'print_env_cli_paths', get_assert_env_cli([conda.get_kipoi_bin(test_env_name)]))
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_kipoi_bin", "--source", "dir", test_model]
+    cli_get_kipoi_bin(*process_args(args))
 
     # list environments:
     monkeypatch.setattr(kipoi.cli.env, 'print_valid_env_names', get_assert_env([test_env_name]))
