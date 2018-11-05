@@ -188,10 +188,16 @@ def restrict_models_to_test(all_models, source, git_range):
 def rm_env(env_name):
     """Alias for remove_env
     """
+    from kipoi.cli.env_db import get_model_env_db
     if env_exists(env_name):
         logger.info("Removing environment: {0}".
                     format(env_name))
         remove_env(env_name)
+        # remove from db
+        db = get_model_env_db()
+        db_entries = [e for e in db.get_all() if e.create_args.env == env_name]
+        [db.remove(e) for e in db_entries]
+        db.save()
 
 
 def get_batch_size(cfg, model_name, default=4):

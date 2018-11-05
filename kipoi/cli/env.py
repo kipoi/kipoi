@@ -304,7 +304,7 @@ def get_envs_by_model(models, source, only_most_recent = True, only_valid = Fals
 
 
 
-def generate_env_db_entry(args):
+def generate_env_db_entry(args, args_env_overload = None):
     from collections import OrderedDict
     from kipoi.cli.env_db import EnvDbEntry
     from kipoi.conda import get_conda_version
@@ -338,6 +338,8 @@ def generate_env_db_entry(args):
     db_entry['timestamp'] = time.time()
     db_entry['compatible_models'] = sub_models
     db_entry['create_args'] = OrderedDict(args._get_kwargs())
+    if args_env_overload is not None:
+        db_entry['create_args'].env = args_env_overload
     entry = EnvDbEntry.from_config(db_entry)
     return entry
 
@@ -369,9 +371,6 @@ def cli_create(cmd, raw_args):
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
 
-    env_db_entry = generate_env_db_entry(args)
-    get_model_env_db().append(env_db_entry)
-    save_model_env_db()
 
     env, env_file = export_env(args.model,
                                args.dataloader,
@@ -381,6 +380,10 @@ def cli_create(cmd, raw_args):
                                env=args.env,
                                vep=args.vep,
                                gpu=args.gpu)
+
+    env_db_entry = generate_env_db_entry(args, args_env_overload=env)
+    get_model_env_db().append(env_db_entry)
+    save_model_env_db()
 
     # setup the conda env from file
     logger.info("Creating conda env from file: {0}".format(env_file))
@@ -448,7 +451,6 @@ def cli_get_cli(cmd, raw_args):
     """Print a kipoi cli path for a model
     """
     import uuid
-    from kipoi.conda import get_cli_path
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
         description='Print kipoi cli path for specific model.'
