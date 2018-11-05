@@ -17,9 +17,9 @@ def test_list_softlink_dependencies():
     deps = list_softlink_dependencies(os.path.join(component_dir, 'HAL'),
                                       component_dir)
     # one of these two, depending on the model source
-    assert (deps == {'MaxEntScan/template'}) or (deps == {'MaxEntScan/template',
-                                                          'MaxEntScan/template/example_files',
-                                                          'labranchor/example_files'})
+    assert (deps == {'MaxEntScan'}) or (deps == {'MaxEntScan/template',
+                                                 'MaxEntScan/template/example_files',
+                                                 'labranchor/example_files'})
     assert list_softlink_dependencies(os.path.join(component_dir, 'deepTarget'),
                                       component_dir) == set()
 

@@ -192,7 +192,10 @@ class LocalComponentGroup(object):
 
         self.component_template_yaml = component_template_yaml
         with open(self.component_template_yaml, "r") as f:
-            self.template = Template(f.read())
+            template_str = f.read()
+            if sys.version_info[0] == 2:
+                template_str = template_str.decode("utf-8")
+            self.template = Template(template_str)
 
         self.models_tsv = models_tsv
         self.df = pd.read_csv(models_tsv, sep='\t', comment='#')
@@ -453,14 +456,35 @@ class LocalSource(Source):
 
     TYPE = "local"
 
-    def __init__(self, local_path=None):
+    def __init__(self, local_path=None, name=None):
         """Local files
         """
+        self.name = name
         if local_path is not None:
             self._local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
+
+            # load the config file
+            config_file = os.path.join(self._local_path, 'config.yaml')
+            if os.path.exists(config_file):
+                from kipoi.specs import SourceConfig
+                self.config = SourceConfig.load(config_file)
+
+                if not self.config.dependencies.all_installed(verbose=False):
+                    import colorlog
+                    print(colorlog.escape_codes['red'])
+                    print("WARNING: Dependencies for model source '{}' stored at local_path {} not satisfied.: \n---".
+                          format(self.name, self._local_path))
+                    self.config.dependencies.all_installed(verbose=True)
+                    print("---\ninstall or update the missing packages")
+                    print(colorlog.escape_codes['reset'])
+                    print("Note: If you don't want to auto_update the model source, \n"
+                          "add `auto_update: False` to ~/.kipoi/config.yaml\n")
+            else:
+                self.config = None
         else:
             # undetermined local path
             self._local_path = None
+            self.config = None
         self.component_yaml_list = None
         self.component_group_list = None
 
@@ -596,100 +620,22 @@ class LocalSource(Source):
 
 
 class GitSource(Source):
+
     TYPE = "git"
 
-    def __init__(self, remote_url, local_path):
+    def __init__(self, remote_url, local_path, auto_update=True, use_lfs=False, name=None):
         """Git Source
         """
+        self.name = name
         self.remote_url = remote_url
         self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
+        self.local_source = LocalSource(self.local_path, name=name)
+
+        self.auto_update = auto_update
         self._pulled = False
-
-        self.local_source = LocalSource(self.local_path)
-
-    def clone(self):
-        """Clone the self.remote_url into self.local_path
-        """
-        if os.path.exists(self.local_path) and os.listdir(self.local_path):
-            raise IOError("Directory {0} already exists and is non-empty".
-                          format(self.local_path))
-
-        logger.info("Cloning {remote} into {local}".
-                    format(remote=self.remote_url,
-                           local=self.local_path))
-
-        subprocess.call(["git",
-                         "clone",
-                         "--depth=1",
-                         self.remote_url,
-                         self.local_path])
-        self._pulled = True
-
-    def pull_source(self):
-        """Pull/update the source
-        """
-        if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
-            return self.clone()
-
-        logger.info("Update {0}".
-                    format(self.local_path))
-        subprocess.call(["git",
-                         "pull"],
-                        cwd=self.local_path)
-        self._pulled = True
-
-    def _list_components(self, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._list_components(which)
-
-    def _get_component_dir(self, component, which='model'):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._get_component_dir(component, which)
-
-    def _get_component_download_dir(self, component, which='model'):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._get_component_download_dir(component, which)
-
-    def _pull_component(self, component, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._pull_component(component, which)
-
-    def _is_component(self, component, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._is_component(component, which)
-
-    def _get_component_descr(self, component, which="model"):
-        if not self._pulled:
-            self.pull_source()
-        return self.local_source._get_component_descr(component, which)
-
-    def get_group_name(self, component, which='model'):
-        return self.local_source.get_group_name(component, which)
-
-    def get_config(self):
-        return OrderedDict([("type", self.TYPE),
-                            ("remote_url", self.remote_url),
-                            ("local_path", self.local_path)])
-
-
-class GitLFSSource(Source):
-
-    TYPE = "git-lfs"
-
-    def __init__(self, remote_url, local_path):
-        """GitLFS Source
-        """
-        lfs_installed(raise_exception=False)
-        self.remote_url = remote_url
-        self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
-        self.local_source = LocalSource(self.local_path)
-        self._pulled = False
-        # TODO - check that downloded should be in .gitignore
+        self.use_lfs = use_lfs
+        if self.use_lfs:
+            lfs_installed(raise_exception=False)
 
     def clone(self, depth=1):
         """Clone the self.remote_url into self.local_path
@@ -697,7 +643,6 @@ class GitLFSSource(Source):
         Args:
           depth: --depth argument to git clone. If None, clone the whole history.
         """
-        lfs_installed(raise_exception=True)
         if os.path.exists(self.local_path) and os.listdir(self.local_path):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
@@ -714,12 +659,20 @@ class GitLFSSource(Source):
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
         self._pulled = True
 
+        if os.path.exists(os.path.join(self.local_path, ".gitattributes")):
+            if not self.use_lfs:
+                logger.info(".gitattributes detected in {}. Using git-lfs".format(self.local_path))
+            self.use_lfs = True
+            lfs_installed(raise_exception=True)
+
     def pull_source(self):
         """Pull/update the source
         """
-        lfs_installed(raise_exception=True)
         if not os.path.exists(self.local_path) or not os.listdir(self.local_path):
             return self.clone()
+
+        if not self.auto_update:
+            logger.warn("Pulling source even though auto_update=False")
 
         logger.info("Update {0}".
                     format(self.local_path))
@@ -727,6 +680,13 @@ class GitLFSSource(Source):
                          "pull"],
                         cwd=self.local_path,
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+
+        if os.path.exists(os.path.join(self.local_path, ".gitattributes")):
+            if not self.use_lfs:
+                logger.info(".gitattributes detected in {}. Using git-lfs".format(self.local_path))
+            self.use_lfs = True
+            lfs_installed(raise_exception=True)
+
         self._pulled = True
 
     def _commit_checkout(self, commit):
@@ -742,43 +702,46 @@ class GitLFSSource(Source):
                         env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
     def _list_components(self, which="model"):
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._list_components(which)
 
     def _get_component_dir(self, component, which='model'):
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._get_component_dir(component, which)
 
     def _get_component_download_dir(self, component, which='model'):
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._get_component_download_dir(component, which)
 
     def _pull_component(self, component, which="model"):
-        lfs_installed(raise_exception=True)
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
 
         component_dir = self.local_source._get_component_dir(component, which)
 
-        # get a list of directories to source (relative to the local_path)
-        softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
-        # pull these softlinks
-        for pull_dir in [component, relative_path(component_dir, self.local_path)] + softlink_dirs:
-            cmd = ["git-lfs",
-                   "pull",
-                   "-I {0}/**".format(pull_dir)]
-            logger.info(" ".join(cmd))
-            subprocess.call(cmd,
-                            cwd=self.local_path,
-                            env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+        if self.use_lfs:
+            # the only call to git-lfs -> pulling specific sub-files
+
+            lfs_installed(raise_exception=True)
+            # get a list of directories to source (relative to the local_path)
+            softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
+            # pull these softlinks
+            for pull_dir in [component, relative_path(component_dir, self.local_path)] + softlink_dirs:
+                cmd = ["git-lfs",
+                       "pull",
+                       "-I {0}/**".format(pull_dir)]
+                logger.info(" ".join(cmd))
+                subprocess.call(cmd,
+                                cwd=self.local_path,
+                                env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
         return self.local_source._pull_component(component, which)
 
     def _is_component(self, component, which="model"):
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._is_component(component, which)
 
@@ -786,24 +749,39 @@ class GitLFSSource(Source):
         return self.local_source.get_group_name(component, which)
 
     def _get_component_descr(self, component, which="model"):
-        if not self._pulled:
+        if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._get_component_descr(component, which)
 
     def get_config(self):
         return OrderedDict([("type", self.TYPE),
                             ("remote_url", self.remote_url),
-                            ("local_path", self.local_path)])
+                            ("local_path", self.local_path),
+                            ("auto_update", self.auto_update),
+                            ("use_lfs", self.use_lfs)])
+
+
+class GitLFSSource(GitSource):
+    TYPE = 'git-lfs'
+
+    def __init__(self, remote_url, local_path, auto_update=True, name=None):
+        """Git-LFS Source
+        """
+        super(GitLFSSource, self).__init__(remote_url=remote_url,
+                                           local_path=local_path,
+                                           auto_update=auto_update,
+                                           use_lfs=True,
+                                           name=name)
 
 
 class GithubPermalinkSource(Source):
 
     TYPE = "github-permalink"
 
-    def __init__(self, local_path):
+    def __init__(self, local_path, name=None):
         """Local files
         """
-
+        self.name = name
         self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
 
     @classmethod
@@ -830,13 +808,15 @@ class GithubPermalinkSource(Source):
     def get_lfs_source(self, component):
         user, repo, commit, model = self._parse_url(component)
         remote_url = "https://github.com/{user}/{repo}.git".format(user=user, repo=repo)
-        lfs_source = GitLFSSource(remote_url, os.path.join(self.local_path, user, repo, commit))
+        lfs_source = GitSource(remote_url, os.path.join(self.local_path, user, repo, commit),
+                               auto_update=False,  # Don't git-pull
+                               use_lfs=False)
+        self._pulled = True  # actually not required due to auto_update=False
 
         if not os.path.exists(lfs_source.local_path) or not os.listdir(lfs_source.local_path):
             # clone the repository
             lfs_source.clone(depth=None)
             lfs_source._commit_checkout(commit)
-        lfs_source._pulled = True  # Don't git-pull
         return lfs_source
 
     def _get_component_dir(self, component, which='model'):
@@ -873,7 +853,7 @@ class GithubPermalinkSource(Source):
 source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource]
 
 
-def load_source(config):
+def load_source(config, name):
     """Load the source from config
     """
     type_cls = {cls.TYPE: cls for cls in source_classes}
@@ -881,5 +861,21 @@ def load_source(config):
         raise ValueError("config['type'] needs to be one of: {0}".
                          format(list(type_cls.keys())))
 
+    if config['type'] == 'git-lfs':
+        # local path is already checked out and .gitattributes doesn't exist
+        # -> the repo is not an actuall git-lfs
+        if os.path.exists(os.path.join(config['local_path'], '.git')) \
+           and not os.path.exists(os.path.join(config['local_path'], '.gitattributes')):
+            # if the .gitattributes doesn't exist for the local path
+
+            if not config['remote_url'].endswith("kipoi/models.git"):
+                # only display this message for remote url's other than kipoi/models
+                logger.info(".gitattributes not found for git-lfs source: {} stored at {}".
+                            format(config['remote_url'], config['local_path']))
+                logger.info("Using 'type: git'")
+            config['type'] = 'git'
+
+    # add name
+    config['name'] = name
     cls = type_cls[config["type"]]
     return cls.from_config(config)

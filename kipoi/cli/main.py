@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
+import json
 import sys
 import os
 from ..utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
@@ -78,18 +79,22 @@ def cli_test(command, raw_args):
                 mh.test.expect = mh.test.expect.get_file(os.path.join(output_dir, 'test.expect.h5'))
             expect = mh.test.expect
         logger.info('Testing if the predictions match the expected ones in the file: {}'.format(expect))
+        logger.info('Desired precision (number of matching decimal places): {}'.format(mh.test.precision_decimal))
 
         # iteratively load the expected file
         expected = kipoi.readers.HDF5Reader(expect)
         expected.open()
-        for i, batch in enumerate(expected.batch_iter(batch_size=args.batch_size)):
+        it = expected.batch_iter(batch_size=args.batch_size)
+        for i, batch in enumerate(tqdm(it, total=len(expected) // args.batch_size)):
             if i == 0 and ('inputs' not in batch or 'preds' not in batch):
                 raise ValueError("test.expect file requires 'inputs' and 'preds' "
                                  "to be specified. Available keys: {}".format(list(expected)))
             pred_batch = mh.predict_on_batch(batch['inputs'])
             # compare to the predictions
+            # import ipdb
+            # ipdb.set_trace()
             try:
-                compare_numpy_dict(batch['preds'], pred_batch, exact=False)
+                compare_numpy_dict(pred_batch, batch['preds'], exact=False, decimal=mh.test.precision_decimal)
             except Exception as e:
                 logger.error("Model predictions don't match the expected predictions."
                              "expected: {}\nobserved: {}. Exception: {}".format(batch['preds'], pred_batch, e))
@@ -98,6 +103,27 @@ def cli_test(command, raw_args):
         expected.close()
         logger.info('All predictions match')
     logger.info('Successfully ran test_predict')
+
+
+def cli_get_example(command, raw_args):
+    """Downloads the example files to the desired directory
+    """
+    assert command == "get-example"
+    # setup the arg-parsing
+    parser = argparse.ArgumentParser('kipoi {}'.format(command),
+                                     description='Get example files')
+    add_model(parser, source="kipoi")
+    parser.add_argument("-o", "--output", default="example", required=False,
+                        help="Output directory where to store the examples. Default: 'example'")
+    args = parser.parse_args(raw_args)
+    # --------------------------------------------
+    mh = kipoi.get_model(args.model, args.source)
+
+    kwargs = mh.default_dataloader.download_example(output_dir=args.output, dry_run=False)
+
+    logger.info("Example files downloaded to: {}".format(args.output))
+    logger.info("use the following dataloader kwargs:")
+    print(json.dumps(kwargs))
 
 
 def cli_preproc(command, raw_args):

@@ -3,7 +3,8 @@
 import os
 import subprocess
 import kipoi
-from kipoi.plugin import list_installed, list_plugins, get_model_yaml_parser, get_dataloader_yaml_parser, get_cli_fn, get_plugin_help, load_plugin, get_plugin_cli_fns, is_plugin
+from kipoi.plugin import (list_installed, list_plugins, get_model_yaml_parser, get_dataloader_yaml_parser,
+                          get_cli_fn, get_plugin_help, load_plugin, get_plugin_cli_fns, is_plugin)
 
 
 def test_list_installed():
@@ -37,12 +38,6 @@ def test_cli_fn():
 
 
 def test_cli_list_plugins():
-    args = ["python",
-            os.path.abspath("./kipoi/__main__.py"),
-            "list_plugins"]
-    returncode = subprocess.call(args=args)
-    assert returncode == 0
-
     # function
     kipoi.cli.main.cli_list_plugins("list_plugins", [])
 

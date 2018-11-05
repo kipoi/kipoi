@@ -5,7 +5,8 @@ import pytest
 import kipoi
 import kipoi.conda
 from kipoi.specs import Dependencies
-from kipoi.conda import install_conda, install_pip, normalize_pip, parse_conda_package
+from kipoi.conda import (install_conda, install_pip, normalize_pip, parse_conda_package,
+                         compatible_versions, is_installed, get_package_version, version_split)
 
 
 def test_pip_merge():
@@ -127,3 +128,56 @@ def test_install():
 
     install_conda(conda_deps)
     install_pip(pip_deps)
+
+
+def test_version_split():
+    assert version_split("asdsda>=2.4,==2") == ('asdsda', ['>=2.4', '==2'])
+    assert version_split("asdsda>=2.4") == ('asdsda', ['>=2.4'])
+    assert version_split("asdsda>=2.4,~=2.3") == ('asdsda', ['>=2.4', '~=2.3'])
+    assert version_split("asdsda~=2.4,>=2.3") == ('asdsda', ['~=2.4', '>=2.3'])
+    assert version_split("asdsda~=2.4") == ('asdsda', ['~=2.4'])
+    assert version_split("asdsda") == ('asdsda', [])
+
+
+def test_compatible_versions():
+    assert compatible_versions("1.10", '>=1.0')
+    assert compatible_versions("1.10", '>1.0')
+    assert not compatible_versions("1.10", '>=2.0')
+    assert not compatible_versions("1.10", '>2.0')
+    assert not compatible_versions("1.10", '==1.11')
+    assert compatible_versions("1.10", '==1.10')
+    assert compatible_versions("1.10", '<=1.10')
+    assert not compatible_versions("1.10", '<=1.1')
+    assert compatible_versions("1.10", '<=1.11')
+    assert compatible_versions("1.10", '<1.11')
+    with pytest.raises(ValueError):
+        compatible_versions("1.10", '1<1.11')
+
+    assert compatible_versions("0.10", '<1.11')
+
+
+def test_package_version():
+    import numpy as np
+    import pandas as pd
+    assert get_package_version("kipoi") == kipoi.__version__
+    assert get_package_version("numpy") == np.__version__
+    assert get_package_version("pandas") == pd.__version__
+    assert get_package_version("package_doesnt_exist") is None
+
+
+def test_is_installed():
+    assert is_installed("kipoi>=0.1")
+    assert is_installed("kipoi<=10.1")
+    assert not is_installed("kipoi>=10.1")
+    assert is_installed("kipoi>=0.1,>=0.2")
+    assert is_installed("kipoi>=0.1,>0.2")
+    assert not is_installed("package_doesnt_exist")
+
+
+def test_dependencies_all_installed():
+    assert Dependencies(conda=["numpy"], pip=["kipoi"]).all_installed()
+    assert Dependencies(conda=["numpy"], pip=["kipoi>=0.1"]).all_installed()
+    assert Dependencies(conda=["numpy>0.1"], pip=["kipoi>=0.1"]).all_installed()
+    assert not Dependencies(conda=["numpy>0.1"], pip=["kipoi>=10.1"]).all_installed()
+    assert not Dependencies(conda=["numpy>0.1"], pip=["kipoi>=10.1"]).all_installed(verbose=True)
+    assert not Dependencies(conda=["package_doesnt_exist>0.1"], pip=["kipoi>=10.1"]).all_installed(verbose=True)

@@ -29,3 +29,4 @@ test:
      expect:
        url: https://s3.eu-central-1.amazonaws.com/kipoi-models/predictions/example/models/pyt/expected.pred.h5
        md5: d6d0779a7bdfb1301c76a59defd293ed
+     precision_decimal: 6

@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import logging
 
+import sys
 import os
 import related
 from attr._make import fields
@@ -33,7 +34,8 @@ class RelatedConfigMixin(object):
         cfg_keys = set(cfg.keys())
         extra_keys = cfg_keys - cls_keys
         if len(extra_keys) > 0:
-            raise ValueError("Unrecognized fields: {0}. Available fields are {1}".format(extra_keys, cls_keys))
+            logger.warn("Unrecognized fields for {0}: {1}. Available fields are {2}".
+                        format(cls.__name__, extra_keys, cls_keys))
 
         return related.to_model(cls, cfg)
 
@@ -56,6 +58,8 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
         """Loads model from a yaml file
         """
         original_yaml = open(path).read().strip()
+        if sys.version_info[0] == 2:
+            original_yaml = original_yaml.decode("utf-8")
         parsed_dict = related.from_yaml(original_yaml)
         if append_path and "path" not in parsed_dict:
             parsed_dict["path"] = path
