@@ -18,6 +18,7 @@ requirements = [
     # sometimes required
     "h5py",
     "urllib3>=1.21.1,<1.23",
+    "tinydb"
 ]
 
 test_requirements = [
