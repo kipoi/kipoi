@@ -410,7 +410,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     cli_get(*process_args(args))
 
     monkeypatch.setattr(kipoi.cli.env, 'print_env_cli_paths', get_assert_env_cli([conda.get_kipoi_bin(test_env_name)]))
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_kipoi_bin", "--source", "dir", test_model]
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "get_bin", "--source", "dir", test_model]
     get_kipoi_bin(*process_args(args))
 
     # list environments:
