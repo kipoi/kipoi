@@ -333,7 +333,7 @@ def cli_test_source(command, raw_args):
             sys.exit(1)
         model_envs = yaml.load(open(os.path.join(source.local_path, env_dir, "models.yaml")))
 
-        test_envs = {get_common_env(m) for m in test_models if get_common_env(m) is not None}
+        test_envs = {get_common_env(m, model_envs) for m in test_models if get_common_env(m, model_envs) is not None}
 
         if len(test_envs) == 0:
             logger.info("No common environments to test")
