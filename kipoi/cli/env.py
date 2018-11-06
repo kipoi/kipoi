@@ -15,7 +15,6 @@ import yaml
 
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.conda.utils import get_kipoi_bin
 from kipoi.conda.env_db import get_model_env_db
 from kipoi.sources import list_subcomponents
 from kipoi.specs import Dependencies, DataLoaderImport
@@ -351,6 +350,7 @@ def generate_env_db_entry(args, args_env_overload=None):
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
+    from kipoi.conda import get_kipoi_bin
     import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
