@@ -230,6 +230,23 @@ def get_batch_size(cfg, model_name, default=4):
     return default
 
 
+def get_common_env(model_name, model_envs):
+    """Get the common environment name
+    """
+    env_name = None
+    for env in model_envs:
+        m_group = deepcopy(model_name)
+        while m_group:
+            if m_group in model_envs[env]:
+                env_name = env
+                break
+            # try to get the environment matching any specific parent
+            m_group = os.path.dirname(m_group)
+        if env_name is not None:
+            break
+    return env_name
+
+
 def cli_test_source(command, raw_args):
     """Runs test on the model
     """
@@ -315,8 +332,15 @@ def cli_test_source(command, raw_args):
             logger.error("{} doesn't exists when installing the common environment".format(models_yaml_path))
             sys.exit(1)
         model_envs = yaml.load(open(os.path.join(source.local_path, env_dir, "models.yaml")))
+
+        test_envs = {get_common_env(m) for m in test_models if get_common_env(m) is not None}
+
+        if len(test_envs) == 0:
+            logger.info("No common environments to test")
+            sys.exit(0)
+
         logger.info("Instaling environments covering the following models: \n{}".format(yaml.dump(model_envs)))
-        for env in model_envs:
+        for env in test_envs:
             if env_exists(env):
                 logger.info("Common environment already exists: {}. Skipping the installation".format(env))
             else:
@@ -343,17 +367,7 @@ def cli_test_source(command, raw_args):
                            create_env=True)
             else:
                 # figure out the common environment name
-                env_name = None
-                for env in model_envs:
-                    m_group = deepcopy(m)
-                    while m_group:
-                        if m_group in model_envs[env]:
-                            env_name = env
-                            break
-                        # try to get the environment matching any specific parent
-                        m_group = os.path.dirname(m_group)
-                    if env_name is not None:
-                        break
+                env_name = get_common_env(m, model_envs)
                 if env_name is None:
                     # skip is none was found
                     logger.info("Common environmnet not found for {}".format(m))
