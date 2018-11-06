@@ -810,7 +810,7 @@ class GithubPermalinkSource(Source):
         remote_url = "https://github.com/{user}/{repo}.git".format(user=user, repo=repo)
         lfs_source = GitSource(remote_url, os.path.join(self.local_path, user, repo, commit),
                                auto_update=False,  # Don't git-pull
-                               use_lfs=False)
+                               use_lfs=True)
         self._pulled = True  # actually not required due to auto_update=False
 
         if not os.path.exists(lfs_source.local_path) or not os.listdir(lfs_source.local_path):
