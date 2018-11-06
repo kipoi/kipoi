@@ -57,7 +57,7 @@ def create_env(env_name, conda_deps):
 
 def get_env_path(env_name):
     for env in get_envs():
-        if env.endswith(env_name):
+        if os.path.basename(env) == env_name:
             return env
     return None
 
@@ -101,47 +101,49 @@ def get_conda_version():
     return out[0]
 
 
-def get_cli_path(env):
-    import tempfile
-    tempfile_env = tempfile.mkstemp()[1]
+# Already implemented in get_kipoi_bin
+#
+# def get_cli_path(env):
+#     import tempfile
+#     tempfile_env = tempfile.mkstemp()[1]
 
-    queries = {}
-    queries["unix"] = []
-    queries["unix"].append("source activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
-    queries["unix"].append(". activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
-    queries["unix"].append("conda activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
-    queries["nt"] = ["activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)]
+#     queries = {}
+#     queries["unix"] = []
+#     queries["unix"].append("source activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+#     queries["unix"].append(". activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+#     queries["unix"].append("conda activate {env} && which kipoi > {tf}".format(env=env, tf=tempfile_env))
+#     queries["nt"] = ["activate {env} && where kipoi > {tf}".format(env=env, tf=tempfile_env)]
 
-    # Compile query for location of kipoi cli
-    sel_queries = queries["unix"]
-    if os.name == 'nt':
-        # Windows query
-        sel_queries = queries["nt"]
+#     # Compile query for location of kipoi cli
+#     sel_queries = queries["unix"]
+#     if os.name == 'nt':
+#         # Windows query
+#         sel_queries = queries["nt"]
 
-    success = False
-    for q in sel_queries:
-        # Query system. Can't use Popen as environment has to be activated first
-        ret_code = os.system(q)
+#     success = False
+#     for q in sel_queries:
+#         # Query system. Can't use Popen as environment has to be activated first
+#         ret_code = os.system(q)
 
-        # Check it has worked
-        if (ret_code == 0) and os.path.exists(tempfile_env):
-            success = True
-            break
+#         # Check it has worked
+#         if (ret_code == 0) and os.path.exists(tempfile_env):
+#             success = True
+#             break
 
-    if not success:
-        raise Exception("Could not retrieve list of conda environments. Please check conda installation.")
+#     if not success:
+#         raise Exception("Could not retrieve list of conda environments. Please check conda installation.")
 
-    try:
-        # Read output
-        with open(tempfile_env, "r") as fh:
-            cli_path = fh.readlines()[0].rstrip()
-    except IndexError:
-        cli_path = None
-    finally:
-        # Delete tempfile
-        os.unlink(tempfile_env)
+#     try:
+#         # Read output
+#         with open(tempfile_env, "r") as fh:
+#             cli_path = fh.readlines()[0].rstrip()
+#     except IndexError:
+#         cli_path = None
+#     finally:
+#         # Delete tempfile
+#         os.unlink(tempfile_env)
 
-    return cli_path
+#     return cli_path
 
 
 def install_conda(conda_deps, channels=["defaults"]):
