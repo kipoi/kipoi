@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import sys
+from copy import deepcopy
 
 from colorlog import escape_codes, default_log_colors
 
@@ -87,7 +88,7 @@ def all_models_to_test(src):
     return list(models) + include
 
 
-def test_model(model_name, source_name, env_name, batch_size, vep=False):
+def create_model_env(model_name, source_name, env_name, vep=False):
     """kipoi test ...
 
     Args:
@@ -112,6 +113,17 @@ def test_model(model_name, source_name, env_name, batch_size, vep=False):
         args.insert(-1, "--vep")
     returncode = _call_command(cmd, args, use_stdout=True)
     assert returncode == 0
+
+
+def test_model(model_name, source_name, env_name, batch_size, vep=False, create_env=True):
+    """kipoi test ...
+
+    Args:
+      model_name (str)
+      source_name: source name
+    """
+    if create_env:
+        create_model_env(model_name, source_name, env_name, vep)
 
     # run the tests in the environment
     cmd = get_kipoi_bin(env_name)
@@ -212,7 +224,7 @@ def get_batch_size(cfg, model_name, default=4):
             if bs != default:
                 logger.info("Using a different batch_size ({0})".
                             format(bs) +
-                            "for model {0} than the default ({1})".
+                            " for model {0} than the default ({1})".
                             format(model_name, default))
             return bs
     return default
@@ -244,6 +256,8 @@ def cli_test_source(command, raw_args):
                         help='clean the environment after running.')
     parser.add_argument('--vep', action='store_true',
                         help='Install the vep dependency.')
+    parser.add_argument('--common_env', action='store_true',
+                        help='Test models in common environments.')
     parser.add_argument('--all', action='store_true',
                         help="Test all models in the source")
 
@@ -291,6 +305,24 @@ def cli_test_source(command, raw_args):
     # TODO - make sure the modes are always tested in the same order?
     #        - make sure the keras config doesn't get cluttered
 
+    # Test common environments
+    if args.common_env:
+        logger.info("Installing common environmnets")
+        env_dir = "shared/envs"
+        import yaml
+        models_yaml_path = os.path.join(source.local_path, env_dir, "models.yaml")
+        if not os.path.exists(models_yaml_path):
+            logger.error("{} doesn't exists when installing the common environment".format(models_yaml_path))
+            sys.exit(1)
+        model_envs = yaml.load(open(os.path.join(source.local_path, env_dir, "models.yaml")))
+        logger.info("Instaling environments covering the following models: \n{}".format(yaml.dump(model_envs)))
+        for env in model_envs:
+            if env_exists(env):
+                logger.info("Common environment already exists: {}. Skipping the installation".format(env))
+            else:
+                logger.info("Installing environment: {}".format(env))
+                create_model_env(os.path.join(env_dir, env), args.source, env, vep=args.vep)
+
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
     for i in range(len(test_models)):
@@ -301,19 +333,46 @@ def cli_test_source(command, raw_args):
                                             m))
         print('-' * 20)
         try:
-            env_name = conda_env_name(m, source=args.source)
-            env_name = "test-" + env_name  # prepend "test-"
-            test_model(m, args.source, env_name,
-                       get_batch_size(cfg, m, args.batch_size), args.vep)
+            if not args.common_env:
+                # Prepend "test-" to the standard kipoi env name
+                env_name = conda_env_name(m, source=args.source)
+                env_name = "test-" + env_name
+                # Test
+                test_model(m, args.source, env_name,
+                           get_batch_size(cfg, m, args.batch_size), args.vep,
+                           create_env=True)
+            else:
+                # figure out the common environment name
+                env_name = None
+                for env in model_envs:
+                    m_group = deepcopy(m)
+                    while m_group:
+                        if m_group in model_envs[env]:
+                            env_name = env
+                            break
+                        # try to get the environment matching any specific parent
+                        m_group = os.path.dirname(m_group)
+                    if env_name is not None:
+                        break
+                if env_name is None:
+                    # skip is none was found
+                    logger.info("Common environmnet not found for {}".format(m))
+                    continue
+                # ---------------------------
+                # Test
+                print("test_model...")
+                test_model(m, args.source, env_name,
+                           get_batch_size(cfg, m, args.batch_size), args.vep,
+                           create_env=False)
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))
             failed_models += [m]
             if args.exitfirst:
-                if args.clean_env:
+                if args.clean_env and not args.common_env:
                     rm_env(env_name)
                 sys.exit(1)
         finally:
-            if args.clean_env:
+            if args.clean_env and not args.common_env:
                 rm_env(env_name)
     print('-' * 40)
     if failed_models:
