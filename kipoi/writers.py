@@ -332,6 +332,9 @@ class HDF5BatchWriter(BatchWriter):
 
 FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
                    "hdf5": HDF5BatchWriter,
+                   "pq": ParquetBatchWriter,
+                   "parquet": ParquetBatchWriter,
+                   "pqt": ParquetBatchWriter,
                    "tsv": TsvBatchWriter,
                    "bed": BedBatchWriter}
 
