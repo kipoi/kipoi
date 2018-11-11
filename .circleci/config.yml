@@ -17,6 +17,7 @@ variables:
         pip install kipoi_veff
         pip install kipoiseq
         pip install pyfaidx
+        conda install --yes -c conda-forge fastparquet
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
