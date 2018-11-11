@@ -4,7 +4,7 @@ import os
 import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
-from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter
+from kipoi.writers import BedBatchWriter, TsvBatchWriter, HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter, ParquetBatchWriter
 from kipoi.readers import HDF5Reader
 from kipoi.cli.main import prepare_batch
 import numpy as np
@@ -77,7 +77,27 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
                                      'preds/2'}
     assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]
 
+def test_ParquetBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.pq"))
+    writer = ParquetBatchWriter(tmpfile)
+    batch = prepare_batch(dl_batch, pred_batch_array)
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    df = pd.read_parquet(tmpfile, engine='fastparquet')
 
+    assert set(list(df.columns)) == {'metadata/ranges/id',
+                                     'metadata/ranges/strand',
+                                     'metadata/ranges/chr',
+                                     'metadata/ranges/start',
+                                     'metadata/ranges/end',
+                                     'metadata/gene_id',
+                                     'preds/0',
+                                     'preds/1',
+                                     'preds/2'}
+    assert list(df['metadata/ranges/id']) == ['0', '1', '2', '0', '1', '2']
+
+    
 def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
     batch = prepare_batch(dl_batch, pred_batch_array)
