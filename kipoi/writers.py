@@ -109,6 +109,58 @@ class TsvBatchWriter(BatchWriter):
         # nothing to do
         pass
 
+class ParquetBatchWriter(BatchWriter):
+    """
+    Args:
+      it: iterator yielding dictionaries
+      fname: chunksize - number of elements to batch together
+      compression: str, dict compression to apply to each column,
+         e.g. GZIP or SNAPPY or {col1: "SNAPPY", col2: None} to specify per column.
+      file_scheme: 'simple'|'hive'
+        If simple: all goes in a single file If hive: each row group is in a separate file,
+        and a separate file (called "_metadata") contains the metadata
+      partition_on: list of column names
+        Passed to groupby in order to split data within each row-group, producing a structured
+        directory tree. Note: as with pandas, null values will be dropped.
+        Ignored if file_scheme is simple.
+      create_dirs: if True, recursively create required folders
+      **kwargs: additional arguments to pd.DataFrame constructor
+
+
+    # Install: conda install -c conda-forge fastparquet
+    """
+    
+    def __init__(self,
+                 file_path,
+                 nested_sep="/",**kwargs):
+        try:
+            import fastparquet as fp
+        except:
+            raise ValueError("fastparquet not installed. "
+                             "Please install it to use ParquetBatchWriter")
+        self.kwargs = kwargs
+        self.file_path = file_path
+        self.nested_sep = nested_sep
+        self.first_pass = True
+        self.fp = fp
+
+    def batch_write(self, batch):
+        """Write a batch of data
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
+        df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
+        df.sort_index(axis=1, inplace=True)
+        if self.first_pass:
+            self.fp.write(self.file_path, df, append=not self.first_pass, write_index=False,**self.kwargs)
+            self.first_pass = False
+        else:
+            self.fp.write(self.file_path, df, append=not self.first_pass,write_index=False,**self.kwargs)
+
+    def close(self):
+        # nothing to do
+        pass
 
 class BedBatchWriter(BatchWriter):
     """Bed-file writer
