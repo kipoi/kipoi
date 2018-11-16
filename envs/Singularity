@@ -32,10 +32,7 @@ From: continuumio/miniconda3:4.5.11
 
     # Create all the environments
     kipoi ls # list all environments to load the remote repo
-    kipoi env create shared/envs/kipoi-py3-keras2
-    kipoi env create shared/envs/kipoi-py3-keras1.2
-    kipoi env create MMSplice
-    kipoi env create deepTarget
+    kipoi env create all
 
     # add write-permission to anyone
     chmod go+r /kipoi/envs.json
