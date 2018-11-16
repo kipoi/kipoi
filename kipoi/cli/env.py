@@ -16,7 +16,7 @@ import yaml
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
 from kipoi.conda.env_db import get_model_env_db
-from kipoi.sources import list_subcomponents
+from kipoi.sources import list_subcomponents, list_models_by_group
 from kipoi.specs import Dependencies, DataLoaderImport
 from kipoi.utils import cd
 
@@ -117,7 +117,7 @@ def merge_deps(models,
         yaml_path = os.path.join(kipoi.get_source(source).local_path, special_env + ".yaml")
 
         if not os.path.exists(yaml_path):
-            raise ValueError("Envirnment definition file {0} not found in source {1}".format(yaml_path, source))
+            raise ValueError("Environment definition file {0} not found in source {1}".format(yaml_path, source))
 
         with open(yaml_path, "r") as fh:
             special_env_deps = Dependencies.from_env_dict(from_yaml(fh))
@@ -293,6 +293,9 @@ def delete_envs(to_delete):
 
 
 def get_envs_by_model(models, source, only_most_recent=True, only_valid=False):
+    if isinstance(models, str):
+        models = [models]
+
     source_path = kipoi.get_source(source).local_path
     entries = []
     db = get_model_env_db()
@@ -359,6 +362,8 @@ def cli_create(cmd, raw_args):
     add_env_args(parser)
     parser.add_argument('-e', '--env', default=None,
                         help="Special environment name. default: kipoi-<model>[-<dataloader>]")
+    parser.add_argument('--dry-run', action='store_true',
+                        help="Don't actually create the environment")
     parser.add_argument('-t', '--tmpdir', default=None,
                         help="Temporary directory path where to create the conda environment file" +
                              "Defaults to /tmp/kipoi/envfiles/<uuid>/")
@@ -375,6 +380,45 @@ def cli_create(cmd, raw_args):
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
 
+    if args.model == ['all']:
+        from kipoi.cli.source_test import get_common_env
+        src = kipoi.get_source(args.source)
+        model_envs = yaml.load(open(os.path.join(src.local_path, SPECIAL_ENV_PREFIX, "models.yaml")))
+
+        # TODO - test this by mocking up the CLI command execution
+
+        # setup the args for all the models
+        df = kipoi.list_models()
+        dfg = list_models_by_group(df, "")
+        for model_group in dfg.group.unique().tolist():
+            existing_envs = get_envs_by_model(model_group, args.source, only_valid=True)
+            if existing_envs or existing_envs is None:
+                # No need to create the environment
+                existing_envs_str = "\n".join([e.create_args.env for e in existing_envs])
+                logger.info("Environment for {} already exists ({}). Skipping installation".format(model_group, existing_envs_str))
+                continue
+
+            logger.info("Environment doesn't exists for model group {}. Installing it".format(model_group))
+
+            # Figure out which <model> to use for installation
+            common_env = get_common_env(model_group, model_envs)
+            if common_env is not None:
+                # common environment exists for the model. Use it
+                logger.info("Using common environment: {}".format(common_env))
+                model_group = os.path.join(SPECIAL_ENV_PREFIX, common_env)
+
+            # Run cli_create
+            def optional_replace(x, ref, alt):
+                if x == ref:
+                    return alt
+                else:
+                    return x
+            new_raw_args = [optional_replace(x, 'all', model_group)
+                            for x in raw_args if x is not None]
+            cli_create(cmd, new_raw_args)
+        logger.info("Done installing all environments!")
+        return None
+
     env, env_file = export_env(args.model,
                                args.dataloader,
                                args.source,
@@ -384,22 +428,25 @@ def cli_create(cmd, raw_args):
                                vep=args.vep,
                                gpu=args.gpu)
 
-    env_db_entry = generate_env_db_entry(args, args_env_overload=env)
-    envdb = get_model_env_db()
-    envdb.append(env_db_entry)
-    envdb.save()
+    if not args.dry_run:
+        env_db_entry = generate_env_db_entry(args, args_env_overload=env)
+        envdb = get_model_env_db()
+        envdb.append(env_db_entry)
+        envdb.save()
 
-    # setup the conda env from file
-    logger.info("Creating conda env from file: {0}".format(env_file))
-    kipoi.conda.create_env_from_file(env_file)
-    env_db_entry.successful = True
+        # setup the conda env from file
+        logger.info("Creating conda env from file: {0}".format(env_file))
+        kipoi.conda.create_env_from_file(env_file)
+        env_db_entry.successful = True
 
-    # env is environment name
-    env_db_entry.cli_path = get_kipoi_bin(env)
-    get_model_env_db().save()
-    logger.info("Done!")
-    print("\nActivate the environment via:")
-    print("source activate {0}".format(env))
+        # env is environment name
+        env_db_entry.cli_path = get_kipoi_bin(env)
+        get_model_env_db().save()
+        logger.info("Done!")
+        print("\nActivate the environment via:")
+        print("source activate {0}".format(env))
+    else:
+        print("Dry run. Conda file path: {}".format(env_file))
 
 
 def confirm(message):
