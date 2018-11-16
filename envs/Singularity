@@ -18,6 +18,10 @@ From: continuumio/miniconda3:4.5.11
     export PATH=$PATH:/opt/conda/bin
     export LC_ALL=C
 
+    # Place to store kipoi environment database
+    mkdir -p /kipoi
+    export KIPOI_ENV_DB_PATH=/kipoi/envs.json
+
     conda config --add channels defaults
     conda config --add channels bioconda
     conda config --add channels conda-forge
@@ -33,12 +37,16 @@ From: continuumio/miniconda3:4.5.11
     kipoi env create MMSplice
     kipoi env create deepTarget
 
+    # add write-permission to anyone
+    chmod go+r /kipoi/envs.json
+
     # clean packages
     conda clean --index-cache --tarballs --packages --yes
 
 %environment
     export LC_ALL=C
     export PATH=$PATH:/opt/conda/bin
+    export KIPOI_ENV_DB_PATH=/kipoi/envs.json
     
 %labels
     Maintainer avsecz
