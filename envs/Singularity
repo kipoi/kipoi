@@ -1,0 +1,45 @@
+bootstrap: docker
+From: continuumio/miniconda3:4.5.11
+
+# TODO - support also GPU environmnets
+
+%help
+    This container provides portable & reproducible environment for running
+    Kipoi moddels.
+
+    Please see https://github.com/kipoi/kipoi for complete documentation.
+
+%post
+    # install sys-dependencies
+    apt-get update
+    apt-get install -y build-essential libz-dev libcurl3-dev
+
+    # Configure Kipoi
+    export PATH=$PATH:/opt/conda/bin
+    export LC_ALL=C
+
+    conda config --add channels defaults
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+
+    # install kipoi from the master branch for now
+    # TODO - use a specific tag for the build
+    pip install git+https://github.com/kipoi/kipoi
+
+    # Create all the environments
+    kipoi ls # list all environments to load the remote repo
+    kipoi env create shared/envs/kipoi-py3-keras2
+    kipoi env create shared/envs/kipoi-py3-keras1.2
+    kipoi env create MMSplice
+    kipoi env create deepTarget
+
+    # clean packages
+    conda clean --index-cache --tarballs --packages --yes
+
+%environment
+    export LC_ALL=C
+    export PATH=$PATH:/opt/conda/bin
+    
+%labels
+    Maintainer avsecz
+    Version v0.1
