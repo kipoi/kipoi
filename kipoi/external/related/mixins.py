@@ -86,5 +86,5 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
         generated_yaml = related.to_yaml(self,
                                          suppress_empty_values=True,
                                          suppress_map_key_values=True)  # .strip()
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, "w") as f:
             f.write(generated_yaml)
