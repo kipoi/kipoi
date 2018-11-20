@@ -398,7 +398,7 @@ class BedGraphWriter(RegionWriter):
     def __init__(self,
                  file_path):
         self.file_path = file_path
-        self.file = open(file_path, "w")
+        self.file = open(file_path, "w", encoding='utf-8')
 
     def region_write(self, region, data):
         """Write region to file.
@@ -484,7 +484,7 @@ class BigWigWriter(RegionWriter):
         # write the bigwig file
         bw = pyBigWig.open(self.file_path, "w")
 
-        with open(sorted_fn, "r", encoding="utf-8") as ifh:
+        with open(sorted_fn) as ifh:
             for l in ifh:
                 chr, start, end, val = l.rstrip().split("\t")
                 bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])

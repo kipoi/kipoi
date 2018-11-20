@@ -201,7 +201,7 @@ if not os.path.exists(_config_path):
         'model_sources': model_sources_dict(),
     }
     try:
-        with open(_config_path, 'w') as f:
+        with open(_config_path, 'w', encoding='utf-8') as f:
             f.write(yaml_ordered_dump(_config, indent=4, default_flow_style=False))
     except IOError:
         # Except permission denied.

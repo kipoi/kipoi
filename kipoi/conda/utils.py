@@ -4,6 +4,7 @@ Reusing code from: https://github.com/conda/conda-api/blob/master/conda_api.py
 """
 from __future__ import absolute_import
 from __future__ import print_function
+from io import open
 
 import os
 import json
@@ -48,7 +49,7 @@ def create_env(env_name, conda_deps):
         os.makedirs(tmp_dir)
     tmp_file_path = "{tmp_dir}/{env_name}.yml".format(tmp_dir=tmp_dir,
                                                       env_name=env_name)
-    with open(tmp_file_path, 'w') as f:
+    with open(tmp_file_path, 'w', encoding='utf-8') as f:
         f.write(yaml_ordered_dump(env_dict, indent=4, default_flow_style=False))
 
     # create the environment

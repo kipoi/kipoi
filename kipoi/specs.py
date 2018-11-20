@@ -692,7 +692,7 @@ class Dependencies(RelatedConfigMixin):
     def to_env_file(self, env_name, path):
         """Dump the dependencies to a file
         """
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             d = self.to_env_dict(env_name)
 
             # add python if not present
