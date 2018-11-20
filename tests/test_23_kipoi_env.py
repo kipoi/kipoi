@@ -171,7 +171,7 @@ def test_generate_env_db_entry():
                 special_env_models = yaml.load(fh)
             for special_env in special_envs:
                 for model_group_name in special_env_models[os.path.basename(special_env)]:
-                    sub_models.extend([os.path.join(kipoi_path, e) for e in
+                    sub_models.extend([e for e in
                                        list_subcomponents(model_group_name, "kipoi", "model")])
 
         assert set(db_entry.compatible_models) == set(sub_models)
