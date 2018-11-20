@@ -15,6 +15,7 @@ import yaml
 
 import kipoi
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
+from kipoi.conda import env_db
 from kipoi.conda.env_db import get_model_env_db
 from kipoi.sources import list_subcomponents
 from kipoi.specs import Dependencies, DataLoaderImport
@@ -292,12 +293,18 @@ def delete_envs(to_delete):
                         "removed from the database.".format(e.create_args.env, str(err)))
 
 
+def _env_db_model_name(source, model):
+    ret = model
+    if source != "kipoi":
+        source_path = kipoi.get_source(source).local_path
+        ret = os.path.join(source_path, model)
+    return ret
+
 def get_envs_by_model(models, source, only_most_recent=True, only_valid=False):
-    source_path = kipoi.get_source(source).local_path
     entries = []
-    db = get_model_env_db()
+    db = env_db.get_model_env_db()
     for m in models:
-        res = db.get_entry_by_model(os.path.join(source_path, m), only_most_recent=only_most_recent,
+        res = db.get_entry_by_model(_env_db_model_name(source, m), only_most_recent=only_most_recent,
                                     only_valid=only_valid)
         if only_most_recent:
             entries.append(res)
@@ -317,9 +324,8 @@ def generate_env_db_entry(args, args_env_overload=None):
     sub_models = []
     for model in only_models:
         parsed_source, parsed_model = parse_source_name(args.source, model)
-        source_path = kipoi.get_source(parsed_source).local_path
         models = list_subcomponents(parsed_model, parsed_source, "model")
-        sub_models.extend([os.path.join(source_path, m) for m in models])
+        sub_models.extend([_env_db_model_name(parsed_source, m) for m in models])
 
     if len(special_envs) != 0:
         # for the special envs load the corresponding models:
@@ -331,9 +337,8 @@ def generate_env_db_entry(args, args_env_overload=None):
             # extend the sub_models by all the submodels covered by the handcrafted environments (special_envs)
             # Those models **always** refer to the kipoi source
             for model_group_name in special_env_models[os.path.basename(special_env)]:
-                source_path = kipoi.get_source("kipoi").local_path
                 models = list_subcomponents(model_group_name, "kipoi", "model")
-                sub_models.extend([os.path.join(source_path, m) for m in models])
+                sub_models.extend([_env_db_model_name("kipoi", m) for m in models])
 
     entry = EnvDbEntry(
         conda_version=get_conda_version(),

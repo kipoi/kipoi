@@ -2,7 +2,7 @@ import json
 import os
 
 import kipoi
-from kipoi.cli.env import generate_env_db_entry
+from kipoi.cli.env import generate_env_db_entry, get_envs_by_model
 from kipoi.conda.env_db import EnvDb
 
 
@@ -29,6 +29,57 @@ def assert_rec(a, b):
             assert_rec(a_el, b_el)
     else:
         assert a == b
+
+
+def test_env_db_kipoi(tmpdir, monkeypatch):
+    # Test the kipoi vs. dir path ambiguation
+    # Test the DeepSEA model using the `kipoi` and the `dir` sources
+    # Test the `shared/envs/kipoi-py3-keras1.2.yaml` model using the `kipoi` and the `dir` sources
+    json_file = os.path.join(str(tmpdir), "db.json")
+    sample_cli_path = os.path.join(str(tmpdir), "sample")
+    with open(sample_cli_path, "w") as fh:
+        fh.write("")
+
+    db = EnvDb(json_file)
+    kwargs = {"dataloader": [], "gpu": True, "model": None, "source": "kipoi",
+              "tmpdir": "something", "vep": True}
+
+    # generate the kipoi entries
+    kipoi_entries = []
+    for model in [["DeepSEA"], ["shared/envs/kipoi-py3-keras1.2"]]:
+        kwargs['model'] = model
+        db_entry = generate_env_db_entry(get_args(kwargs)())
+        db.append(db_entry)
+        kipoi_entries.append(db_entry)
+
+    # generate the kipoi entries
+    dir_entries = []
+    local_path = kipoi.get_source("dir").local_path
+    kwargs["source"] = "dir"
+    for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2"]]:
+        kwargs['model'] = [os.path.join(local_path,model[0])]
+        db_entry = generate_env_db_entry(get_args(kwargs)())
+        db.append(db_entry)
+        dir_entries.append(db_entry)
+
+    # make sure there is no mixup between the kipoi and dir models and make sure the full path is only used
+    # for dir models
+
+    assert db.get_entry_by_model("DeepSEA", only_most_recent=False) == [kipoi_entries[0]]
+    assert db.get_entry_by_model("CpGenie/merged", only_most_recent=False) == [dir_entries[1], kipoi_entries[1]]
+    assert db.get_entry_by_model(os.path.join(local_path, "example/models/pyt"),
+                                 only_most_recent=False) == [dir_entries[0]]
+
+    # monkeypatch the get_model_env_db()
+    monkeypatch.setattr(kipoi.conda.env_db, 'get_model_env_db', lambda: db)
+
+    assert get_envs_by_model(['DeepSEA'], "kipoi", only_most_recent=False, only_valid=False) == [kipoi_entries[0]]
+    assert get_envs_by_model(["CpGenie/merged"], "kipoi", only_most_recent=False,
+                             only_valid=False) == [dir_entries[1],kipoi_entries[1]]
+    assert get_envs_by_model(["example/models/pyt"], "dir", only_most_recent=False,
+                             only_valid=False) == [dir_entries[0]]
+
+
 
 
 def test_env_db(tmpdir):
