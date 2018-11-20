@@ -9,7 +9,6 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
-from io import open
 
 import os
 import sys
@@ -398,7 +397,7 @@ class BedGraphWriter(RegionWriter):
     def __init__(self,
                  file_path):
         self.file_path = file_path
-        self.file = open(file_path, "w", encoding='utf-8')
+        self.file = open(file_path, "w")
 
     def region_write(self, region, data):
         """Write region to file.
