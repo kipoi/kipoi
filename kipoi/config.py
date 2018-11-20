@@ -5,6 +5,7 @@ https://github.com/fchollet/keras/blob/6f3e6bb6fc97e706f37dc078ae821f490b78035b/
 """
 from __future__ import absolute_import
 from __future__ import print_function
+from io import open
 
 import os
 from collections import OrderedDict
