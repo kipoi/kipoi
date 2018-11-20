@@ -191,7 +191,7 @@ class LocalComponentGroup(object):
         assert self.which in ['model', 'dataloader']
 
         self.component_template_yaml = component_template_yaml
-        with open(self.component_template_yaml, "r") as f:
+        with open(self.component_template_yaml, "r", encoding="utf-8") as f:
             template_str = f.read()
             if sys.version_info[0] == 2:
                 template_str = template_str.decode("utf-8")

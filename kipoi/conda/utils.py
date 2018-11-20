@@ -135,7 +135,7 @@ def get_conda_version():
 
 #     try:
 #         # Read output
-#         with open(tempfile_env, "r") as fh:
+#         with open(tempfile_env, "r", encoding="utf-8") as fh:
 #             cli_path = fh.readlines()[0].rstrip()
 #     except IndexError:
 #         cli_path = None

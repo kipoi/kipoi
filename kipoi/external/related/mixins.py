@@ -57,7 +57,7 @@ class RelatedLoadSaveMixin(RelatedConfigMixin):
     def load(cls, path, append_path=True):
         """Loads model from a yaml file
         """
-        original_yaml = open(path).read().strip()
+        original_yaml = open(path, "r", encoding="utf-8").read().strip()
         if sys.version_info[0] == 2:
             original_yaml = original_yaml.decode("utf-8")
         parsed_dict = related.from_yaml(original_yaml)

@@ -345,7 +345,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                         format(weights))
         else:
             # load arch
-            with open(arch, "r") as arch:
+            with open(arch, "r", encoding="utf-8") as arch:
                 self.model = model_from_json(arch.read(),
                                              custom_objects=self.custom_objects)
             logger.info('successfully loaded model architecture from {}'.

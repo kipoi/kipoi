@@ -128,7 +128,7 @@ class ArraySchema(RelatedConfigMixin):
             import os
             # check if path exists raise exception only test time, but only a warning in prediction time
             if os.path.exists(label):
-                with open(label, "r") as ifh:
+                with open(label, "r", encoding="utf-8") as ifh:
                     object.__setattr__(self, "column_labels", [l.rstrip() for l in ifh])
             self._validate_list_column_labels()
         else:
@@ -687,8 +687,6 @@ class Dependencies(RelatedConfigMixin):
         elif len(pip) > 1:
             raise Exception("Malformatted conda environment yaml!")
         return self.from_config(cfg)
-
-
 
     def to_env_file(self, env_name, path):
         """Dump the dependencies to a file
