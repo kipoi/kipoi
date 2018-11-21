@@ -2,6 +2,7 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
+from io import open
 
 import argparse
 import logging
@@ -120,7 +121,7 @@ def merge_deps(models,
         if not os.path.exists(yaml_path):
             raise ValueError("Envirnment definition file {0} not found in source {1}".format(yaml_path, source))
 
-        with open(yaml_path, "r") as fh:
+        with open(yaml_path, "r", encoding="utf-8") as fh:
             special_env_deps = Dependencies.from_env_dict(from_yaml(fh))
         deps = deps.merge(special_env_deps)
 
@@ -332,7 +333,7 @@ def generate_env_db_entry(args, args_env_overload=None):
         for special_env in special_envs:
             special_env_folder = "/".join(special_env.rstrip("/").split("/")[:-1])
             source_path = kipoi.get_source(args.source).local_path
-            with open(os.path.join(source_path, special_env_folder, "models.yaml"), "r") as fh:
+            with open(os.path.join(source_path, special_env_folder, "models.yaml"), "r", encoding="utf-8") as fh:
                 special_env_models = yaml.load(fh)
             # extend the sub_models by all the submodels covered by the handcrafted environments (special_envs)
             # Those models **always** refer to the kipoi source

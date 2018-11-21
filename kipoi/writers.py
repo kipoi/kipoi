@@ -9,6 +9,7 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
+
 import os
 import sys
 from abc import abstractmethod
@@ -129,10 +130,10 @@ class ParquetBatchWriter(BatchWriter):
 
     # Install: conda install -c conda-forge fastparquet
     """
-    
+
     def __init__(self,
                  file_path,
-                 nested_sep="/",**kwargs):
+                 nested_sep="/", **kwargs):
         try:
             import fastparquet as fp
         except:
@@ -153,10 +154,10 @@ class ParquetBatchWriter(BatchWriter):
         df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
         df.sort_index(axis=1, inplace=True)
         if self.first_pass:
-            self.fp.write(self.file_path, df, append=not self.first_pass, write_index=False,**self.kwargs)
+            self.fp.write(self.file_path, df, append=not self.first_pass, write_index=False, **self.kwargs)
             self.first_pass = False
         else:
-            self.fp.write(self.file_path, df, append=not self.first_pass,write_index=False,**self.kwargs)
+            self.fp.write(self.file_path, df, append=not self.first_pass, write_index=False, **self.kwargs)
 
     def close(self):
         # nothing to do
@@ -482,7 +483,7 @@ class BigWigWriter(RegionWriter):
         # write the bigwig file
         bw = pyBigWig.open(self.file_path, "w")
 
-        with open(sorted_fn, "r") as ifh:
+        with open(sorted_fn) as ifh:
             for l in ifh:
                 chr, start, end, val = l.rstrip().split("\t")
                 bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])

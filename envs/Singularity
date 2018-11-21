@@ -27,7 +27,7 @@ From: continuumio/miniconda3:4.5.11
     conda config --add channels conda-forge
 
     # install kipoi from the master branch for now
-    # TODO  - use a specific tag for the build
+    # TODO - use a specific tag for the build
     pip install git+https://github.com/kipoi/kipoi
 
     # Create all the environments
