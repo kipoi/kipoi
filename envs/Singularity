@@ -43,7 +43,13 @@ From: continuumio/miniconda3:4.5.11
 %environment
     export LC_ALL=C
     export PATH=$PATH:/opt/conda/bin
-    export KIPOI_ENV_DB_PATH=/kipoi/envs.json
+
+    # Move the json database to tempdir
+    random_string=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo '')
+    tmpdir=/tmp/kipoi/$random_string
+    mkdir -p $tmpdir
+    cp /kipoi/envs.json $tmpdir/envs.json
+    export KIPOI_ENV_DB_PATH=$tmpdir/envs.json
     
 %labels
     Maintainer avsecz

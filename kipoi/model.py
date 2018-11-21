@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+from io import open
 
 from collections import OrderedDict, Mapping
 import sys
@@ -345,7 +346,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                         format(weights))
         else:
             # load arch
-            with open(arch, "r") as arch:
+            with open(arch, "r", encoding="utf-8") as arch:
                 self.model = model_from_json(arch.read(),
                                              custom_objects=self.custom_objects)
             logger.info('successfully loaded model architecture from {}'.
@@ -587,8 +588,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         feed_input_names = None
         if keras.__version__[0] == '1':
             feed_input_names = self.model.input_names
-        elif hasattr(keras.engine.training, "_standardize_input_data"):
-            from keras.engine.training import _standardize_input_data
+        else:
             if not hasattr(self.model, "_feed_input_names"):
                 if not self.model.built:
                     self.model.build()
@@ -619,6 +619,15 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if hasattr(self.model, "_feed_input_shapes"):
                 fis = self.model._feed_input_shapes
             x_standardized = _standardize_input_data(x, feed_input_names, fis)
+        elif hasattr(keras.engine.training_utils, "standardize_input_data"):
+            from keras.engine.training_utils import standardize_input_data
+            if not hasattr(self.model, "_feed_input_names"):
+                if not self.model.built:
+                    self.model.build()
+            fis = None
+            if hasattr(self.model, "_feed_input_shapes"):
+                fis = self.model._feed_input_shapes
+            x_standardized = standardize_input_data(x, feed_input_names, fis)
         else:
             raise Exception("This Keras version is not supported!")
         return x_standardized

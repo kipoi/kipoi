@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+from io import open
 
 import os
 import os.path
@@ -212,7 +213,7 @@ def parse_json_file_str(extractor_args):
         if not os.path.exists(extractor_args):
             raise ValueError("File path: {0} doesn't exist".format(extractor_args))
         logger.debug("Parsing the extractor_args as a json file path")
-        with open(extractor_args, "r") as f:
+        with open(extractor_args, "r", encoding="utf-8") as f:
             return yaml.load(f.read())
 
 
@@ -368,7 +369,7 @@ def override_default_kwargs(fn_cls, kwargs):
 
 
 def read_yaml(path):
-    with open(path) as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.load(f)
 
 
@@ -434,7 +435,7 @@ def read_txt(file_path, comment_str="#"):
     empty lines
     """
     out = []
-    with open(file_path) as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.partition(comment_str)[0]
             line = line.strip()
