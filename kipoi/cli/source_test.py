@@ -14,7 +14,7 @@ from copy import deepcopy
 from colorlog import escape_codes, default_log_colors
 
 import kipoi
-from kipoi.cli.env import conda_env_name
+from kipoi.cli.env import conda_env_name, SPECIAL_ENV_PREFIX
 from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.sources import list_softlink_dependencies
 from kipoi.utils import list_files_recursively, read_txt, get_file_path, cd
@@ -329,13 +329,12 @@ def cli_test_source(command, raw_args):
     # Test common environments
     if args.common_env:
         logger.info("Installing common environmnets")
-        env_dir = "shared/envs"
         import yaml
-        models_yaml_path = os.path.join(source.local_path, env_dir, "models.yaml")
+        models_yaml_path = os.path.join(source.local_path, SPECIAL_ENV_PREFIX, "models.yaml")
         if not os.path.exists(models_yaml_path):
             logger.error("{} doesn't exists when installing the common environment".format(models_yaml_path))
             sys.exit(1)
-        model_envs = yaml.load(open(os.path.join(source.local_path, env_dir, "models.yaml"), "r", encoding="utf-8"))
+        model_envs = yaml.load(open(os.path.join(source.local_path, SPECIAL_ENV_PREFIX, "models.yaml", "r", encoding="utf-8")))
 
         test_envs = {get_common_env(m, model_envs) for m in test_models if get_common_env(m, model_envs) is not None}
 
@@ -349,7 +348,7 @@ def cli_test_source(command, raw_args):
                 logger.info("Common environment already exists: {}. Skipping the installation".format(env))
             else:
                 logger.info("Installing environment: {}".format(env))
-                create_model_env(os.path.join(env_dir, env), args.source, env, vep=args.vep)
+                create_model_env(os.path.join(SPECIAL_ENV_PREFIX, env), args.source, env, vep=args.vep)
 
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []

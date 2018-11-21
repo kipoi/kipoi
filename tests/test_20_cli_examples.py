@@ -308,47 +308,50 @@ def process_args(args):
     return cmd, raw_args
 
 
+class PseudoConda:
+    def __init__(self, tmpdir):
+        self.existing_envs = {}
+        self.tmpdir = tmpdir
+
+    @staticmethod
+    def strip_yaml_suffix(env):
+        env = env.split("/")[-1]
+        if env.endswith(".yaml"):
+            return env[:-len(".yaml")]
+        else:
+            return env
+
+    def add_env(self, env):
+        env = self.strip_yaml_suffix(env)
+        if env in self.existing_envs:
+            return 1
+
+        kipoi_cli_path = os.path.join(str(self.tmpdir), "kipoi_cli_" + env)
+        with open(kipoi_cli_path, "w") as ofh:
+            ofh.write("kipoi")
+        self.existing_envs[env] = kipoi_cli_path
+        return 0
+
+    def get_cli(self, env):
+        env = self.strip_yaml_suffix(env)
+        if env not in self.existing_envs:
+            return None
+        return self.existing_envs[env]
+
+    def delete_env(self, env):
+        env = self.strip_yaml_suffix(env)
+        if env in self.existing_envs:
+            self.existing_envs.pop(env)
+            return 0
+        else:
+            raise Exception("Failed")
+
+
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
     tempfile = os.path.join(str(tmpdir), "envs.json")
 
     # Define things necessary for monkeypatching
-    class PseudoConda:
-        def __init__(self):
-            self.existing_envs = {}
-
-        @staticmethod
-        def strip_yaml_suffix(env):
-            env = env.split("/")[-1]
-            if env.endswith(".yaml"):
-                return env[:-len(".yaml")]
-            else:
-                return env
-
-        def add_env(self, env):
-            env = self.strip_yaml_suffix(env)
-            if env in self.existing_envs:
-                return 1
-
-            kipoi_cli_path = os.path.join(str(tmpdir), "kipoi_cli_" + env)
-            with open(kipoi_cli_path, "w") as ofh:
-                ofh.write("kipoi")
-            self.existing_envs[env] = kipoi_cli_path
-            return 0
-
-        def get_cli(self, env):
-            env = self.strip_yaml_suffix(env)
-            if env not in self.existing_envs:
-                return None
-            return self.existing_envs[env]
-
-        def delete_env(self, env):
-            env = self.strip_yaml_suffix(env)
-            if env in self.existing_envs:
-                self.existing_envs.pop(env)
-                return 0
-            else:
-                raise Exception("Failed")
 
     def get_assert_env(equals):
         def assert_to(val):
@@ -365,7 +368,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
         return assert_to
 
     # pseudo kipoi CLI executable
-    conda = PseudoConda()
+    conda = PseudoConda(tmpdir)
 
     if os.path.exists(tempfile):
         os.unlink(tempfile)
@@ -462,3 +465,22 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     # just make sure this resets after the test.
     kipoi.config._env_db_path = old_env_db_path
     kipoi.conda.env_db.reload_model_env_db()
+
+
+def test_kipoi_env_create_all(tmpdir, monkeypatch):
+    from kipoi.cli.env import cli_create
+    conda = PseudoConda(tmpdir)
+    monkeypatch.setattr(kipoi.conda, 'create_env_from_file', conda.add_env)
+    monkeypatch.setattr(kipoi.conda, 'remove_env', conda.delete_env)
+    monkeypatch.setattr(kipoi.conda, 'get_kipoi_bin', conda.get_cli)
+
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "all"]
+    # pretend to run the CLI
+    cli_create(*process_args(args))
+
+
+def test_kipoi_env_create_all_dry_run():
+    from kipoi.cli.env import cli_create
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "all", "--dry-run"]
+    # pretend to run the CLI
+    cli_create(*process_args(args))
