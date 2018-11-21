@@ -2,7 +2,6 @@
 """
 from __future__ import absolute_import
 from __future__ import print_function
-from io import open
 
 import collections
 import logging
@@ -121,6 +120,8 @@ class ArraySchema(RelatedConfigMixin):
                            % (str(self.shape), len(self.column_labels), str(self.column_labels)[:30]))
 
     def __attrs_post_init__(self):
+        from io import open
+
         if len(self.column_labels) > 1:
             # check that length is ok with columns
             self._validate_list_column_labels()
