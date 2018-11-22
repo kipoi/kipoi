@@ -17,7 +17,7 @@ from __future__ import print_function
 
 import six
 import os
-from kipoi.utils import unique_list, makedir_exist_ok
+from kipoi.utils import unique_list, makedir_exist_ok, is_subdir
 from kipoi.conda import _call_command
 import subprocess
 import logging
@@ -44,14 +44,46 @@ def singularity_pull(remote_path, local_path):
         logger.info("Container file {} already exists. Skipping `singularity pull`".
                     format(local_path))
     else:
-        logger.info("Container file {} doesn't exist. Pulling the container from {}".
-                    format(local_path, remote_path))
+        if os.environ['SINGULARITY_CACHEDIR']:
+            downloaded_path = os.path.join(os.environ['SINGULARITY_CACHEDIR'],
+                                           os.path.basename(local_path))
+            pull_dir = os.path.dirname(downloaded_path)
+            logger.info("SINGULARITY_CACHEDIR is set to {}".
+                        format(os.environ['SINGULARITY_CACHEDIR']))
+            if os.path.exists(downloaded_path):
+                logger.info("Container file {} already exists. Skipping `singularity pull` and softlinking it".
+                            format(downloaded_path))                
+                if os.path.islink(local_path):
+                    logger.info("Softlink {} already exists. Removing it".format(local_path))
+                    os.remove(local_path)
+
+                logger.info("Soflinking the downloaded file: ln -s {} {}".
+                            format(downloaded_path,
+                                   local_path))
+                os.symlink(downloaded_path, local_path)
+                return None
+        else:
+            pull_dir = os.path.dirname(local_path)
+
+        logger.info("Container file {} doesn't exist. Pulling the container from {}. Saving it to: {}".
+                    format(local_path, remote_path, pull_dir))
         cmd = ['singularity', 'pull', '--name', os.path.basename(local_path), remote_path]
         logger.info(" ".join(cmd))
         returncode = subprocess.call(cmd,
-                                     cwd=os.path.dirname(local_path))
+                                     cwd=pull_dir)
         if returncode != 0:
             raise ValueError("Command: {} failed".format(" ".join(cmd)))
+        
+        # softlink it
+        if os.environ['SINGULARITY_CACHEDIR']:
+            if os.path.islink(local_path):
+                logger.info("Softlink {} already exists. Removing it".format(local_path))
+                os.remove(local_path)
+            logger.info("Soflinking the downloaded file: ln -s {} {}".
+                        format(downloaded_path,
+                               local_path))
+            os.symlink(downloaded_path, local_path)
+
         if not os.path.exists(local_path):
             raise ValueError("Container doesn't exist at the download path: {}".format(local_path))
 
@@ -105,7 +137,7 @@ def container_local_path(remote_path):
 # ---------------------------------
 
 
-def involved_directories(dataloader_kwargs, output_files=[]):
+def involved_directories(dataloader_kwargs, output_files=[], exclude_dirs=[]):
     """Infer the involved directories given dataloader kwargs
     """
     dirs = []
@@ -117,6 +149,13 @@ def involved_directories(dataloader_kwargs, output_files=[]):
     # output files
     for v in output_files:
         dirs.append(os.path.dirname(os.path.abspath(v)))
+
+    # optionally exclude directories 
+    def in_any_dir(fname, dirs):
+        return any([is_subdir(fname, os.path.expanduser(d))
+                    for d in dirs])
+    dirs = [x for x in dirs
+            if not in_any_dir(x, exclude_dirs)]
 
     return unique_list(dirs)
 
@@ -135,4 +174,4 @@ def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], so
     kipoi_cmd_conda = [stdout.decode().strip()] + kipoi_cmd[1:]
     singularity_exec(local_path,
                      kipoi_cmd_conda,
-                     bind_directories=involved_directories(dataloader_kwargs, output_files), dry_run=dry_run)
+                     bind_directories=involved_directories(dataloader_kwargs, output_files, exclude_dirs=['/tmp', '~']), dry_run=dry_run)
