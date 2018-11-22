@@ -46,7 +46,7 @@ def singularity_pull(remote_path, local_path):
     else:
         logger.info("Container file {} doesn't exist. Pulling the container from {}".
                     format(local_path, remote_path))
-        cmd = ['singularity', 'pull', remote_path]
+        cmd = ['singularity', 'pull', '--name', os.path.basename(local_path), remote_path]
         logger.info(" ".join(cmd))
         returncode = subprocess.call(cmd,
                                      cwd=os.path.dirname(local_path))
@@ -94,9 +94,12 @@ def container_remote_url(source='kipoi'):
 
 def container_local_path(remote_path):
     from kipoi.config import _kipoi_dir
-    relative_path, tag = os.path.join(remote_path.split("://")[1]).split(":")
-
-    # TODO - figure out this better
+    tmp = os.path.join(remote_path.split("://")[1])
+    if ":" in tmp:
+        relative_path, tag = tmp.split(":")
+    else:
+        relative_path = tmp
+        tag = 'latest'
     return os.path.join(_kipoi_dir, "envs/singularity/", relative_path + "_" + tag + ".sif")
 
 # ---------------------------------
