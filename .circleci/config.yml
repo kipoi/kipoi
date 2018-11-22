@@ -12,13 +12,13 @@ variables:
         # TODO only install if singularity is not yet present
         # if type singularity > /dev/null; then exit 0; fi
         SINGULARITY_VER=2.5.1
-        sudo apt-get update; sudo apt-get install squashfs-tools libarchive-dev
+        apt-get update; apt-get install squashfs-tools libarchive-dev
         wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
         tar xvf singularity-$SINGULARITY_VER.tar.gz
         cd singularity-$SINGULARITY_VER
         ./configure --prefix=/usr/local --sysconfdir=/etc
         make
-        sudo make install
+        make install
         # conda install --yes -c conda-forge singularity
   install_kipoi_plugins: &install_kipoi_plugins
     run:
