@@ -5,10 +5,21 @@ variables:
     run:
       name: Update conda
       command: conda update --yes conda
-  install_git_lfs: &install_git_lfs
+  install_singularity: &install_singularity
     run:
-      name: Install git-lfs
-      command: conda install --yes -c conda-forge git-lfs
+      name: Install Singularity
+      command: |
+        # TODO only install if singularity is not yet present
+        # if type singularity > /dev/null; then exit 0; fi
+        SINGULARITY_VER=2.5.1
+        apt-get update; apt-get install -y squashfs-tools libarchive-dev
+        wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
+        tar xvf singularity-$SINGULARITY_VER.tar.gz
+        cd singularity-$SINGULARITY_VER
+        ./configure --prefix=/usr/local --sysconfdir=/etc
+        make
+        make install
+        # conda install --yes -c conda-forge singularity
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -63,6 +74,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
+      - *install_singularity
       - *install_pip_deps
       - *install_kipoi
       - *install_kipoi_plugins
@@ -80,6 +92,7 @@ jobs:
       - checkout
       - *update_conda
       - *install_pip_deps
+      - *install_singularity
       - *install_kipoi
       - *install_kipoi_plugins
       - *kipoi_ls
