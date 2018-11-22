@@ -44,15 +44,15 @@ def singularity_pull(remote_path, local_path):
         logger.info("Container file {} already exists. Skipping `singularity pull`".
                     format(local_path))
     else:
-        if os.environ['SINGULARITY_CACHEDIR']:
-            downloaded_path = os.path.join(os.environ['SINGULARITY_CACHEDIR'],
+        if os.environ.get('SINGULARITY_CACHEDIR'):
+            downloaded_path = os.path.join(os.environ.get('SINGULARITY_CACHEDIR'),
                                            os.path.basename(local_path))
             pull_dir = os.path.dirname(downloaded_path)
             logger.info("SINGULARITY_CACHEDIR is set to {}".
-                        format(os.environ['SINGULARITY_CACHEDIR']))
+                        format(os.environ.get('SINGULARITY_CACHEDIR')))
             if os.path.exists(downloaded_path):
                 logger.info("Container file {} already exists. Skipping `singularity pull` and softlinking it".
-                            format(downloaded_path))                
+                            format(downloaded_path))
                 if os.path.islink(local_path):
                     logger.info("Softlink {} already exists. Removing it".format(local_path))
                     os.remove(local_path)
@@ -73,9 +73,9 @@ def singularity_pull(remote_path, local_path):
                                      cwd=pull_dir)
         if returncode != 0:
             raise ValueError("Command: {} failed".format(" ".join(cmd)))
-        
+
         # softlink it
-        if os.environ['SINGULARITY_CACHEDIR']:
+        if os.environ.get('SINGULARITY_CACHEDIR'):
             if os.path.islink(local_path):
                 logger.info("Softlink {} already exists. Removing it".format(local_path))
                 os.remove(local_path)
@@ -150,7 +150,7 @@ def involved_directories(dataloader_kwargs, output_files=[], exclude_dirs=[]):
     for v in output_files:
         dirs.append(os.path.dirname(os.path.abspath(v)))
 
-    # optionally exclude directories 
+    # optionally exclude directories
     def in_any_dir(fname, dirs):
         return any([is_subdir(fname, os.path.expanduser(d))
                     for d in dirs])
