@@ -117,9 +117,20 @@ def cli_get_example(command, raw_args):
                         help="Output directory where to store the examples. Default: 'example'")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
-    mh = kipoi.get_model(args.model, args.source)
+    md = kipoi.get_model_descr(args.model, args.source)
+    src = kipoi.get_source(args.source)
 
-    kwargs = mh.default_dataloader.download_example(output_dir=args.output, dry_run=False)
+    # load the default dataloader
+    if isinstance(md.default_dataloader, kipoi.specs.DataLoaderImport):
+        with cd(src.get_model_dir(args.model)):
+            dl_descr = md.default_dataloader.get()
+    else:
+        # load from directory
+        # attach the default dataloader already to the model
+        dl_descr = kipoi.get_dataloader_descr(os.path.join(src.get_model_dir(args.model), md.default_dataloader),
+                                              source=args.source)
+
+    kwargs = dl_descr.download_example(output_dir=args.output, dry_run=False)
 
     logger.info("Example files downloaded to: {}".format(args.output))
     logger.info("use the following dataloader kwargs:")
