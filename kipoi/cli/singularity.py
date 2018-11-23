@@ -160,18 +160,62 @@ def involved_directories(dataloader_kwargs, output_files=[], exclude_dirs=[]):
     return unique_list(dirs)
 
 
+def create_conda_run():
+    """Create conda_run bash script to ~/.kipoi/bin/conda_run
+
+    NOTE: this should be changed to `conda run` once conda=4.6.0 is released
+    https://github.com/conda/conda/issues/2379
+    """
+    from kipoi.config import _kipoi_dir
+    crun = """#!/bin/bash
+# Run a bash command in a new conda environment
+set -e # stop on error
+
+if [[ $# -lt 2 ]] ; then
+    echo "Usage: "
+    echo "       conda_run <conda envrionment> <command> "
+    exit 0
+fi
+
+env=$1
+cmd=${@:2}
+echo "Running command in env: $env"
+echo "Command: $cmd"
+
+source activate $env
+$cmd
+source deactivate $env
+"""
+    bin_dir = os.path.join(_kipoi_dir, 'bin')
+    makedir_exist_ok(bin_dir)
+    crun_path = os.path.join(bin_dir, 'conda_run')
+    with open(crun_path, 'w') as f:
+        f.write(crun)
+
+    # make it executable
+    subprocess.call(["chmod", "u+x", crun_path])
+    return crun_path
+
+
 def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], source='kipoi', dry_run=False):
+
     remote_path = container_remote_url(source)
     local_path = container_local_path(remote_path)
     singularity_pull(remote_path, local_path)
 
     assert kipoi_cmd[0] == 'kipoi'
 
-    # figure out the right cli path
-    stdout, stderr = _call_command('singularity', ['exec', local_path, 'kipoi', 'env', 'get_cli', model], stdin=subprocess.PIPE)
+    # remove all spaces within each command
+    kipoi_cmd = [x.replace(" ", "").replace("\n", "").replace("\t", "") for x in kipoi_cmd]
 
-    # run the singularity command
-    kipoi_cmd_conda = [stdout.decode().strip()] + kipoi_cmd[1:]
+    # figure out the right environment name
+    stdout, stderr = _call_command('singularity', ['exec', local_path, 'kipoi', 'env', 'get', model], stdin=subprocess.PIPE)
+    env_name = stdout.decode().strip()
+
+    # create/get the `conda_run` command
+    conda_run = create_conda_run()
+
     singularity_exec(local_path,
-                     kipoi_cmd_conda,
+                     [conda_run, env_name] + kipoi_cmd,
+                     # kipoi_cmd_conda,
                      bind_directories=involved_directories(dataloader_kwargs, output_files, exclude_dirs=['/tmp', '~']), dry_run=dry_run)

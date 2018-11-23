@@ -196,7 +196,8 @@ def cli_predict(command, raw_args):
                         "`model.predict_activation_on_batch` will be invoked instead of `model.predict_on_batch`")
     parser.add_argument("--singularity", action='store_true',
                         help="Run `kipoi predict` in the appropriate singularity container. "
-                        "Containters will get downloaded to ~/.kipoi/envs/")
+                        "Containters will get downloaded to ~/.kipoi/envs/ or to "
+                        "$SINGULARITY_CACHEDIR if set")
     parser.add_argument('-o', '--output', required=True, nargs="+",
                         help="Output files. File format is inferred from the file path ending. Available file formats are: " +
                         ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
