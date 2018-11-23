@@ -954,7 +954,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
     def get_example_kwargs(self):
         # return self.download_example()
-        return example_kwargs(self.args, os.path.join(self.path, "downloaded/example_files"))
+        return example_kwargs(self.args, os.path.join(os.path.dirname(self.path), "downloaded/example_files"))
 
     def download_example(self, output_dir, absolute_path=False, dry_run=False):
         return example_kwargs(self.args,
@@ -964,23 +964,26 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
     def print_kwargs(self, format_examples_json=False):
         from kipoi.external.related.fields import UNSPECIFIED
-        if hasattr(self, "args"):
+        if not hasattr(self, "args"):
             logger.warn("No keyword arguments defined for the given dataloader.")
             return None
 
-        for k in self.args:
-            print("Keyword argument: `{0}`".format(k))
+        example_kwargs = self.get_example_kwargs()
+
+        args = self.args
+        for k in args:
+            print("{0}:".format(k))
             for elm in ["doc", "type", "optional", "example"]:
-                if hasattr(self.args[k], elm) and \
-                   (not isinstance(getattr(self.args[k], elm), UNSPECIFIED)):
-                    print("    {0}: {1}".format(elm, getattr(self.args[k], elm)))
-                    example_kwargs = self.example_kwargs
-                    print("-" * 80)
-        if hasattr(self, "example_kwargs"):
-            if format_examples_json:
-                import json
-                example_kwargs = json.dumps(example_kwargs)
-                print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+                if hasattr(args[k], elm) and \
+                        (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
+                    print("    {0}: {1}".format(elm, getattr(args[k], elm)))
+
+        # if format_examples_json:
+        #     import json
+        #     example_kwargs = json.dumps(example_kwargs)
+        # print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+
+    print_args = print_kwargs
 
     def __attrs_post_init__(self):
         # load additional objects

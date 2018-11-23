@@ -152,7 +152,7 @@ class BaseDataLoader(object):
         if not hasattr(cls, "args"):
             logger.warn("No keyword arguments defined for the given dataloader.")
             return None
-            print("No keyword arguments defined for the given dataloader.")
+            # print("No keyword arguments defined for the given dataloader.")
         args = cls.args
         for k in args:
             print("{0}:".format(k))
@@ -160,13 +160,13 @@ class BaseDataLoader(object):
                 if hasattr(args[k], elm) and \
                         (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
                     print("    {0}: {1}".format(elm, getattr(args[k], elm)))
-        example_kwargs = cls.example_kwargs
-        print("-" * 80)
-        if hasattr(cls, "example_kwargs"):
-            if format_examples_json:
-                import json
-                example_kwargs = json.dumps(example_kwargs)
-            print("Example keyword arguments are: {0}".format(str(example_kwargs)))
+        # example_kwargs = cls.example_kwargs
+        # print("-" * 80)
+        # if hasattr(cls, "example_kwargs"):
+        #     if format_examples_json:
+        #         import json
+        #         example_kwargs = json.dumps(example_kwargs)
+        #     print("Example keyword arguments are: {0}".format(str(example_kwargs)))
 
     @classmethod
     def get_output_schema(cls):

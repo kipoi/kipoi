@@ -354,19 +354,30 @@ def cli_info(command, raw_args):
 
     # --------------------------------------------
     # load model & dataloader
-    model = kipoi.get_model(args.model, args.source)
+    md = kipoi.get_model_descr(args.model, args.source)
+    src = kipoi.get_source(args.source)
 
-    if args.dataloader is not None:
-        dl_info = "dataloader '{0}' from source '{1}'".format(str(args.dataloader), str(args.dataloader_source))
-        Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
+    # load the default dataloader
+    if isinstance(md.default_dataloader, kipoi.specs.DataLoaderImport):
+        with cd(src.get_model_dir(args.model)):
+            dl_descr = md.default_dataloader.get()
     else:
-        dl_info = "default dataloader for model '{0}' from source '{1}'".format(str(model.name), str(args.source))
-        Dl = model.default_dataloader
+        # load from directory
+        # attach the default dataloader already to the model
+        dl_descr = kipoi.get_dataloader_descr(os.path.join(src.get_model_dir(args.model), md.default_dataloader),
+                                              source=args.source)
 
     print("-" * 80)
-    print("Displaying keyword arguments for {0}".format(dl_info))
-    print(Dl.print_args())
-    print("-" * 80)
+    print("'{0}' from source '{1}'".format(str(args.model), str(args.source)))
+    print("")
+    print("Model information")
+    print("-----------")
+    print(md.info.get_config_as_yaml())
+    print("Dataloader arguments")
+    print("--------------------")
+    dl_descr.print_args()
+    print("--------------------\n")
+    print("Run `kipoi get-example {} -o example` to download example files.\n".format(args.model))
 
 
 def cli_list_plugins(command, raw_args):
