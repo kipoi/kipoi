@@ -90,7 +90,7 @@ def parse_source_name(source, name):
             source, name = name.split("::")
         except ValueError:
             raise ValueError("The name: {0} couldn't be properly parsed. ".format(name) +
-                             "Use the following synthax: <source>::<model/dataloader> or <model/dataloader>")
+                             "Use the following syntax: <source>::<model/dataloader> or <model/dataloader>")
 
     # Check that the source is correctly specified
     available_sources = list(kipoi.config.model_sources().keys())

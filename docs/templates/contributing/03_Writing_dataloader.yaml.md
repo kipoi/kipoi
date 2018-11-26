@@ -10,7 +10,7 @@ A model without functional dataloader is as bad as a model that doesn't work, so
 dataloader.yaml is essential for the use of a model in the zoo. Make sure you have read 
 [Writing dataloader.py](./04_Writing_dataloader.py.md).
 
-To help understand the synthax of YAML please take a look at: 
+To help understand the syntax of YAML please take a look at: 
 [YAML Syntax Basics](http://docs.ansible.com/ansible/latest/YAMLSyntax.html#yaml-basics)
 
 Here is an example `dataloader.yaml`:
