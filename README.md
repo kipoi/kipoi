@@ -20,7 +20,7 @@ This repository implements a python package and a command-line interface (CLI) t
 - [kipoi.org](http://kipoi.org) - Main website
 - [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
-- [bioarxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
+- [biorxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
   
 ## Installation
 
@@ -187,7 +187,7 @@ Documentation can be found here: [kipoi.org/docs](http://kipoi.org/docs)
 
 ## Citing Kipoi
 
-If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Bioarxiv preprint: https://doi.org/10.1101/375345.
+If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Biorxiv preprint: https://doi.org/10.1101/375345.
 
 ```bibtex
 @article {kipoi,
