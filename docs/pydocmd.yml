@@ -83,6 +83,7 @@ pages:
   - R API: tutorials/R-api.md
   - Comparing models: tutorials/tf_binding_models.md
   - Composing models: tutorials/composing_models.md
+- FAQ: faq.md
 
 - Api:
   - list: api/list_.md

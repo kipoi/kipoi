@@ -567,7 +567,16 @@ class MyDataset(Dataset):
 
 </div>
 
-<!-- TODO: make the run commands single line -->
+
+<div class="cond anyExpl" style="display: none;">
+
+    <h4 id="license">License</h4>
+
+    <p>Please make sure that the license that is defined in the <code>license:</code> tag in the yaml file is correct.
+    Also only contribute models for which you have the rights to do so and only contribute models that permit 
+    redistribution.</p>
+
+</div>
 
 <div class="cond single" style="display: none;">
 
@@ -601,13 +610,10 @@ class MyDataset(Dataset):
 
 </div>
 
-<div class="cond anyExpl" style="display: none;">
-
-    <h4 id="forking-and-submitting">Forking and submitting</h4>
-
-</div>
 
 <div class="cond forking" style="display: none;">
+
+    <h4 id="forking-and-submitting">Forking and submitting</h4>
 
     <ul>
     <li>Make sure your model repository is up to date: <ul>

@@ -77,12 +77,18 @@ model = kipoi.get_model("https://github.com/kipoi/models/tree/7d3ea7800184de414a
 In the following commands a few properties of the model will be shown:
 
 ```python
-model.info # Information about the author:
+model.info # Information about the author
+
+model.info.license # Display the model license
 
 model.default_dataloader # Access the default dataloader
 
 model.model # Access the underlying Keras model
 ```
+
+#### License
+As you have seen in the code snippet above every model has a `license` field. If you use or aim to redistribute the 
+model please always make sure that the license gives you the permission to do so.
 
 #### Test the model
 Every Kipoi model comes with a small test dataset, which is used to assert its functionality in the nightly tests. This model test function can be accessed by:
