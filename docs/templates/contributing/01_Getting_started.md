@@ -276,12 +276,16 @@ class MyDataset(Dataset):
 .cond:{
     visibility: hidden;
 }
+.hidden:{
+    visibility: hidden;
+}
 </style>
 
 <!--- BEGIN extra imports for yaml display etc. --->
 <script src="../../js/jquery-2.1.1.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" defer=""></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js" defer=""></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.16/clipboard.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 <!--- END extra imports for yaml display etc. --->
 
@@ -341,30 +345,29 @@ class MyDataset(Dataset):
         <!-- Tab panes -->
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane" id="tab-model_yaml">
-                <pre><button type="button" onclick="copyToClipboard(get_model_yaml_code())">Copy to clipboard</button>
+                <pre>
+                <!--- this should be the copy-to-clipboard button
+                <button type="button" class="btn btn-default clipboard-btn hidden" data-clipboard-target="#model_yaml_raw_code">Copy to clipboard</button>
+                <input class="hidden" id="model_yaml_raw_code"></input>
+                --->
                 <code class="yaml hljs makefile" id="model_yaml_code">
                 </code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-model-template_yaml">
-                <pre><button type="button" onclick="copyToClipboard(get_model_template_yaml_code())">Copy to clipboard</button>
-                <code class="yaml hljs makefile" id="model-template_yaml_code">
+                <pre><code class="yaml hljs makefile" id="model-template_yaml_code">
                 </code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-model_py">
-                <pre><button type="button" onclick="copyToClipboard(get_model_py_code())">Copy to clipboard</button>
-                <code class="python hljs" id="model_py_code"></code></pre>
+                <pre><code class="python hljs" id="model_py_code"></code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-models_tsv">
-                <pre><button type="button" onclick="copyToClipboard(get_models_tsv_code())">Copy to clipboard</button>
-                <code class="yaml hljs makefile" id="models_tsv_code"></code></pre>
+                <pre><code class="yaml hljs makefile" id="models_tsv_code"></code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-dataloader_yaml">
-                <pre><button type="button" onclick="copyToClipboard(get_dataloader_yaml_code())">Copy to clipboard</button>
-                <code class="yaml hljs makefile" id="dataloader_yaml_code"></code></pre>
+                <pre><code class="yaml hljs makefile" id="dataloader_yaml_code"></code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-dataloader_py">
-                <pre><button type="button" onclick="copyToClipboard(get_dataloader_py_code())">Copy to clipboard</button>
-                <code class="python hljs" id="dataloader_py_code"></code></pre>
+                <pre><code class="python hljs" id="dataloader_py_code"></code></pre>
             </div>
         </div>
     </div>
@@ -681,6 +684,7 @@ insert_code_data = function(){
     var sel_inp = $('#sel_inp').val();
     var sel_fw = $('#sel_fw').val();
     var sel_mg = $('#sel_mg').val();
+    $("#model_yaml_raw_code").val(unescape(get_model_yaml_code())); // for copying to clipboard
     $("#model_yaml_code").html(get_model_yaml_code());
     $("#model-template_yaml_code").html(get_model_template_yaml_code());
     $("#models_tsv_code").html(get_models_tsv_code());
@@ -689,6 +693,8 @@ insert_code_data = function(){
     $("#dataloader_yaml_code").html(get_dataloader_yaml_code());
     hljs.highlightBlock(document.getElementById("model_yaml_code"));
 }
+
+var clipboard = new Clipboard('.clipboard-btn');
 
 
 refresh_info = function(){
