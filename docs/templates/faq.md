@@ -32,7 +32,7 @@ Micro-changes like updating the model description are also tracked using Git, he
 always referred to using the commit hash.
 
 
-### Trouble with system-wide libararies?
+### Trouble with system-wide libraries?
 
 If you have trouble executing kipoi because of system-wide installed libraries you can use our singularity container
 to run calculations. After installing singularity, just add the `--singularity` argument to your kipoi command.
@@ -44,4 +44,6 @@ framework and version in which the original model is available. In the future, w
 the ONNX format which will allow porting models across different frameworks. If you are insterested or keen to help - 
 here is the issue tracking this feature: https://github.com/kipoi/kipoi/issues/405
 
+### Do you support Windows?
 
+For Windows users we suggest to use the docker container: https://hub.docker.com/r/kipoi/models/. Installing conda environments for the Kipoi models is not fully supported on Windows due to unavailability of certain conda packages for Windows. Specifically, cyvcf2 is not readily available for windows via Bioconda, neither is htslib/tabix. htslib has been enabled for Windows from version 1.6, but not on conda. We hope that we will be able to enable support for Windows when those packages become Windows-compatible.
