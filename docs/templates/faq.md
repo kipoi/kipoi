@@ -35,7 +35,7 @@ always referred to using the commit hash.
 ### Trouble with system-wide libraries?
 
 If you have trouble executing kipoi because of system-wide installed libraries you can use our singularity container
-to run calculations. After installing singularity, just add the `--singularity` argument to your kipoi command.
+to run calculations. After installing [singularity](https://www.sylabs.io/guides/latest/user-guide/quick_start.html#quick-installation-steps), just add the `--singularity` argument to your kipoi command.
 
 ### Is it possible to perform transfer learning between different frameworks or different versions of the same framework?
 
