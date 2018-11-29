@@ -117,9 +117,20 @@ def cli_get_example(command, raw_args):
                         help="Output directory where to store the examples. Default: 'example'")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
-    mh = kipoi.get_model(args.model, args.source)
+    md = kipoi.get_model_descr(args.model, args.source)
+    src = kipoi.get_source(args.source)
 
-    kwargs = mh.default_dataloader.download_example(output_dir=args.output, dry_run=False)
+    # load the default dataloader
+    if isinstance(md.default_dataloader, kipoi.specs.DataLoaderImport):
+        with cd(src.get_model_dir(args.model)):
+            dl_descr = md.default_dataloader.get()
+    else:
+        # load from directory
+        # attach the default dataloader already to the model
+        dl_descr = kipoi.get_dataloader_descr(os.path.join(src.get_model_dir(args.model), md.default_dataloader),
+                                              source=args.source)
+
+    kwargs = dl_descr.download_example(output_dir=args.output, dry_run=False)
 
     logger.info("Example files downloaded to: {}".format(args.output))
     logger.info("use the following dataloader kwargs:")
@@ -183,6 +194,10 @@ def cli_predict(command, raw_args):
     parser.add_argument("-l", "--layer",
                         help="Which output layer to use to make the predictions. If specified," +
                         "`model.predict_activation_on_batch` will be invoked instead of `model.predict_on_batch`")
+    parser.add_argument("--singularity", action='store_true',
+                        help="Run `kipoi predict` in the appropriate singularity container. "
+                        "Containters will get downloaded to ~/.kipoi/envs/ or to "
+                        "$SINGULARITY_CACHEDIR if set")
     parser.add_argument('-o', '--output', required=True, nargs="+",
                         help="Output files. File format is inferred from the file path ending. Available file formats are: " +
                         ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
@@ -200,6 +215,20 @@ def cli_predict(command, raw_args):
                          format(ending, o, writers.FILE_SUFFIX_MAP))
             sys.exit(1)
         dir_exists(os.path.dirname(o), logger)
+
+    # singularity_command
+    if args.singularity:
+        from kipoi.cli.singularity import singularity_command
+        logger.info("Running kipoi predict in the singularity container")
+        # Drop the singularity flag
+        raw_args = [x for x in raw_args if x != '--singularity']
+        singularity_command(['kipoi', command] + raw_args,
+                            args.model,
+                            dataloader_kwargs,
+                            output_files=args.output,
+                            source=args.source,
+                            dry_run=False)
+        return None
     # --------------------------------------------
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source)

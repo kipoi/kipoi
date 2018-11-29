@@ -20,14 +20,14 @@ This repository implements a python package and a command-line interface (CLI) t
 - [kipoi.org](http://kipoi.org) - Main website
 - [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
-- [bioarxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
+- [biorxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
   
 ## Installation
 
 ### 1. Install miniconda/anaconda
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/).
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/). Supported python versions: 2.7 and >=3.5.
 
 ### 2. Install Git LFS
 
@@ -187,7 +187,7 @@ Documentation can be found here: [kipoi.org/docs](http://kipoi.org/docs)
 
 ## Citing Kipoi
 
-If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Bioarxiv preprint: https://doi.org/10.1101/375345.
+If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Biorxiv preprint: https://doi.org/10.1101/375345.
 
 ```bibtex
 @article {kipoi,
