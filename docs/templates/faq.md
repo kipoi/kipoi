@@ -30,6 +30,9 @@ most recent version in `KipoiModel/v2/model.yaml -> KipoiModel/model.yaml`.
 Micro-changes like updating the model description are also tracked using Git, hence a particular model version can be 
 always referred to using the commit hash.
 
+### Can the model be a binary executable
+
+Yes if the binary is compiled and distributed through Bioconda or Conda-Forge conda channels. Lsgkm-SVM is one such example. See its [model.py](https://github.com/kipoi/models/blob/master/lsgkm-SVM/model.py) for the implementation details.
 
 ### Trouble with system-wide libraries?
 
