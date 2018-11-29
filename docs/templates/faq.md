@@ -19,8 +19,7 @@ increase the computation time for testing immensely.
 
 ### What licenses are allowed?
 
-Any license that allows the redistribution of model(weights). It is the users' responsibility not to break copy rights 
-when (re-)using models that are available in the Kipoi model zoo.
+Any license that allows the redistribution model of files uploaded to file-sharing services like Zenodo or Figshare. We encourage users to use one of the standard open-source software licenses such as MIT, BSD License, GNU Public License or Apache License ([Comparison of free and open-source software licenses](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses)). Please contact us if you would like to host the files on your own servers. We note that it is the users' responsibility not to break copy rights when (re-)using models that are available in the Kipoi model zoo.
 
 ### Versioning of models
 
