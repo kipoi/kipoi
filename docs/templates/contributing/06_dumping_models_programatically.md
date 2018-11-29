@@ -30,4 +30,4 @@ BJ_ENCSR000DEA	model_files/BJ_ENCSR000DEA.json	model_files/BJ_ENCSR000DEA.h5	6d3
 CMK_ENCSR000DGJ	model_files/CMK_ENCSR000DGJ.json	model_files/CMK_ENCSR000DGJ.h5	6d3a971ce766128ca444dd70ef76df70	d5c0c9dd55f1056036cc300ec1f61e1d	https://zenodo.org/record/1466073/files/A549_ENCSR000DDI?download=1	https://zenodo.org/record/1466073/files/CMK_ENCSR000DGJ.h5?download=1
 ```
 
-One row in `models.tsv` will represent a single model and will be used to populate `model-template.yaml` and construct `model.yaml` using [Jinja2 templating language](http://jinja.pocoo.org/docs/2.10/). This allows you to even write if statements in `model-template.yaml`. See [CpGenie model](https://github.com/kipoi/models/tree/kipoiseq_dl/CpGenie) as an example.
+One row in `models.tsv` will represent a single model and will be used to populate `model-template.yaml` and construct `model.yaml` using [Jinja2 templating language](http://jinja.pocoo.org/docs/2.10/). This allows you to even write if statements in `model-template.yaml`. See [CpGenie model](https://github.com/kipoi/models/tree/master/CpGenie) as an example.
