@@ -24,10 +24,11 @@ This repository will be stored locally under `local_path`. Advantage of using `g
 
 ### All possible model source types
 
-In addition to the default `kipoi` source, you can modify `~/.kipoi/config.yaml` and add additional (private or public) model sources. Available model source types are:
+In addition to the default `kipoi` source, you can modify `~/.kipoi/config.yaml` and add additional (private or public) 
+model sources. Available model source types are:
 
-- `git-lfs` - As for `kipoi` model source. Model weights will get downloaded upon request (say when running `kipoi predict`).
-- `git` - Normal git repository, all the files will be downloaded on checkout.
+- `git-lfs` - Model weights will get downloaded from git-lfs upon request.
+- `git` - Normal git repository, all the files will be downloaded on checkout. This is the source type used by the public `kipoi` repository.
 - `local` - Local directory.
 
 Example:
@@ -52,6 +53,7 @@ model_sources:
 
 ### About model definition
 
-A particular model is defined by its source (key under `model_sources`, say `kipoi`) and the relative path of the desired model directory from the model source root (say `rbp_eclip/UPF1`).
+A particular model is defined by its source (key under `model_sources`, say `kipoi`) and the relative path of the 
+desired model directory from the model source root (say `rbp_eclip/UPF1`).
 
 A directory is considered a model if it contains a `model.yaml` file.
