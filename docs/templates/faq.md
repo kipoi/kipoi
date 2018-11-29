@@ -39,12 +39,11 @@ Yes if the binary is compiled and distributed through Bioconda or Conda-Forge co
 If you have trouble executing kipoi because of system-wide installed libraries you can use our singularity container
 to run calculations. After installing [singularity](https://www.sylabs.io/guides/latest/user-guide/quick_start.html#quick-installation-steps), just add the `--singularity` argument to your kipoi command.
 
-### Is it possible to perform transfer learning between different frameworks or different versions of the same framework?
+### Is it possible to perform transfer learning using a different frameworks?
 
-At the moment we don’t offer framework conversion, therefore transfer learning can only be performed within the same 
-framework and version in which the original model is available. In the future, we plan to convert all the models to 
+It depends. Kipoi allows you to pre-compute the activations of the frozen part of the network and save them to a file. These activations can be used as input features for a model written in an arbitrary framework. See [this](https://github.com/kipoi/manuscript/blob/master/src/transfer_learning/pre-computed-tlearn.ipynb) notebook on how to do this. If you wish to fine-tune the the whole model in a differnet framework you would need to convert the model parameters yourself (we recommend using [ONNX](https://onnx.ai/) to do so). In the future, we plan to convert all the models to 
 the ONNX format which will allow porting models across different frameworks. If you are insterested or keen to help - 
-here is the issue tracking this feature: https://github.com/kipoi/kipoi/issues/405
+here is the issue tracking this feature: https://github.com/kipoi/kipoi/issues/405.
 
 ### Do you support Windows?
 
