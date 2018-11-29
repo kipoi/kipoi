@@ -244,7 +244,8 @@ class MyDataset(Dataset):
                     <option value="None" selected>Select...</option>
                     <option value="dna">DNA sequence (one-hot encoded or string)</option>
                     <option value="dnaAdditional">DNA sequence with additional tracks</option>
-                    <option value="splicing">DNA sequence at specific positions (e.g.: splice sites)</option>
+                    <option value="splicing">DNA sequence splicing model</option>
+                    <option value="otherInput">Other model input</option>
                 </select>
             </li>
             <li>
@@ -330,6 +331,11 @@ class MyDataset(Dataset):
 </div>
 
 
+<!--- this should be the copy-to-clipboard button that was placed in the tab-pane
+<button type="button" class="btn btn-default clipboard-btn hidden" data-clipboard-target="#model_yaml_raw_code">Copy to clipboard</button>
+<input class="hidden" id="model_yaml_raw_code"></input>
+--->
+
 <div class="cond anyExpl" style="display: none;">
     <div id="wrapper">
         <!-- Nav tabs -->
@@ -338,19 +344,14 @@ class MyDataset(Dataset):
           <li role="presentation" class="cond setSim" id="top-tab-model-template_yaml"><a href="#tab-model-template_yaml" role="tab" data-toggle="tab">model-template.yaml</a></li>
           <li role="presentation" class="cond other"><a href="#tab-model_py" role="tab" data-toggle="tab">model.py</a></li>
           <li role="presentation" class="cond setSim"><a href="#tab-models_tsv" role="tab" data-toggle="tab">models.tsv</a></li>
-          <li role="presentation" class="cond dnaAdditional"><a href="#tab-dataloader_yaml" role="tab" data-toggle="tab">dataloader.yaml</a></li>
-          <li role="presentation" class="cond dnaAdditional"><a href="#tab-dataloader_py" role="tab" data-toggle="tab">dataloader.py</a></li>
+          <li role="presentation" class="cond dnaAdditional otherInput"><a href="#tab-dataloader_yaml" role="tab" data-toggle="tab">dataloader.yaml</a></li>
+          <li role="presentation" class="cond dnaAdditional otherInput"><a href="#tab-dataloader_py" role="tab" data-toggle="tab">dataloader.py</a></li>
         </ul>
     
         <!-- Tab panes -->
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane" id="tab-model_yaml">
-                <pre>
-                <!--- this should be the copy-to-clipboard button
-                <button type="button" class="btn btn-default clipboard-btn hidden" data-clipboard-target="#model_yaml_raw_code">Copy to clipboard</button>
-                <input class="hidden" id="model_yaml_raw_code"></input>
-                --->
-                <code class="yaml hljs makefile" id="model_yaml_code">
+                <pre><code class="yaml hljs makefile" id="model_yaml_code">
                 </code></pre>
             </div>
             <div role="tabpanel" class="tab-pane" id="tab-model-template_yaml">
@@ -536,6 +537,28 @@ class MyDataset(Dataset):
 
 </div>
 
+<div class="cond otherInput" style="display: none;">
+
+    <p>Since your model uses input other than what is covered by the default data-loaders you have to define your own 
+    dataloader function or class. 
+    Depending on your use-case you may find some of the data-loader implementations of exiting models in the model zoo 
+    helpful. You may find the 
+    <a href="https://github.com/kipoi/models/blob/master/rbp_eclip/dataloader.py">rbp_eclip dataloader</a> or one of the 
+    <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">FactorNet dataloaders</a> 
+    relevant. Also consider taking advantage of elements implemented in the <a href="https://github.com/kipoi/kipoiseq">kipoiseq</a> 
+    package. For you implementation you have to:</p>
+    <ul>
+        <li>set <code>default_dataloader: .</code> in the <code>model.yaml</code> file</li>
+        <li>write a <code>dataloader.yaml</code> file as defined in <a href="../03_Writing_dataloader.yaml">writing dataloader.yaml</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.yaml">this one</a>.</li>
+        <li>implement the dataloader in a <code>dataloader.py</code> file as defined in 
+        <a href="../03_Writing_dataloader.py">writing dataloader.py</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">this one</a>.</li>
+        <li>put the <code>dataloader.yaml</code> and the <code>dataloader.py</code> in the same folder as <code>model.yaml</code>.</li>
+    </ul>
+
+</div>
+
 <div class="cond splicing" style="display: none;">
 
     <p>Since your model is specialised in predicting properties of splice sites you are encouraged to take a look at the 
@@ -690,17 +713,17 @@ insert_code_data = function(){
     var sel_inp = $('#sel_inp').val();
     var sel_fw = $('#sel_fw').val();
     var sel_mg = $('#sel_mg').val();
-    $("#model_yaml_raw_code").val(unescape(get_model_yaml_code())); // for copying to clipboard
+    //$("#model_yaml_raw_code").val(unescape(get_model_yaml_code())); // for copying to clipboard
     $("#model_yaml_code").html(get_model_yaml_code());
     $("#model-template_yaml_code").html(get_model_template_yaml_code());
     $("#models_tsv_code").html(get_models_tsv_code());
     $("#model_py_code").html(get_model_py_code());
     $("#dataloader_py_code").html(get_dataloader_py_code());
-    $("#dataloader_yaml_code").html(get_dataloader_yaml_code());
-    hljs.highlightBlock(document.getElementById("model_yaml_code"));
+    $("#dataloader_yaml_code").html(get_dataloader_yaml_code());    
+    $('.tab-pane').each(function(i, block) {
+      hljs.highlightBlock(block);
+    });
 }
-
-var clipboard = new Clipboard('.clipboard-btn');
 
 
 refresh_info = function(){
@@ -711,7 +734,7 @@ refresh_info = function(){
     // deactivate the code tabs
     $(".nav-tabs").children().removeClass("active")
     $(".tab-pane").removeClass("active")
-    if (($.inArray(sel_inp, ['dna', 'dnaAdditional', 'splicing'])>-1) && ($.inArray(sel_fw, ['keras', 'tensorflow', 'pytorch', 'scikitlearn', 'other'])>-1) && ($.inArray(sel_mg, ['single', 'setSim', 'setDiff'])>-1)){
+    if (($.inArray(sel_inp, ['dna', 'dnaAdditional', 'splicing', 'otherInput'])>-1) && ($.inArray(sel_fw, ['keras', 'tensorflow', 'pytorch', 'scikitlearn', 'other'])>-1) && ($.inArray(sel_mg, ['single', 'setSim', 'setDiff'])>-1)){
         insert_code_data();
         if (sel_mg == "setSim"){
             //assign active class to top-tab-model-template_yaml and tab-model-template_yaml
