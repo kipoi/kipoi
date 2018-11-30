@@ -9,6 +9,10 @@ from kipoi.conda import (install_conda, install_pip, normalize_pip, parse_conda_
                          compatible_versions, is_installed, get_package_version, version_split)
 
 
+def fake_call_command(main_cmd, cmd_list, use_stdout=False, return_logs_with_stdout=False, **kwargs):
+    return main_cmd, cmd_list
+
+
 def test_pip_merge():
     pip_list = ["package>=1.1,==1.4", "package2", "package2>=1.5",
                 "package>=1.1,==1.4,==1.5", "package5"]
@@ -97,18 +101,31 @@ def test_other_channels():
     assert channels == ["defaults", "other"]
 
 
-def test_create_env():
+def test_create_env(monkeypatch):
+    import kipoi
+    import kipoi.conda.utils
+    from kipoi.conda.utils import create_env, env_exists, remove_env
+    # monkeypatch.setattr(kipoi.conda.utils, '_call_and_parse', fake_call_command)
     dependencies = ["python=3.6", "numpy",
                     OrderedDict(pip=["tqdm"])
                     ]
-
     ENV_NAME = "kipoi-test-env1"
-    kipoi.conda.create_env(ENV_NAME, dependencies)
-    # check that file exists
-    assert kipoi.conda.env_exists(ENV_NAME)
+
+    assert not env_exists(ENV_NAME)
+
+    def fake_env_exists(env_name):
+        return False
+    monkeypatch.setattr(kipoi.conda.utils, 'env_exists', fake_env_exists)
+    monkeypatch.setattr(kipoi.conda.utils, '_call_command', fake_call_command)
+
+    main_cmd, cmd_list = create_env(ENV_NAME, dependencies)
+    assert main_cmd == 'conda'
+    assert cmd_list == ['env', 'create', '--file', '/tmp/kipoi/kipoi-test-env1.yml']
+
     # remove the environment
-    kipoi.conda.remove_env(ENV_NAME)
-    assert not kipoi.conda.env_exists(ENV_NAME)
+    main_cmd, cmd_list = remove_env(ENV_NAME)
+    assert main_cmd == 'conda'
+    assert cmd_list == ['env', 'remove', '-y', '-n', 'kipoi-test-env1']
 
 
 def test_create_env_wrong_dependencies():
@@ -120,14 +137,21 @@ def test_create_env_wrong_dependencies():
         kipoi.conda.create_env(ENV_NAME, dependencies)
 
 
-def test_install():
-    # TODO - write a conda installation test with a certain channel
-    # TODO - add a conda channels for installing
+def test_install(monkeypatch):
+    import kipoi
+    import kipoi.conda.utils
     conda_deps = ["python=3.6", "pep8"]
     pip_deps = ["tqdm"]
 
-    install_conda(conda_deps)
-    install_pip(pip_deps)
+    monkeypatch.setattr(kipoi.conda.utils, '_call_command', fake_call_command)
+
+    main_cmd, cmd_list = install_conda(conda_deps)
+    assert main_cmd == 'conda'
+    assert cmd_list == ['install', '-y', '--channel=defaults', '--override-channels', 'pep8']
+
+    main_cmd, cmd_list = install_pip(pip_deps)
+    assert main_cmd == 'pip'
+    assert cmd_list == ['install', 'tqdm']
 
 
 def test_version_split():
