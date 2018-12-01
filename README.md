@@ -81,7 +81,7 @@ kipoi env create rbp_eclip/UPF1
 
 ---
 
-If you are working on a machine that has GPUs, you will want to add the `--gpu` flag to the command. And if you want to make use of the `kipoi-veff` plug-in then add `--vep`. For more options please run `kipoi env create --help`.
+If you are working on a machine that has GPUs, you will want to add the `--gpu` flag to the command. If you want to make use of the `kipoi-veff` plug-in then add `--vep`. If you want to make use of the `kipoi-interpret` plug-in then add `--interpret`. For more options please run `kipoi env create --help`.
 
 
 The command will tell you how the execution environment for the model is called, e.g.:
