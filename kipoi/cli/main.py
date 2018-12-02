@@ -127,7 +127,7 @@ def cli_get_example(command, raw_args):
     else:
         # load from directory
         # attach the default dataloader already to the model
-        dl_descr = kipoi.get_dataloader_descr(os.path.join(src.get_model_dir(args.model), md.default_dataloader),
+        dl_descr = kipoi.get_dataloader_descr(os.path.join(args.model, md.default_dataloader),
                                               source=args.source)
 
     kwargs = dl_descr.download_example(output_dir=args.output, dry_run=False)
@@ -364,7 +364,7 @@ def cli_info(command, raw_args):
     else:
         # load from directory
         # attach the default dataloader already to the model
-        dl_descr = kipoi.get_dataloader_descr(os.path.join(src.get_model_dir(args.model), md.default_dataloader),
+        dl_descr = kipoi.get_dataloader_descr(os.path.join(args.model, md.default_dataloader),
                                               source=args.source)
 
     print("-" * 80)

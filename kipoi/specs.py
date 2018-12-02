@@ -954,7 +954,11 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
     def get_example_kwargs(self):
         # return self.download_example()
-        return example_kwargs(self.args, os.path.join(os.path.dirname(self.path), "downloaded/example_files"))
+        if self.path is None:
+            path = "."
+        else:
+            path = self.path
+        return example_kwargs(self.args, os.path.join(os.path.dirname(path), "downloaded/example_files"))
 
     def download_example(self, output_dir, absolute_path=False, dry_run=False):
         return example_kwargs(self.args,
@@ -968,8 +972,6 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
             logger.warn("No keyword arguments defined for the given dataloader.")
             return None
 
-        example_kwargs = self.get_example_kwargs()
-
         args = self.args
         for k in args:
             print("{0}:".format(k))
@@ -978,6 +980,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                         (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
                     print("    {0}: {1}".format(elm, getattr(args[k], elm)))
 
+        # example_kwargs = self.get_example_kwargs()
         # if format_examples_json:
         #     import json
         #     example_kwargs = json.dumps(example_kwargs)
