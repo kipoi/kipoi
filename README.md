@@ -109,6 +109,16 @@ usage: kipoi <command> [-h] ...
     interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT
 ```
 
+```bash
+# Run model predictions and save the results
+# sequentially into an HDF5 file
+kipoi predict <Model> --dataloader_args='{
+  "intervals_file": "intervals.bed",
+  "fasta_file": "hg38.fa"}' \
+  --singularity \
+  -o '<Model>.preds.h5'
+```
+
 Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://kipoi.org/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
 
 ### Configure Kipoi in `.kipoi/config.yaml`
