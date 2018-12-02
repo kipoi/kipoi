@@ -24,30 +24,10 @@ This repository implements a python package and a command-line interface (CLI) t
   
 ## Installation
 
-### 1. Install miniconda/anaconda
-
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
 Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/). Supported python versions: 2.7 and >=3.5.
 
-### 2. Install Git LFS
-
-For downloading models, Kipoi uses git and [Git Large File Storage](https://git-lfs.github.com/) (LFS). See how to install git [here](https://www.atlassian.com/git/tutorials/install-git). To install git-lfs on Ubuntu, run:
-
-```bash
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install -y git git-lfs
-git-lfs install
-```
-
-Alternatively, you can install git-lfs through conda:
-
-```bash
-conda install -c conda-forge git-lfs && git lfs install
-```
-
-### 3. Install Kipoi
-
-Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
+Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
 pip install kipoi
