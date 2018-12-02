@@ -15,25 +15,16 @@ kipoi.list_models()
 ### Get the model
 Before getting started with models take a short look what a Kipoi model actually is. Kipoi model have to have the following folder structure in which all the relevant files have their assigned places:
 ```
-├── dataloader.py     # implements the dataloader
-├── dataloader.yaml   # describes the dataloader
-├── dataloader_files/      #/ files required by the dataloader
-│   ├── x_transfomer.pkl
-│   └── y_transfomer.pkl
 ├── model.yaml        # describes the model
-├── model_files/           #/ files required by the model
-│   ├── model.json
-│   └── weights.h5
-└── example_files/         #/ small example files
-    ├── features.csv
-    └── targets.csv
+├── dataloader.yaml   # (optional) describes the dataloader
+└── dataloader.py     # (optional) implements the dataloader
 ```
 The core file that defines a model is `model.yaml`, for more details please look at the docs for [contributing models](../contributing/01_Getting_started/).
 
 Now let's get started with the model:
 
 ```python
-model = kipoi.get_model("rbp_eclip/AARS")
+model = kipoi.get_model("Basset")
 ```
 ---
 ** Aside: `get_model` and models versus model groups**: 
@@ -88,19 +79,13 @@ The output of the function above will tell you which arguments you can use when 
 model.pipeline.predict({"dataloader_arg1": "...", "targets_file": "..."})
 ```
 
-Specifically, for the `rbp_eclip/AARS` model, you would run the following:
+Specifically, for the `Basset` model, you would run the following:
 
 ```python
-# Make sure we are in the directory containing the example files
-import os
-os.chdir(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS'))
+dl_kwargs = model.default_dataloader.download_example('example')
 
 # Run the prediction
-model.pipeline.predict({'intervals_file': 'example_files/intervals.bed', 
-                        'fasta_file': 'example_files/hg38_chr22.fa', 
-	                'gtf_file': 'example_files/gencode.v24.annotation_chr22.gtf', 
-	                'filter_protein_coding': True, 
-	                'target_file': 'example_files/targets.tsv'})
+pred = model.pipeline.predict(dl_kwargs, batch_size=4)
 ```
 
 ### Setup the dataloader

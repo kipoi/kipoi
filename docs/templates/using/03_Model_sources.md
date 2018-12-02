@@ -52,6 +52,6 @@ model_sources:
 ### About model definition
 
 A particular model is defined by its source (key under `model_sources`, say `kipoi`) and the relative path of the 
-desired model directory from the model source root (say `rbp_eclip/AARS`).
+desired model directory from the model source root (say `Basset`).
 
 A directory is considered a model if it contains a `model.yaml` file.

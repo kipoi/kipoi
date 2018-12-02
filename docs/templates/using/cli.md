@@ -19,7 +19,7 @@ kipoi ls
 Get information on how the required dataloader keyword arguments
 
 ```bash
-kipoi info rbp_eclip/AARS
+kipoi info Basset
 ```
 
 ### predict
@@ -27,14 +27,12 @@ kipoi info rbp_eclip/AARS
 Run model prediction
 
 ```bash
-cd ~/.kipoi/models/rbp_eclip/AARS/example_files
-
-kipoi predict rbp_eclip/AARS \
-  --dataloader_args='{'intervals_file': 'intervals.bed', 'fasta_file': 'hg38_chr22.fa', 'gtf_file': 'gencode.v24.annotation_chr22.gtf'}' \
-  -o '/tmp/rbp_eclip__AARS.example_pred.tsv'
-
+kipoi get-example Basset -o example
+kipoi predict Basset \
+  --dataloader_args='{"intervals_file": "example/intervals_file", "fasta_file": "example/fasta_file"}' \
+  -o '/tmp/Basset.example_pred.tsv'
 # check the results
-head '/tmp/rbp_eclip__AARS.example_pred.tsv'
+head '/tmp/Basset.example_pred.tsv'
 ```
 
 You can add `--singularity` to the command in order to execute the command in the virtual environment.
@@ -45,7 +43,7 @@ You can add `--singularity` to the command in order to execute the command in th
 Test whether a model is defined correctly and whether is execution using the example files is successful.
 
 ```bash
-kipoi test ~/.kipoi/models/rbp_eclip/AARS/example_files
+kipoi test ~/.kipoi/models/Basset/example_files
 ```
 
 ### env 
@@ -53,15 +51,15 @@ kipoi test ~/.kipoi/models/rbp_eclip/AARS/example_files
 Install model dependencies
 
 ```bash
-kipoi env install rbp_eclip/AARS
+kipoi env install Basset
 ```
 
 #### create
 Create a new conda environment for the model
 
 ```bash
-kipoi env create rbp_eclip/AARS
-source activate kipoi-rbp_eclip__UPF
+kipoi env create Basset
+source activate kipoi-Basset
 ```
 
 #### list
@@ -72,3 +70,5 @@ kipoi env list
 ```
 
 Use `source activate <env>` or `conda activate <env>` to activate the environment.
+
+See also <https://github.com/kipoi/examples> for more information.
