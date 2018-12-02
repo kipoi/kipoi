@@ -787,6 +787,7 @@ def infer_pyt_class(kwargs):
     else:
         return OldPyTorchModel
 
+
 class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads a pytorch model.
 
@@ -795,7 +796,6 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     MODEL_PACKAGE = "pytorch"
 
     def __init__(self, weights, module_class=None, module_kwargs=None, module_obj=None, module_file=None,
-                 torch_t7_file=None,
                  auto_use_cuda=True):
         """
         Instantiate a PyTorchModel. The preferred way of instantiating PyTorch models is by using the `load_state_dict`
@@ -823,36 +823,31 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         if (module_obj is None) and (module_class is None):
             raise Exception("Either 'module_obj' or 'module_class' have to be defined.")
 
-        if torch_t7_file is not None:
-            from torch.utils.serialization import load_lua
-            self.model = load_lua(torch_t7_file)
-            self.model.evaluate()
+        obj_name = module_class
+        if module_obj is not None:
+            obj_name = module_obj
+
+        if module_file is not None:
+            obj = getattr(load_module(module_file), obj_name)
         else:
-            obj_name = module_class
-            if module_obj is not None:
-                obj_name = module_obj
+            try:
+                obj = load_obj(obj_name)
+            except ValueError as e:
+                raise ValueError("The module file either has to be defined explicitly in `module_file` or implicitly "
+                                 "in the `module_class` or `module_obj` arguments. Loading the PyTorchModel failed "
+                                 "with: %s" % e.message)
 
-            if module_file is not None:
-                obj = getattr(load_module(module_file), obj_name)
-            else:
-                try:
-                    obj = load_obj(obj_name)
-                except ValueError as e:
-                    raise ValueError("The module file either has to be defined explicitly in `module_file` or implicitly "
-                                     "in the `module_class` or `module_obj` arguments. Loading the PyTorchModel failed "
-                                     "with: %s" % e.message)
+        self.model = obj
+        if module_class is not None:
+            kwargs = {}
+            if module_kwargs is not None:
+                if isinstance(module_kwargs, six.string_types):
+                    kwargs = yaml.load(module_kwargs)
+                else:
+                    kwargs = module_kwargs
+            self.model = obj(**kwargs)
 
-            self.model = obj
-            if module_class is not None:
-                kwargs = {}
-                if module_kwargs is not None:
-                    if isinstance(module_kwargs, six.string_types):
-                        kwargs = yaml.load(module_kwargs)
-                    else:
-                        kwargs = module_kwargs
-                self.model = obj(**kwargs)
-
-            self.model.load_state_dict(torch.load(weights))
+        self.model.load_state_dict(torch.load(weights))
 
         if auto_use_cuda and torch.cuda.is_available():
             self.model = self.model.cuda()
@@ -861,8 +856,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             self.use_cuda = False
 
         # Assuming that model should be used for predictions only
-        if hasattr(self.model, 'eval'):
-            self.model.eval()
+        self.model.eval()
 
         # Keep all gradient hooks in a list
         self.grad_hooks = []
