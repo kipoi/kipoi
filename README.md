@@ -21,6 +21,7 @@ This repository implements a python package and a command-line interface (CLI) t
 - [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
 - [biorxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
+- [github.com/kipoi/examples](https://github.com/kipoi/examples) - Use-case oriented tutorials
   
 ## Installation
 
