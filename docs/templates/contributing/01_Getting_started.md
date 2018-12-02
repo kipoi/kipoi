@@ -11,7 +11,12 @@ We have compiled some of the standard use-cases of model contribution here. Plea
 
 <script>
 // Definition of dynamic content
-var model_class = {"keras": "kipoi.model.KerasModel", "tensorflow": "kipoi.model.TensorFlowModel", "pytorch": "kipoi.model.PyTorchModel", "scikitlearn": "kipoi.model.SklearnModel", "other": "my_model.MyModel # Specify where the model is defined, for example: my_model.MyModel if the MyModel class is defined in my_model.py"};
+var model_class = {"keras": "kipoi.model.KerasModel",
+                   "tensorflow": "kipoi.model.TensorFlowModel",
+                   "pytorch": "kipoi.model.PyTorchModel",
+                   "scikitlearn": "kipoi.model.SklearnModel",
+                   "other": "my_model.MyModel # MyModel class defined in my_model.py"};
+
 var model_args = {"keras": `args: # arguments of kipoi.model.KerasModel
     arch:
         url: https://zenodo.org/path/to/my/architecture/file
@@ -26,8 +31,8 @@ var model_args = {"keras": `args: # arguments of kipoi.model.KerasModel
       url: https://zenodo.org/path/to/my/model.tf
       md5: 1234567890abc`,
 "pytorch": `args: # arguments of kipoi.model.PyTorchModel
-    module_class: my_pytorch_model.DummyModel # Assuming that DummyModel is defined in my_pytorch_model.py which lies in the same folder as model.yaml
-    module_kwargs: # Optional argument defining kwargs for the DummyModel initialisation
+    module_class: my_model.DummyModel # DummyModel defined in ./my_model.py
+    module_kwargs: # Optional kwargs for the DummyModel initialisation
       x: 1
       y: 2
       z: 3
@@ -38,7 +43,7 @@ var model_args = {"keras": `args: # arguments of kipoi.model.KerasModel
   pkl_file: 
       url: https://zenodo.org/path/to/my/model.pkl
       md5: 1234567890abc
-  predict_method: predict_proba  # Optional. predict by default. Available: predict, predict_proba, predict_log_proba`,
+  predict_method: predict_proba`,
 "other":`args: # Optional. Arguments to be passed to the model initialisation.
   file_path: 
       url: https://zenodo.org/path/to/my/model.pkl
@@ -59,8 +64,8 @@ var model_template_args = {"keras": `args: # arguments of kipoi.model.KerasModel
       url: {{ model_checkpoint_url }} # refers to models.tsv
       md5: {{ model_checkpoint_md5 }}`,
 "pytorch": `args: # arguments of kipoi.model.PyTorchModel
-    module_class: my_pytorch_model.DummyModel # Assuming that DummyModel is defined in my_pytorch_model.py which lies in the same folder as model.yaml
-    module_kwargs: # Optional argument defining kwargs for the DummyModel initialisation
+    module_class: my_model.DummyModel # DummyModel defined in my_model.py
+    module_kwargs: # Optional kwargs for the DummyModel initialisation
       x: 1
       y: 2
       z: 3
@@ -71,7 +76,7 @@ var model_template_args = {"keras": `args: # arguments of kipoi.model.KerasModel
   pkl_file: 
       url: {{ model_pkl_url }} # refers to models.tsv
       md5: {{ model_pkl_md5 }}
-  predict_method: predict_proba  # Optional. predict by default. Available: predict, predict_proba, predict_log_proba`,
+  predict_method: predict_proba`,
 "other":`args: # Optional. Arguments to be passed to the model initialisation.
   file_path: 
       url: {{ model_file_url }} # refers to models.tsv
@@ -99,49 +104,64 @@ my_model_2\thttps://zenodo.org/path/to/my/model2.pkl\t1234567890abc`,
 var model_yaml_dl_entry ={
     "dna":`
     defined_as: kipoiseq.dataloaders.SeqIntervalDl
+
     default_args: # Optional arguments to the SeqIntervalDl dataloader
-        auto_resize_len: 1000 # Automatically resize sequence intervals
-        alphabet_axis: 1 # dimension in which alphabet should be one-hot encoded, default: 1
+        # See also https://kipoi.org/kipoiseq/dataloaders/#seqintervaldl 
+        auto_resize_len: 100 # Automatically resize sequence intervals
+        alphabet_axis: 1
         dummy_axis: 2 # Add a dummy axis. Omit in order not to create dummy_axis.
         alphabet: "ACGT" # Order of letters in 1-hot encoding
-        ignore_targets: False # if True, dont return any target variables
-        #dtype: float #defines the numpy dtype of the returned array. Example: int, np.int32, np.float32, float`,
-    "dnaAdditional":`. #Defines that there exists a dataloader.yaml file in the same folder as this file.`,
+        ignore_targets: False # if True, dont return any target variables`,
+    "dnaAdditional":`. #Refer to dataloader.yaml in the same folder as this file.`,
     "splicing":`
     defined_as: kipoiseq.dataloaders.MMSpliceDl
     default_args: # Optional arguments to the MMSpliceDl dataloader
         intron5prime_len: 100 # 5' intronic sequence length to take.
         intron3prime_len: 100 # 3' intronic sequence length to take.`
 };
+
 var model_yaml = `defined_as: {{ model_class }}
 {{ model_args }}
+
 default_dataloader: {{ model_yaml_dl_entry }}
+
 info: # General information about the model
     authors: 
         - name: Your Name
           github: your_github_username
           email: your_email@host.org
-    doc: Model predicting the Iris species
+    doc: Model predicting X
     cite_as: https://doi.org:/... # preferably a doi url to the paper
-    trained_on: Iris species dataset (http://archive.ics.uci.edu/ml/datasets/Iris) # short dataset description
+    trained_on: Dataset Y. held-out chromosomes chr8, chr9 and chr22.
     license: MIT # Software License - if not set defaults to MIT
+    # You can also specify the license in the LICENSE file
+
 dependencies:
     conda: # install via conda
       - python=3.5
       - h5py
-      # - soumith::pytorch  # specify packages from other channels via &lt;channel&gt;::&lt;package&gt;      
+      # - soumith::pytorch  # &lt;channel&gt;::&lt;package&gt; syntax
     pip:   # install via pip
       - keras&gt;=2.0.4
       - tensorflow&gt;=1.0
+
 schema:  # Model schema. The schema defintion is essential for kipoi plug-ins to work.
-    inputs:
-        features:
-            shape: (4,)  # array shape of a single sample (omitting the batch dimension)
-            doc: &quot;Features in cm: sepal length, sepal width, petal length, petal width.&quot;
+    inputs:  # input = single numpy array
+        shape: (100,4)  # array shape of a single sample (omitting the batch dimension)
+        doc: input feature description
+
+    # inputs:  # input = dictionary of fields
+    #   seq:
+    #     shape: (100,4)
+    #     doc: input feature description
+    #   other_track:
+    #     shape: (50,)
+    #     doc: input feature description
     targets:
         shape: (3,)
-        doc: &quot;One-hot encoded array of classes: setosa, versicolor, virginica.&quot;
+        doc: model prediction description
 `;
+
 var model_py = `from kipoi.model import BaseModel
 
 class MyModel(BaseModel): # Implement your Kipoi model
@@ -152,83 +172,108 @@ class MyModel(BaseModel): # Implement your Kipoi model
     # Execute model prediction for input data
     def predict_on_batch(self, x): # The bare minimum that has to be defined
         return self.model.predict(x)`;
-var dataloader_yaml = `defined_as: dataloader.MyDataset  # Required to implement MyDataset class inheriting from kipoi.data.Dataset in dataloader.py
-args: # List the parameters for MyDataset.__init__ here and give paths to example input files.
+
+var dataloader_yaml = `defined_as: dataloader.MyDataset # MyDataset impolemented in dataloader.py
+args: # MyDataset.__init__ argument description
     features_file:
-        # descr: > allows multi-line fields
-        doc: >
-          Csv file of the Iris Plants Database from
-          http://archive.ics.uci.edu/ml/datasets/Iris features.
-        type: str
+        doc: intervals_file: bed3 file containing intervals
+        # Test file URL's
         example: 
-            url: https://zenodo.org/path/to/example_files/features.csv  # example file
-            md5: 7a6s5d76as5d76a5sd7
+            url: https://raw.githubusercontent.com/../intervals_51bp.tsv
+            md5: a76e47b3df87fd514860cf27fdc10eb4
     targets_file:
-        doc: >
-          Csv file of the Iris Plants Database targets.
-          Not required for making the prediction.
-        type: str
+        doc: Reference genome FASTA file path.
         example:
-            url: https://zenodo.org/path/to/example_files/targets.csv  # example file
-            md5: 76sd8f7687sd6fs68a67
-        optional: True  # if not present, the targets field will not be present in the dataloader output
+            url: https://raw.githubusercontent.com/../hg38_chr22_32000000_32300000.fa
+            md5: 01320157a250a3d2eea63e89ecf79eba
+    ignore_targets:
+        doc: if True, don't return any target variables
+        optional: True  # if not present, the "targets" will not be present
+
 info:
     authors: 
         - name: Your Name
           github: your_github_account
           email: your_email@host.org
-    doc: Model predicting the Iris species
+    doc: Data-loader returning one-hot encoded sequences given genome intervals
+
 dependencies:
     conda:
       - python=3.5
-      - pandas
+      - bioconda::pybedtools
+      - bioconda::pysam
+      - bioconda::pyfaidx
       - numpy
-      - sklearn
-output_schema: # Define the dataloader output schema according to the outputs that are generated in the dataloader
+      - pandas
+    pip:
+      - kipoiseq
+
+output_schema: # Define the dataloader output schema according to the returned values
     inputs:
-        features:
-            shape: (4,)
-            doc: Features in cm: sepal length, sepal width, petal length, petal width.
+        seq:
+            shape: (100, 4)
+            doc: One-hot encoded DNA sequence
+        other_track:
+            shape: (50,)
+            doc: dummy track
     targets:
-        shape: (3, )
-        doc: One-hot encoded array of classes: setosa, versicolor, virginica.
-    metadata:  # field providing additional information to the samples (not directly required by the model)
-        example_row_number:
-            type: int
-            doc: Just an example metadata column`;
+        shape: (None,)
+        doc: (optional) values following the bed-entry
+    metadata:  # additional information about the samples
+        ranges:
+            type: GenomicRanges
+            doc: Ranges describing inputs.seq`;
+
 var dataloader_py = `from __future__ import absolute_import, division, print_function
 import numpy as np
-from pybedtools import BedTool
-from genomelake.extractors import FastaExtractor
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
+from kipoiseq.dataloaders.sequence import BedDataset
+from kipoiseq.extractors import FastaStringExtractor
+from kipoiseq.transforms import OneHot
+
 
 class MyDataset(Dataset):
-    """
+    """Example re-implementation of kipoiseq.dataloaders.SeqIntervalDl
+
     Args:
         intervals_file: bed3 file containing intervals
         fasta_file: file path; Genome sequence
     """
 
-    def __init__(self, intervals_file, fasta_file):
-
-        self.bt = BedTool(intervals_file)
+    def __init__(self, intervals_file, fasta_file, ignore_targets=True):
+        self.bt = BedDataset(intervals_file,
+                             bed_columns=3,
+                             ignore_targets=ignore_targets)
         self.fasta_file = fasta_file
         self.fasta_extractor = None
+        self.transform = OneHot()  # one-hot encode DNA sequence
 
     def __len__(self):
         return len(self.bt)
 
     def __getitem__(self, idx):
         if self.fasta_extractor is None:
-            self.fasta_extractor = FastaExtractor(self.fasta_file)
+            self.fasta_extractor = FastaStringExtractor(self.fasta_file)
 
-        interval = self.bt[idx]
+        # get the intervals
+        interval, targets = self.bed[idx]
 
-        seq = np.squeeze(self.fasta_extractor([interval]), axis=0)
+        # resize to 100bp
+        interval = resize_interval(interval, 100, anchor='center')
+
+        # extract the sequence
+        seq = self.fasta_extractors.extract(interval)
+
+        # one-hot encode the sequence
+        seq_onehot = self.transform(seq)
+
         return {
-            "inputs": seq,
-            # lacks targets
+            "inputs": {
+               "seq": seq_onehot,
+               "other_track": np.ones((50, ))
+             },
+            "targets": targets,   # (optional field)
             "metadata": {
                 "ranges": GenomicRanges.from_interval(interval)
             }
@@ -264,8 +309,8 @@ class MyDataset(Dataset):
                 <select id="sel_mg" onchange="refresh_info()">
                     <option value="None" selected>Select...</option>
                     <option value="single">single model</option>
-                    <option value="setSim">set of highly similar models with identical preprocessing requirements</option>
-                    <option value="setDiff">set of models that logically belong together, but require different input</option>
+                    <option value="setSim">set of highly similar models (say models for different TFs)</option>
+                    <option value="setDiff">set of models that logically belong together, but may not be very similar</option>
                 </select>
             </li>
         </ul>
@@ -296,7 +341,7 @@ class MyDataset(Dataset):
 
 
 <div class="cond" style="display: none;">
-    <h4 id="preparation">Preparation</h4>
+    <h3 id="preparation">Preparation</h3>
 </div>
 
 <div class="cond forking" style="display: none;">
@@ -305,7 +350,7 @@ class MyDataset(Dataset):
 
 
 <div class="cond anyExpl" style="display: none;">
-    <h4 id="setting-up-your-model">Setting up your model</h4>
+    <h3 id="setting-up-your-model">Setting up your model</h3>
 </div>
     
 <div class="cond single setSim" style="display: none;">
@@ -495,7 +540,7 @@ class MyDataset(Dataset):
 
 <div class="cond dnaAdditional" style="display: none;">
 
-    <h4 id="setting-up-your-dataloader">Setting up your dataloader</h4>
+    <h3 id="setting-up-your-dataloader">Setting up your dataloader</h3>
 
 </div>
 
@@ -579,7 +624,7 @@ class MyDataset(Dataset):
 
 <div class="cond" style="display: none;">
 
-    <h4 id="info-and-model-schema">Info and model schema</h4>
+    <h3 id="info-and-model-schema">Info and model schema</h3>
     
     <p> Please update the model description, the authors and the data it the model was trained in the <code>info</code> 
     section of the model <code>.yaml</code> file. Please explain explicitly what your model does etc. Think what you 
@@ -593,7 +638,7 @@ class MyDataset(Dataset):
 
 <div class="cond anyExpl" style="display: none;">
 
-    <h4 id="license">License</h4>
+    <h3 id="license">License</h3>
 
     <p>Please make sure that the license that is defined in the <code>license:</code> tag in the yaml file is correct.
     Also only contribute models for which you have the rights to do so and only contribute models that permit 
@@ -603,7 +648,7 @@ class MyDataset(Dataset):
 
 <div class="cond single" style="display: none;">
 
-    <h4 id="testing">Testing</h4>
+    <h3 id="testing">Testing</h3>
 
     <p> Now it is time to test your model. If you are in the model directory run the command:</p>
     <pre><code class="hljs bash">kipoi test .</code></pre>
@@ -617,7 +662,7 @@ class MyDataset(Dataset):
 
 <div class="cond setSim setDiff" style="display: none;">
 
-    <h4 id="testing">Testing</h4>
+    <h3 id="testing">Testing</h3>
 
     <p> Now it is time to test your models. For the following let's assume your model group is called 
     <code>MyModel</code> and your have two models in the group, which are <code>MyModel/ModelA</code> and 
@@ -636,7 +681,7 @@ class MyDataset(Dataset):
 
 <div class="cond forking" style="display: none;">
 
-    <h4 id="forking-and-submitting">Forking and submitting</h4>
+    <h3 id="forking-and-submitting">Forking and submitting</h3>
 
     <ul>
     <li>Make sure your model repository is up to date: <ul>
