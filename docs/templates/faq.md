@@ -1,25 +1,19 @@
-### What models go to Kipoi?
+### What type of models are suitable for the Kipoi model repository?
 
-  - **Trained** machine learning models from the area of **genomics**. Those can be models of any kind including deep learning, HMMs, trees, etc.
-  - Models for which the model contributor has the license to redistribute
+The Kipoi model repository is restricted to trained models with application in genomics,. Specifically, we request at least one input data modality to be derived from DNA sequence (which includes amino acid sequences) or from a functional genomics assay such as ChIP-seq or protein mass-spectrometry. Moreover, models must be able to satisfy the specifications of the API ([model](http://kipoi.org/docs/contributing/05_Writing_model.py/) and [dataloader](http://kipoi.org/docs/contributing/04_Writing_dataloader.py/)).
+Please contact us if the model you would like to share a model that doesn’t fit the scope. We would be happy to help you instantiate a new model repository for a different domain (say imaging).
+
 
 ### What models don't go into Kipoi?
 
 Basically, models that don't fit [these requirements](#what-models-go-to-kipoi). In particular, models that require 
-training before their prediction becomes sensible. These are for example models for imputation that need to be trained 
+training before they can be used. These are for example models for imputation that need to be trained 
 on the specific dataset prior to application.
 
-### Why is training not supported in Kipoi?
-
-Kipoi strives to generalise and simplify tasks in a `one-command-fits-all` fashion. This enables the handling and use 
-of models in a transparent way. Training a machine learning model is a complex task and the workload of a model 
-contributor to convert their model training code into code that is compatible with a general API would be very high. 
-Additionally, since all our models and code are tested nightly, this would also be required for training, which would 
-increase the computation time for testing immensely. 
 
 ### What licenses are allowed?
 
-Any license that allows the redistribution model of files uploaded to file-sharing services like Zenodo or Figshare. We encourage users to use one of the standard open-source software licenses such as MIT, BSD License, GNU Public License or Apache License ([Comparison of free and open-source software licenses](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses)). Please contact us if you would like to host the files on your own servers. We note that it is the users' responsibility not to break copy rights when (re-)using models that are available in the Kipoi model zoo.
+Any license that allows the redistribution model of files uploaded to file-sharing services like Zenodo or Figshare. We encourage users to use one of the standard open-source software licenses such as MIT, BSD License, GNU Public License or Apache License ([Comparison of free and open-source software licenses](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses)). Please contact us if you would like to host the files on your own servers. We note that it is the users' responsibility not to break copy rights when (re-)using models that are available in the Kipoi model zoo. License is specified either in the LICENSE file present in the model directory or the license type is specified in [model.yaml](http://kipoi.org/docs/contributing/02_Writing_model.yaml/).
 
 ### Versioning of models
 
@@ -39,12 +33,11 @@ Yes if the binary is compiled and distributed through Bioconda or Conda-Forge co
 If you have trouble executing kipoi because of system-wide installed libraries you can use our singularity container
 to run calculations. After installing [singularity](https://www.sylabs.io/guides/latest/user-guide/quick_start.html#quick-installation-steps), just add the `--singularity` argument to your kipoi command.
 
-### Is it possible to perform transfer learning using a different frameworks?
+### Is it possible to perform transfer learning across machine learning frameworks?
 
-It depends. Kipoi allows you to pre-compute the activations of the frozen part of the network and save them to a file. These activations can be used as input features for a model written in an arbitrary framework. See [this](https://github.com/kipoi/manuscript/blob/master/src/transfer_learning/pre-computed-tlearn.ipynb) notebook on how to do this. If you wish to fine-tune the the whole model in a differnet framework you would need to convert the model parameters yourself (we recommend using [ONNX](https://onnx.ai/) to do so). In the future, we plan to convert all the models to 
-the ONNX format which will allow porting models across different frameworks. If you are insterested or keen to help - 
-here is the issue tracking this feature: https://github.com/kipoi/kipoi/issues/405.
+It depends. Kipoi allows you to pre-compute the activations of the frozen part of the network and save them to a file. These activations can be used as input features for a model written in an arbitrary framework. See [this](https://github.com/kipoi/manuscript/blob/master/src/transfer_learning/pre-computed-tlearn.ipynb) notebook on how to do this. If you wish to fine-tune the the whole model in a different framework you would need to convert the model parameters yourself (we recommend using [ONNX](https://onnx.ai/) to do so). In the future, we plan to convert all the models to 
+the ONNX format which will allow porting models across different frameworks. If you are interested or would like to get involved - here is the issue tracking this feature: https://github.com/kipoi/kipoi/issues/405.
 
-### Do you support Windows?
+### Does Kipoi support Windows?
 
 For Windows users we suggest to use the docker container: https://hub.docker.com/r/kipoi/models/. Installing conda environments for the Kipoi models is not fully supported on Windows due to unavailability of certain conda packages for Windows. Specifically, cyvcf2 is not readily available for windows via Bioconda, neither is htslib/tabix. htslib has been enabled for Windows from version 1.6, but not on conda. We hope that we will be able to enable support for Windows when those packages become Windows-compatible.
