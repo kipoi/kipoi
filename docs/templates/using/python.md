@@ -33,7 +33,7 @@ The core file that defines a model is `model.yaml`, for more details please look
 Now let's get started with the model:
 
 ```python
-model = kipoi.get_model("rbp_eclip/UPF1")
+model = kipoi.get_model("rbp_eclip/AARS")
 ```
 ---
 ** Aside: `get_model` and models versus model groups**: 
@@ -88,12 +88,12 @@ The output of the function above will tell you which arguments you can use when 
 model.pipeline.predict({"dataloader_arg1": "...", "targets_file": "..."})
 ```
 
-Specifically, for the `rbp_eclip/UPF1` model, you would run the following:
+Specifically, for the `rbp_eclip/AARS` model, you would run the following:
 
 ```python
 # Make sure we are in the directory containing the example files
 import os
-os.chdir(os.path.expanduser('~/.kipoi/models/rbp_eclip/UPF1'))
+os.chdir(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS'))
 
 # Run the prediction
 model.pipeline.predict({'intervals_file': 'example_files/intervals.bed', 

@@ -19,29 +19,33 @@ kipoi ls
 Get information on how the required dataloader keyword arguments
 
 ```bash
-kipoi info -i --source kipoi rbp_eclip/UPF1
+kipoi info rbp_eclip/AARS
 ```
 
 ### predict
+
 Run model prediction
 
 ```bash
-cd ~/.kipoi/models/rbp_eclip/UPF1/example_files
+cd ~/.kipoi/models/rbp_eclip/AARS/example_files
 
-kipoi predict rbp_eclip/UPF1 \
+kipoi predict rbp_eclip/AARS \
   --dataloader_args='{'intervals_file': 'intervals.bed', 'fasta_file': 'hg38_chr22.fa', 'gtf_file': 'gencode.v24.annotation_chr22.gtf'}' \
-  -o '/tmp/rbp_eclip__UPF1.example_pred.tsv'
+  -o '/tmp/rbp_eclip__AARS.example_pred.tsv'
 
 # check the results
-head '/tmp/rbp_eclip__UPF1.example_pred.tsv'
+head '/tmp/rbp_eclip__AARS.example_pred.tsv'
 ```
+
+You can add `--singularity` to the command in order to execute the command in the virtual environment.
+
 
 ### test
 
 Test whether a model is defined correctly and whether is execution using the example files is successful.
 
 ```bash
-kipoi test ~/.kipoi/models/rbp_eclip/UPF1/example_files
+kipoi test ~/.kipoi/models/rbp_eclip/AARS/example_files
 ```
 
 ### env 
@@ -49,14 +53,14 @@ kipoi test ~/.kipoi/models/rbp_eclip/UPF1/example_files
 Install model dependencies
 
 ```bash
-kipoi env install rbp_eclip/UPF1
+kipoi env install rbp_eclip/AARS
 ```
 
 #### create
 Create a new conda environment for the model
 
 ```bash
-kipoi env create rbp_eclip/UPF1
+kipoi env create rbp_eclip/AARS
 source activate kipoi-rbp_eclip__UPF
 ```
 

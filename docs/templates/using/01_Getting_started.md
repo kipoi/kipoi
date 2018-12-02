@@ -32,26 +32,18 @@ kipoi.list_models()
 
 #### Get the model
 Before getting started with models take a short look what a Kipoi model actually is. Kipoi model have to have the following folder structure in which all the relevant files have their assigned places:
+
 ```
-├── dataloader.py     # implements the dataloader
-├── dataloader.yaml   # describes the dataloader
-├── dataloader_files/      #/ files required by the dataloader
-│   ├── x_transfomer.pkl
-│   └── y_transfomer.pkl
 ├── model.yaml        # describes the model
-├── model_files/           #/ files required by the model
-│   ├── model.json
-│   └── weights.h5
-└── example_files/         #/ small example files
-    ├── features.csv
-    └── targets.csv
+├── dataloader.yaml   # (optional) describes the dataloader
+└── dataloader.py     # (optional) implements the dataloader
 ```
 The core file that defines a model is `model.yaml`, for more details please look at the docs for [contributing models](../contributing/01_Getting_started/).
 
 Now let's get started with the model:
 
 ```python
-model = kipoi.get_model("rbp_eclip/UPF1")
+model = kipoi.get_model("rbp_eclip/AARS")
 ```
 ---
 ** Aside: `get_model` and models versus model groups**: 
@@ -112,12 +104,12 @@ The output of the function above will tell you which arguments you can use when 
 model.pipeline.predict({"dataloader_arg1": "...", "targets_file": "..."})
 ```
 
-Specifically, for the `rbp_eclip/UPF1` model, you would run the following:
+Specifically, for the `rbp_eclip/AARS` model, you would run the following:
 
 ```python
 # Make sure we are in the directory containing the example files
 import os
-os.chdir(os.path.expanduser('~/.kipoi/models/rbp_eclip/UPF1'))
+os.chdir(os.path.expanduser('~/.kipoi/models/rbp_eclip/AARS'))
 
 # Run the prediction
 model.pipeline.predict({'intervals_file': 'example_files/intervals.bed', 
@@ -187,20 +179,20 @@ kipoi ls
 ```
 #### Get information on how the required dataloader keyword arguments
 ```bash
-kipoi info -i --source kipoi rbp_eclip/UPF1
+kipoi info -i --source kipoi rbp_eclip/AARS
 ```
 
 #### Run model prediction
 
 ```bash
-cd ~/.kipoi/models/rbp_eclip/UPF1/example_files
+cd ~/.kipoi/models/rbp_eclip/AARS/example_files
 
-kipoi predict rbp_eclip/UPF1 \
+kipoi predict rbp_eclip/AARS \
   --dataloader_args='{'intervals_file': 'intervals.bed', 'fasta_file': 'hg38_chr22.fa', 'gtf_file': 'gencode.v24.annotation_chr22.gtf'}' \
-  -o '/tmp/rbp_eclip__UPF1.example_pred.tsv'
+  -o '/tmp/rbp_eclip__AARS.example_pred.tsv'
 
 # check the results
-head '/tmp/rbp_eclip__UPF1.example_pred.tsv'
+head '/tmp/rbp_eclip__AARS.example_pred.tsv'
 ```
 
 #### Test a model
@@ -208,19 +200,19 @@ head '/tmp/rbp_eclip__UPF1.example_pred.tsv'
 Test whether a model is defined correctly and whether is execution using the example files is successful.
 
 ```bash
-kipoi test ~/.kipoi/models/rbp_eclip/UPF1/example_files
+kipoi test ~/.kipoi/models/rbp_eclip/AARS/example_files
 ```
 
 #### Install all model dependencies
 
 ```bash
-kipoi env install rbp_eclip/UPF1
+kipoi env install rbp_eclip/AARS
 ```
 
 #### Create a new conda environment for the model
 
 ```bash
-kipoi env create rbp_eclip/UPF1
+kipoi env create rbp_eclip/AARS
 source activate kipoi-rbp_eclip__UPF
 ```
 
@@ -235,8 +227,9 @@ Use `source activate <env>` or `conda activate <env>` to activate the environmen
 
 #### Score variants
 
+
 ```bash
-kipoi postproc score_variant rbp_eclip/UPF1 \
+kipoi veff score_variant rbp_eclip/AARS \
 	--batch_size=16 \
 	-v input.vcf \
 	-o output.vcf

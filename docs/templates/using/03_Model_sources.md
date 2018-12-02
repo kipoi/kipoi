@@ -5,7 +5,7 @@
 ```yaml
 model_sources:
   kipoi: # source name 
-    type: git-lfs  # git repository with large file storage (lfs)
+    type: git  # git repository
     remote_url: git@github.com:kipoi/models.git  # git remote
     local_path: /home/avsec/.kipoi/models/ # local storage path
 
@@ -17,18 +17,16 @@ model_sources:
 
 
 `model_sources` defines all the places where kipoi will search for models and pull them to a local directory.
-By default, it contains the model-zoo from `github.com/kipoi/models`. It is not a normal git repository,
-since bigger files are stored with [git large file storage (git-lfs)](https://git-lfs.github.com/).
-This repository will be stored locally under `local_path`. Advantage of using `git-lfs` is that only the files tracked by `git` will be downloaded first. Larger files stored in `git-lfs` will be downloaded individually for each model upon request (say when a user invokes a `kipoi predict` command).
 
+By default, it contains the model-zoo from `github.com/kipoi/models` which is a normal git repository,
 
 ### All possible model source types
 
 In addition to the default `kipoi` source, you can modify `~/.kipoi/config.yaml` and add additional (private or public) 
 model sources. Available model source types are:
 
-- `git-lfs` - Model weights will get downloaded from git-lfs upon request.
 - `git` - Normal git repository, all the files will be downloaded on checkout. This is the source type used by the public `kipoi` repository.
+- `git-lfs` - Model weights will get downloaded from git-lfs upon request.
 - `local` - Local directory.
 
 Example:
@@ -36,7 +34,7 @@ Example:
 ```yaml
 model_sources:
   kipoi:
-    type: git-lfs
+    type: git
     remote_url: git@github.com:kipoi/models.git
     local_path: /home/avsec/.kipoi/models/
 	
@@ -54,6 +52,6 @@ model_sources:
 ### About model definition
 
 A particular model is defined by its source (key under `model_sources`, say `kipoi`) and the relative path of the 
-desired model directory from the model source root (say `rbp_eclip/UPF1`).
+desired model directory from the model source root (say `rbp_eclip/AARS`).
 
 A directory is considered a model if it contains a `model.yaml` file.
