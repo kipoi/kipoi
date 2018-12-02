@@ -6,9 +6,7 @@ Please contact us if the model you would like to share a model that doesn’t fi
 
 ### What models don't go into Kipoi?
 
-Basically, models that don't fit [the above requirements](#what-models-go-to-kipoi). In particular, models that require 
-training before they can be used. These are for example models for imputation that need to be trained 
-on the specific dataset prior to application.
+Basically, models that don't fit [the above requirements](#what-models-go-to-kipoi). These are for example models that require training before they can be used (say imputation models that need to be trained on the specific dataset prior to application).
 
 
 ### What licenses are allowed?
