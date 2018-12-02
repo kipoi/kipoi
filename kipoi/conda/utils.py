@@ -256,7 +256,7 @@ def parse_conda_package(dep):
             channel, package = dep.split("::")
         except ValueError:
             raise ValueError("The conda dependency: {0} couldn't be properly parsed. ".format(dep) +
-                             "Use the following synthax: <channel>::<package> or <package>")
+                             "Use the following syntax: <channel>::<package> or <package>")
         return (channel, package)
     else:
         return ("defaults", dep)

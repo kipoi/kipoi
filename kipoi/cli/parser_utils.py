@@ -61,7 +61,9 @@ def add_env_args(parser, source="kipoi"):
                         "Dataloader will be used. You can use <source>::<dataloader> to use dataloaders from different sources\n"
                         "As for the --model tag, you can specify whole dataloader groups.")
     parser.add_argument("--vep", action="store_true",
-                        help="Include also the dependencies for variant effect prediction")
+                        help="Include also the dependencies for the kipoi-veff package")
+    parser.add_argument("--interpret", action="store_true",
+                        help="Include also the dependencies for the kipoi-interpret package")
     parser.add_argument("--gpu", action="store_true",
                         help="Use gpu-compatible dependencies. Example: instead " +
                         "of using 'tensorflow', 'tensorflow-gpu' will be used")
@@ -90,7 +92,7 @@ def parse_source_name(source, name):
             source, name = name.split("::")
         except ValueError:
             raise ValueError("The name: {0} couldn't be properly parsed. ".format(name) +
-                             "Use the following synthax: <source>::<model/dataloader> or <model/dataloader>")
+                             "Use the following syntax: <source>::<model/dataloader> or <model/dataloader>")
 
     # Check that the source is correctly specified
     available_sources = list(kipoi.config.model_sources().keys())

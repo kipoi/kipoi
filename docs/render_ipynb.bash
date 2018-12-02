@@ -23,7 +23,7 @@ for file in $(cat ipynb_pages.txt); do
     dir_out=sources/${DIR}/${file}_files
 
     # fix the paths for the original images
-    sed_replace '![img](../docs/theme_dir/img/' '![img](/img/' $file_out
+    sed_replace '![img](../docs/theme_dir/img/' '![img](/docs/img/' $file_out
     # TODO - prepend the original ipython notebook link
     echo -e "Generated from [notebooks/${file}.ipynb](https://github.com/kipoi/kipoi/blob/master/notebooks/${file}.ipynb)\n$(cat ${file_out})" > ${file_out}
 
@@ -36,7 +36,7 @@ for file in $(cat ipynb_pages.txt); do
 	mv -f ${dir_out} theme_dir/img/ipynb/
 
 	# fix the path in the .md file
-	sed_replace '![png]('${file}'_files' '![png](/img/ipynb/'${file}'_files' $file_out
-	sed_replace '![svg]('${file}'_files' '![svg](/img/ipynb/'${file}'_files' $file_out
+	sed_replace '![png]('${file}'_files' '![png](/docs/img/ipynb/'${file}'_files' $file_out
+	sed_replace '![svg]('${file}'_files' '![svg](/docs/img/ipynb/'${file}'_files' $file_out
     fi
 done

@@ -5,240 +5,799 @@ Kipoi stores models (descriptions, parameter files, dataloader code, ...) as fol
 [`model.yaml`](./02_Writing_model.yaml.md) file is available in the model folder, which defines the type of the model, 
 file paths / URLs, the dataloader, description, software dependencies, etc.
 
-All files necessary for a model to be executed have to be published on [zenodo](https://zenodo.org/) or 
-[figshare](https://figshare.com/) to insure functionality and versioning of models.
+We have compiled some of the standard use-cases of model contribution here. Please specify:
 
 
-One key element for a model to be contributed to Kipoi is its dataloader. The main aim of a dataloader is to generate 
-batches of data with which a model can be run. Its inputs should be files in the most common formats of the respective 
-field, such as .bed and .fasta files for genomic sequences and regions. 
 
-#### Pre-defined datalaoders
-To simplify the process of contributing models to Kipoi we have created [kipoiseq](https://github.com/kipoi/kipoiseq), 
-a repository that offers pre-defined dataloaders for common applications.
+<script>
+// Definition of dynamic content
+var model_class = {"keras": "kipoi.model.KerasModel",
+                   "tensorflow": "kipoi.model.TensorFlowModel",
+                   "pytorch": "kipoi.model.PyTorchModel",
+                   "scikitlearn": "kipoi.model.SklearnModel",
+                   "other": "my_model.MyModel # MyModel class defined in my_model.py"};
 
-If you can use one of the dataloaders in kipoiseq for you model then the Kipoi model will consist solely in a folder
-and one `model.yaml` file inside it:
+var model_args = {"keras": `args: # arguments of kipoi.model.KerasModel
+    arch:
+        url: https://zenodo.org/path/to/my/architecture/file
+        md5: 1234567890abc
+    weights:
+        url: https://zenodo.org/path/to/my/model/weights.h5
+        md5: 1234567890abc`,
+"tensorflow": `args: # arguments of kipoi.model.TensorFlowModel
+  input_nodes: "inputs"
+  target_nodes: "preds"
+  checkpoint_path: 
+      url: https://zenodo.org/path/to/my/model.tf
+      md5: 1234567890abc`,
+"pytorch": `args: # arguments of kipoi.model.PyTorchModel
+    module_class: my_model.DummyModel # DummyModel defined in ./my_model.py
+    module_kwargs: # Optional kwargs for the DummyModel initialisation
+      x: 1
+      y: 2
+      z: 3
+    weights: # Path to the file containing the state_dict
+        url: https://zenodo.org/path/to/my/model/weights.pth
+        md5: 1234567890abc`,
+"scikitlearn": `args: # arguments of kipoi.model.SklearnModel
+  pkl_file: 
+      url: https://zenodo.org/path/to/my/model.pkl
+      md5: 1234567890abc
+  predict_method: predict_proba`,
+"other":`args: # Optional. Arguments to be passed to the model initialisation.
+  file_path: 
+      url: https://zenodo.org/path/to/my/model.pkl
+      md5: 1234567890abc
+  my_param: 42`,
+};
+var model_template_args = {"keras": `args: # arguments of kipoi.model.KerasModel
+    arch:
+        url: {{ model_arch_url }} # refers to models.tsv
+        md5: {{ model_arch_md5 }}
+    weights:
+        url: {{ model_weights_url }}
+        md5: {{ model_weights_md5 }}`,
+"tensorflow": `args: # arguments of kipoi.model.TensorFlowModel
+  input_nodes: "inputs"
+  target_nodes: "preds"
+  checkpoint_path: 
+      url: {{ model_checkpoint_url }} # refers to models.tsv
+      md5: {{ model_checkpoint_md5 }}`,
+"pytorch": `args: # arguments of kipoi.model.PyTorchModel
+    module_class: my_model.DummyModel # DummyModel defined in my_model.py
+    module_kwargs: # Optional kwargs for the DummyModel initialisation
+      x: 1
+      y: 2
+      z: 3
+    weights: # Path to the file containing the state_dict
+        url: {{ model_weights_url }} # refers to models.tsv
+        md5: {{ model_weights_md5 }}`,
+"scikitlearn": `args: # arguments of kipoi.model.SklearnModel
+  pkl_file: 
+      url: {{ model_pkl_url }} # refers to models.tsv
+      md5: {{ model_pkl_md5 }}
+  predict_method: predict_proba`,
+"other":`args: # Optional. Arguments to be passed to the model initialisation.
+  file_path: 
+      url: {{ model_file_url }} # refers to models.tsv
+      md5: {{ model_file_md5 }}
+  my_param: 42`,
+}
 
-```
-MyModel
-└── model.yaml         # describes the model
-```
- 
+var models_tsv = {"keras": `model\tmodel_arch_url\tmodel_arch_md5\tmodel_weights_url\tmodel_weights_md5
+my_model_1\thttps://zenodo.org/path/to/my/architecture/file1\t1234567890abc\thttps://zenodo.org/path/to/my/model/weights1.h5\t1234567890abc
+my_model_2\thttps://zenodo.org/path/to/my/architecture/file2\t1234567890abc\thttps://zenodo.org/path/to/my/model/weights2.h5\t1234567890abc`,
+"tensorflow": `model\tmodel_checkpoint_url\tmodel_checkpoint_md5
+my_model_1\thttps://zenodo.org/path/to/my/model1.tf\t1234567890abc
+my_model_2\thttps://zenodo.org/path/to/my/model2.tf\t1234567890abc`,
+"pytorch": `model\tmodel_weights_url\tmodel_weights_md5
+my_model_1\thttps://zenodo.org/path/to/my/model/weights1.pth\t1234567890abc
+my_model_2\thttps://zenodo.org/path/to/my/model/weights2.pth\t1234567890abc`,
+"scikitlearn": `model\tmodel_pkl_url\tmodel_pkl_md5
+my_model_1\thttps://zenodo.org/path/to/my/model1.pkl\t1234567890abc
+my_model_2\thttps://zenodo.org/path/to/my/model2.pkl\t1234567890abc`,
+"other":`model\tmodel_file_url\tmodel_file_md5
+my_model_1\thttps://zenodo.org/path/to/my/model1.pkl\t1234567890abc
+my_model_2\thttps://zenodo.org/path/to/my/model2.pkl\t1234567890abc`,
+};
 
-#### Non-default dataloaders
+var model_yaml_dl_entry ={
+    "dna":`
+    defined_as: kipoiseq.dataloaders.SeqIntervalDl
 
-If the model you want to contribute requires different input from what is available out of the box in 
-[kipoiseq](https://github.com/kipoi/kipoiseq), you are encouraged to use the tested tools available in 
-[kipoiseq](https://github.com/kipoi/kipoiseq) to write your own [dataloader](./04_Writing_dataloader.py.md) and its 
-companion [yaml-file](./03_Writing_dataloader.yaml.md). If you do so you should keep the standard Kipoi way of
-defining models with all the files and their assigned places:
-```
-MyModel
-├── dataloader.py     # implements the dataloader
-├── dataloader.yaml   # describes the dataloader
-└── model.yaml         # describes the model
-```
+    default_args: # Optional arguments to the SeqIntervalDl dataloader
+        # See also https://kipoi.org/kipoiseq/dataloaders/#seqintervaldl 
+        auto_resize_len: 100 # Automatically resize sequence intervals
+        alphabet_axis: 1
+        dummy_axis: 2 # Add a dummy axis. Omit in order not to create dummy_axis.
+        alphabet: "ACGT" # Order of letters in 1-hot encoding
+        ignore_targets: False # if True, dont return any target variables`,
+    "dnaAdditional":`. #Refer to dataloader.yaml in the same folder as this file.`,
+    "splicing":`
+    defined_as: kipoiseq.dataloaders.MMSpliceDl
+    default_args: # Optional arguments to the MMSpliceDl dataloader
+        intron5prime_len: 100 # 5' intronic sequence length to take.
+        intron3prime_len: 100 # 3' intronic sequence length to take.`
+};
 
-### Required steps for contribution
+var model_yaml = `defined_as: {{ model_class }}
+{{ model_args }}
 
-#### Using pre-defined datalaoders
+default_dataloader: {{ model_yaml_dl_entry }}
 
-If the dataloaders offered in [kipoiseq](https://github.com/kipoi/kipoiseq) are what your model needs then submitting 
-a new model can even be done online using github or locally as explained 
-[here](#setting-up-kipoi-for-model-contribution).
- 
-###### Contribute model online
-You can contribute a model online on github by clicking `Create new file` in the 
-[models repository](https://github.com/kipoi/models). The filename would then be `MyModel/model.yaml`. The 
-name of folder (here: `MyModel`) which contains the [`model.yaml`](./02_Writing_model.yaml.md) 
-file. You can then select `Create a new branch for this commit and start a pull request` to attempt adding your model
-to Kipoi. If you want to test your model locally you have to make sure that kipoi and git are installed locally. 
-You can test your models as described [here](#how-to-test-the-model).
+info: # General information about the model
+    authors: 
+        - name: Your Name
+          github: your_github_username
+          email: your_email@host.org
+    doc: Model predicting X
+    cite_as: https://doi.org:/... # preferably a doi url to the paper
+    trained_on: Dataset Y. held-out chromosomes chr8, chr9 and chr22.
+    license: MIT # Software License - if not set defaults to MIT
+    # You can also specify the license in the LICENSE file
+
+dependencies:
+    conda: # install via conda
+      - python=3.5
+      - h5py
+      # - soumith::pytorch  # &lt;channel&gt;::&lt;package&gt; syntax
+    pip:   # install via pip
+      - keras&gt;=2.0.4
+      - tensorflow&gt;=1.0
+
+schema:  # Model schema. The schema defintion is essential for kipoi plug-ins to work.
+    inputs:  # input = single numpy array
+        shape: (100,4)  # array shape of a single sample (omitting the batch dimension)
+        doc: input feature description
+
+    # inputs:  # input = dictionary of fields
+    #   seq:
+    #     shape: (100,4)
+    #     doc: input feature description
+    #   other_track:
+    #     shape: (50,)
+    #     doc: input feature description
+    targets:
+        shape: (3,)
+        doc: model prediction description
+`;
+
+var model_py = `from kipoi.model import BaseModel
+
+class MyModel(BaseModel): # Implement your Kipoi model
+    def __init__(self, file_path, my_param):
+        ...
+        self.model = load_model_parameters(file_path)
+
+    # Execute model prediction for input data
+    def predict_on_batch(self, x): # The bare minimum that has to be defined
+        return self.model.predict(x)`;
+
+var dataloader_yaml = `defined_as: dataloader.MyDataset # MyDataset impolemented in dataloader.py
+args: # MyDataset.__init__ argument description
+    features_file:
+        doc: intervals_file: bed3 file containing intervals
+        # Test file URL's
+        example: 
+            url: https://raw.githubusercontent.com/../intervals_51bp.tsv
+            md5: a76e47b3df87fd514860cf27fdc10eb4
+    targets_file:
+        doc: Reference genome FASTA file path.
+        example:
+            url: https://raw.githubusercontent.com/../hg38_chr22_32000000_32300000.fa
+            md5: 01320157a250a3d2eea63e89ecf79eba
+    ignore_targets:
+        doc: if True, don't return any target variables
+        optional: True  # if not present, the "targets" will not be present
+
+info:
+    authors: 
+        - name: Your Name
+          github: your_github_account
+          email: your_email@host.org
+    doc: Data-loader returning one-hot encoded sequences given genome intervals
+
+dependencies:
+    conda:
+      - python=3.5
+      - bioconda::pybedtools
+      - bioconda::pysam
+      - bioconda::pyfaidx
+      - numpy
+      - pandas
+    pip:
+      - kipoiseq
+
+output_schema: # Define the dataloader output schema according to the returned values
+    inputs:
+        seq:
+            shape: (100, 4)
+            doc: One-hot encoded DNA sequence
+        other_track:
+            shape: (50,)
+            doc: dummy track
+    targets:
+        shape: (None,)
+        doc: (optional) values following the bed-entry
+    metadata:  # additional information about the samples
+        ranges:
+            type: GenomicRanges
+            doc: Ranges describing inputs.seq`;
+
+var dataloader_py = `from __future__ import absolute_import, division, print_function
+import numpy as np
+from kipoi.data import Dataset
+from kipoi.metadata import GenomicRanges
+from kipoiseq.dataloaders.sequence import BedDataset
+from kipoiseq.extractors import FastaStringExtractor
+from kipoiseq.transforms import OneHot
 
 
-#### Defining your own dataloader
-If the pre-defined dataloaders don't cover your use-case you will have to define your own. You therefore have to set up 
-kipoi as described [here](#setting-up-kipoi-for-model-contribution).
+class MyDataset(Dataset):
+    """Example re-implementation of kipoiseq.dataloaders.SeqIntervalDl
 
-#### Setting up Kipoi for model contribution
+    Args:
+        intervals_file: bed3 file containing intervals
+        fasta_file: file path; Genome sequence
+    """
 
-Here is a list of steps required to contribute a model to [kipoi/models](https://github.com/kipoi/models):
+    def __init__(self, intervals_file, fasta_file, ignore_targets=True):
+        self.bt = BedDataset(intervals_file,
+                             bed_columns=3,
+                             ignore_targets=ignore_targets)
+        self.fasta_file = fasta_file
+        self.fasta_extractor = None
+        self.transform = OneHot()  # one-hot encode DNA sequence
 
-##### 1. Install Kipoi
+    def __len__(self):
+        return len(self.bt)
 
-1. Install git
-    - There are many ways to do so and on many systems git is already installed. If not you can follow 
-    [this](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) guide.
-2. Install kipoi
-    - `pip install kipoi`
-3. Run `kipoi ls` (this will checkout the `kipoi/models` repo to `~/.kipoi/models`)
+    def __getitem__(self, idx):
+        if self.fasta_extractor is None:
+            self.fasta_extractor = FastaStringExtractor(self.fasta_file)
 
-##### 2. Add the model
+        # get the intervals
+        interval, targets = self.bed[idx]
 
-0. `cd ~/.kipoi/models`
-1. [Write the model](#how-to-write-the-model): Create a new folder `<my new model>` containing all the required files. 
- The required files can be created by doing one of the following three options:
-    - Option 1: Copy the existing model: `cp -R <existing model> <my new model>`, edit/replace/add the copied files 
-    until they fit your new model.
-	- Option 2: Run `kipoi init`, answer the questions, edit/replace the created files until they fit your new model.
-	- Option 3: `mkdir <my new model>` & write all the files from scratch
-2. [Test the model](#how-to-test-the-model)
-    - Step 1: `kipoi test ~/.kipoi/models/my_new_model`
-	- Step 2: `kipoi test-source kipoi --all -k my_new_model`
+        # resize to 100bp
+        interval = resize_interval(interval, 100, anchor='center')
 
-##### 3. Submit the pull-request
+        # extract the sequence
+        seq = self.fasta_extractors.extract(interval)
 
-###### Option 1: Fork the repository 
+        # one-hot encode the sequence
+        seq_onehot = self.transform(seq)
 
-0. Make sure you have all the recent changes locally
-    - `cd ~/.kipoi/models`
-    - `export GIT_LFS_SKIP_SMUDGE=1 && git pull` - pulls all the changes but doesn't download the files tracked by git-lfs.
-1. Commit your changes
-	- `git add my_new_model/`
-	- `git commit -m "Added <my new model>"`
-1. [Fork](https://guides.github.com/activities/forking/) the <https://github.com/kipoi/models> repo on github (click on the Fork button)
-1. Add your fork as a git remote to `~/.kipoi/models`
-    - `git remote add fork https://github.com/<username>/models.git`
-1. Push to your fork
-    - `git push fork master`
-1. Submit a pull-request
-    - click the [New pull request](https://help.github.com/articles/creating-a-pull-request/) button on your github fork - `https://github.com/<username>/models>`
+        return {
+            "inputs": {
+               "seq": seq_onehot,
+               "other_track": np.ones((50, ))
+             },
+            "targets": targets,   # (optional field)
+            "metadata": {
+                "ranges": GenomicRanges.from_interval(interval)
+            }
+        }`;
+</script>
 
-###### Option 2: Create a new branch on kipoi/models
 
-If you wish to contribute models more frequently, please [join the team](https://github.com/kipoi/models/issues/55). 
-You will be added to the Kipoi organization. This will allow you to push to branches of the `kipoi/models` github repo directly.
+<div class="container">
+    <p> 
+        <ul>
+            <li>which input data your model requires:
+                <select id="sel_inp" onchange="refresh_info()">
+                    <option value="None" selected>Select...</option>
+                    <option value="dna">DNA sequence (one-hot encoded or string)</option>
+                    <option value="dnaAdditional">DNA sequence with additional tracks</option>
+                    <option value="splicing">DNA sequence splicing model</option>
+                    <option value="otherInput">Other model input</option>
+                </select>
+            </li>
+            <li>
+                in which framework your model is implemented:
+                <select id="sel_fw" onchange="refresh_info()">
+                    <option value="None" selected>Select...</option>
+                    <option value="keras">Keras</option>
+                    <option value="tensorflow">TensorFlow</option>
+                    <option value="pytorch">PyTorch</option>
+                    <option value="scikitlearn">Sci-Kit learn</option>
+                    <option value="other">other</option>
+                </select>
+            </li>
+            <li>
+                whether you want to contribute a:
+                <select id="sel_mg" onchange="refresh_info()">
+                    <option value="None" selected>Select...</option>
+                    <option value="single">single model</option>
+                    <option value="setSim">set of highly similar models (say models for different TFs)</option>
+                    <option value="setDiff">set of models that logically belong together, but may not be very similar</option>
+                </select>
+            </li>
+        </ul>
+    </p>
+</div>
 
-1. Make sure you have all the recent changes locally
-    - `cd ~/.kipoi/models`
-    - `export GIT_LFS_SKIP_SMUDGE=1 && git pull` - pulls all the changes but doesn't download the files tracked by git-lfs.
-1. Create a new branch in `~/.kipoi/models`
-    - `git stash` - this will store/stash all local changes in [git stash](https://git-scm.com/book/en/v1/Git-Tools-Stashing)
-    - `git checkout -b my_new_model` - create a new branch
-    - `git stash pop` - get the stashed files back
-2. Commit changes
-    - `git add my_new_model/`
-    - `git commit -m "Added <my new model>"`
-3. Push changes to `my_new_model` branch
-    - `git push -u origin my_new_model`
-4. Submit a pull-request
-    - click the [New pull request](https://help.github.com/articles/creating-a-pull-request/) button on `my_new_model` branch of repo <https://github.com/kipoi/models>.
 
-Rest of this document will go more into the details about steps writing the model and testing the model.
+<style>
+.cond:{
+    visibility: hidden;
+}
+.hidden:{
+    visibility: hidden;
+}
+</style>
 
-#### How to write the model
+<!--- BEGIN extra imports for yaml display etc. --->
+<script src="../../js/jquery-2.1.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.16/clipboard.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<!--- END extra imports for yaml display etc. --->
 
-Best place to start figuring out which files you need to contribute is to look at some of the existing models. Explore the <https://github.com/kipoi/models> repository and see if there are any models similar to yours (in terms of the dependencies, framework, input-output data modalities). See [tutorials/contributing_models](../../tutorials/contributing_models) for a step-by-step procedure for contributing models.
+<p></p>
+<p></p>
+<!-- YAML goes here. Tabs for the different yamls and python files -->
 
-In terms of what to include in your model: The information in these pages here are the minimum requirement. The more
-information you can share with other users the better! If you have converted the model from using a script, please add that.
-If you have additional test and validation scripts that you wrote while verifying the Kipoi model, etc. , please add them.
-You will make future users happy.
 
-Hint: If you want to take a look at a specific model that is already in the zoo, but instead of the content of the model files there is just a hash entry, then use `kipoi pull <model_name>` to download the model data.
+<div class="cond" style="display: none;">
+    <h3 id="preparation">Preparation</h3>
+</div>
 
-##### Option #1: Copy existing model
+<div class="cond forking" style="display: none;">
+    <p>Before you start, make sure you have installed <code>kipoi</code>.</p>
+</div>
 
-Once you have found the closest match, simply copy the directory and start editing/replacing the files. Edit the files in this order:
 
-- model.yaml
-- dataloader.yaml (If you wrote your own dataloader)
-- dataloader.py (If you wrote your own dataloader)
-- LICENSE
+<div class="cond anyExpl" style="display: none;">
+    <h3 id="setting-up-your-model">Setting up your model</h3>
+</div>
+    
+<div class="cond single setSim" style="display: none;">
+    <p>For this example let's assume the model you want to submit is called <code>MyModel</code>. To submit your model
+    you will have create the folder <code>MyModel</code> in you Kipoi model folder (default:
+    <code>~/.kipoi/models</code>). In this folder you will have to create the following file(s):</p>
+</div>
 
-##### Option #2: Use `kipoi init`
+<div class="cond setDiff" style="display: none;">
 
-Alternatively, you can use `kipoi init` instead of copying the existing model:
+    <p>If you have trained multiple models that logically belong into one model-group as they are similar in function, but 
+    they individually require different preprocessing code then you are right here. To submit your model you will have to:</p>
+    <ul>
+        <li>Create a new local folder named after your model, e.g.: <br /><code>mkdir MyModel</code><br /> and within this folder create a folder
+        structure so that every individual trained model has its own folder. Every folder that contains a <code>model.yaml</code> is then
+        interpreted as an individual model by Kipoi.</li>
+        <li>To make this clearer take a look at how <code>FactorNet</code> is structured: 
+        <a href="https://github.com/kipoi/models/tree/master/FactorNet">FactorNet</a>. If you have files that are re-used in multiple 
+        models you can use symbolic links (<code>ln -s</code>) relative within the folder structure of your model group.</li>
+        <li>For your selection the following files have to exist in every sub-folder that should act as an individual model:</li>
+    </ul>
 
-```bash
-cd ~/.kipoi/models && kipoi init
-```
+</div>
 
-This will ask you a few questions and create a new model folder.
 
-```bash
-$ kipoi init
-INFO [kipoi.cli.main] Initializing a new Kipoi model
+<!--- this should be the copy-to-clipboard button that was placed in the tab-pane
+<button type="button" class="btn btn-default clipboard-btn hidden" data-clipboard-target="#model_yaml_raw_code">Copy to clipboard</button>
+<input class="hidden" id="model_yaml_raw_code"></input>
+--->
 
-Please answer the questions below. Defaults are shown in square brackets.
+<div class="cond anyExpl" style="display: none;">
+    <div id="wrapper">
+        <!-- Nav tabs -->
+        <ul id="codes" class="nav nav-tabs" role="tablist">
+          <li role="presentation" class="cond single setDiff" id="top-tab-model_yaml"><a href="#tab-model_yaml" role="tab" data-toggle="tab">model.yaml</a></li>
+          <li role="presentation" class="cond setSim" id="top-tab-model-template_yaml"><a href="#tab-model-template_yaml" role="tab" data-toggle="tab">model-template.yaml</a></li>
+          <li role="presentation" class="cond other"><a href="#tab-model_py" role="tab" data-toggle="tab">model.py</a></li>
+          <li role="presentation" class="cond setSim"><a href="#tab-models_tsv" role="tab" data-toggle="tab">models.tsv</a></li>
+          <li role="presentation" class="cond dnaAdditional otherInput"><a href="#tab-dataloader_yaml" role="tab" data-toggle="tab">dataloader.yaml</a></li>
+          <li role="presentation" class="cond dnaAdditional otherInput"><a href="#tab-dataloader_py" role="tab" data-toggle="tab">dataloader.py</a></li>
+        </ul>
+    
+        <!-- Tab panes -->
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane" id="tab-model_yaml">
+                <pre><code class="yaml hljs makefile" id="model_yaml_code">
+                </code></pre>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="tab-model-template_yaml">
+                <pre><code class="yaml hljs makefile" id="model-template_yaml_code">
+                </code></pre>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="tab-model_py">
+                <pre><code class="python hljs" id="model_py_code"></code></pre>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="tab-models_tsv">
+                <pre><code class="yaml hljs makefile" id="models_tsv_code"></code></pre>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="tab-dataloader_yaml">
+                <pre><code class="yaml hljs makefile" id="dataloader_yaml_code"></code></pre>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="tab-dataloader_py">
+                <pre><code class="python hljs" id="dataloader_py_code"></code></pre>
+            </div>
+        </div>
+    </div>
+</div>
 
-You might find the following links useful: 
-- (model_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_models.md
-- (dataloader_type) https://github.com/kipoi/kipoi/blob/master/docs/writing_dataloaders.md
---------------------------------------------
+<div class="cond" style="display: none;">
+    <p>For this example let's assume the model you want to submit is called <code>MyModel</code>. To submit your model you will have to:</p>
+    <ul>
+        <li>Create a new local folder named like your model, e.g.: <code>mkdir MyModel</code></li>
+        <li>In the <code>MyModel</code> folder you will have to crate a <code>model.yaml</code> file:
+            The <code>model.yaml</code> files acts as a configuration file for Kipoi. For an example take a look at 
+            <a href="https://github.com/kipoi/models/blob/master/Divergent421/model.yaml">Divergent421/model.yaml</a>.</li>
+    </ul>
+</div>
 
-model_name [my_model]: my_new_model
-author_name [Your name]: Ziga Avsec
-author_github [Your github username]: avsecz
-author_email [Your email(optional)]: 
-model_doc [Model description]: Model predicting iris species
-Select model_license:
-1 - MIT
-2 - BSD
-3 - ISCL
-4 - Apache Software License 2.0
-5 - Not open source
-Choose from 1, 2, 3, 4, 5 [1]:  
-Select model_type:
-1 - keras
-2 - custom
-3 - sklearn
-Choose from 1, 2, 3 [1]: 1
-Select model_input_type:
-1 - np.array
-2 - list of np.arrays
-3 - dict of np.arrays
-Choose from 1, 2, 3 [1]: 2
-Select model_output_type:
-1 - np.array
-2 - list of np.arrays
-3 - dict of np.arrays
-Choose from 1, 2, 3 [1]: 3
-Select dataloader_type:
-1 - Dataset
-2 - PreloadedDataset
-3 - BatchDataset
-4 - SampleIterator
-5 - SampleGenerator
-6 - BatchIterator
-7 - BatchGenerator
-Choose from 1, 2, 3, 4, 5, 6, 7 [1]: 1
---------------------------------------------
-INFO [kipoi.cli.main] Done!
-Created the following folder into the current working directory: my_new_model
-```
+<div class="cond" style="display: none;">
 
-The created folder contains a model and a dataloader for predicting the Iris species. 
-You will now have to [edit the model.yaml](./02_Writing_model.yaml.md) and to 
-[edit the dataloader.yaml](./03_Writing_dataloader.yaml.md) files according to your model.
- You can check whether you have succeeded and your model is setup correctly with the commands below.
+    <p>For this example let's assume you have trained one model architecture on multiple similar datasets and can use the 
+     same preprocessing code for all models. Let's assume you want to call the 
+    model-group <code>MyModel</code>. To submit your model you will have to:</p>
+    <ul>
+        <li>Create a new local folder named after your model, e.g.: <code>mkdir MyModel</code></li>
+        <li>In the <code>MyModel</code> folder you will have to crate a <code>model-template.yaml</code> file:
+            The <code>model-template.yaml</code> files acts as a configuration file for Kipoi. For an example take a look at 
+            <a href="https://github.com/kipoi/models/blob/master/CpGenie/model-template.yaml">CpGenie/model-template.yaml</a>.</li>
+        <li>As you can see instead of putting urls and parameters directly in the <code>.yaml</code> file you need to put 
+        <code>{{ parameter_name }}</code> in the yaml file. The values are then automatically loaded from a <code>tab</code>-delimited
+        file called <code>models.tsv</code> that you also have to provide. For the previous example this would be: 
+        <a href="https://github.com/kipoi/models/blob/master/CpGenie/models.tsv">CpGenie/models.tsv</a>. Using kipoi those models are
+        then accessible by the model group name and the model name defined in the <code>models.tsv</code>. Model names may contain <code>/</code>s.</li>
+    </ul>
 
-#### How to test the model
-Be aware that the test functions will only check whether the definition side of things 
-(model.yaml, dataloader.yaml, syntax errors, etc.) is setup correctly, you will have to validate yourself whether 
-the outputs created by using the predict function produce the desired model output!
 
-##### Step 1: Run `kipoi test ~/.kipoi/models/my_new_model`
+</div>
 
-<!-- To make sure this work as you expect, test your model by running: -->
 
-<!-- ```bash -->
-<!-- kipoi test ~/.kipoi/models/my_new_model -->
-<!-- ``` -->
+<div class="cond" style="display: none;">
 
-This checks the yaml files and runs `kipoi predict` for the example files (specified in `dataloader.yaml > args > my_arg > example`). Once this command returns no errors or warnings proceed to the next step.
+    <ul>
+        <li>In the model definition yaml file you see the <code>defined_as</code> keyword: Since your model is a Keras model, set it to
+         <code>kipoi.model.KerasModel</code>.</li>
+        <li>In the model definition yaml file you see the <code>args</code> keyword, which can be set the following way: 
+        <a href="../02_Writing_model.yaml/#kipoimodelkerasmodel-models">KerasModel definition</a></li>
+    </ul>
 
-##### Step 2: Run `kipoi test-source kipoi --all -k my_new_model`
 
-<!-- To also test that the conda environment for the model can be installed correctly, run: -->
+</div>
 
-<!-- ```bash -->
-<!-- kipoi test-source kipoi --all -k my_new_model -->
-<!-- ``` -->
+<div class="cond" style="display: none;">
 
-This will run `kipoi test` in a new conda environment with dependencies specified in `model.yaml` and `dataloader.yaml`.
+    <ul>
+        <li>In the model definition yaml file you see the <code>defined_as</code> keyword: Since your model is a TensorFlow model, set it to
+         <code>kipoi.model.TensorFlowModel</code>.</li>
+        <li>In the model definition yaml file you see the <code>args</code> keyword, which can be set the following way: 
+        <a href="../02_Writing_model.yaml/#kipoimodeltensorflowmodel-models">TensorFlowModel definition</a></li>
+    </ul>
 
-#### Removing or updating models
 
-To remove, rename or update an existing model, send a pull-request (as when contributing models, see [3. Submit the pull-request](#3-submit-the-pull-request)).
+</div>
+
+<div class="cond" style="display: none;">
+
+    <ul>
+        <li>In the model definition yaml file you see the <code>defined_as</code> keyword: Since your model is a PyTorch model, set it to
+         <code>kipoi.model.PyTorchModel</code>.</li>
+        <li>In the model definition yaml file you see the <code>args</code> keyword, which can be set the following way: 
+        <a href="../02_Writing_model.yaml/#kipoimodelpytorchmodel-models">PyTorchModel definition</a></li>
+    </ul>
+
+
+</div>
+
+<div class="cond" style="display: none;">
+
+    <ul>
+        <li>In the model definition yaml file you see the <code>defined_as</code> keyword: Since your model is a scikit-learn model, set it to
+         <code>kipoi.model.SklearnModel</code>.</li>
+        <li>In the model definition yaml file you see the <code>args</code> keyword, which can be set the following way: 
+        <a href="../02_Writing_model.yaml/#kipoimodelsklearnmodel-models">SklearnModel definition</a></li>
+    </ul>
+
+
+</div>
+
+<div class="cond" style="display: none;">
+
+    <ul>
+        <li>Your model is not implemented in <code>Keras</code>, <code>TensorFlow</code>, <code>PyTorch</code>, nor <code>sci-kit learn</code>, so you will have to implement a 
+        custom python class inheriting from <code>kipoi.model.Model</code>. In the <code>defined_as</code> keyword of the <code>model.yaml</code> you will then 
+        have to refer to your definition by <code>my_model_def.MyModel</code> if the <code>MyModel</code> class is defined in the <code>my_model_def.py</code> 
+        that lies in the same folder as <code>model.yaml</code>. For details please see: 
+        <a href="../02_Writing_model.yaml/#custom-models">defining custom models in model.yaml</a> and 
+        <a href="../05_Writing_model.py">writing a model.py file</a>.</li>
+    </ul>
+
+</div>
+
+<div class="cond" style="display: none;">
+
+<ul>
+    <li>Now set the software requirements correctly. This happens in the <code>dependencies</code> section of the model 
+    <code>.yaml</code> file. As you can see in the example the dependencies are split by <code>conda</code> and <code>pip</code>. Ideally you define the 
+    ranges of the versions of packages your model supports - otherwise it may fail at some point in future. If you need 
+    to specify a conda channel use the <code>&lt;channel&gt;::&lt;package&gt;</code> notation for conda dependencies.</li>
+</ul>
+
+</div>
+
+<div class="cond" style="display: none;">
+
+    <p>As you have seen in the presented example and in the model definition links it is necessary that prior to model 
+    contribution you have published all model files (except for python scripts and other configuration files) on 
+    <a href="https://zenodo.org/">zenodo</a> or <a href="https://figshare.com/">figshare</a> to ensure functionality and versioning of models.</p>
+    <p>If you want to test your model(s) locally before publishing them on <a href="https://zenodo.org/">zenodo</a> or
+     <a href="https://figshare.com/">figshare</a> you can replace the pair of <code>url</code> and <code>md5</code> tags in the model definition yaml by the 
+    local path on your filesystem, e.g.:</p>
+    <pre><code class="yaml hljs makefile"><span class="hljs-section">args:</span>
+        arch: path/to/my/arch.json
+    </code></pre>
+
+    <p>But keep in mind that local paths are only good for testing and for models that you want to keep only locally.</p>
+
+</div>
+
+<div class="cond dnaAdditional" style="display: none;">
+
+    <h3 id="setting-up-your-dataloader">Setting up your dataloader</h3>
+
+</div>
+
+<div class="cond" style="display: none;">
+
+    <p>Sice your model uses DNA sequence input the <a href="https://github.com/kipoi/kipoiseq">kipoiseq</a> dataloaders are recommended to be used, as shown in 
+    the above example model definition <code>.yaml</code> file, which could for example be defined like this:</p>
+    <pre><code class="yaml hljs css"><span class="hljs-selector-tag">default_dataloader</span>:
+      <span class="hljs-selector-tag">defined_as</span>: <span class="hljs-selector-tag">kipoiseq</span><span class="hljs-selector-class">.dataloaders</span><span class="hljs-selector-class">.SeqIntervalDl</span>
+      <span class="hljs-selector-tag">default_args</span>:
+        <span class="hljs-selector-tag">auto_resize_len</span>: 1001
+        <span class="hljs-selector-tag">alphabet_axis</span>: 0
+        <span class="hljs-selector-tag">dummy_axis</span>: 1
+    </code></pre>
+
+    <p>To see all the parameters and functions of the off-the-shelf dataloaders please take a look at 
+    <a href="https://github.com/kipoi/kipoiseq">kipoiseq</a>.</p>
+
+</div>
+
+<div class="cond dnaAdditional" style="display: none;">
+
+    <p>Since your model uses DNA sequence and additional annotation you have to define your own dataloader function or class. 
+    Depending on your use-case you may find some of the data-loader implementations of exiting models in the model zoo 
+    helpful. You may find the 
+    <a href="https://github.com/kipoi/models/blob/master/rbp_eclip/dataloader.py">rbp_eclip dataloader</a> or one of the 
+    <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">FactorNet dataloaders</a> 
+    relevant. Also consider taking advantage of elements implemented in the <a href="https://github.com/kipoi/kipoiseq">kipoiseq</a> 
+    package. For you implementation you have to:</p>
+    <ul>
+        <li>set <code>default_dataloader: .</code> in the <code>model.yaml</code> file</li>
+        <li>write a <code>dataloader.yaml</code> file as defined in <a href="../03_Writing_dataloader.yaml">writing dataloader.yaml</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.yaml">this one</a>.</li>
+        <li>implement the dataloader in a <code>dataloader.py</code> file as defined in 
+        <a href="../03_Writing_dataloader.py">writing dataloader.py</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">this one</a>.</li>
+        <li>put the <code>dataloader.yaml</code> and the <code>dataloader.py</code> in the same folder as <code>model.yaml</code>.</li>
+    </ul>
+
+</div>
+
+<div class="cond otherInput" style="display: none;">
+
+    <p>Since your model uses input other than what is covered by the default data-loaders you have to define your own 
+    dataloader function or class. 
+    Depending on your use-case you may find some of the data-loader implementations of exiting models in the model zoo 
+    helpful. You may find the 
+    <a href="https://github.com/kipoi/models/blob/master/rbp_eclip/dataloader.py">rbp_eclip dataloader</a> or one of the 
+    <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">FactorNet dataloaders</a> 
+    relevant. Also consider taking advantage of elements implemented in the <a href="https://github.com/kipoi/kipoiseq">kipoiseq</a> 
+    package. For you implementation you have to:</p>
+    <ul>
+        <li>set <code>default_dataloader: .</code> in the <code>model.yaml</code> file</li>
+        <li>write a <code>dataloader.yaml</code> file as defined in <a href="../03_Writing_dataloader.yaml">writing dataloader.yaml</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.yaml">this one</a>.</li>
+        <li>implement the dataloader in a <code>dataloader.py</code> file as defined in 
+        <a href="../03_Writing_dataloader.py">writing dataloader.py</a>. An example is 
+        <a href="https://github.com/kipoi/models/blob/master/FactorNet/CEBPB/meta_Unique35_DGF/dataloader.py">this one</a>.</li>
+        <li>put the <code>dataloader.yaml</code> and the <code>dataloader.py</code> in the same folder as <code>model.yaml</code>.</li>
+    </ul>
+
+</div>
+
+<div class="cond splicing" style="display: none;">
+
+    <p>Since your model is specialised in predicting properties of splice sites you are encouraged to take a look at the 
+    dataloaders implemented for the kipoi models tagged as <code>RNA splicing</code> models, such as 
+    <a href="https://github.com/kipoi/models/blob/master/HAL/dataloader.py">HAL</a>, 
+    <a href="https://github.com/kipoi/models/blob/master/labranchor/dataloader.py">labranchor</a>, or 
+    <a href="https://github.com/kipoi/models/tree/master/MMSplice">MMSplice</a>.
+     If the MMSplice dataloader in the above example does not fit your needs, you have to:</p>
+    <ul>
+        <li>set <code>default_dataloader: .</code> in the <code>model.yaml</code> file</li>
+        <li>write a <code>dataloader.yaml</code> file as defined in <a href="../03_Writing_dataloader.yaml">writing dataloader.yaml</a>.</li>
+        <li>implement the dataloader in a <code>dataloader.py</code> file as defined in 
+        <a href="../03_Writing_dataloader.py">writing dataloader.py</a>.</li>
+        <li>put the <code>dataloader.yaml</code> and the <code>dataloader.py</code> in the same folder as <code>model.yaml</code>.</li>
+    </ul>
+
+</div>
+
+<div class="cond" style="display: none;">
+
+    <h3 id="info-and-model-schema">Info and model schema</h3>
+    
+    <p> Please update the model description, the authors and the data it the model was trained in the <code>info</code> 
+    section of the model <code>.yaml</code> file. Please explain explicitly what your model does etc. Think what you 
+    would want to know if you didn't know anything about the model.</p>
+    
+    <p>Now fillout the model schema (<code>schema</code> tag) as explained here: 
+    <a href="../#02_Writing_model.yaml/#schema">model schema</a>.</p>
+
+</div>
+
+
+<div class="cond anyExpl" style="display: none;">
+
+    <h3 id="license">License</h3>
+
+    <p>Please make sure that the license that is defined in the <code>license:</code> tag in the yaml file is correct.
+    Also only contribute models for which you have the rights to do so and only contribute models that permit 
+    redistribution.</p>
+
+</div>
+
+<div class="cond single" style="display: none;">
+
+    <h3 id="testing">Testing</h3>
+
+    <p> Now it is time to test your model. If you are in the model directory run the command:</p>
+    <pre><code class="hljs bash">kipoi test .</code></pre>
+    <p>in your model folder to test 
+    whether the general setup is correct. When this was successful run </p>
+     <pre><code class="hljs bash">kipoi test-source dir --all -k ./</code></pre>
+    <p>to test whether all the software dependencies of the model are setup correctly and the automated tests will 
+    pass.</p>
+
+</div>
+
+<div class="cond setSim setDiff" style="display: none;">
+
+    <h3 id="testing">Testing</h3>
+
+    <p> Now it is time to test your models. For the following let's assume your model group is called 
+    <code>MyModel</code> and your have two models in the group, which are <code>MyModel/ModelA</code> and 
+    <code>MyModel/ModelB</code> then you should should make sure you are in the <code>MyModel</code> folder and 
+    run the commands </p>
+    <pre><code class="hljs bash">kipoi test ./ModelA</code></pre>
+    <p> and </p>
+    <pre><code class="hljs bash">kipoi test ./ModelB</code></pre>
+    <p>. When this was successful 
+    run </p>
+    <pre><code class="hljs bash">kipoi test-source dir --all -k ./</code></pre>
+    <p> to test whether all the software dependencies of the model and dataloader are setup correctly.</p>
+
+</div>
+
+
+<div class="cond forking" style="display: none;">
+
+    <h3 id="forking-and-submitting">Forking and submitting</h3>
+
+    <ul>
+    <li>Make sure your model repository is up to date: <ul>
+    <li><code class="hljs bash">git pull</code></li>
+    </ul>
+    </li>
+    <li>Commit your changes<ul>
+    <li><code class="hljs bash">git add MyModel/</code></li>
+    <li><code class="hljs bash">git commit -m "Added &lt;MyModel&gt;"</code></li>
+    </ul>
+    </li>
+    <li><a href="https://guides.github.com/activities/forking/">Fork</a> the <a href="https://github.com/kipoi/models">https://github.com/kipoi/models</a> repo on github (click on 
+    the Fork button)</li>
+    <li>Add your fork as a git remote to <code>~/.kipoi/models</code><ul>
+    <li><code class="hljs bash">git remote add fork https://github.com/&lt;username&gt;/models.git</code></li>
+    </ul>
+    </li>
+    <li>Push to your fork<ul>
+    <li><code class="hljs bash">git push fork master</code></li>
+    </ul>
+    </li>
+    <li>Submit a pull-request<ul>
+    <li>On github click the <a href="https://help.github.com/articles/creating-a-pull-request/">New pull request</a> button on your 
+    github fork - <code>https://github.com/&lt;username&gt;/models&gt;</code></li>
+    </ul>
+    </li>
+    </ul>
+</div>
+
+
+<script type="text/javascript">
+
+get_model_yaml_code = function(){
+    var sel_inp = $('#sel_inp').val();
+    var sel_fw = $('#sel_fw').val();
+    return Mustache.render(model_yaml, {model_class: model_class[sel_fw], model_args: model_args[sel_fw], model_yaml_dl_entry: model_yaml_dl_entry[sel_inp]});
+}
+
+get_model_template_yaml_code = function(){
+    var sel_inp = $('#sel_inp').val();
+    var sel_fw = $('#sel_fw').val();
+    return Mustache.render(model_yaml, {model_class: model_class[sel_fw], model_args: model_template_args[sel_fw], model_yaml_dl_entry: model_yaml_dl_entry[sel_inp]});
+}
+
+get_models_tsv_code = function(){
+    var sel_fw = $('#sel_fw').val();
+    return models_tsv[sel_fw];
+}
+
+get_model_py_code = function(){
+    return model_py;
+}
+
+get_dataloader_py_code = function(){
+    return dataloader_py;
+}
+
+get_dataloader_yaml_code = function(){
+    return dataloader_yaml;
+}
+
+function copyToClipboard(text){
+    //https://stackoverflow.com/questions/33855641/copy-output-of-a-javascript-variable-to-the-clipboard
+    var dummy = document.createElement("input");
+    document.body.appendChild(dummy);
+    dummy.setAttribute('value', unescape(text));
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+}
+
+
+insert_code_data = function(){
+    var sel_inp = $('#sel_inp').val();
+    var sel_fw = $('#sel_fw').val();
+    var sel_mg = $('#sel_mg').val();
+    //$("#model_yaml_raw_code").val(unescape(get_model_yaml_code())); // for copying to clipboard
+    $("#model_yaml_code").html(get_model_yaml_code());
+    $("#model-template_yaml_code").html(get_model_template_yaml_code());
+    $("#models_tsv_code").html(get_models_tsv_code());
+    $("#model_py_code").html(get_model_py_code());
+    $("#dataloader_py_code").html(get_dataloader_py_code());
+    $("#dataloader_yaml_code").html(get_dataloader_yaml_code());    
+    $('.tab-pane').each(function(i, block) {
+      hljs.highlightBlock(block);
+    });
+}
+
+
+refresh_info = function(){
+    $('.cond').hide();
+    var sel_inp = $('#sel_inp').val();
+    var sel_fw = $('#sel_fw').val();
+    var sel_mg = $('#sel_mg').val();
+    // deactivate the code tabs
+    $(".nav-tabs").children().removeClass("active")
+    $(".tab-pane").removeClass("active")
+    if (($.inArray(sel_inp, ['dna', 'dnaAdditional', 'splicing', 'otherInput'])>-1) && ($.inArray(sel_fw, ['keras', 'tensorflow', 'pytorch', 'scikitlearn', 'other'])>-1) && ($.inArray(sel_mg, ['single', 'setSim', 'setDiff'])>-1)){
+        insert_code_data();
+        if (sel_mg == "setSim"){
+            //assign active class to top-tab-model-template_yaml and tab-model-template_yaml
+            $("#top-tab-model-template_yaml").addClass("active");
+            $("#tab-model-template_yaml").addClass("active");
+        } else {
+            //assign active class to top-tab-model_yaml and tab-model_yaml
+            $("#top-tab-model_yaml").addClass("active");
+            $("#tab-model_yaml").addClass("active");
+        }
+        $(".anyExpl").show();
+        $(".forking").show();
+        $("."+sel_inp).show();
+        $("."+sel_fw).show();
+        $("."+sel_mg).show();
+    }
+}
+refresh_info();
+
+
+</script>

@@ -84,6 +84,8 @@ VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::pybedtools",
                                "bioconda::pysam"],
                         pip=["kipoi_veff"])
+INTERPRET_DEPS = Dependencies(pip=["kipoi_interpret"])
+
 # Hard-code kipoi-seq dataloaders
 KIPOISEQ_DEPS = Dependencies(conda=['bioconda::pybedtools', 'bioconda::pyfaidx', 'numpy', 'pandas'], pip=['kipoiseq'])
 
@@ -103,6 +105,7 @@ def merge_deps(models,
                dataloaders=None,
                source="kipoi",
                vep=False,
+               interpret=False,
                gpu=False):
     """Setup the dependencies
     """
@@ -195,6 +198,11 @@ def merge_deps(models,
         logger.info("Adding the vep dependencies")
         deps = VEP_DEPS.merge(deps)
 
+    if interpret:
+        # add vep dependencies
+        logger.info("Adding the interpret dependencies")
+        deps = INTERPRET_DEPS.merge(deps)
+
     if gpu:
         logger.info("Using gpu-compatible dependencies")
         deps = deps.gpu()
@@ -226,6 +234,7 @@ def export_env(models,
                env_dir=".",
                env=None,
                vep=False,
+               interpret=False,
                gpu=False):
     """Write a conda environment file. Helper function for the cli_export and cli_create.
 
@@ -254,6 +263,7 @@ def export_env(models,
                       dataloaders=dataloaders,
                       source=source,
                       vep=vep,
+                      interpret=interpret,
                       gpu=gpu)
     return export_deps_to_env(deps, env_file=env_file, env_dir=env_dir, env=env)
 
@@ -276,6 +286,7 @@ def cli_export(cmd, raw_args):
                                env_file=args.output,
                                env=args.env,
                                vep=args.vep,
+                               interpret=args.interpret,
                                gpu=args.gpu)
 
     print("Create the environment with:")
@@ -433,6 +444,7 @@ def cli_create(cmd, raw_args):
                                env_dir=tmpdir,
                                env=args.env,
                                vep=args.vep,
+                               interpret=args.interpret,
                                gpu=args.gpu)
 
     if not args.dry_run:
@@ -620,6 +632,7 @@ def cli_install(cmd, raw_args):
                       dataloaders=args.dataloader,
                       source=args.source,
                       vep=args.vep,
+                      interpret=args.interpret,
                       gpu=args.gpu)
     deps.install()
     logger.info("Done!")

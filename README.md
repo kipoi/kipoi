@@ -20,34 +20,16 @@ This repository implements a python package and a command-line interface (CLI) t
 - [kipoi.org](http://kipoi.org) - Main website
 - [kipoi.org/docs](http://kipoi.org/docs) - Documentation
 - [github.com/kipoi/models](https://github.com/kipoi/models) - Model zoo for genomics maintained by the Kipoi team
-- [bioarxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
+- [biorxiv preprint](https://doi.org/10.1101/375345) - Kipoi: accelerating the community exchange and reuse of predictive models for genomics
+- [blog post introducing Kipoi](https://medium.com/@zigaavsec/kipoi-utilizing-machine-learning-models-for-genomics-e75b7e26a56c), [blog post describing 0.6 release](https://medium.com/@zigaavsec/kipoi-0-6-release-notes-854a45bd6fdc)
+- [github.com/kipoi/examples](https://github.com/kipoi/examples) - Use-case oriented tutorials
   
 ## Installation
 
-### 1. Install miniconda/anaconda
-
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/).
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/). Supported python versions: 2.7 and >=3.5.
 
-### 2. Install Git LFS
-
-For downloading models, Kipoi uses git and [Git Large File Storage](https://git-lfs.github.com/) (LFS). See how to install git [here](https://www.atlassian.com/git/tutorials/install-git). To install git-lfs on Ubuntu, run:
-
-```bash
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-sudo apt-get install -y git git-lfs
-git-lfs install
-```
-
-Alternatively, you can install git-lfs through conda:
-
-```bash
-conda install -c conda-forge git-lfs && git lfs install
-```
-
-### 3. Install Kipoi
-
-Next, install Kipoi using [pip](https://pip.pypa.io/en/stable/):
+Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
 pip install kipoi
@@ -55,46 +37,53 @@ pip install kipoi
 
 ## Quick start
 
-The following diagram gives a short overview over Kipoi's workflow:
-<img src="http://kipoi.org/docs/img/kipoi-workflow.png" height=400>
+Explore available models on [https://kipoi.org/groups/](http://kipoi.org/groups/). Use-case oriented tutorials are available at <https://github.com/kipoi/examples>.
 
-If you want to check which models are available in Kipoi you can use the [website](http://kipoi.org/groups/), where you can also see example commands for how to use the models on the CLI, python and R.
-Alternatively you can run `kipoi ls` in the command line or in python:
+### Installing all required model dependencies
+
+Use `kipoi env create <model>` to create a new conda environment for the model. You can use the following two commands to create common environments suitable for multiple models.
+
+```
+kipoi env create shared/envs/kipoi-py3-keras2   # add --gpu to install gpu-compatible deps
+kipoi env create shared/envs/kipoi-py3-keras1.2
+```
+
+Before using a model in any way, activate the right conda enviroment:
+```bash
+source activate $(kipoi env get <model>)
+```
+
+Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi` commands.
+
+### Python
+
 ```python
 import kipoi
 
-kipoi.list_models()
+kipoi.list_models() # list available models
+
+model = kipoi.get_model("Basset") # load the model
+
+model = kipoi.get_model(  # load the model from a past commit
+    "https://github.com/kipoi/models/tree/<commit>/<model>",
+    source='github-permalink'
+)
+
+# main attributes
+model.model # wrapped model (say keras.models.Model)
+model.default_dataloader # dataloader
+model.info # description, authors, paper link, ...
+
+# main methods
+model.dependencies.install() # calls `conda install` and `pip install`
+model.predict_on_batch(x) # implemented by all the models regardless of the framework
+model.pipeline.predict(dict(fasta_file="hg19.fa",
+                            intervals_file="intervals.bed"))
+# runs: raw files -[dataloader]-> numpy arrays -[model]-> predictions 
 ```
-
-Once a model has been selected (here: `rbp_eclip/UPF1`), the model environments have to be installed. To do so use one of the `kipoi env` commands.
-For example to install an environment for model `rbp_eclip/UPF1`:
-
-```bash
-kipoi env create rbp_eclip/UPF1
-```
-
----
-** Aside: models versus model groups**: 
-
->A Kipoi `model` is a path to a directory containing a `model.yaml` file.  This file specifies the underlying model, data loader, and other model attributes.  
->If instead you provide a path to a model *group* (e.g  "rbp_eclip" or "lsgkm-SVM/Tfbs/Ap2alpha/"), rather than one model (e.g "rbp_eclip/UPF1" or "lsgkm-SVM/Tfbs/Ap2alpha/Helas3/Sydh_Std"), or any other directory without a `model.yaml` file, a `ValueError` will be thrown.
-
----
-
-If you are working on a machine that has GPUs, you will want to add the `--gpu` flag to the command. And if you want to make use of the `kipoi-veff` plug-in then add `--vep`. For more options please run `kipoi env create --help`.
-
-
-The command will tell you how the execution environment for the model is called, e.g.:
-
-```INFO [kipoi.cli.env] Environment name: kipoi-rbp_eclip__UPF1```
-
-Before using a model in any way, make sure that you have activated its environment, e.g.: prior to executing `kipoi` or `python` or `R` in the attempt to use Kipoi with the model. To activate the model environment run for example:
-```bash
-source activate kipoi-rbp_eclip__UPF1
-``` 
+For more information see: [notebooks/python-api.ipynb](notebooks/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
 
 ### Command-line
-Once the model environment is activated Kipoi's API can be accessed from the commandline using:
 
 ```
 $ kipoi
@@ -105,6 +94,7 @@ usage: kipoi <command> [-h] ...
     ls               List all the available models
     list_plugins     List all the available plugins
     info             Print dataloader keyword argument info
+    get-example      Download example files
     predict          Run the model prediction
     pull             Download the directory associated with the model
     preproc          Run the dataloader and save the results to an hdf5 array
@@ -117,41 +107,20 @@ usage: kipoi <command> [-h] ...
     
     # - plugin commands:
     veff             Variant effect prediction
-    interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT.
+    interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT
+```
+
+```bash
+# Run model predictions and save the results
+# sequentially into an HDF5 file
+kipoi predict <Model> --dataloader_args='{
+  "intervals_file": "intervals.bed",
+  "fasta_file": "hg38.fa"}' \
+  --singularity \
+  -o '<Model>.preds.h5'
 ```
 
 Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://kipoi.org/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
-
-### Python
-Once the model environment is activated (`source activate kipoi-rbp_eclip__UPF1`) Kipoi's python API can be used to:
-
-The following commands give a short overview. For details please take a look at the python API documentation.
-Load the model from model the source:
-```python
-import kipoi
-model = kipoi.get_model("rbp_eclip/UPF1") # load the model
-```
-
-To get model predictions using the dataloader we can run:
-```python
-model.pipeline.predict(dict(fasta_file="hg19.fa",
-                            intervals_file="intervals.bed",
-                            gtf_file="gencode.v24.annotation_chr22.gtf"))
-# runs: raw files -[dataloader]-> numpy arrays -[model]-> predictions 
-```
-
-To predict the values of a model input `x`, which for example was generated by dataloader, we can use:
- 
-```python
-model.predict_on_batch(x) # implemented by all the models regardless of the framework
-```
-
-Here `x` has to be a `numpy.ndarray` or a list or a dict of a `numpy.ndarray`, depending on the model requirements, for details please see the documentation of the API or of `datalaoder.yaml` and `model.yaml`.
-
-
-
-For more information see: [notebooks/python-api.ipynb](notebooks/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
-
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
@@ -183,11 +152,16 @@ pip install kipoi_interpret
 
 ## Documentation
 
-Documentation can be found here: [kipoi.org/docs](http://kipoi.org/docs)
+- [kipoi.org/docs](http://kipoi.org/docs)
+
+## Tutorials
+
+- <https://github.com/kipoi/examples> - Use-case oriented tutorials
+- [notebooks](https://github.com/kipoi/kipoi/tree/master/notebooks)
 
 ## Citing Kipoi
 
-If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Bioarxiv preprint: https://doi.org/10.1101/375345.
+If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Biorxiv preprint: https://doi.org/10.1101/375345.
 
 ```bibtex
 @article {kipoi,
