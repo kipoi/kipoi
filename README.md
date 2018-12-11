@@ -120,7 +120,7 @@ kipoi predict <Model> --dataloader_args='{
   -o '<Model>.preds.h5'
 ```
 
-Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/getting started cli](http://kipoi.org/docs/using/01_Getting_started/#command-line-interface-quick-start) for more information.
+Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/cli/](http://kipoi.org/docs/using/cli/) for more information.
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
