@@ -81,7 +81,7 @@ model.pipeline.predict(dict(fasta_file="hg19.fa",
                             intervals_file="intervals.bed"))
 # runs: raw files -[dataloader]-> numpy arrays -[model]-> predictions 
 ```
-For more information see: [notebooks/python-api.ipynb](notebooks/python-api.ipynb) and [docs/using getting started](http://kipoi.org/docs/using/01_Getting_started/)
+For more information see: [notebooks/python-api.ipynb](notebooks/python-api.ipynb) and [docs/using/python](https://kipoi.org/docs/using/python/)
 
 ### Command-line
 
