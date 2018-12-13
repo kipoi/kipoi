@@ -654,7 +654,7 @@ class MyDataset(Dataset):
     <pre><code class="hljs bash">kipoi test .</code></pre>
     <p>in your model folder to test 
     whether the general setup is correct. When this was successful run </p>
-     <pre><code class="hljs bash">kipoi test-source dir --all -k ./</code></pre>
+     <pre><code class="hljs bash">kipoi test-source dir --all</code></pre>
     <p>to test whether all the software dependencies of the model are setup correctly and the automated tests will 
     pass.</p>
 
@@ -673,7 +673,7 @@ class MyDataset(Dataset):
     <pre><code class="hljs bash">kipoi test ./ModelB</code></pre>
     <p>. When this was successful 
     run </p>
-    <pre><code class="hljs bash">kipoi test-source dir --all -k ./</code></pre>
+    <pre><code class="hljs bash">kipoi test-source dir --all</code></pre>
     <p> to test whether all the software dependencies of the model and dataloader are setup correctly.</p>
 
 </div>
