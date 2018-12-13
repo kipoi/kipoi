@@ -847,7 +847,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                     kwargs = module_kwargs
             self.model = obj(**kwargs)
 
-        self.model.load_state_dict(torch.load(weights))
+        self.model.load_state_dict(torch.load(weights), map_location=lambda storage, location: storage)
 
         if auto_use_cuda and torch.cuda.is_available():
             self.model = self.model.cuda()
