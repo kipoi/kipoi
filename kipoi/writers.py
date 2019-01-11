@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import os
 import sys
+import time
 from abc import abstractmethod
 import numpy as np
 import pandas as pd
@@ -73,6 +74,69 @@ class MultipleBatchWriter(BatchWriter):
             bw.close()
 
 
+def _write_worker(q, batch_writer):
+    """Writer loop
+
+    Args:
+      q: multiprocessing.Queue
+      batch_writer.
+    """
+    while True:
+        batch = q.get()
+        if batch is None:
+            return
+        else:
+            batch_writer.batch_write(batch)
+
+
+class AsyncBatchWriter(BatchWriter):
+
+    def __init__(self, batch_writer, max_queue_size=100):
+        """
+        Args:
+          batch_writer: BatchWriter object
+          max_queue_size: maximal queue size. If it gets
+            larger then batch_write needs to wait
+             till it can write to the queue again.
+        """
+        from multiprocessing import Queue, Process
+        self.batch_writer = batch_writer
+        self.max_queue_size = max_queue_size
+
+        # instantiate the queue and start the process
+        self.queue = Queue()
+        self.process = Process(target=_write_worker,
+                               args=(self.queue, self.batch_writer))
+        self.process.start()
+
+    def batch_write(self, batch):
+        """Write a single batch of data
+
+        Args:
+          batch is one batch of data (nested numpy arrays with the same axis 0 shape)
+        """
+        while self.queue.qsize() > self.max_queue_size:
+            print("WARNING: queue too large {} > {}. Blocking the writes".
+                  format(self.queue.qsize(), self.max_queue_size))
+            time.sleep(1)
+        self.queue.put(batch)
+
+    def close(self):
+        """Close the file
+        """
+        # stop the process,
+        # make sure the queue is empty
+        # close the file
+        self.process.join(.5)  # wait one second to close it
+        if self.queue.qsize() > 0:
+            print("WARNING: queue not terminated successfully. {} elements left".
+                  format(self.queue.qsize()))
+            print(self.queue.get())
+        self.batch_writer.close()
+        self.process.terminate()
+
+    def __del__(self):
+        self.close()
 # --------------------------------------------
 
 
@@ -109,6 +173,7 @@ class TsvBatchWriter(BatchWriter):
     def close(self):
         # nothing to do
         pass
+
 
 class ParquetBatchWriter(BatchWriter):
     """
