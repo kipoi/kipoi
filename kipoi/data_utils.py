@@ -27,6 +27,8 @@ def _numpy_collate(stack_fn=np.stack):
             return np.asarray(batch)
         elif isinstance(batch[0], float):
             return np.asarray(batch)
+        elif batch[0] is None:
+            return np.asarray(batch)
         elif isinstance(batch[0], string_classes):
             # Also convert to a numpy array
             return np.asarray(batch)
