@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 from collections import OrderedDict
-from kipoi.utils import map_nested
+from kipoi.utils import map_nested, get_subsuffix
 from kipoi.data_utils import flatten_batch, numpy_collate_concat
 from kipoi.external.flatten_json import flatten
 from kipoi.specs import MetadataType
@@ -230,6 +230,7 @@ class ParquetBatchWriter(BatchWriter):
         # nothing to do
         pass
 
+
 class BedBatchWriter(BatchWriter):
     """Bed-file writer
 
@@ -291,7 +292,7 @@ class HDF5BatchWriter(BatchWriter):
     """HDF5 file writer
 
     # Arguments
-      file_path (str): File path of the output tsv file
+      file_path (str): File path of the output .h5 file
       chunk_size (str): Chunk size for storing the files
       nested_sep: What separator to use for flattening the nested dictionary structure
         into a single key
@@ -393,6 +394,146 @@ class HDF5BatchWriter(BatchWriter):
         obj.close()
 
 
+def get_zarr_store(file_path):
+    """Get the storage type
+    """
+    import zarr
+    ZARR_STORE_MAP = {"lmdb": zarr.LMDBStore,
+                      "zip": zarr.ZipStore,
+                      "dbm": zarr.DBMStore,
+                      "default": zarr.DirectoryStore}
+
+    suffix, subsuffix = get_subsuffix(file_path)
+    if suffix != 'zarr' or (subsuffix is not None and subsuffix not in ZARR_STORE_MAP):
+        return ZARR_STORE_MAP['default'](file_path)
+    else:
+        return ZARR_STORE_MAP[subsuffix](file_path)
+
+
+class ZarrBatchWriter(BatchWriter):
+    """Zarr file writer
+
+    # Arguments
+      file_path (str): File path of the output zarr file
+      chunk_size (str): Chunk size for storing the files
+      store: zarr.storage. If not specified, it's inferred from the file-name.
+        For example: *.lmdb.zarr uses LMDB, *.zip.zarr uses Zip, and no special suffix
+        uses DirectoryStore      
+      compressor (str): Zarr compressor from numcodecs. Example:
+        from numcodecs import Blosc
+        compressor = Blosc(cname='zstd', clevel=3, shuffle=Blosc.BITSHUFFLE)
+      string_dtype: how to encode the string. If None, variable length is used
+    """
+
+    def __init__(self, file_path,
+                 chunk_size=10000,
+                 store=None,
+                 string_dtype=None,
+                 compressor=None):
+        import zarr
+
+        self.file_path = file_path
+        self.chunk_size = chunk_size
+
+        if string_dtype is None:
+            if sys.version_info[0] == 2:
+                self.string_dtype = unicode
+            else:
+                self.string_dtype = str
+        else:
+            self.string_dtype = string_dtype
+
+        if compressor is None:
+            # use blosc compressor by default
+            from numcodecs import Blosc
+            self.compressor = Blosc()
+            # self.compressor = None
+        else:
+            self.compressor = compressor
+        self.write_buffer = None
+        self.write_buffer_size = 0
+        self.first_pass = True
+
+        if store is None:
+            self.store = get_zarr_store(self.file_path)
+        else:
+            self.store = store
+
+        # setup the group
+        self.root = zarr.group(self.store, overwrite=True)
+
+    def batch_write(self, batch):
+        """Write a batch of data to bed file
+
+        # Arguments
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
+        fbatch = flatten(batch, separator="/")
+
+        batch_sizes = [fbatch[k].shape[0] for k in fbatch]
+        # assert all shapes are the same
+        assert len(pd.Series(batch_sizes).unique()) == 1
+        batch_size = batch_sizes[0]
+
+        if self.first_pass:
+            # have a dictionary holding
+            for k in fbatch:
+                if fbatch[k].dtype.type in [np.string_, np.str_, np.unicode_]:
+                    dtype = self.string_dtype
+                else:
+                    dtype = fbatch[k].dtype
+
+                self.root.empty(k,
+                                shape=(0,) + fbatch[k].shape[1:],
+                                dtype=dtype,
+                                compressor=self.compressor,
+                                chunks=(self.chunk_size,) + fbatch[k].shape[1:])
+            self.first_pass = False
+        # add data to the buffer
+        if self.write_buffer is None:
+            self.write_buffer = [fbatch]
+            self.write_buffer_size = batch_size
+        else:
+            self.write_buffer.append(fbatch)
+            self.write_buffer_size += batch_size
+
+        if self.write_buffer is not None and self.write_buffer_size >= self.chunk_size:
+            self._flush_buffer()
+
+    def _flush_buffer(self):
+        """Write buffer
+        """
+        wb = numpy_collate_concat(self.write_buffer)  # merge the buffer
+        for k in wb:
+            if sys.version_info[0] == 2 and wb[k].dtype.type in [np.string_, np.str_, np.unicode_]:
+                self.root[k].append(wb[k].astype(unicode))
+            else:
+                self.root[k].append(wb[k])
+        self.write_buffer = None
+        self.write_buffer_size = 0
+
+    def close(self):
+        """Close the file handle
+        """
+        if self.write_buffer is not None:
+            self._flush_buffer()
+        if hasattr(self.store, 'close'):
+            self.store.close()
+
+    @classmethod
+    def dump(cls, file_path, batch):
+        """In a single shot write the batch/data to a file and
+        close the file.
+
+        # Arguments
+            file_path: file path
+            batch: batch of data. Either a single `np.array` or a list/dict thereof.
+        """
+        obj = cls(file_path=file_path)
+        obj.batch_write(batch)
+        obj.close()
+
+
 # Nice-to-have writers:
 # - parquet
 # - zarr, bcolz <-> xarray
@@ -402,6 +543,7 @@ FILE_SUFFIX_MAP = {"h5": HDF5BatchWriter,
                    "hdf5": HDF5BatchWriter,
                    "pq": ParquetBatchWriter,
                    "parquet": ParquetBatchWriter,
+                   "zarr": ZarrBatchWriter,
                    "pqt": ParquetBatchWriter,
                    "tsv": TsvBatchWriter,
                    "bed": BedBatchWriter}

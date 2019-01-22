@@ -44,11 +44,13 @@ generate:
   - api/readers.md:
     - kipoi.readers:
       - kipoi.readers.HDF5Reader+
+      - kipoi.readers.ZarrReader+
   - api/writers.md:
     - kipoi.writers:
       - kipoi.writers.TsvBatchWriter+
       - kipoi.writers.BedBatchWriter+
       - kipoi.writers.HDF5BatchWriter+
+      - kipoi.writers.ZarrBatchWriter+
       - kipoi.writers.BedGraphWriter+
       - kipoi.writers.BigWigWriter+
 

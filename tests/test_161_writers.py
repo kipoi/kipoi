@@ -5,13 +5,16 @@ import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
 from kipoi.writers import (AsyncBatchWriter, BedBatchWriter, TsvBatchWriter,
+                           ZarrBatchWriter, get_zarr_store,
                            HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter, ParquetBatchWriter)
-from kipoi.readers import HDF5Reader
+from kipoi.readers import HDF5Reader, ZarrReader
 from kipoi.cli.main import prepare_batch
 import numpy as np
 import pandas as pd
 from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
 from collections import OrderedDict
+from kipoi.utils import get_subsuffix
+import zarr
 
 
 @fixture
@@ -150,6 +153,62 @@ def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
     writer.batch_write(batch)
     writer.close()
     with HDF5Reader(tmpfile) as f:
+        assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
+        out = f.load_all()
+        assert np.all(out['metadata']['gene_id'] == np.concatenate(
+            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
+        assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
+                                                                          dl_batch['metadata']['ranges']['chr']]))
+        assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
+                                                                            dl_batch['metadata']['ranges']['start']]))
+        assert np.all(out['preds'][0][:3] == pred_batch_list[0])
+
+
+# Zarr
+
+def test_get_subsuffix():
+    assert get_subsuffix("asds.lmdb.zarr") == ('zarr', 'lmdb')
+    assert get_subsuffix("/asdasd.asd/asds.lmdb.zarr") == ('zarr', 'lmdb')
+    assert get_subsuffix("asds.zarr") == ('zarr', "")
+    assert get_subsuffix("asdszarr") == ('', '')
+
+
+def test_zarr_store():
+    assert isinstance(get_zarr_store('output.zarr'), zarr.storage.DirectoryStore)
+    assert isinstance(get_zarr_store('output.za'), zarr.storage.DirectoryStore)
+    assert isinstance(get_zarr_store('output'), zarr.storage.DirectoryStore)
+    assert isinstance(get_zarr_store('output.zip.zarr'), zarr.storage.ZipStore)
+
+
+def test_ZarrBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.zip.zarr"))
+    batch = prepare_batch(dl_batch, pred_batch_array)
+    writer = ZarrBatchWriter(tmpfile, chunk_size=4)
+
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    with ZarrReader(tmpfile) as f:
+        assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
+        out = f.load_all()
+        assert np.all(out['metadata']['gene_id'] == np.concatenate(
+            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
+        assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
+                                                                          dl_batch['metadata']['ranges']['chr']]))
+        assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
+                                                                            dl_batch['metadata']['ranges']['start']]))
+        assert np.all(out['preds'][:3] == pred_batch_array)
+
+
+def test_ZarrBatchWriter_list(dl_batch, pred_batch_list, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.zip.zarr"))
+    batch = prepare_batch(dl_batch, pred_batch_list)
+    writer = ZarrBatchWriter(tmpfile, chunk_size=4)
+
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    with ZarrReader(tmpfile) as f:
         assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
         out = f.load_all()
         assert np.all(out['metadata']['gene_id'] == np.concatenate(

@@ -587,3 +587,17 @@ def makedir_exist_ok(dirpath):
             pass
         else:
             raise OSError(str(e))
+
+
+def get_subsuffix(file_path):
+    """
+    >>> get_subsufix("asds.lmdb.zarr")
+    >>> ('zarr', 'lmdb')
+    """
+    elems = file_path.split(".")
+    if len(elems) == 1:
+        return "", ""
+    elif len(elems) == 2:
+        return elems[-1], ""
+    else:
+        return elems[-1], elems[-2]
