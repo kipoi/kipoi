@@ -13,6 +13,8 @@ import numpy as np
 import related
 import six
 
+import kipoi
+from kipoi.external.torchvision.dataset_utils import download_url, check_integrity
 from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_installed
 import kipoi.conda as kconda
 from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
@@ -503,15 +505,12 @@ class RemoteFile(RelatedConfigMixin):
     def validate(self, path):
         """Validate if the path complies with the provided md5 hash
         """
-        from kipoi.external.torchvision.dataset_utils import check_integrity
         return check_integrity(path, self.md5)
 
     def get_file(self, path):
         """Download the remote file to cache_dir and return
         the file path to it
         """
-        from kipoi.external.torchvision.dataset_utils import download_url
-
         if self.md5:
             file_hash = self.md5
         else:
