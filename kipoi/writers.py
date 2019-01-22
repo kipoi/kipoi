@@ -91,17 +91,19 @@ def _write_worker(q, batch_writer):
 
 class AsyncBatchWriter(BatchWriter):
 
-    def __init__(self, batch_writer, max_queue_size=100):
+    def __init__(self, batch_writer, max_queue_size=10, close_wait=10):
         """
         Args:
           batch_writer: BatchWriter object
           max_queue_size: maximal queue size. If it gets
             larger then batch_write needs to wait
              till it can write to the queue again.
+          close_wait: time to wait till everything is written
         """
         from multiprocessing import Queue, Process
         self.batch_writer = batch_writer
         self.max_queue_size = max_queue_size
+        self.close_wait = close_wait
 
         # instantiate the queue and start the process
         self.queue = Queue()
@@ -127,7 +129,7 @@ class AsyncBatchWriter(BatchWriter):
         # stop the process,
         # make sure the queue is empty
         # close the file
-        self.process.join(.5)  # wait one second to close it
+        self.process.join(self.close_wait)  # wait one second to close it
         if self.queue.qsize() > 0:
             print("WARNING: queue not terminated successfully. {} elements left".
                   format(self.queue.qsize()))
