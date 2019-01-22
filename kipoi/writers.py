@@ -417,11 +417,12 @@ class ZarrBatchWriter(BatchWriter):
       file_path (str): File path of the output zarr file
       chunk_size (str): Chunk size for storing the files
       store: zarr.storage. If not specified, it's inferred from the file-name.
-      nested_sep: What separator to use for flattening the nested dictionary structure
-        into a single key
+        For example: *.lmdb.zarr uses LMDB, *.zip.zarr uses Zip, and no special suffix
+        uses DirectoryStore      
       compressor (str): Zarr compressor from numcodecs. Example:
         from numcodecs import Blosc
         compressor = Blosc(cname='zstd', clevel=3, shuffle=Blosc.BITSHUFFLE)
+      string_dtype: how to encode the string. If None, variable length is used
     """
 
     def __init__(self, file_path,

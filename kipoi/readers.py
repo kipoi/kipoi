@@ -142,7 +142,7 @@ class ZarrReader(Reader):
     """Read the Zarr file. Convenience wrapper around zarr.group
 
     # Arguments
-        file_path: File path to an HDF5 file
+        file_path: File path to an Zarr file
     """
 
     def __init__(self, file_path):
