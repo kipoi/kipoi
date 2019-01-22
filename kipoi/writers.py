@@ -483,7 +483,7 @@ class ZarrBatchWriter(BatchWriter):
                     dtype = fbatch[k].dtype
 
                 self.root.empty(k,
-                                shape=(1,) + fbatch[k].shape[1:],
+                                shape=(0,) + fbatch[k].shape[1:],
                                 dtype=dtype,
                                 compressor=self.compressor,
                                 chunks=(self.chunk_size,) + fbatch[k].shape[1:])
