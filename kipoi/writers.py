@@ -504,7 +504,10 @@ class ZarrBatchWriter(BatchWriter):
         """
         wb = numpy_collate_concat(self.write_buffer)  # merge the buffer
         for k in wb:
-            self.root[k].append(wb[k])
+            if sys.version_info[0] == 2 and wb[k].dtype.type in [np.string_, np.str_, np.unicode_]:
+                self.root[k].append(wb[k].astype(unicode))
+            else:
+                self.root[k].append(wb[k])
         self.write_buffer = None
         self.write_buffer_size = 0
 
