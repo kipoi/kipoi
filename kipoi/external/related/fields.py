@@ -20,8 +20,9 @@ def AnyField(default=NOTHING, required=True, repr=True):
     :param bool cmp: include this field in generated comparison.
     """
     default = _init_fields.init_default(required, default, UNSPECIFIED())
-    return attrib(default=default, convert=None, validator=None,
+    return attrib(default=default, converter=None, validator=None,
                   repr=repr)
+
 
 
 def StrSequenceField(cls, default=NOTHING, required=True, repr=True):
@@ -39,7 +40,12 @@ def StrSequenceField(cls, default=NOTHING, required=True, repr=True):
     # check that it's not sequence
     converter = to_sequence_field_w_str(cls)
     validator = _init_fields.init_validator(required, types.TypedSequence)
-    return attrib(default=default, convert=converter, validator=validator,
+    # kw convert is deprecated
+    try:
+        return attrib(default=default, converter=converter, validator=validator,
+                  repr=repr)
+    except TypeError:
+        return attrib(default=default, convert=converter, validator=validator,
                   repr=repr)
 
 
@@ -61,8 +67,8 @@ def NestedMappingField(cls, keyword, key, default=NOTHING, required=True, repr=F
     converter = to_leaf_mapping_field(cls, keyword, key)
     # validator = _init_fields.init_validator(required, types.TypedSequence)
     validator = None
-    return attrib(default=default, convert=converter, validator=validator,
-                  repr=repr)
+    return attrib(default=default, converter=converter, validator=validator,
+              repr=repr)
 
 
 def TupleIntField(default=NOTHING, required=True, repr=True):
@@ -79,5 +85,5 @@ def TupleIntField(default=NOTHING, required=True, repr=True):
     default = _init_fields.init_default(required, default, tuple)
     converter = to_eval_str
     validator = _init_fields.init_validator(required, tuple)
-    return attrib(default=default, convert=converter, validator=validator,
-                  repr=repr)
+    return attrib(default=default, converter=converter, validator=validator,
+              repr=repr)
