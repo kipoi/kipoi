@@ -14,7 +14,7 @@ dependencies:
   - pytest
   - h5py
   - scipy
-  - attr>=17.4.0
+  - attrs>=17.4.0
   # Bio
   - pybigwig
   - pybedtools

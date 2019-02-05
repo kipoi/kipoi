@@ -10,7 +10,7 @@ requirements = [
     "numpy",
     "pandas>=0.21.0",
     "tqdm",
-    "attr>=17.4.0",
+    "attrs>=17.4.0",
     "related>=0.6.0",
     "enum34",
     "colorlog",
