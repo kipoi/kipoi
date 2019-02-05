@@ -388,7 +388,7 @@ def lfs_installed(raise_exception=False):
         if raise_exception:
             raise OSError("git-lfs not installed")
         else:
-            logger.warn("git-lfs not installed")
+            logger.warning("git-lfs not installed")
     return ce
 
 

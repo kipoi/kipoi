@@ -83,7 +83,7 @@ def main():
                 args.command, commands_str))
     # backwards compatibilty
     if args.command == "postproc":
-        logger.warn("`kipoi postproc` has been deprecated. Please use kipoi <plugin> ...: {}".
+        logger.warning("`kipoi postproc` has been deprecated. Please use kipoi <plugin> ...: {}".
                     format(kipoi.plugin.get_plugin_help()))
         if len(sys.argv) == 2:
             logger.error("Use - kipoi <plugin> <command>.")

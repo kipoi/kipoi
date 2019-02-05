@@ -34,7 +34,7 @@ class RelatedConfigMixin(object):
         cfg_keys = set(cfg.keys())
         extra_keys = cfg_keys - cls_keys
         if len(extra_keys) > 0:
-            logger.warn("Unrecognized fields for {0}: {1}. Available fields are {2}".
+            logger.warning("Unrecognized fields for {0}: {1}. Available fields are {2}".
                         format(cls.__name__, extra_keys, cls_keys))
 
         return related.to_model(cls, cfg)

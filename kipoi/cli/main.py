@@ -59,7 +59,7 @@ def cli_test(command, raw_args):
 
     if not mh._sufficient_deps(mh.dependencies):
         # model requirements should be installed
-        logger.warn("Required package '{0}' for model type: {1} is not listed in the dependencies".
+        logger.warning("Required package '{0}' for model type: {1} is not listed in the dependencies".
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
@@ -170,7 +170,7 @@ def cli_preproc(command, raw_args):
     for i, batch in enumerate(tqdm(it)):
         # check that the first batch was indeed correct
         if i == 0 and not Dataloader.get_output_schema().compatible_with_batch(batch):
-            logger.warn("First batch of data is not compatible with the dataloader schema.")
+            logger.warning("First batch of data is not compatible with the dataloader schema.")
         writer.batch_write(batch)
 
     writer.close()
@@ -260,7 +260,7 @@ def cli_predict(command, raw_args):
     for i, batch in enumerate(tqdm(it)):
         # validate the data schema in the first iteration
         if i == 0 and not Dl.get_output_schema().compatible_with_batch(batch):
-            logger.warn("First batch of data is not compatible with the dataloader schema.")
+            logger.warning("First batch of data is not compatible with the dataloader schema.")
 
         # make the prediction
         if args.layer is None:

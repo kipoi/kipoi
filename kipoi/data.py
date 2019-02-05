@@ -150,7 +150,7 @@ class BaseDataLoader(object):
         """
         from kipoi.external.related.fields import UNSPECIFIED
         if not hasattr(cls, "args"):
-            logger.warn("No keyword arguments defined for the given dataloader.")
+            logger.warning("No keyword arguments defined for the given dataloader.")
             return None
             # print("No keyword arguments defined for the given dataloader.")
         args = cls.args
@@ -225,7 +225,7 @@ def kipoi_dataloader(override=dict()):
         for i, arg in enumerate(dl_descr.args):
             optional = i >= len(arg_names) - len(default_values)
             if dl_descr.args[arg].optional and not optional:
-                logger.warn("Parameter {} was specified as optional. However, there "
+                logger.warning("Parameter {} was specified as optional. However, there "
                             "are no defaults for it. Specifying it as not optinal".format(arg))
             dl_descr.args[arg].optional = optional
 

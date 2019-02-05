@@ -58,7 +58,7 @@ class Info(RelatedConfigMixin):
 
     def __attrs_post_init__(self):
         if self.authors and self.doc == "":
-            logger.warn("doc empty for the `info:` field")
+            logger.warning("doc empty for the `info:` field")
 
 
 @related.mutable(strict=False)
@@ -500,7 +500,7 @@ class RemoteFile(RelatedConfigMixin):
 
     def __attrs_post_init__(self):
         if self.md5 == "":
-            logger.warn("md5 not specified for url: {}".format(self.url))
+            logger.warning("md5 not specified for url: {}".format(self.url))
 
     def validate(self, path):
         """Validate if the path complies with the provided md5 hash
@@ -534,7 +534,7 @@ class DataLoaderArgument(RelatedConfigMixin):
 
     def __attrs_post_init__(self):
         if self.doc == "":
-            logger.warn("doc empty for one of the dataloader `args` fields")
+            logger.warning("doc empty for one of the dataloader `args` fields")
             # parse args
         self.example = recursive_dict_parse(self.example, 'url', RemoteFile.from_config)
         self.default = recursive_dict_parse(self.default, 'url', RemoteFile.from_config)
@@ -656,7 +656,7 @@ class Dependencies(RelatedConfigMixin):
             channels.insert(channels.index("bioconda") + 1, "conda-forge")
         if "pysam" in packages and "bioconda" in channels:
             if channels.index("defaults") < channels.index("bioconda"):
-                logger.warn("Swapping channel order - putting defaults last. " +
+                logger.warning("Swapping channel order - putting defaults last. " +
                             "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
                 channels.insert(len(channels), "defaults")
@@ -740,7 +740,7 @@ class Dependencies(RelatedConfigMixin):
         """
         from sys import platform
         if platform != 'darwin':
-            logger.warn("Calling osx dependency conversion on non-osx platform: {}".
+            logger.warning("Calling osx dependency conversion on non-osx platform: {}".
                         format(platform))
 
         def replace_osx(dep):
@@ -857,7 +857,7 @@ class ModelDescription(RelatedLoadSaveMixin):
 
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
-                    logger.warn("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
+                    logger.warning("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
         # parse args
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
@@ -968,7 +968,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     def print_kwargs(self, format_examples_json=False):
         from kipoi.external.related.fields import UNSPECIFIED
         if not hasattr(self, "args"):
-            logger.warn("No keyword arguments defined for the given dataloader.")
+            logger.warning("No keyword arguments defined for the given dataloader.")
             return None
 
         args = self.args
@@ -1000,7 +1000,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                     self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
-                    logger.warn("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
+                    logger.warning("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
     # download example files
     # def download_example(self):

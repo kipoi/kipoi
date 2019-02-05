@@ -164,7 +164,7 @@ if os.path.exists(_config_path):
     try:
         _config = yaml_ordered_load(open(_config_path, "r"))
     except ValueError:
-        logger.warn("Unable to parse the config file: {0}. Using default config".format(_config_path))
+        logger.warning("Unable to parse the config file: {0}. Using default config".format(_config_path))
         _model_sources = model_sources()
     else:
         _model_sources = _config['model_sources']

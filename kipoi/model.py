@@ -325,7 +325,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         if self.backend is not None:
             if keras.backend.backend() != self.backend:
-                logger.warn("Keras backend is {0} instead of {1}".
+                logger.warning("Keras backend is {0} instead of {1}".
                             format(keras.backend.backend(), self.backend))
 
         if custom_objects is not None and os.path.exists(custom_objects):
@@ -407,7 +407,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             # get the outputs from all nodes of the selected layer (selecting output from individual output nodes
             # creates None entries when running K.gradients())
             if self.get_num_inbound_nodes(selected_layer) > 1:
-                logger.warn("Layer %s has multiple input nodes. By default outputs from all nodes "
+                logger.warning("Layer %s has multiple input nodes. By default outputs from all nodes "
                             "are concatenated" % selected_layer.name)
                 for i in range(self.get_num_inbound_nodes(selected_layer)):
                     sel_output_dims.append(len(selected_layer.get_output_shape_at(i)))
@@ -553,7 +553,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             # Which subset of the selected layer outputs should be looked at?
             if filter_slices is not None:
                 if has_concat_output:
-                    logger.warn("Filter slices have been defined for output selection from layers %s, but "
+                    logger.warning("Filter slices have been defined for output selection from layers %s, but "
                                 "layer outputs of nodes had to be concatenated. This will potentially lead to undesired "
                                 "output - please take this concatenation into consideration when "
                                 "defining `filter_slices`." % str([l.name for l in selected_layers]))
@@ -1300,7 +1300,7 @@ class OldPyTorchModel(PyTorchModel):
         Where `weights` is the parameter of this function.
         Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
         """
-        logger.warn("You are using the old initialisation of Kipoi's pytorch models! This feature will soon be "
+        logger.warning("You are using the old initialisation of Kipoi's pytorch models! This feature will soon be "
                     "removed. Please convert your model to comply with the new definition of loading 'PyTorchModel's.")
         import torch
         if build_fn is not None:

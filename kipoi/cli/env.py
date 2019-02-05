@@ -165,7 +165,7 @@ def merge_deps(models,
                                     .format(model_descr.default_dataloader.defined_as))
                                 deps = deps.merge(KIPOISEQ_DEPS)
                             else:
-                                logger.warn("Unable to extract dataloader description. "
+                                logger.warning("Unable to extract dataloader description. "
                                             "Make sure the package containing the dataloader `{}` is installed".
                                             format(model_descr.default_dataloader.defined_as))
                 else:
@@ -301,7 +301,7 @@ def delete_envs(to_delete):
             db.remove(e)
             db.save()
         except Exception as err:
-            logger.warn("Conda delete of environment {0} failed with error: {1}. This environment entry was not "
+            logger.warning("Conda delete of environment {0} failed with error: {1}. This environment entry was not "
                         "removed from the database.".format(e.create_args.env, str(err)))
 
 

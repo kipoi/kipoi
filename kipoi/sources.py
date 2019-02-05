@@ -672,7 +672,7 @@ class GitSource(Source):
             return self.clone()
 
         if not self.auto_update:
-            logger.warn("Pulling source even though auto_update=False")
+            logger.warning("Pulling source even though auto_update=False")
 
         logger.info("Update {0}".
                     format(self.local_path))

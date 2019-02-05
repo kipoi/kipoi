@@ -10,7 +10,7 @@ dependencies:
   # - git-lfs 
   # General
   - numpy
-  - pandas
+  - pandas>=0.21.0
   - pytest
   - h5py
   - scipy
