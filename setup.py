@@ -8,7 +8,7 @@ requirements = [
     "pyyaml",
     "future",
     "numpy",
-    "pandas",
+    "pandas>=0.21",
     "tqdm",
     "related>=0.6.0",
     "enum34",
