@@ -59,11 +59,11 @@ def validate_kwargs(dataloader, dataloader_kwargs):
                 if not dataloader.args[k].optional}
     missing_arg = req_args - set(dataloader_kwargs.keys())
     if len(missing_arg) > 0:
-        logger.warn("Required arguments for the dataloader: {0} were not specified".
+        logger.warning("Required arguments for the dataloader: {0} were not specified".
                     format(",".join(list(missing_arg))))
     unused = set(dataloader_kwargs.keys()) - set(dataloader.args.keys())
     if len(unused) > 0:
-        logger.warn("Some provided dataloader kwargs were not used: {0}".format(unused))
+        logger.warning("Some provided dataloader kwargs were not used: {0}".format(unused))
     return {k: v for k, v in six.iteritems(dataloader_kwargs) if k in dataloader.args}
 
 
@@ -86,7 +86,7 @@ class Pipeline(object):
 
         # validate if model and datalaoder_cls are compatible
         if not self.model.schema.compatible_with_schema(self.dataloader_cls.get_output_schema()):
-            logger.warn("dataloader.output_schema is not compatible with model.schema")
+            logger.warning("dataloader.output_schema is not compatible with model.schema")
         else:
             logger.info("dataloader.output_schema is compatible with model.schema")
 
@@ -121,7 +121,7 @@ class Pipeline(object):
             pred_list = []
             for i, batch in enumerate(tqdm(it)):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
-                    logger.warn("First batch of data is not compatible with the dataloader schema.")
+                    logger.warning("First batch of data is not compatible with the dataloader schema.")
                 pred_batch = self.model.predict_on_batch(batch['inputs'])
                 pred_list.append(pred_batch)
 
@@ -173,7 +173,7 @@ class Pipeline(object):
 
         for i, batch in enumerate(it):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
-                logger.warn("First batch of data is not compatible with the dataloader schema.")
+                logger.warning("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
                 yield self.model.predict_on_batch(batch['inputs'])
             else:
@@ -201,7 +201,7 @@ class Pipeline(object):
 
         for i, batch in enumerate(tqdm(it)):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
-                logger.warn("First batch of data is not compatible with the dataloader schema.")
+                logger.warning("First batch of data is not compatible with the dataloader schema.")
             pred_batch = self.model.predict_on_batch(batch['inputs'])
             output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs)
             writer.batch_write(output_batch)
@@ -262,7 +262,7 @@ class Pipeline(object):
 
         for i, batch in enumerate(it):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
-                logger.warn("First batch of data is not compatible with the dataloader schema.")
+                logger.warning("First batch of data is not compatible with the dataloader schema.")
 
             pred = self.model.input_grad(batch['inputs'], filter_idx, avg_func, layer, final_layer,
                                          selected_fwd_node, pre_nonlinearity, **kwargs)

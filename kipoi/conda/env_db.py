@@ -75,7 +75,7 @@ class EnvDb:
             try:
                 self.entries.append(EnvDbEntry.from_config(db_entry))
             except Exception as e:
-                logger.warn("Could not load entry with cli path {0} due to: {1}. "
+                logger.warning("Could not load entry with cli path {0} due to: {1}. "
                             "Skipping...".format(str(db_entry), str(e)))
 
     def get_entry_by_model(self, model_name, only_most_recent=True, only_valid=False):
