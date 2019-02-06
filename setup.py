@@ -35,7 +35,11 @@ test_requirements = [
     "scikit-learn",
     "cython",
     "keras",
-    "tensorflow"
+    "tensorflow",
+    #"genomelake>=0.1.4",     # test_10_KipoiModel.py (fails on circle-ci)
+    "zarr>=2.2.0",            # test_161_writers.py
+    #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
+    "kipoi_interpret>=0.1.1", # test_42_kipoi_interpret.py
 ]
 
 setup(
