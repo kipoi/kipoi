@@ -61,8 +61,10 @@ Ready to contribute? Here’s how to set up kipoi for local development.
 3.  Install your local copy into a conda environment. Assuming you have conda installed, this is how you set up your fork for local development:
 
         $ conda create -n kipoi-py35 python=3.5
+        $ source activate kipoi-py35
+        $ conda install -c bioconda cyvcf2 genomelake 
+        $ conda install pytorch-cpu torchvision-cpu -c pytorch
         $ cd kipoi/
-		$ source activate kipoi-py35
         $ pip install -e '.[develop]'
 
 4.  Create a branch for local development:
