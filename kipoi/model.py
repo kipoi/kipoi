@@ -360,6 +360,38 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
 
+
+     
+    def _does_model_start_with_input_layer(self):
+        # since the model used to start with an InputLayer
+        # since keras 2.2 (i think, maybe 2.1)
+        # this implicit input layer is gone.
+        # => to not break anything we might need to compensate for that
+        # Consider:
+        # "Sequential([Dense(32, input_shape=(784,), activation='relu', name="first")])"
+        # for keras 2.0.x will be 2 layers:
+        #   -  keras.engine.topology.InputLayer 
+        #   - keras.layers.core.Dense object 
+        # for  keras 2.2.x
+        #   - this will be a single layer
+        #   - keras.layers.core.Dense
+        import keras
+        try:
+            first_layer =  self.model.get_layer(index=0)
+        except:
+            # if we cannot get the 0th layer it is for sure no input layer
+            return False
+        try:
+            if isinstance(first_layer, keras.engine.topology.InputLayer):
+                return True
+            else:
+                return False
+        except AttributeError:
+                # keras does not seem to have this attribute
+                return False
+
+
+
     def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
         """
         Get layers and outputs either by name / index or from the final layer(s).
@@ -391,7 +423,11 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if isinstance(self.model, keras.models.Sequential):
                 selected_layers = [self.model.layers[-1]]
             else:
-                selected_layers = self.model.output_layers
+                # Model has not attribute output_layers
+                try:
+                    selected_layers = self.model.output_layers
+                except AttributeError:
+                    selected_layers = self.model._output_layers
             for l in selected_layers:
                 for i in range(self.get_num_inbound_nodes(l)):
                     sel_output_dims.append(len(l.get_output_shape_at(i)))
@@ -400,7 +436,21 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # If not the final layer then the get the layer by its name / index
         elif layer is not None:
             if isinstance(layer, int):
-                selected_layer = self.model.get_layer(index=layer)
+
+                # users / unit tests except layer to be 1 based indexing
+                # since the model used to start with an InputLayer
+                # since keras 2.2 (i think, maybe 2.1)
+                # this implicit input layer is gone.
+                # => to not break anything we might need to compensate for that
+                input_layer_as_start = self._does_model_start_with_input_layer()
+                
+                if input_layer_as_start:
+                    selected_layer = self.model.get_layer(index=layer)
+                else:
+                    selected_layer = self.model.get_layer(index=layer-1)
+
+
+
             elif isinstance(layer, six.string_types):
                 selected_layer = self.model.get_layer(name=layer)
             selected_layers = [selected_layer]
@@ -595,10 +645,30 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             feed_input_names = self.model._feed_input_names
         return feed_input_names
 
+    @staticmethod
+    def _get_standardize_input_data_func():
+        import keras
+        if keras.__version__[0] == '1':
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+        elif hasattr(keras.engine.training, "_standardize_input_data"):
+            from keras.engine.training import _standardize_input_data
+        elif hasattr(keras.engine.training_utils, "standardize_input_data"):
+            from keras.engine.training import standardize_input_data as _standardize_input_data
+        else:
+            raise Exception("This Keras version is not supported!")
+        return _standardize_input_data
+
+
+
+
     def _batch_to_list(self, x):
         import keras
         from keras import backend as K
         feed_input_names = self._get_feed_input_names()
+
+        # depending on the version this function needs to be imported from different places
+        _standardize_input_data = KerasModel._get_standardize_input_data_func()
+
         if keras.__version__[0] == '1':
             from keras.engine.training import standardize_input_data as _standardize_input_data
             if not self.model.built:
@@ -610,8 +680,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 iis = self.model.model.internal_input_shapes
             x_standardized = _standardize_input_data(x, feed_input_names,
                                                      iis)
-        elif hasattr(keras.engine.training, "_standardize_input_data"):
-            from keras.engine.training import _standardize_input_data
+        else:
             if not hasattr(self.model, "_feed_input_names"):
                 if not self.model.built:
                     self.model.build()
@@ -619,17 +688,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if hasattr(self.model, "_feed_input_shapes"):
                 fis = self.model._feed_input_shapes
             x_standardized = _standardize_input_data(x, feed_input_names, fis)
-        elif hasattr(keras.engine.training_utils, "standardize_input_data"):
-            from keras.engine.training_utils import standardize_input_data
-            if not hasattr(self.model, "_feed_input_names"):
-                if not self.model.built:
-                    self.model.build()
-            fis = None
-            if hasattr(self.model, "_feed_input_shapes"):
-                fis = self.model._feed_input_shapes
-            x_standardized = standardize_input_data(x, feed_input_names, fis)
-        else:
-            raise Exception("This Keras version is not supported!")
+             
         return x_standardized
 
     def _match_to_input(self, to_match, input):
@@ -743,14 +802,17 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         """
         import keras
         from keras import backend as K
+
+        # depending on the keras version this functions needs to be imported from 
+        # different places
+        _standardize_input_data = KerasModel._get_standardize_input_data_func()
         if keras.__version__[0] == '1':
-            from keras.engine.training import standardize_input_data as _standardize_input_data
             x = _standardize_input_data(x, self.model.input_names,
                                         self.model.internal_input_shapes)
         else:
-            from keras.engine.training import _standardize_input_data
             x = _standardize_input_data(x, self.model._feed_input_names,
                                         self.model._feed_input_shapes)
+
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x + [0.]
         else:

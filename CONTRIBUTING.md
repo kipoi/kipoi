@@ -58,14 +58,25 @@ Ready to contribute? Here’s how to set up kipoi for local development.
 
         $ git clone git@github.com:your_name_here/kipoi.git
 
-3.  Install your local copy into a conda environment. Assuming you have conda installed, this is how you set up your fork for local development:
-
-        $ conda create -n kipoi-py35 python=3.5
-        $ source activate kipoi-py35
-        $ conda install -c bioconda cyvcf2 genomelake 
-        $ conda install pytorch-cpu torchvision-cpu -c pytorch
+3.  Install your local copy into a conda environment. Assuming you have conda installed, this is how you set up your fork for local development.
+For for python 2.7 do the following steps:
+        
         $ cd kipoi/
+        $ conda env create -f dev-requirements-py27.yml
+        $ source activate kipoi-py27
         $ pip install -e '.[develop]'
+
+For python 3.5:
+
+        $ cd kipoi/
+        $ conda env create -f dev-requirements-py27.yml
+        $ source activate kipoi-py27
+        $ pip install -e '.[develop]'
+
+Note that this will install a cpu version of pytorch.
+If you need gpu support for local development you need to adapt 
+the dev-requirements.
+
 
 4.  Create a branch for local development:
 
