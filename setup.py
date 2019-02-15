@@ -20,7 +20,7 @@ requirements = [
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
     "tinydb",
-    "deprecations>=2.0.6"
+    "deprecation>=2.0.6"
 ]
 
 test_requirements = [
