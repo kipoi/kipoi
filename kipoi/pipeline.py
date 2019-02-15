@@ -12,6 +12,7 @@ import six
 from tqdm import tqdm
 import six
 import deprecation
+from ._version import version
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
