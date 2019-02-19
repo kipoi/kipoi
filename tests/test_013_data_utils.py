@@ -2,8 +2,27 @@
 """
 
 import pytest
+from pytest import fixture
+
 from kipoi.data import PreloadedDataset
 import numpy as np
+
+@fixture
+def data():
+    return {"a": [np.arange(3)],
+            "b": {"d": np.arange(3)},
+            "c": np.arange(3).reshape((-1, 1))
+            }
+
+
+@fixture
+def bad_data():
+    return {"a": [np.arange(3)],
+            "b": {"d": np.arange(4)},
+            "c": np.arange(3).reshape((-1, 1)),
+            "e": 1
+            }
+
 
 
 def test_preloaded_dataset(data):
