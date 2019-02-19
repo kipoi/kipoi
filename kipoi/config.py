@@ -11,7 +11,7 @@ from collections import OrderedDict
 import pandas as pd
 import six
 from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
-from .utils import yaml_ordered_dump, yaml_ordered_load, du
+from kipoi_utils.utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 
 logger = logging.getLogger(__name__)

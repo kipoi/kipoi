@@ -1,5 +1,5 @@
 import numpy as np
-from kipoi.utils import cd
+from kipoi_utils.utils import cd
 import kipoi
 import pytest
 

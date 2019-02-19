@@ -3,7 +3,7 @@ import numpy as np
 from kipoi.data import Dataset
 from kipoi.specs import DataLoaderArgument, DataLoaderSchema, DataLoaderDescription
 from kipoi.specs import Author, Dependencies
-from kipoi.utils import inherits_from
+from kipoi_utils.utils import inherits_from
 from collections import OrderedDict
 import related
 from kipoi.data import kipoi_dataloader

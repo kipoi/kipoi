@@ -19,7 +19,9 @@ requirements = [
     # sometimes required
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
-    "tinydb"
+    "tinydb",
+    "kipoi-utils>=0.1.0",
+    "kipoi-conda>=0.1.0"
 ]
 
 test_requirements = [
@@ -40,6 +42,7 @@ test_requirements = [
     "zarr>=2.2.0",            # test_161_writers.py
     #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
     "kipoi_interpret>=0.1.1", # test_42_kipoi_interpret.py
+    "concise>=0.6.6"
 ]
 
 setup(

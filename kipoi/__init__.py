@@ -8,18 +8,25 @@ __version__ = '0.6.7'
 # available modules
 from . import config
 from . import pipeline
-from . import utils
+from kipoi_utils import utils # backward compat
+from kipoi_utils import data_utils # backward compat
+
 from . import sources
 from . import remote  # backward compat
 from . import model
-from . import data_utils
 from . import data
-from . import conda
+from . import external
+# import kipoi_conda as conda # backward compat
+# # monkey patch for backward compatibility 
+# from . import env_db as _env_cb
+# conda.env_db = env_db
+
 from . import specs
 from . import components  # backward compat
 from . import readers
 from . import writers
 from . import plugin
+from . import env_db
 
 # shortcuts
 from .model import get_model

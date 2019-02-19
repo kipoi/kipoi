@@ -7,7 +7,7 @@ import sys
 import os
 import yaml
 import kipoi  # for .config module
-from .utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
+from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
                     load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 import abc
 import six
@@ -818,7 +818,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
           auto_use_cuda: Automatically try to use CUDA if available
         """
         import torch
-        from kipoi.utils import load_obj
+        from kipoi_utils.utils import load_obj
 
         if (module_obj is None) and (module_class is None):
             raise Exception("Either 'module_obj' or 'module_class' have to be defined.")

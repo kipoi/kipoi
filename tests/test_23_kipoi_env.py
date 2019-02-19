@@ -2,7 +2,7 @@
 """
 import subprocess
 import os
-from kipoi.utils import read_yaml
+from kipoi_utils.utils import read_yaml
 from kipoi.cli.env import get_env_name, export_env, merge_deps, split_models_special_envs, generate_env_db_entry
 from kipoi.sources import list_subcomponents
 from kipoi.specs import Dependencies

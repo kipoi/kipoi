@@ -17,8 +17,8 @@ from __future__ import print_function
 
 import six
 import os
-from kipoi.utils import unique_list, makedir_exist_ok, is_subdir
-from kipoi.conda import _call_command
+from kipoi_utils.utils import unique_list, makedir_exist_ok, is_subdir
+from kipoi_conda import _call_command
 import subprocess
 import logging
 logger = logging.getLogger(__name__)

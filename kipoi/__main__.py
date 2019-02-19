@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import kipoi
+import kipoi_utils
 from kipoi import cli
 
 import argparse
@@ -39,7 +40,7 @@ command_functions = {
     'test-source': cli.source_test.cli_test_source,
     'init': cli.main.cli_init,
 }
-command_functions = kipoi.utils.merge_dicts(command_functions,
+command_functions = kipoi_utils.utils.merge_dicts(command_functions,
                                             kipoi.plugin.get_plugin_cli_fns())
 commands_str = ', '.join(command_functions.keys())
 

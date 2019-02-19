@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
-from .utils import cd
+from kipoi_utils.utils import cd
 import kipoi  # for .config module
 from .data import numpy_collate_concat
 # import h5py

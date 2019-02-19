@@ -13,10 +13,10 @@ from collections import OrderedDict
 import related
 import kipoi  # for .config module
 from kipoi.specs import DataLoaderDescription, Info, example_kwargs, RemoteFile, download_default_args
-from .utils import (load_module, cd, getargs, classproperty, inherits_from, rsetattr,
+from kipoi_utils import (load_module, cd, getargs, classproperty, inherits_from, rsetattr,
                     _get_arg_name_values, load_obj, infer_parent_class, override_default_kwargs)
-from .external.torch.data import DataLoader
-from kipoi.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
+from kipoi_utils.external.torch.data import DataLoader
+from kipoi_utils.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
                               DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 from tqdm import tqdm
 import types
@@ -148,7 +148,7 @@ class BaseDataLoader(object):
         # Arguments
           format_examples_json: format the results as json
         """
-        from kipoi.external.related.fields import UNSPECIFIED
+        from kipoi_utils.external.related.fields import UNSPECIFIED
         if not hasattr(cls, "args"):
             logger.warning("No keyword arguments defined for the given dataloader.")
             return None

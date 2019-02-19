@@ -6,7 +6,7 @@ import sys
 import os
 import yaml
 import kipoi
-import kipoi.utils
+import kipoi_utils.utils
 from kipoi.pipeline import install_model_requirements
 import config
 
@@ -48,7 +48,7 @@ def test_dataloader_model(example):
     # get model
     model = kipoi.get_model(example_dir, source="dir")
 
-    with kipoi.utils.cd(example_dir):
+    with kipoi_utils.utils.cd(example_dir):
         # initialize the dataloader
         dataloader = Dl(**test_kwargs)
 

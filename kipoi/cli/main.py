@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 import os
-from ..utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
+from kipoi_utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
 import kipoi  # for .config module
 from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_dataloader_main, file_exists, dir_exists
 from kipoi.sources import list_subcomponents

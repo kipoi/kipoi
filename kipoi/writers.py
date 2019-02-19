@@ -18,9 +18,9 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 from collections import OrderedDict
-from kipoi.utils import map_nested, get_subsuffix
-from kipoi.data_utils import flatten_batch, numpy_collate_concat
-from kipoi.external.flatten_json import flatten
+from kipoi_utils.utils import map_nested, get_subsuffix
+from kipoi_utils.data_utils import flatten_batch, numpy_collate_concat
+from kipoi_utils.external.flatten_json import flatten
 from kipoi.specs import MetadataType
 import logging
 logger = logging.getLogger(__name__)

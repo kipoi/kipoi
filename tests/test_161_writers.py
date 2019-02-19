@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
 from collections import OrderedDict
-from kipoi.utils import get_subsuffix
+from kipoi_utils.utils import get_subsuffix
 import zarr
 
 
