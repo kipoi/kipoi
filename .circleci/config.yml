@@ -29,22 +29,6 @@ variables:
         pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
-  install_kipoi: &install_kipoi_utils
-    run:
-      name: Install Kipoi-Utils
-      command: |
-        git clone git@github.com:kipoi/kipoi-utils.git kipoi_utils_pkg
-        cd kipoi_utils_pkg
-        pip install '.'
-        cd ..
-  install_kipoi: &install_kipoi_conda
-    run:
-      name: Install Kipoi-Conda
-      command: |
-        git clone git@github.com:kipoi/kipoi-conda.git kipoi_conda_pkg
-        cd kipoi_conda_pkg
-        pip install '.'
-        cd ..
 
   install_pip_deps: &install_pip_deps
     run:
@@ -93,8 +77,6 @@ jobs:
       - *update_conda
       - *install_singularity
       - *install_pip_deps
-      - *install_kipoi_utils
-      - *install_kipoi_conda
       - *install_kipoi
       - *install_kipoi_plugins
       - *kipoi_ls
@@ -111,8 +93,6 @@ jobs:
       - checkout
       - *update_conda
       - *install_pip_deps
-      - *install_kipoi_utils
-      - *install_kipoi_conda
       - *install_singularity
       - *install_kipoi
       - *install_kipoi_plugins
