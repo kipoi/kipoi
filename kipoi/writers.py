@@ -653,48 +653,105 @@ class BedGraphWriter(RegionWriter):
 
 
 class BigWigWriter(RegionWriter):
-    """BigWig entries have to be sorted so the generated values are cached in a bedgraph file.
+    """
 
     # Arguments
       file_path (str): File path of the output tsv file
+      genome_file: genome file containing chromosome sizes. Can
+        be None. Can be overriden by `chrom_sizes`.
+      chrom_sizes: a list of tuples containing chromosome sizes.
+        If not None, it overrided `genome_file`.
+      is_sorted: if True, the provided entries need to be sorted beforehand
+
+    Note: One of `genome_file` or `chrom_sizes` shouldn't be None.
     """
 
-    def __init__(self,
-                 file_path):
-        import tempfile
-        self.temp_bedgraph_path = tempfile.mkstemp()[1]
+    def __init__(self, file_path, genome_file=None, chrom_sizes=None, is_sorted=True):
+        import pandas as pd
+        import pyBigWig
         self.file_path = file_path
-        self.bgw = BedGraphWriter(file_path=self.temp_bedgraph_path)
-        raise Exception("BigWigWriter is not functional due to a Segmentation fault when trying to write to a file.")
+        self.genome_file = genome_file
+        # read the genome file
+        if chrom_sizes is not None:
+            self.chrom_sizes = chrom_sizes
+        else:
+            if genome_file is None:
+                raise ValueError("One of `chrom_sizes` or `genome_file` should not be None")
+            self.chrom_sizes = pd.read_csv(self.genome_file, header=None, sep='\t').values.tolist()
+        self.bw = pyBigWig.open(self.file_path, "w")
+        self.bw.addHeader(self.chrom_sizes)
+        self.is_sorted = is_sorted
+        if not self.is_sorted:
+            import tempfile
+            self.bgw = BedGraphWriter(tempfile.mkstemp()[1])
+        else:
+            self.bgw = None
 
     def region_write(self, region, data):
-        self.bgw.region_write(region, data)
-
-    def write_entry(self, chr, start, end, value):
-        """Write region to file.
+        """Write region to file. Note: the written regions need to be sorted beforehand.
 
         # Arguments
-            region: Defines the region that will be written position by position. Example: `{"chr":"chr1", "start":0, "end":4}`.
-            data: a 1D or 2D numpy array vector that has length "end" - "start". if 2D array is passed then
-                `data.sum(axis=1)` is performed on it first.
+          region: a `kipoi.metadata.GenomicRanges`,  `pybedtools.Interval` or a dictionary with at least keys:
+            "chr", "start", "end" and list-values. Example: `{"chr":"chr1", "start":0, "end":4}`.
+          data: a 1D-array of values to be written - where the 0th entry is at 0-based "start"
         """
-        self.bgw.write_entry(chr, start, end, value)
+        if not self.is_sorted:
+            self.bgw.region_write(region, data)
+            return None
+
+        def get_el(obj):
+            if isinstance(obj, np.ndarray):
+                assert len(data.shape) == 1
+            if isinstance(obj, list) or isinstance(obj, np.ndarray):
+                assert len(obj) == 1
+                return obj[0]
+            return obj
+
+        if isinstance(region, dict):
+            if 'chr' in region:
+                chr = get_el(region["chr"])
+            elif 'chrom' in region:
+                chr = get_el(region["chr"])
+            else:
+                raise ValueError("'chr' or 'chrom' not in `region`")
+            start = int(get_el(region["start"]))
+
+            if 'end' in region:
+                end = int(get_el(region["end"]))
+            elif 'stop' in region:
+                end = int(get_el(region["end"]))
+            else:
+                raise ValueError("'end' or 'stop' not in `region`")
+        else:
+            # works also with pybedtools.Interval
+            chr = region['chrom']
+            start = region['start']
+            end = region['end']
+
+        if end - start != len(data):
+            raise ValueError("end - start ({end - start})!= len(data) ({len(data)})".
+                             format(start=start, end=end, data=data))
+        # if len(data.shape) == 2:
+        #     data = data.sum(axis=1)
+        assert len(data.shape) == 1
+
+        self.bw.addEntries(chr, int(start), values=data.astype(float), span=1, step=1, validate=True)
 
     def close(self):
         """Close the file
         """
-        from pybedtools import BedTool
-        import pyBigWig
-        # close the temp file
-        self.bgw.close()
-        # sort the tempfile and get the path of the sorted file
-        sorted_fn = BedTool(self.temp_bedgraph_path).sort().fn
-        # write the bigwig file
-        bw = pyBigWig.open(self.file_path, "w")
-
-        with open(sorted_fn) as ifh:
-            for l in ifh:
-                chr, start, end, val = l.rstrip().split("\t")
-                bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])
-
-        bw.close()
+        if self.is_sorted:
+            self.bw.close()
+        else:
+            # convert bedGraph to bigwig
+            from pybedtools import BedTool
+            # close the temp file
+            self.bgw.close()
+            # sort the tempfile and get the path of the sorted file
+            sorted_fn = BedTool(self.bgw.file_path).sort().fn
+            # write the bigwig file
+            with open(sorted_fn) as ifh:
+                for l in ifh:
+                    chr, start, end, val = l.rstrip().split("\t")
+                    self.bw.addEntries([chr], [int(start)], ends=[int(end)], values=[float(val)])
+            self.bw.close()

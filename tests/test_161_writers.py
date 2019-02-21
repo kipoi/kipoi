@@ -265,24 +265,58 @@ def test_BedBatchWriter(dl_batch, pred_batch_array, metadata_schema, tmpdir):
     assert list(df['name']) == [0, 1, 2, 0, 1, 2]
 
 
-def test_bigwigwriter():
+def test_bigwigwriter(tmpdir):
     from kipoi.writers import BigWigWriter
     import pyBigWig
     import tempfile
-    temp_path = tempfile.mkstemp()[1]
-    with pytest.raises(Exception):
-        bww = BigWigWriter(temp_path)
-        regions = {"chr": ["chr1", "chr7", "chr2"], "start": [10, 30, 20], "end": [11, 31, 21]}
-        values = [3.0, 4.0, 45.4]
-        for i, val in enumerate(values):
-            reg = {k: v[i] for k, v in regions.items()}
-            bww.region_write(reg, np.array([val]))
-        bww.close()
-        bww_2 = pyBigWig(temp_path)
-        for i, val in enumerate(values):
-            reg = {k: v[i] for k, v in regions.items()}
-            bww.region_write(reg, [val])
-            assert bww_2.entries(reg["chr"], reg["start"], reg["end"])[0][2] == val
+    tmpfile = str(tmpdir.mkdir("example").join("out.bw"))
+    bww = BigWigWriter(tmpfile, chrom_sizes=[('chr1', 1000), ('chr10', 1000)])
+    regions = [
+        ({"chr": "chr1", "start": 10, "end": 20}, np.arange(10)),
+        ({"chr": "chr1", "start": 30, "end": 40}, np.arange(10)[::-1]),
+        ({"chr": "chr10", "start": 10, "end": 20}, np.arange(10))
+    ]
+    for region, data in regions:
+        bww.region_write(region, data)
+    bww.close()
+    # load the bigwig file and validate the values
+    r = pyBigWig.open(tmpfile)
+
+    for region, data in regions:
+        # query the values
+        assert np.allclose(data, r.values(region['chr'],
+                                          region['start'],
+                                          region['end'], numpy=True))
+    # assert there are no values here
+    assert np.isnan(r.values("chr1", 20, 30, numpy=True)).all()
+    r.close()
+
+
+def test_bigwigwriter_not_sorted(tmpdir):
+    from kipoi.writers import BigWigWriter
+    import pyBigWig
+    import tempfile
+    tmpfile = str(tmpdir.mkdir("example").join("out.bw"))
+    bww = BigWigWriter(tmpfile, chrom_sizes=[('chr1', 1000), ('chr10', 1000)], is_sorted=False)
+    regions = [
+        ({"chr": "chr1", "start": 30, "end": 40}, np.arange(10)[::-1]),
+        ({"chr": "chr1", "start": 10, "end": 20}, np.arange(10)),
+        ({"chr": "chr10", "start": 10, "end": 20}, np.arange(10))
+    ]
+    for region, data in regions:
+        bww.region_write(region, data)
+    bww.close()
+    # load the bigwig file and validate the values
+    r = pyBigWig.open(tmpfile)
+
+    for region, data in regions:
+        # query the values
+        assert np.allclose(data, r.values(region['chr'],
+                                          region['start'],
+                                          region['end'], numpy=True))
+    # assert there are no values here
+    assert np.isnan(r.values("chr1", 20, 30, numpy=True)).all()
+    r.close()
 
 
 def test_bedgraphwriter():
