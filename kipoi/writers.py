@@ -729,7 +729,8 @@ class BigWigWriter(RegionWriter):
             end = region['end']
 
         if end - start != len(data):
-            raise ValueError(f"end - start ({end - start})!= len(data) ({len(data)})")
+            raise ValueError("end - start ({end - start})!= len(data) ({len(data)})".
+                             format(start=start, end=end, data=data))
         # if len(data.shape) == 2:
         #     data = data.sum(axis=1)
         assert len(data.shape) == 1
