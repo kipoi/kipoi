@@ -94,8 +94,8 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 
 # For no good reason this test fails when installing
 # from conda even tough this work very fine locally
-@pytest.mark.skipif('os.environ.get('CI_JOB_PY_36_YAML') is not None')
-def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir, max_queue_size):
+@pytest.mark.skipif("os.environ.get('CI_JOB_PY_36_YAML') is not None")
+def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = AsyncBatchWriter(TsvBatchWriter(tmpfile))
@@ -114,7 +114,7 @@ def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir, max_queue
                                      'preds/0',
                                      'preds/1',
                                      'preds/2'}
-    assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]
+    assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]
 
 
 
