@@ -359,21 +359,18 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
-
-
      
     def _does_model_start_with_input_layer(self):
-        # since the model used to start with an InputLayer
+        # the model used to start with an InputLayer,
         # since keras 2.2 (i think, maybe 2.1)
         # this implicit input layer is gone.
         # => to not break anything we might need to compensate for that
         # Consider:
         # "Sequential([Dense(32, input_shape=(784,), activation='relu', name="first")])"
-        # for keras 2.0.x will be 2 layers:
+        # for keras 2.0.x we get 2 layers:
         #   -  keras.engine.topology.InputLayer 
         #   - keras.layers.core.Dense object 
-        # for  keras 2.2.x
-        #   - this will be a single layer
+        # for  keras 2.2.x  this will be a single layer
         #   - keras.layers.core.Dense
         import keras
         try:
@@ -389,7 +386,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         except AttributeError:
                 # keras does not seem to have this attribute
                 return False
-
 
 
     def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
