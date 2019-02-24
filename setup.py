@@ -19,7 +19,8 @@ requirements = [
     # sometimes required
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
-    "tinydb"
+    "tinydb",
+    "deprecation>=2.0.6"
 ]
 
 test_requirements = [
@@ -44,7 +45,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.6.7',
+    version='0.6.8',
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
