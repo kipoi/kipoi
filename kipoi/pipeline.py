@@ -19,7 +19,7 @@ logger.addHandler(logging.NullHandler())
 
 
 
-@deprecation.deprecated(deprecated_in="0.6.8", removed_in="0.7",
+@deprecation.deprecated(deprecated_in="0.6.8", removed_in="0.7.0",
                         current_version=__version__,
                         details=""" installing packages in a running python env is error prone.
                         Use command line interface of kipoi to install packages.
@@ -46,7 +46,7 @@ def install_model_requirements(model, source="kipoi", and_dataloaders=True):
         dl = kipoi.config.get_source(dl_source).get_dataloader_descr(default_dataloader_path)
         dl.dependencies.install()
 
-@deprecation.deprecated(deprecated_in="0.6.8", removed_in="0.7",
+@deprecation.deprecated(deprecated_in="0.6.8", removed_in="0.7.0",
                         current_version=__version__,
                         details=""" installing packages in a running python env is error prone.
                         Use command line interface of kipoi to install packages.
