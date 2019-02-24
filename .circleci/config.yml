@@ -169,8 +169,6 @@ jobs:
       - *run_tests
       - *store_test_results
       - *store_test_artifacts
-      - *install_from_dev_requirements_py27
-
           
   build-deploy-docs:
     docker:
