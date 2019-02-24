@@ -57,6 +57,12 @@ Alternatively, you can use the Singularity or Docker containers with all depende
 
 ### Python
 
+Before using a model from python in any way, activate the right conda enviroment:
+```bash
+source activate $(kipoi env get <model>)
+```
+
+
 ```python
 import kipoi
 
@@ -75,7 +81,6 @@ model.default_dataloader # dataloader
 model.info # description, authors, paper link, ...
 
 # main methods
-model.dependencies.install() # calls `conda install` and `pip install`
 model.predict_on_batch(x) # implemented by all the models regardless of the framework
 model.pipeline.predict(dict(fasta_file="hg19.fa",
                             intervals_file="intervals.bed"))
