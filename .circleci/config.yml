@@ -31,28 +31,27 @@ variables:
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
 
-  install_from_dev_requirements_py27: &install_from_dev_requirements_py27
+  install_from_dev_requirements_py3x: &install_from_dev_requirements_py3x
     run:
-      name: Install from dev-requirements-py27.yml
+      name: Install from dev-requirements-py3x.yml
       command: |
-        conda env create --name kipoi-env -f dev-requirements-py27.yml
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements.yml
         source activate kipoi-env
-        pip install -e '.[develop]'
-  install_from_dev_requirements_py35: &install_from_dev_requirements_py35
-    run:
-      name: Install from dev-requirements-py35.yml
-      command: |
-        conda env create --name kipoi-env -f dev-requirements-py35.yml
-        source activate kipoi-env
-        pip install -e '.
+        pip install -e .
+
   install_from_dev_requirements_py36: &install_from_dev_requirements_py36
     run:
       name: Install from dev-requirements-py36.yml
       command: |
-        echo 'export CI_JOB_PY_36_YAML="$CI_JOB_PY_36_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda create -n kipoi-env python=3.6
         source activate kipoi-env
+        conda env update -f dev-requirements.yml
         pip install -e .
+
+
+
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
@@ -111,19 +110,6 @@ variables:
 
 
 jobs:
-  test-py35-yml:
-    docker:
-     - image: kipoi/miniconda3:4.3.14
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *update_conda
-      - *install_from_dev_requirements_py35
-      - *activate_and_kipoi_ls
-      - *activate_and_run_tests
-      - *activate_and_run_coveralls
-      - *store_test_results
-      - *store_test_artifacts
   test-py36-yml:
     docker:
      - image: kipoi/miniconda3:4.3.14
@@ -132,6 +118,19 @@ jobs:
       - checkout
       - *update_conda
       - *install_from_dev_requirements_py36
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+  test-py3x-yml:
+    docker:
+     - image: kipoi/miniconda3:4.3.14
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      - *install_from_dev_requirements_py3x
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
       - *activate_and_run_coveralls
@@ -208,9 +207,8 @@ workflows:
     jobs:
       - test-py36
       - test-py27
-      - test-py36-yml
-      #- test-py35-yml
-      #- test-py27-yml
+      - test-py3x-yml
+
       - build-deploy-docs:
           requires:
             - test-py36

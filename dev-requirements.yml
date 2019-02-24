@@ -1,11 +1,11 @@
-name: kipoi
+name: kipoi-dev
 channels:
   - bioconda
   - pytorch
   - conda-forge
   - defaults
 dependencies:
-  - python
+  - python>=3.6.0
   # general packages
   # - git-lfs 
   # General
@@ -15,6 +15,7 @@ dependencies:
   - pytest-xdist
   - pytest-sugar
   - pytest-cov>=2.6.1
+  #- coveralls
   - h5py>=2.7.0
   - scipy>=1.0.0
   - attrs>=18.2.0
@@ -35,7 +36,15 @@ dependencies:
   - scikit-learn>=0.19.1
   - tensorflow>=1.4.0
   - pytorch-cpu>=0.3.1
-  - keras>=2.0.4
+  - keras>=2.2.4
+  # for plugins (double check)
+  - fastparquet
+  - zarr 
+  - numcodecs
+  # singularity
+  - singularity
   - pip:
+    - kipoi_interpret
+    - kipoi_veff
+    - kipoiseq
     - concise>=0.6.5
-    - -e '.[develop]'
