@@ -13,6 +13,7 @@ from __future__ import print_function
 import os
 import sys
 import time
+import warnings
 from abc import abstractmethod
 import numpy as np
 import pandas as pd
@@ -74,39 +75,41 @@ class MultipleBatchWriter(BatchWriter):
             bw.close()
 
 
-def _write_worker(q, batch_writer):
-    """Writer loop
 
-    Args:
-      q: multiprocessing.Queue
-      batch_writer.
-    """
-    while True:
-        batch = q.get()
-        if batch is None:
-            return
-        else:
-            batch_writer.batch_write(batch)
 
 
 class AsyncBatchWriter(BatchWriter):
 
-    def __init__(self, batch_writer, max_queue_size=10, close_wait=10):
+    def __init__(self, batch_writer, max_queue_size=10, close_wait=None):
         """
         Args:
           batch_writer: BatchWriter object
           max_queue_size: maximal queue size. If it gets
             larger then batch_write needs to wait
              till it can write to the queue again.
-          close_wait: time to wait till everything is written
+          close_wait: deprecated, we wait unit job is done
         """
-        from multiprocessing import Queue, Process
+        from multiprocessing import JoinableQueue, Process
         self.batch_writer = batch_writer
-        self.max_queue_size = max_queue_size
-        self.close_wait = close_wait
+        if close_wait is not None:
+            warnings.warn("AsyncBatchWriter usage of kw close_wait is deprecated", 
+                DeprecationWarning) 
+
+
+        def _write_worker(q, batch_writer):
+            """Writer loop
+
+            Args:
+              q: multiprocessing.JoinableQueue
+              batch_writer.
+            """
+            while True:
+                batch = q.get() # <- this blocks
+                batch_writer.batch_write(batch)
+                q.task_done()
 
         # instantiate the queue and start the process
-        self.queue = Queue()
+        self.queue = JoinableQueue(max_queue_size)
         self.process = Process(target=_write_worker,
                                args=(self.queue, self.batch_writer))
         self.process.start()
@@ -117,10 +120,6 @@ class AsyncBatchWriter(BatchWriter):
         Args:
           batch is one batch of data (nested numpy arrays with the same axis 0 shape)
         """
-        while self.queue.qsize() > self.max_queue_size:
-            print("WARNING: queue too large {} > {}. Blocking the writes".
-                  format(self.queue.qsize(), self.max_queue_size))
-            time.sleep(1)
         self.queue.put(batch)
 
     def close(self):
@@ -129,11 +128,7 @@ class AsyncBatchWriter(BatchWriter):
         # stop the process,
         # make sure the queue is empty
         # close the file
-        self.process.join(self.close_wait)  # wait one second to close it
-        if self.queue.qsize() > 0:
-            print("WARNING: queue not terminated successfully. {} elements left".
-                  format(self.queue.qsize()))
-            print(self.queue.get())
+        self.queue.join()  # wait one second to close it
         self.batch_writer.close()
         self.process.terminate()
 
