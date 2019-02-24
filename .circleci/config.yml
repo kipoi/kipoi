@@ -50,8 +50,6 @@ variables:
         conda env update -f dev-requirements.yml
         pip install -e .
 
-
-
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
@@ -107,7 +105,6 @@ variables:
     store_artifacts:
       path: test-reports
       destination: test-reports
-
 
 jobs:
   test-py36-yml:
@@ -205,12 +202,15 @@ workflows:
     jobs:
       - test-py36
       - test-py27
+      - test-py36-yml
       - test-py3x-yml
 
       - build-deploy-docs:
           requires:
             - test-py36
             - test-py27
+            - test-py36-yml
+            - test-py3x-yml
           filters:
             branches:
               only:
