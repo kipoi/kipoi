@@ -53,12 +53,9 @@ variables:
       name: Install from dev-requirements-py36.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda create -n kipoi-env python=3.6
+        conda env create --name kipoi-env -f dev-requirements-py36.yml
         source activate kipoi-env
-        conda env update -f dev-requirements.yml
         pip install -e .
-        # for no good reason the wrong pytest is missing in the bin path..
-        pip install --force "pytest>=3.3.1"
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
