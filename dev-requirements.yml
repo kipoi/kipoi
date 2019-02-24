@@ -5,7 +5,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.6.0
+  - python>=3.5.0
   # general packages
   # - git-lfs 
   # General
@@ -15,6 +15,7 @@ dependencies:
   - pytest-xdist
   - pytest-sugar
   - pytest-cov>=2.6.1
+  - deprecation>=2.0.6
   #- coveralls
   - h5py>=2.7.0
   - scipy>=1.0.0
