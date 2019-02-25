@@ -207,7 +207,6 @@ def test_activation_function_model(example):
         if example == "rbp":
             model.predict_activation_on_batch(batch["inputs"], layer="flatten_6")
 
-
 def test_keras_get_layers_and_outputs():
     import keras
     backend = keras.backend._BACKEND
@@ -236,6 +235,7 @@ def test_keras_get_layers_and_outputs():
     assert len(sel_outputs) == 1
     assert sel_outputs[0] == selected_layers[0].output
     assert len(sel_output_dims) == 1
+    
     # using the sequential model
     model = kipoi.model.KerasModel(*get_sample_sequential_model())
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(2)
@@ -259,7 +259,6 @@ def test_keras_get_layers_and_outputs():
     assert sel_outputs[0] == selected_layers[0].output
     assert len(sel_output_dims) == 1
 
-
 def test_generate_activation_output_functions():
     import keras
     backend = keras.backend._BACKEND
@@ -281,7 +280,6 @@ def test_generate_activation_output_functions():
     if backend != 'theano':
         act_fn_l = model._generate_activation_output_functions(layer="hidden", pre_nonlinearity=True)
         act_fn_l(sample_input)
-
 
 def test_single_layer_gradient():
     model = kipoi.model.KerasModel(*get_single_layer_model())
@@ -339,14 +337,12 @@ def test_gradient_function_model(example):
         # elif example == "extended_coda":
         #    model._input_grad(batch["inputs"], -1, filter_func=tf.reduce_max, filter_func_kwargs={"axis": 1})
 
-
 def check_grad(input, grad):
     if isinstance(input, list):
         for el, grad_el in zip(input, grad):
             assert el.shape == grad_el.shape
     else:
         assert input.shape == grad.shape
-
 
 def test__get_gradient_function():
     import keras.backend as K
@@ -379,7 +375,6 @@ def test__get_gradient_function():
     check_grad(sample_input, grad_fn(sample_input))
     grad_fn = model._get_gradient_function(use_final_layer=False, layer=2, filter_func=K.sum)
     check_grad(sample_input, grad_fn(sample_input))
-
 
 def test_returned_gradient_fmt():
     model = kipoi.model.KerasModel(*get_sample_functional_model())

@@ -9,17 +9,18 @@ variables:
     run:
       name: Install Singularity
       command: |
-        # TODO only install if singularity is not yet present
-        # if type singularity > /dev/null; then exit 0; fi
+        # # TODO only install if singularity is not yet present
+        # # if type singularity > /dev/null; then exit 0; fi
         SINGULARITY_VER=2.5.1
-        apt-get update; apt-get install -y squashfs-tools libarchive-dev
+        apt-get update; 
+        apt-get install -y squashfs-tools libarchive-dev
         wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
         tar xvf singularity-$SINGULARITY_VER.tar.gz
         cd singularity-$SINGULARITY_VER
         ./configure --prefix=/usr/local --sysconfdir=/etc
         make
         make install
-        # conda install --yes -c conda-forge singularity
+        #conda install --yes -c conda-forge singularity
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -29,6 +30,32 @@ variables:
         pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
+
+  export_shortcuts: &export_shortcuts
+    run:
+      name: Export shortcuts 
+      command: |
+        # for no good reason the wrong version of pytest is choosen by default...
+        echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
+
+
+  install_from_dev_requirements_py3x: &install_from_dev_requirements_py3x
+    run:
+      name: Install from dev-requirements-py3x.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements.yml
+        source activate kipoi-env
+        pip install -e .
+
+  install_from_dev_requirements_py36: &install_from_dev_requirements_py36
+    run:
+      name: Install from dev-requirements-py36.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        source activate kipoi-env
+        pip install -e .
   install_pip_deps: &install_pip_deps
     run:
       name: Install pip dependencies
@@ -45,17 +72,38 @@ variables:
     run:
       name: List kipoi packages
       command: kipoi ls
+  kipoi_ls: &activate_and_kipoi_ls
+    run:
+      name: List kipoi packages
+      command: |
+        source activate kipoi-env
+        kipoi ls
+  # run_coveralls: &run_coveralls
   run_tests: &run_tests
     run:
       name: Run tests
       command: |
         mkdir test-reports
-        py.test --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        pytest --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+      no_output_timeout: 15m
+  activate_and_run_tests: &activate_and_run_tests
+    run:
+      name: Run tests
+      command: |
+        source activate kipoi-env
+        mkdir test-reports
+        $PYTEST --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:
       name: run coveralls
       command: coveralls || true
+  activate_and_run_coveralls: &activate_and_run_coveralls
+    run:
+      name: activate and run coveralls
+      command: |
+        source activate kipoi-env
+        coveralls || true
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -64,8 +112,35 @@ variables:
       path: test-reports
       destination: test-reports
 
-
 jobs:
+  test-py36-yml:
+    docker:
+     - image: kipoi/miniconda3:4.3.14
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      - *install_from_dev_requirements_py36
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+  test-py3x-yml:
+    docker:
+     - image: kipoi/miniconda3:4.3.14
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      - *install_from_dev_requirements_py3x
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
 
   test-py36:
     docker:
@@ -135,10 +210,15 @@ workflows:
     jobs:
       - test-py36
       - test-py27
+      - test-py36-yml
+      - test-py3x-yml
+
       - build-deploy-docs:
           requires:
             - test-py36
             - test-py27
+            - test-py36-yml
+            - test-py3x-yml
           filters:
             branches:
               only:
