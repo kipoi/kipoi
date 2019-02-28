@@ -10,7 +10,9 @@ def gen_bar_updater(pbar):
         if pbar.total is None and total_size:
             pbar.total = total_size
         progress_bytes = count * block_size
-        pbar.update(progress_bytes - pbar.n)
+        n = progress_bytes - pbar.n
+        if n > 0:
+            pbar.update(n)
 
     return bar_update
 
