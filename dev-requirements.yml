@@ -49,5 +49,5 @@ dependencies:
     - kipoi-conda>=0.1.0
     - kipoi-interpret>=0.1.2
     - kipoi-veff>=0.2.3
-    - kipoiseq>=0.2.4
+    - kipoiseq>=0.2.3
     - concise>=0.6.5
