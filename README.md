@@ -195,3 +195,7 @@ pip install -e '.[develop]'
 This will install some additional packages like `pytest`. You can test the package by running `py.test`. 
 
 If you wish to run tests in parallel, run `py.test -n 6`.
+
+## License
+
+Kipoi is MIT-style licensed, as found in the LICENSE file.
