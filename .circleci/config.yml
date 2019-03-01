@@ -191,7 +191,7 @@ jobs:
           command: pip install -e .
       - run:
           name: Install build deps
-          command: pip install nbconvert==0.5.4 mkdocs pydoc-markdown
+          command: pip install nbconvert==5.4.0 mkdocs pydoc-markdown
       - run:
           name: Build docs
           command: |
