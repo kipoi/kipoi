@@ -32,6 +32,18 @@ class GenomicRanges(Mapping):
             if eval(v) is None:
                 raise ValueError("{0} can't be None".format(v))
 
+    @property
+    def chrom(self):
+        return self.chr
+    
+    @property
+    def stop(self):
+        return self.end
+    
+    @property
+    def name(self):
+        return self.id
+    
     def __getitem__(self, key):
         return self._storage[key]
 

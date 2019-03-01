@@ -22,6 +22,7 @@ requirements = [
     "tinydb",
     "kipoi-utils>=0.1.1",
     "kipoi-conda>=0.1.0"
+    "deprecation>=2.0.6"
 ]
 
 test_requirements = [
@@ -41,13 +42,13 @@ test_requirements = [
     #"genomelake>=0.1.4",     # test_10_KipoiModel.py (fails on circle-ci)
     "zarr>=2.2.0",            # test_161_writers.py
     #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
-    "kipoi_interpret>=0.1.1", # test_42_kipoi_interpret.py
+    "kipoi-interpret>=0.1.2", # test_42_kipoi_interpret.py
     "concise>=0.6.6"
 ]
 
 setup(
     name='kipoi',
-    version='0.6.7',
+    version='0.6.8',
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
