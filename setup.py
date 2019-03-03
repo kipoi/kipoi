@@ -48,7 +48,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.6.8',
+    version='0.6.9',
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
