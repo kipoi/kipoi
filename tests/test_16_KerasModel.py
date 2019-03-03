@@ -8,10 +8,10 @@ import yaml
 from contextlib import contextmanager
 import kipoi
 from kipoi.pipeline import install_model_requirements
-from kipoi.utils import Slice_conv
+from kipoi_utils.utils import Slice_conv
 import config
 import numpy as np
-from kipoi.utils import cd
+from kipoi_utils.utils import cd
 
 # TODO: Implement automatic switching of backends to test on Theano model!
 

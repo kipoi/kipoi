@@ -2,7 +2,7 @@
 """
 import pytest
 from pytest import raises
-from kipoi.utils import read_txt
+from kipoi_utils.utils import read_txt
 from kipoi.specs import Dependencies
 from related import from_yaml
 

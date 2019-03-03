@@ -15,9 +15,9 @@ from colorlog import escape_codes, default_log_colors
 
 import kipoi
 from kipoi.cli.env import conda_env_name, SPECIAL_ENV_PREFIX
-from kipoi.conda import get_kipoi_bin, env_exists, remove_env, _call_command
+from kipoi_conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.sources import list_softlink_dependencies
-from kipoi.utils import list_files_recursively, read_txt, get_file_path, cd
+from kipoi_utils.utils import list_files_recursively, read_txt, get_file_path, cd
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -207,7 +207,7 @@ def restrict_models_to_test(all_models, source, git_range):
 def rm_env(env_name):
     """Alias for remove_env
     """
-    from kipoi.conda.env_db import get_model_env_db
+    from kipoi.env_db import get_model_env_db
     if env_exists(env_name):
         logger.info("Removing environment: {0}".
                     format(env_name))

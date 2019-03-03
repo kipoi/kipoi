@@ -3,10 +3,9 @@
 
 import pytest
 from pytest import fixture
-from kipoi.data_utils import get_dataset_lens, get_dataset_item
+
 from kipoi.data import PreloadedDataset
 import numpy as np
-
 
 @fixture
 def data():
@@ -24,27 +23,6 @@ def bad_data():
             "e": 1
             }
 
-
-# data = data()
-# bad_data = bad_data()
-
-
-def test_datset_lens_good(data):
-    assert get_dataset_lens(data) == 3 * [3]
-
-
-def test_datset_lens_bad(bad_data):
-    assert sorted(get_dataset_lens(bad_data)) == [1, 3, 3, 4]
-
-    with pytest.raises(Exception):
-        get_dataset_lens(bad_data, require_numpy=True)
-
-
-def test_get_item(data):
-    dlen = get_dataset_lens(data)[0]
-    assert dlen == 3
-    assert len(set(get_dataset_lens(data))) == 1
-    assert get_dataset_item(data, 1) == {"a": [1], "b": {"d": 1}, "c": np.array([1])}
 
 
 def test_preloaded_dataset(data):

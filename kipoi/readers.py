@@ -3,7 +3,7 @@
 - HDF5Reader
 """
 import numpy as np
-from kipoi.external.flatten_json import unflatten_list
+from kipoi_utils.external.flatten_json import unflatten_list
 from abc import abstractmethod
 
 

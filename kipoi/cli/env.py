@@ -15,12 +15,13 @@ from sys import platform
 import yaml
 
 import kipoi
+import kipoi_conda
 from kipoi.cli.parser_utils import add_env_args, parse_source_name
-from kipoi.conda import env_db
-from kipoi.conda.env_db import get_model_env_db
+from kipoi import env_db
+from kipoi.env_db import get_model_env_db
 from kipoi.sources import list_subcomponents, list_models_by_group
 from kipoi.specs import Dependencies, DataLoaderImport
-from kipoi.utils import cd
+from kipoi_utils.utils import cd
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -297,7 +298,7 @@ def delete_envs(to_delete):
     db = get_model_env_db()
     for e in to_delete:
         try:
-            kipoi.conda.remove_env(e.create_args.env)
+            kipoi_conda.remove_env(e.create_args.env)
             db.remove(e)
             db.save()
         except Exception as err:
@@ -332,8 +333,8 @@ def get_envs_by_model(models, source, only_most_recent=True, only_valid=False):
 
 def generate_env_db_entry(args, args_env_overload=None):
     from collections import OrderedDict
-    from kipoi.conda.env_db import EnvDbEntry
-    from kipoi.conda import get_conda_version
+    from kipoi.env_db import EnvDbEntry
+    from kipoi_conda import get_conda_version
 
     special_envs, only_models = split_models_special_envs(args.model)
 
@@ -371,7 +372,7 @@ def generate_env_db_entry(args, args_env_overload=None):
 def cli_create(cmd, raw_args):
     """Create a conda environment for a model
     """
-    from kipoi.conda import get_kipoi_bin
+    from kipoi_conda import get_kipoi_bin
     import uuid
     parser = argparse.ArgumentParser(
         'kipoi env {}'.format(cmd),
@@ -455,7 +456,7 @@ def cli_create(cmd, raw_args):
 
         # setup the conda env from file
         logger.info("Creating conda env from file: {0}".format(env_file))
-        kipoi.conda.create_env_from_file(env_file)
+        kipoi_conda.create_env_from_file(env_file)
         env_db_entry.successful = True
 
         # env is environment name

@@ -6,7 +6,7 @@ from pytest import fixture
 from kipoi.data import (PreloadedDataset, Dataset, BatchDataset,
                         SampleIterator, SampleGenerator,
                         BatchIterator, BatchGenerator)
-from kipoi.data_utils import get_dataset_item
+from kipoi_utils.data_utils import get_dataset_item
 
 N = 10
 

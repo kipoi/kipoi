@@ -1,5 +1,5 @@
-from kipoi.external.related.mixins import RelatedConfigMixin
-from kipoi.external.related.fields import StrSequenceField
+from kipoi_utils.external.related.mixins import RelatedConfigMixin
+from kipoi_utils.external.related.fields import StrSequenceField
 import os
 import kipoi
 import related

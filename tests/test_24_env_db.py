@@ -3,7 +3,7 @@ import os
 
 import kipoi
 from kipoi.cli.env import generate_env_db_entry, get_envs_by_model
-from kipoi.conda.env_db import EnvDb
+from kipoi.env_db import EnvDb
 
 
 def get_args(def_kwargs):
@@ -71,7 +71,7 @@ def test_env_db_kipoi(tmpdir, monkeypatch):
                                  only_most_recent=False) == [dir_entries[0]]
 
     # monkeypatch the get_model_env_db()
-    monkeypatch.setattr(kipoi.conda.env_db, 'get_model_env_db', lambda: db)
+    monkeypatch.setattr(kipoi.env_db, 'get_model_env_db', lambda: db)
 
     assert get_envs_by_model(['DeepSEA'], "kipoi", only_most_recent=False, only_valid=False) == [kipoi_entries[0]]
     assert get_envs_by_model(["CpGenie/merged"], "kipoi", only_most_recent=False,

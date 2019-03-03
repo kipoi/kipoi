@@ -32,7 +32,7 @@ except ImportError:
     # python3
     from io import StringIO
 
-from kipoi.external.flatten_json import flatten, unflatten, unflatten_list, check_if_numbers_are_consecutive
+from kipoi_utils.external.flatten_json import flatten, unflatten, unflatten_list, check_if_numbers_are_consecutive
 
 
 def test_numbers_consecutive():

@@ -37,7 +37,7 @@ $kipoi_cmd veff score_variants \
 import os
 import kipoi
 from collections import OrderedDict
-from kipoi.utils import cd
+from kipoi_utils.utils import cd
 from kipoi.specs import ArraySchema
 import numpy as np
 from joblib import Parallel, delayed

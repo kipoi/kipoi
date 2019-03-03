@@ -6,7 +6,7 @@ import sys
 import pytest
 from kipoi.specs import DataLoaderImport
 import kipoi
-from kipoi.utils import inherits_from
+from kipoi_utils.utils import inherits_from
 from uuid import uuid4
 
 

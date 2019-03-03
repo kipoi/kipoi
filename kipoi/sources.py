@@ -8,7 +8,7 @@ import six
 import subprocess
 import logging
 from collections import OrderedDict
-from .utils import unique_list, lfs_installed, get_file_path, cd, list_files_recursively, is_subdir, relative_path
+from kipoi_utils.utils import unique_list, lfs_installed, get_file_path, cd, list_files_recursively, is_subdir, relative_path
 import pandas as pd
 import kipoi
 logger = logging.getLogger(__name__)

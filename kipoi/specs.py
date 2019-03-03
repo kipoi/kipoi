@@ -14,13 +14,13 @@ import related
 import six
 
 import kipoi
-from kipoi.external.torchvision.dataset_utils import download_url, check_integrity
+from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
 from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_installed
-import kipoi.conda as kconda
-from kipoi.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
-from kipoi.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
+import kipoi_conda as kconda
+from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.utils import (unique_list, yaml_ordered_dump, read_txt,
+from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt,
                          load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
 logger = logging.getLogger(__name__)
@@ -966,7 +966,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                               dry_run=dry_run)
 
     def print_kwargs(self, format_examples_json=False):
-        from kipoi.external.related.fields import UNSPECIFIED
+        from kipoi_utils.external.related.fields import UNSPECIFIED
         if not hasattr(self, "args"):
             logger.warning("No keyword arguments defined for the given dataloader.")
             return None

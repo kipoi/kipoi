@@ -1,6 +1,6 @@
 import numpy as np
 from kipoi.model import PyTorchModel, OldPyTorchModel, infer_pyt_class
-from kipoi.utils import cd
+from kipoi_utils.utils import cd
 import torch
 from torch import nn
 import torch.nn.functional as F

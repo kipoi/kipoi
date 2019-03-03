@@ -45,7 +45,9 @@ dependencies:
   # singularity
   - singularity
   - pip:
-    - kipoi_interpret
-    - kipoi_veff
-    - kipoiseq
+    - kipoi-utils>=0.1.2
+    - kipoi-conda>=0.1.0
+    - kipoi-interpret>=0.1.2
+    - kipoi-veff>=0.2.3
+    - kipoiseq>=0.2.3
     - concise>=0.6.5
