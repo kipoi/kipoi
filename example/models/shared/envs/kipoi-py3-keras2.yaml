@@ -31,7 +31,6 @@ dependencies:
   # - scikit-learn
   - pyvcf
   - intervaltree
-  - deepdish
   - joblib
   - sklearn-pandas
   - tqdm
