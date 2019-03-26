@@ -60,10 +60,10 @@ variables:
         conda env create --name kipoi-env -f dev-requirements-py36.yml
         source activate kipoi-env
         pip install -e .
-  install_pip_deps: &install_pip_deps
+  install_genomelake: &install_genomelake
     run:
       name: Install pip dependencies
-      command: pip install genomelake --no-deps
+      command: conda install -c bioconda genomelake 
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -155,7 +155,7 @@ jobs:
       - *install_sys_deps
       - *update_conda
       - *install_singularity
-      - *install_pip_deps
+      - *install_genomelake
       - *install_kipoi
       - *install_kipoi_plugins
       - *kipoi_ls
@@ -172,7 +172,7 @@ jobs:
       - checkout
       - *install_sys_deps
       - *update_conda
-      - *install_pip_deps
+      - *install_genomelake
       - *install_singularity
       - *install_kipoi
       - *install_kipoi_plugins
