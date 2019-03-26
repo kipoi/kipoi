@@ -5,6 +5,10 @@ variables:
     run:
       name: Update conda
       command: conda update --yes conda
+  install_sys_deps: &install_sys_deps
+    run:
+      name: install build-essential
+      command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
   install_singularity: &install_singularity
     run:
       name: Install Singularity
@@ -148,6 +152,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_sys_deps
       - *update_conda
       - *install_singularity
       - *install_pip_deps
@@ -165,6 +170,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_sys_deps
       - *update_conda
       - *install_pip_deps
       - *install_singularity
