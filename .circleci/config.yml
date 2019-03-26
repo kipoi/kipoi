@@ -115,7 +115,7 @@ variables:
 jobs:
   test-py36-yml:
     docker:
-     - image: kipoi/miniconda3:4.3.14
+     - image: kipoi/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -129,7 +129,7 @@ jobs:
       - *store_test_artifacts
   test-py3x-yml:
     docker:
-     - image: kipoi/miniconda3:4.3.14
+     - image: kipoi/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -144,7 +144,7 @@ jobs:
 
   test-py36:
     docker:
-      - image: kipoi/miniconda3:4.3.14
+      - image: kipoi/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -161,7 +161,7 @@ jobs:
 
   test-py27:
     docker:
-      - image: kipoi/miniconda:4.3.14
+      - image: kipoi/miniconda:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -177,7 +177,7 @@ jobs:
           
   build-deploy-docs:
     docker:
-      # - image: continuumio/miniconda3:4.3.14
+      # - image: continuumio/miniconda3:4.5.12
       - image: continuumio/anaconda3:5.0.1
       # - image: circleci/python:3.5
     working_directory: ~/repo
