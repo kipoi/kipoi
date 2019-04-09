@@ -98,7 +98,7 @@ variables:
         source activate kipoi-env
         coveralls || true
   store_test_results: &store_test_results
-    store_test_results:https://circleci.com/gh/kipoi/kipoi/2541?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
+    store_test_results:
       path: test-reports
   store_test_artifacts: &store_test_artifacts
     store_artifacts:
@@ -125,8 +125,7 @@ jobs:
      - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
-      - chtest-py3x-yml
-      -eckout
+      - checkout
       - *update_conda
       - *install_from_dev_requirements_py3x
       - *export_shortcuts
@@ -135,7 +134,7 @@ jobs:
       - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
-
+      
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
@@ -171,6 +170,7 @@ workflows:
     jobs:
       - test-py36-yml
       - test-py3x-yml
+
       - build-deploy-docs:
           requires:
             - test-py36-yml
