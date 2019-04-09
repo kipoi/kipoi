@@ -44,7 +44,8 @@ dependencies:
   - numcodecs
   # singularity
   - singularity
-  - git-lsf
+  - git
+  - git-lfs
   - pip:
     - kipoi-utils>=0.1.2
     - kipoi-conda>=0.1.0
