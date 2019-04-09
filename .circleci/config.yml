@@ -125,31 +125,14 @@ jobs:
      - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
-      - checkout
+      - chtest-py3x-yml
+      -eckout
       - *update_conda
       - *install_from_dev_requirements_py3x
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
       - *activate_and_run_coveralls
-      - *store_test_results
-      - *store_test_artifacts
-
-  test-py36:
-    docker:
-      - image: continuumio/miniconda3:4.5.12
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *install_sys_deps
-      - *update_conda
-      - *install_singularity
-      - *install_genomelake
-      - *install_kipoi
-      - *install_kipoi_plugins
-      - *kipoi_ls
-      - *run_tests
-      - *run_coveralls
       - *store_test_results
       - *store_test_artifacts
 
@@ -176,7 +159,7 @@ jobs:
             cd docs/
             ./render_ipynb.bash
             pydocmd build
-      - run:            - test-py36
+      - run:
           name: Deploy docs
           command: .circleci/deploy_docs.bash
 workflows:
@@ -188,7 +171,6 @@ workflows:
     jobs:
       - test-py36-yml
       - test-py3x-yml
-
       - build-deploy-docs:
           requires:
             - test-py36-yml
