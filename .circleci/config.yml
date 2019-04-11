@@ -42,7 +42,7 @@ variables:
         pip install -e .
         git lfs install
         ln -s /opt/conda/bin/python /usr/bin/python
-  install_from_dev_requirements_py36: &install_from_dev_requirements_py36
+  install_from_dev_requirements_py36: &install_from_dev_requirements_py36 -
     run:
       name: Install from dev-requirements-py36.yml
       command: |
