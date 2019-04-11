@@ -4,23 +4,16 @@ variables:
   update_conda: &update_conda
     run:
       name: Update conda
-      command: conda update --yes conda
+      command: conda update -n base conda -c anaconda
+  install_sys_deps: &install_sys_deps
+    run:
+      name: install build-essential
+      command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
   install_singularity: &install_singularity
     run:
       name: Install Singularity
       command: |
-        # # TODO only install if singularity is not yet present
-        # # if type singularity > /dev/null; then exit 0; fi
-        SINGULARITY_VER=2.5.1
-        apt-get update; 
-        apt-get install -y squashfs-tools libarchive-dev
-        wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
-        tar xvf singularity-$SINGULARITY_VER.tar.gz
-        cd singularity-$SINGULARITY_VER
-        ./configure --prefix=/usr/local --sysconfdir=/etc
-        make
-        make install
-        #conda install --yes -c conda-forge singularity
+        conda install --yes -c conda-forge singularity
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -47,7 +40,8 @@ variables:
         conda env create --name kipoi-env -f dev-requirements.yml
         source activate kipoi-env
         pip install -e .
-
+        git lfs install
+        ln -s /opt/conda/bin/python /usr/bin/python
   install_from_dev_requirements_py36: &install_from_dev_requirements_py36
     run:
       name: Install from dev-requirements-py36.yml
@@ -56,10 +50,12 @@ variables:
         conda env create --name kipoi-env -f dev-requirements-py36.yml
         source activate kipoi-env
         pip install -e .
-  install_pip_deps: &install_pip_deps
+        git lfs install
+        ln -s /opt/conda/bin/python /usr/bin/python
+  install_genomelake: &install_genomelake
     run:
       name: Install pip dependencies
-      command: pip install genomelake --no-deps
+      command: conda install -c bioconda genomelake 
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -115,7 +111,7 @@ variables:
 jobs:
   test-py36-yml:
     docker:
-     - image: kipoi/miniconda3:4.3.14
+     - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -129,7 +125,7 @@ jobs:
       - *store_test_artifacts
   test-py3x-yml:
     docker:
-     - image: kipoi/miniconda3:4.3.14
+     - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -142,42 +138,9 @@ jobs:
       - *store_test_results
       - *store_test_artifacts
 
-  test-py36:
-    docker:
-      - image: kipoi/miniconda3:4.3.14
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *update_conda
-      - *install_singularity
-      - *install_pip_deps
-      - *install_kipoi
-      - *install_kipoi_plugins
-      - *kipoi_ls
-      - *run_tests
-      - *run_coveralls
-      - *store_test_results
-      - *store_test_artifacts
-
-  test-py27:
-    docker:
-      - image: kipoi/miniconda:4.3.14
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *update_conda
-      - *install_pip_deps
-      - *install_singularity
-      - *install_kipoi
-      - *install_kipoi_plugins
-      - *kipoi_ls
-      - *run_tests
-      - *store_test_results
-      - *store_test_artifacts
-          
   build-deploy-docs:
     docker:
-      # - image: continuumio/miniconda3:4.3.14
+      # - image: continuumio/miniconda3:4.5.12
       - image: continuumio/anaconda3:5.0.1
       # - image: circleci/python:3.5
     working_directory: ~/repo
@@ -208,15 +171,11 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - test-py36
-      - test-py27
       - test-py36-yml
       - test-py3x-yml
 
       - build-deploy-docs:
           requires:
-            - test-py36
-            - test-py27
             - test-py36-yml
             - test-py3x-yml
           filters:
