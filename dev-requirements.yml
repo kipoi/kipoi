@@ -46,6 +46,7 @@ dependencies:
   - singularity>=3.0.0
   - git
   - git-lfs
+  - cookiecutter>=1.6.0
   - pip:
     - kipoi-utils>=0.1.12
     - kipoi-conda>=0.1.6

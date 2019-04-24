@@ -15,7 +15,7 @@ requirements = [
     "enum34",
     "colorlog",
     "jinja2",
-    "cookiecutter",
+    "cookiecutter>=1.6.0",
     # sometimes required
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
