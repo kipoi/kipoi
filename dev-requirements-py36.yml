@@ -49,7 +49,6 @@ dependencies:
   - pip:
     - kipoi-utils>=0.1.12
     - kipoi-conda>=0.1.6
->>>>>>> 652e84e0c70ff3feb566ebae9017c66c40b200c8
     - kipoi-interpret>=0.1.2
     - kipoi-veff>=0.2.3
     - kipoiseq>=0.2.3
