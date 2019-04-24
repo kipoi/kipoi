@@ -43,10 +43,12 @@ dependencies:
   - zarr 
   - numcodecs
   # singularity
-  - singularity
+  - singularity>=3.0.0
+  - git
+  - git-lfs
   - pip:
     - kipoi-utils>=0.1.12
-    - kipoi-conda>=0.1.0
+    - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
     - kipoi-veff>=0.2.3
     - kipoiseq>=0.2.3
