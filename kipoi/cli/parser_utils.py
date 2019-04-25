@@ -31,8 +31,8 @@ def add_dataloader_main(parser, with_args=True):
                         " under model_sources. " +
                         "'dir' is an additional source referring to the local folder.")
     if with_args:
-        parser.add_argument('--dataloader_args',
-                            help="Dataloader arguments either as a json string:'{\"arg1\": 1} or " +
+        parser.add_argument('--dataloader_args', type=str,nargs="+",
+                            help="DataLoader arguments either as a json string:'{\"arg1\": 1} or " +
                             "as a file path to a json file")
 
 
@@ -44,8 +44,8 @@ def add_dataloader(parser, with_args=True):
                         help="Dataloader source")
 
     if with_args:
-        parser.add_argument('--dataloader_args',
-                            help="Dataloader arguments either as a json string:" +
+        parser.add_argument('--dataloader_args',type=str,nargs="+",
+                            help="DataLoader arguments either as a json string:" +
                             "'{\"arg1\": 1} or as a file path to a json file")
 
 

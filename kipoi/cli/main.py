@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 import os
-from kipoi_utils import parse_json_file_str, cd, makedir_exist_ok, compare_numpy_dict
+from kipoi_utils import parse_json_file_str_or_arglist, cd, makedir_exist_ok, compare_numpy_dict
 import kipoi  # for .config module
 from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_dataloader_main, file_exists, dir_exists
 from kipoi.sources import list_subcomponents
@@ -20,8 +20,13 @@ from tqdm import tqdm
 from collections import OrderedDict
 import logging
 from kipoi import writers
+
+import ast
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
 
 
 def prepare_batch(dl_batch, pred_batch,
@@ -153,7 +158,7 @@ def cli_preproc(command, raw_args):
                         help="Output hdf5 file")
     args = parser.parse_args(raw_args)
 
-    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
+    dataloader_kwargs = parse_json_file_str_or_arglist(args.dataloader_args, parser)
 
     dir_exists(os.path.dirname(args.output), logger)
     # --------------------------------------------
@@ -203,7 +208,7 @@ def cli_predict(command, raw_args):
                         ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
     args = parser.parse_args(raw_args)
 
-    dataloader_kwargs = parse_json_file_str(args.dataloader_args)
+    dataloader_kwargs = parse_json_file_str_or_arglist(args.dataloader_args, parser)
 
     # setup the files
     if not isinstance(args.output, list):

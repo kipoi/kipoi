@@ -111,9 +111,9 @@ def test_postproc_cli_fail():
     returncode = subprocess.call(args=args)
     assert returncode > 0
 
-
+@pytest.mark.parametrize("new_dataloader_kwargs_format", [False, True])
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
-def test_preproc_example(example, tmpdir):
+def test_preproc_example(example, new_dataloader_kwargs_format, tmpdir):
     """kipoi preproc ...
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
@@ -127,14 +127,40 @@ def test_preproc_example(example, tmpdir):
 
     tmpfile = str(tmpdir.mkdir("output", ).join("out.h5"))
 
-    # run the
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
-            "../",  # directory
-            "--source=dir",
-            "--batch_size=4",
-            "--num_workers=2",
-            "--dataloader_args=test.json",
-            "--output", tmpfile]
+    if example in {"rbp"} and new_dataloader_kwargs_format:
+        if example == "rbp":
+            dataloader_args=[
+                "intervals_file=intervals.tsv",
+                "fasta_file=hg38_chr22.fa",
+                "preproc_transformer=../dataloader_files/encodeSplines.pkl",
+                "gtf_file=gencode_v25_chr22.gtf.pkl.gz",
+                "tarOget_file=targets.tsv"
+            ]
+        elif example == "extended_coda":
+            dataloader_args = [
+                "intervals_file=intervals.tsv",
+                "input_data_sources={'H3K27AC_subsampled':'H3K27AC_subsampled.bw'}",
+                "batch_size=4"
+            ]
+        # run the
+        args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
+                "../",  # directory
+                "--source=dir",
+                "--batch_size=4",
+                "--num_workers=2",
+                "--dataloader_args"] + dataloader_args + [ "--output", tmpfile]
+
+
+
+    else:
+        # run the
+        args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",
+                "../",  # directory
+                "--source=dir",
+                "--batch_size=4",
+                "--num_workers=2",
+                "--dataloader_args=test.json",
+                "--output", tmpfile]
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
     returncode = subprocess.call(args=args,

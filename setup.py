@@ -15,12 +15,12 @@ requirements = [
     "enum34",
     "colorlog",
     "jinja2",
-    "cookiecutter",
+    "cookiecutter>=1.6.0",
     # sometimes required
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
     "tinydb",
-    "kipoi-utils>=0.1.2",
+    "kipoi-utils>=0.1.12",
     "kipoi-conda>=0.1.6",
     "deprecation>=2.0.6"
 ]
@@ -48,7 +48,7 @@ test_requirements = [
 
 setup(
     name='kipoi',
-    version='0.6.9',
+    version='0.6.11',
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
