@@ -1,2 +1,2 @@
-# this header exisits just for backward compability
+# this header exisits just for backward compatibility
 from kipoi_utils.external.torchvision.dataset_utils import *
