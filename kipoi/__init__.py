@@ -15,6 +15,7 @@ from kipoi_utils import data_utils # backward compat
 from . import sources
 from . import remote  # backward compat
 from . import model
+from . import rpyc_model
 from . import data
 from . import external
 # import kipoi_conda as conda # backward compat

@@ -9,6 +9,9 @@ import yaml
 import kipoi  # for .config module
 from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
                     load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
+from . base_model import BaseModel
+from kipoi.rpyc_model import RemoteModel,ModelArgs
+
 import abc
 import six
 import numpy as np
@@ -55,7 +58,14 @@ class BaseModel(object):
             return False
 
 
-def get_model(model, source="kipoi", with_dataloader=True):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+
+def get_model(model, source="kipoi", with_dataloader=True, server_settings=None):
     """Load the `model` from `source`, as well as the default dataloder to model.default_dataloder.
 
     # Arguments
@@ -161,42 +171,93 @@ def get_model(model, source="kipoi", with_dataloader=True):
                 # download the parameters and override the model
                 path = md.args[k].get_file(os.path.join(output_dir, fname))
                 md.args[k] = path
-        if md.type is not None:
-            # old API
-            if md.type == 'custom':
-                Mod = load_model_custom(**md.args)
-                assert issubclass(Mod, BaseModel)  # it should inherit from Model
-                mod = Mod()
-            elif md.type == "pytorch":
-                mod = infer_pyt_class(md.args)(**md.args)
-            elif md.type in AVAILABLE_MODELS:
-                # TODO - this doesn't seem to work
-                mod = AVAILABLE_MODELS[md.type](**md.args)
+
+        if server_settings is None:
+            if md.type is not None:
+                # old API
+                if md.type == 'custom':
+                    Mod = load_model_custom(**md.args)
+                    assert issubclass(Mod, BaseModel)  # it should inherit from Model
+                    mod = Mod()
+                elif md.type == "pytorch":
+                    mod = infer_pyt_class(md.args)(**md.args)
+                elif md.type in AVAILABLE_MODELS:
+                    # TODO - this doesn't seem to work
+                    mod = AVAILABLE_MODELS[md.type](**md.args)
+                else:
+                    raise ValueError("Unsupported model type: {0}. " +
+                                     "Model type needs to be one of: {1}".
+                                     format(md.type,
+                                            ['custom'] + list(AVAILABLE_MODELS.keys())))
             else:
-                raise ValueError("Unsupported model type: {0}. " +
-                                 "Model type needs to be one of: {1}".
-                                 format(md.type,
-                                        ['custom'] + list(AVAILABLE_MODELS.keys())))
+                # new API
+                try:
+                    Mod = load_obj(md.defined_as)
+                except ImportError:
+                    if md.defined_as.startswith("kipoi.model."):
+                        # user tried importing some of the available models
+                        logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
+                            md.defined_as,
+                            ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
+                        ))
+                    raise ImportError("Unable to import {}".format(md.defined_as))
+                if not inherits_from(Mod, BaseModel):
+                    raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+                mod = Mod(**md.args)
+                for k, v in six.iteritems(AVAILABLE_MODELS):
+                    if isinstance(mod, v):
+                        md.type = k
+                if md.type is None:
+                    md.type = 'custom'
         else:
-            # new API
-            try:
-                Mod = load_obj(md.defined_as)
-            except ImportError:
-                if md.defined_as.startswith("kipoi.model."):
-                    # user tried importing some of the available models
-                    logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
-                        md.defined_as,
-                        ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
-                    ))
-                raise ImportError("Unable to import {}".format(md.defined_as))
-            if not inherits_from(Mod, BaseModel):
-                raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
-            mod = Mod(**md.args)
-            for k, v in six.iteritems(AVAILABLE_MODELS):
-                if isinstance(mod, v):
-                    md.type = k
-            if md.type is None:
-                md.type = 'custom'
+
+            # TODO
+            ####################################
+            if False:
+                server_settings.setEnv('TODO')
+
+            if md.type is not None:
+                # old API
+                if md.type == 'custom':
+                    mod = RemoteModel(server_settings=server_settings, model_type='custom',
+                                model_args=ModelArgs(**md.args), cwd=source_dir)
+                elif md.type == "pytorch":
+                    Mod = infer_pyt_class(md.args)#(**md.args)
+                    assert Mod != OldPyTorchModel
+                    mod = RemoteModel(server_settings=server_settings, model_type='pytorch',
+                                model_args=ModelArgs(**md.args), cwd=source_dir)
+
+                elif md.type in AVAILABLE_MODELS:
+                    mod = RemoteModel(server_settings=server_settings, model_type=md.type,
+                                model_args=ModelArgs(**md.args), cwd=source_dir)
+                else:
+                    raise ValueError("Unsupported model type: {0}. " +
+                                     "Model type needs to be one of: {1}".
+                                     format(md.type,
+                                            ['custom'] + list(AVAILABLE_MODELS.keys())))
+            else:
+                # new API
+                try:
+                    Mod = load_obj(md.defined_as)
+                except ImportError:
+                    if md.defined_as.startswith("kipoi.model."):
+                        # user tried importing some of the available models
+                        logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
+                            md.defined_as,
+                            ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
+                        ))
+                    raise ImportError("Unable to import {}".format(md.defined_as))
+                if not inherits_from(Mod, BaseModel):
+                    raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+                
+                for k, v in six.iteritems(AVAILABLE_MODELS):
+                    if v==Mod:
+                        md.type = k
+                if md.type is None:
+                    md.type = 'custom'
+
+                mod = RemoteModel(server_settings=server_settings, model_type=md.type,
+                                model_args=ModelArgs(**md.args), cwd=source_dir)
 
     # populate the returned class
     mod.type = md.type
