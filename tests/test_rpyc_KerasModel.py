@@ -204,17 +204,17 @@ def test_predict_on_batch(example, port):
 
     # get remote model
     s = kipoi.rpyc_model.ServerArgs(env_name=None,  address='localhost', port=port, logging_level=0)
-    remote_model = kipoi.get_model(example_dir, source="dir", server_settings=s)
-    #
-    with cd(example_dir + "/example_files"):
-        # initialize the dataloader
-        dataloader = Dl(**test_kwargs)
-        #
-        # sample a batch of data
-        it = dataloader.batch_iter()
-        batch = next(it)
-        # predict with a model
-        res = model.predict_on_batch(batch["inputs"])
-        remote_res = remote_model.predict_on_batch(batch["inputs"])
+    with  kipoi.get_model(example_dir, source="dir", server_settings=s) as remote_model:
+        
+        with cd(example_dir + "/example_files"):
+            # initialize the dataloader
+            dataloader = Dl(**test_kwargs)
+            #
+            # sample a batch of data
+            it = dataloader.batch_iter()
+            batch = next(it)
+            # predict with a model
+            res = model.predict_on_batch(batch["inputs"])
+            remote_res = remote_model.predict_on_batch(batch["inputs"])
 
-        numpy.testing.assert_allclose(res, remote_res)
+            numpy.testing.assert_allclose(res, remote_res)
