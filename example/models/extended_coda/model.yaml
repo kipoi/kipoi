@@ -10,9 +10,12 @@ info:
     version: 0.1
     doc: Single bp resolution ChIP-seq denoising
 dependencies:
+    conda:
+        - python=3.6
+        - pip
     pip:
-      - tensorflow>=1.0.0
-      - keras>2.0.4
+        - tensorflow>=1.0.0
+        - keras>2.0.4
 schema:
     inputs:
         H3K27AC_subsampled:

@@ -194,5 +194,5 @@ def test_decorator_env_loading(tmpdir):
     mdir = cp_tmpdir("example/models/kipoi_dataloader_decorator", tmpdir)
     assert merge_deps([mdir], source='dir') == \
            Dependencies(conda=['python=2.7', 'scikit-learn'],
-                        pip=['kipoi', 'scikit-learn', 'tqdm'],
+                        pip=['kipoi', 'rpyc','scikit-learn', 'tqdm'],
                         conda_channels=['defaults'])

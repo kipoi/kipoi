@@ -54,3 +54,4 @@ dependencies:
     - kipoi-veff>=0.2.3
     - kipoiseq>=0.2.3
     - concise>=0.6.5
+    - rpyc

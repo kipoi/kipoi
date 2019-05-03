@@ -35,7 +35,11 @@ def extractor(intervals_file, input_data_sources, target_data_sources=None, batc
             mapping from input name to genomelake directory
         batch_size: int
     """
-    bt = pybedtools.BedTool(intervals_file)
+    try:
+        bt = pybedtools.BedTool(intervals_file)
+    except FileNotFoundError as e:
+        msg = "{} cwd: {}".format(e, os.getcwd())
+        raise FileNotFoundError(msg)
     input_data_extractors = {key: ArrayExtractor(data_source)
                              for key, data_source in input_data_sources.items()}
     if target_data_sources is not None:

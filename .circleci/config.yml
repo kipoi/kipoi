@@ -9,7 +9,7 @@ variables:
     run:
       name: install build-essential
       command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
-  install_singularity: &install_singularity
+  install_singularity: &install_singularitymodel
     run:
       name: Install Singularity
       command: |
@@ -68,7 +68,7 @@ variables:
       name: Run tests
       command: |
         mkdir test-reports
-        pytest --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        pytest --cov=kipoi/  tests/test_rpyc_KerasModel.py -k test_predict_on_batch  --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   activate_and_run_tests: &activate_and_run_tests
     run:
@@ -76,7 +76,7 @@ variables:
       command: |
         source activate kipoi-env
         mkdir test-reports
-        $PYTEST --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=kipoi/ tests/test_rpyc_KerasModel.py -k test_predict_on_batch  --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:

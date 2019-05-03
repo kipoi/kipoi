@@ -78,7 +78,7 @@ def get_env_name(model_name, dataloader_name=None, source="kipoi", gpu=False):
 conda_env_name = get_env_name
 
 # constant dependencies
-KIPOI_DEPS = Dependencies(pip=["kipoi"])
+KIPOI_DEPS = Dependencies(pip=["kipoi","rpyc"])
 # TODO - update once kipoi_veff will be on bioconda
 VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
                                "bioconda::cyvcf2",
@@ -398,7 +398,7 @@ def cli_create(cmd, raw_args):
 
     # write the env file
     logger.info("Writing environment file: {0}".format(tmpdir))
-
+    #assert False
     if args.model == ['all']:
         from kipoi.cli.source_test import get_common_env
         src = kipoi.get_source(args.source)
@@ -455,14 +455,14 @@ def cli_create(cmd, raw_args):
         envdb.save()
 
         # setup the conda env from file
-        logger.info("Creating conda env from file: {0}".format(env_file))
-        kipoi_conda.create_env_from_file(env_file)
+        print("Creating conda env from file: {0}".format(env_file))
+        kipoi_conda.create_env_from_file(env_file, use_stdout=True)
         env_db_entry.successful = True
 
         # env is environment name
         env_db_entry.cli_path = get_kipoi_bin(env)
         get_model_env_db().save()
-        logger.info("Done!")
+        print("Done!")
         print("\nActivate the environment via:")
         print("source activate {0}".format(env))
     else:

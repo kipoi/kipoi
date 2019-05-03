@@ -25,9 +25,13 @@ info:
     version: 0.1
     doc: DataLoader for single bp resolution ChIP-seq denoising
 dependencies:
+    conda:
+        - python=3.6
+        - bioconda::genomelake
+        - pip
     pip:
         - cython
-        - genomelake
+        
 output_schema:
     inputs:
         H3K27AC_subsampled:

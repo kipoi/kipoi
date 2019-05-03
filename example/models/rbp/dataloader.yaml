@@ -28,12 +28,15 @@ info:
           github: avsecz
     doc: RBP binding prediction
 dependencies:
+    conda:
+        - python=3.6
+        - pip
+        - bioconda::pybedtools
+        - bioconda::genomelake
     pip:
         - concise>=0.6.5
-        - pybedtools
         - pysam
         - cython
-        - genomelake
 output_schema:
     inputs:
         seq:

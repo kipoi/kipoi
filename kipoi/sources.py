@@ -331,7 +331,7 @@ class Source(object):
 
     def assert_is_component(self, component, which='model'):
         if not self._is_component(component, which):
-            raise ValueError("{} {} doesn't exist".format(which, component))
+            raise ValueError("{} {} doesn't exist cwd: {}".format(which, component,os.getcwd()))
 
     def pull_model(self, model):
         self._pull_component(model, "model")

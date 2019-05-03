@@ -10,7 +10,7 @@ import kipoi  # for .config module
 from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
                     load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 from . base_model import BaseModel
-from kipoi.rpyc_model import RemoteModel,ModelArgs
+from kipoi.rpyc_model import *
 
 import abc
 import six
@@ -25,44 +25,6 @@ from distutils.version import LooseVersion
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-class BaseModel(object):
-    __metaclass__ = abc.ABCMeta
-
-    MODEL_PACKAGE = None
-
-    @abc.abstractmethod
-    def predict_on_batch(self, x):
-        raise NotImplementedError
-
-    @classmethod
-    def _sufficient_deps(cls, deps):
-        """Tests it the provided dependencies contain MODEL_PACKAGE
-
-        Args:
-          deps: instance of kipoi.specs.Dependencies
-
-        Returns:
-          True if cls.MODEL_PACKAGE is listed in the depenencies and False otherwise
-        """
-        if cls.MODEL_PACKAGE is None:
-            return True
-        else:
-            for d in deps.conda:
-                if cls.MODEL_PACKAGE in d:
-                    return True
-            for d in deps.pip:
-                if cls.MODEL_PACKAGE in d:
-                    return True
-            return False
-
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
 
 
 def get_model(model, source="kipoi", with_dataloader=True, server_settings=None):
@@ -98,6 +60,8 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
 
     """
     # TODO - model can be a yaml file or a directory
+    is_remote = server_settings is not None
+
     if isinstance(source, str):
         source_name = source
         source = kipoi.config.get_source(source)
@@ -120,7 +84,7 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
     # TODO - validate md.default_dataloader <-> model
 
     # Load the dataloader
-    if with_dataloader:
+    if with_dataloader and server_settings is None:
         # load from python
         if isinstance(md.default_dataloader, DataLoaderImport):
             with cd(source_dir):
@@ -149,6 +113,8 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
 
     model_download_dir = source.get_model_download_dir(model)
     # Read the Model - append methods, attributes to self
+
+    get_dataloader_cwd = os.getcwd()
     with cd(source_dir):  # move to the model directory temporarily
 
         # explicitly handle downloading files for TensorFlowModel
@@ -211,25 +177,24 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
                     md.type = 'custom'
         else:
 
-            # TODO
-            ####################################
-            if False:
-                server_settings.setEnv('TODO')
+            # # TODO 
+            # ####################################
+            # if False:
+            #     server_settings.setEnv('TODO')
 
             if md.type is not None:
                 # old API
-                if md.type == 'custom':
-                    mod = RemoteModel(server_settings=server_settings, model_type='custom',
-                                model_args=ModelArgs(**md.args), cwd=source_dir)
-                elif md.type == "pytorch":
+                if md.type == "pytorch":
                     Mod = infer_pyt_class(md.args)#(**md.args)
-                    assert Mod != OldPyTorchModel
-                    mod = RemoteModel(server_settings=server_settings, model_type='pytorch',
-                                model_args=ModelArgs(**md.args), cwd=source_dir)
-
-                elif md.type in AVAILABLE_MODELS:
-                    mod = RemoteModel(server_settings=server_settings, model_type=md.type,
-                                model_args=ModelArgs(**md.args), cwd=source_dir)
+                    if Mod == OldPyTorchModel:
+                        raise RuntimeError('remote model does not support OldPytorchModel')
+                    RemoteModelCls = OldPytorchModel
+                    mod = RemoteModelCls(cwd=source_dir, server_settings=server_settings, **md.args)
+                if md.type in AVAILABLE_REMOTE_MODELS:
+                    #mod = RemoteModel(server_settings=server_settings, model_type=md.type,
+                    #            model_args=ModelArgs(**md.args), cwd=source_dir)
+                    RemoteModelCls = AVAILABLE_REMOTE_MODELS[md.type]
+                    mod = RemoteModelCls(cwd=source_dir, server_settings=server_settings, **md.args)
                 else:
                     raise ValueError("Unsupported model type: {0}. " +
                                      "Model type needs to be one of: {1}".
@@ -248,7 +213,7 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
                         ))
                     raise ImportError("Unable to import {}".format(md.defined_as))
                 if not inherits_from(Mod, BaseModel):
-                    raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+                    raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".fsourceormat(md.defined_as))
                 
                 for k, v in six.iteritems(AVAILABLE_MODELS):
                     if v==Mod:
@@ -256,9 +221,10 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
                 if md.type is None:
                     md.type = 'custom'
 
-                mod = RemoteModel(server_settings=server_settings, model_type=md.type,
-                                model_args=ModelArgs(**md.args), cwd=source_dir)
 
+                RemoteModelCls = AVAILABLE_REMOTE_MODELS[md.type]
+                mod = RemoteModelCls(cwd=source_dir, server_settings=server_settings, **md.args)
+                
     # populate the returned class
     mod.type = md.type
     mod.args = md.args
@@ -266,15 +232,35 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
     mod.schema = md.schema
     mod.dependencies = md.dependencies
     mod.test = md.test
-    mod.default_dataloader = default_dataloader
+    # mod.default_dataloader = default_dataloader
     mod.name = model
     mod.source = source
     mod.source_name = source_name
     mod.source_dir = source_dir
+
+    if is_remote:
+        mod._populate_model(
+            type=md.type,
+            args=md.args,
+            info=md.info,
+            schema=md.schema,
+            dependencies=md.dependencies,
+            test=md.test,
+            name=model,
+            source=source,
+            source_name=source_name,
+            source_dir=source_dir
+        )
+
+
     # parse the postprocessing module
     mod.postprocessing = md.postprocessing
-    if with_dataloader:
+    if with_dataloader and server_settings is None:
+        mod.default_dataloader = default_dataloader
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
+    elif with_dataloader:
+
+        mod._init_pipeline(md.default_dataloader,cwd=get_dataloader_cwd, source=source, model=model)
     else:
         mod.pipeline = None
     return mod
@@ -372,6 +358,10 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     MODEL_PACKAGE = "keras"
 
     def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
+        
+        from keras import backend as K
+        K.clear_session()
+
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
@@ -389,8 +379,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 logger.warning("Keras backend is {0} instead of {1}".
                             format(keras.backend.backend(), self.backend))
 
-        if custom_objects is not None and os.path.exists(custom_objects):
-            self.custom_objects = load_module(custom_objects).OBJECTS
+        if custom_objects is not None :
+            if not os.path.exists(custom_objects):
+                p = os.path.join(os.getcwd(), str(custom_objects))
+                logger.warning("custom_objects does not exist at {}".format(p))
+                self.custom_objects = {}
+            else:
+                self.custom_objects = load_module(custom_objects).OBJECTS
         else:
             self.custom_objects = {}
 
@@ -417,7 +412,10 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             self.model.load_weights(weights)
             logger.info('successfully loaded model weights from {}'.
                         format(weights))
-
+    @property
+    def keras_backend(self):
+        return keras.backend._BACKEND
+    
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
      

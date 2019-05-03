@@ -4,7 +4,7 @@ args:
     weights:
       url: https://github.com/kipoi/kipoi/raw/f86a2162d15c92e72adeae2988bd1757732c79b0/example/models/rbp/model_files/weights.h5
       md5: 6f959cf27e58c065b1a73d10002eca35
-    custom_objects: model/custom_keras_objects.py
+    custom_objects: model_files/custom_keras_objects.py
     backend: tensorflow
 default_dataloader: . # path to the directory
 info:
@@ -13,6 +13,9 @@ info:
           github: avsecz
     doc: RBP binding prediction
 dependencies:
+    conda:
+        - python=3.6
+        - pip
     pip:
         - concise>=0.6.5
         - tensorflow>=1.0.0

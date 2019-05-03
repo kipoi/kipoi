@@ -165,7 +165,7 @@ def get_sample_sequential_model():
 
 
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
-def test_activation_function_model(example):
+def test_activation_ofunction_model(example):
     """Test extractor
     """
     if example == "rbp" and sys.version_info[0] == 2:
@@ -185,7 +185,7 @@ def test_activation_function_model(example):
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
     #
     test_kwargs = get_test_kwargs(example_dir)
-    #
+    #model
     # install the dependencies
     # - TODO maybe put it implicitly in load_extractor?
     if INSTALL_REQ:
