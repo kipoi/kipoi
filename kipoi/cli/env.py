@@ -455,16 +455,13 @@ def cli_create(cmd, raw_args):
         envdb.save()
 
         # setup the conda env from file
-        print("Creating conda env from file: {0}".format(env_file))
-        kipoi_conda.create_env_from_file(env_file, use_stdout=True)
+        kipoi_conda.create_env_from_file(env_file)
         env_db_entry.successful = True
 
         # env is environment name
         env_db_entry.cli_path = get_kipoi_bin(env)
         get_model_env_db().save()
-        print("Done!")
-        print("\nActivate the environment via:")
-        print("source activate {0}".format(env))
+
     else:
         print("Dry run. Conda file path: {}".format(env_file))
 
