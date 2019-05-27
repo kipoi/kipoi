@@ -12,9 +12,9 @@ from kipoi_utils.utils import Slice_conv,_call_command
 import config
 import numpy as np
 from kipoi_utils.utils import cd
-
+from kipoi_conda.utils import get_kipoi_bin
 from kipoi.rpyc_model import *
-from kipoi.cli.env import delete_envs,get_env_name
+from kipoi.cli.env import *
 
 
 
@@ -54,6 +54,61 @@ def cd_local_and_remote(newdir, remote_model):
         os.chdir(prevdir)
         
 
+
+
+
+def create_model_env(model,source,tmpdir=None):
+    if isinstance(model, str):
+        model = [model]
+    import uuid
+
+    class Args(object):
+        def __init__(self, model, source):
+            self.model = model
+            self.source = source        
+        def _get_kwargs(self):
+            kwargs = {"dataloader": [], "env":None, "gpu": False, "model": self.model, "source": self.source,
+                  "tmpdir": "something", "vep": False}
+            return kwargs
+
+    # create the tmp dir
+    if tmpdir is None:
+        tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
+    else:
+        tmpdir = args.tmpdir
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir)
+
+    # write the env file
+    logger.info("Writing environment file: {0}".format(tmpdir))
+
+
+    env, env_file = export_env(model,
+                               None,
+                               source,
+                               env_file=None,
+                               env_dir=tmpdir,
+                               env=None,
+                               vep=False,
+                               interpret=False,
+                               gpu=False)
+
+    args = Args(model=model, source=source)
+    env_db_entry = generate_env_db_entry(args, args_env_overload=env)
+    envdb = get_model_env_db()
+    envdb.append(env_db_entry)
+    envdb.save()
+
+    # setup the conda env from file
+    kipoi_conda.create_env_from_file(env_file)
+    env_db_entry.successful = True
+
+    # env is environment name
+    env_db_entry.cli_path = get_kipoi_bin(env)
+    get_model_env_db().save()
+
+
+
 @contextmanager
 def create_tmp_env(model, use_current_python, source, delete_env=True):
     env_name = get_env_name(model,source=source)
@@ -69,8 +124,9 @@ def create_tmp_env(model, use_current_python, source, delete_env=True):
             pass
 
         # create the env for the model
-        args = ["./kipoi/__main__.py", "env", "create", model, "--source",source]
-        _call_command('python' ,extra_args=args,cwd=os.getcwd(),use_stdout=True)
+        create_model_env(model=model, source=source)
+        #args = ["./kipoi/__main__.py", "env", "create", model, "--source",source]
+        #_call_command('python' ,extra_args=args,cwd=os.getcwd(),use_stdout=True)
 
         
     else:
@@ -82,10 +138,11 @@ def create_tmp_env(model, use_current_python, source, delete_env=True):
         if delete_env and not use_current_python:
 
             try:
+                pass
                 # env of that model
                 model_env = get_envs_by_model(model, source=source, only_most_recent=True, only_valid=True)[-1]
                 env_name = model_env.create_args.env
-                delete_envs([model_env])
+                #delete_envs([model_env])
             except:
                 pass
 
@@ -148,16 +205,7 @@ def test_activation_function_model(example, use_current_python, port):
     port = port + int(use_current_python)
     port = port + MODEL_PORT_OFFSET[example]
 
-    # # for misterious reasons this test fails when the model is `extended_coda`
-    # # and we are installing the `extended_coda` env.
-    # # Aftert installing the model env, get_envs_by_model does not
-    # # find the the just created db.
-    # # To make this even more strange, when we rerun the test with SSH
-    # # it still fails, but if we rand the test by hand in the SSH session
-    # # it does not fail. => looks like some super strange circleci thing
-    # if os.getenv('CI') is not None or os.getenv('CIRCLECI') is not None:
-    #     if example == "extended_coda" and not use_current_python:
-    #         pytest.skip("")
+
 
 
     import keras
@@ -179,7 +227,7 @@ def test_activation_function_model(example, use_current_python, port):
     # - TODO maybe put it implicitly in load_extractor?
     if INSTALL_REQ:
         install_model_requirements(example_dir, source="dir")
-    #
+    
     # get model
     model = kipoi.get_model(example_dir, source="dir")
     
@@ -206,7 +254,7 @@ def test_activation_function_model(example, use_current_python, port):
 
                     # predict with a model
                     remote_model.predict_on_batch(batch["inputs"])
-                    remote_model.predict_activation_on_batch(batch["inputs"], layer=len(model.model.layers) - 2)
+                    remote_model.predict_activation_on_batch(batch["inputs"], layer=len(remote_model.model.layers) - 2)
 
                     if example == "rbp":
                         remote_model.predict_activation_on_batch(batch["inputs"], layer="flatten_6")
@@ -284,16 +332,7 @@ def test_predict_on_batch(example, use_current_python, port):
     backend = keras.backend._BACKEND
 
 
-    # # for misterious reasons this test fails when the model is `extended_coda`
-    # # and we are installing the `extended_coda` env.
-    # # Aftert installing the model env, get_envs_by_model does not
-    # # find the the just created db.
-    # # To make this even more strange, when we rerun the test with SSH
-    # # it still fails, but if we rand the test by hand in the SSH session
-    # # it does not fail. => looks like some super strange circleci thing
-    # if os.getenv('CI') is not None or os.getenv('CIRCLECI') is not None:
-    #     if example == "extended_coda" and not use_current_python:
-    #         pytest.skip("")
+
 
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
@@ -350,16 +389,7 @@ def test_pipeline(example, use_current_python, port):
 
     import keras
     backend = keras.backend._BACKEND
-    # # for misterious reasons this test fails when the model is `extended_coda`
-    # # and we are installing the `extended_coda` env.
-    # # Aftert installing the model env, get_envs_by_model does not
-    # # find the the just created db.
-    # # To make this even more strange, when we rerun the test with SSH
-    # # it still fails, but if we rand the test by hand in the SSH session
-    # # it does not fail. => looks like some super strange circleci thing
-    # if os.getenv('CI') is not None or os.getenv('CIRCLECI') is not None:
-    #     if example == "extended_coda" and not use_current_python:
-    #         pytest.skip("")
+
 
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")

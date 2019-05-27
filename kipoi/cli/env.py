@@ -113,7 +113,11 @@ def merge_deps(models,
 
     special_envs, only_models = split_models_special_envs(models)
     deps = Dependencies()
+    print(f"special_envs {special_envs} only_models {only_models}")
 
+
+    logger.info("source local path %s",kipoi.get_source(source).local_path)
+    print("source local path %s",kipoi.get_source(source).local_path)
     # Treat the handcrafted environments differently
     for special_env in special_envs:
         from related import from_yaml
@@ -131,9 +135,9 @@ def merge_deps(models,
 
     for model in only_models:
         logger.info("Loading model: {0} description".format(model))
-
+        print(f"model {model} source {source}")
         parsed_source, parsed_model = parse_source_name(source, model)
-
+        print(f"parsed_source {parsed_source} source {source}")
         sub_models = list_subcomponents(parsed_model, parsed_source, "model")
         if len(sub_models) == 0:
             raise ValueError("Model {0} not found in source {1}".format(parsed_model, parsed_source))

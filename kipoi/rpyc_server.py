@@ -45,16 +45,6 @@ def add_func_to_service(cls, funcs):
 
 class ModelRpycServiceBase(rpyc.Service):
 
-    # #######################################################
-    # # NOT FOR USERS
-    # def exposed__set_model_type(self, model_type):
-        
-    #     self.model_type = model_type
-    #     if model_type != "custom":
-    #         if model_type not in AVAILABLE_MODELS:
-    #             raise RuntimeError("model must be in {}".format(str(AVAILABLE_MODELS.keys())))
-    #         self.model_cls = AVAILABLE_MODELS[model_type]
-
     def exposed__initialize(self, *args, **kwargs):
         if self.model_type == "custom":
             self.model_cls = load_model_custom(*args, **kwargs)
@@ -72,7 +62,6 @@ class ModelRpycServiceBase(rpyc.Service):
             os.chdir(newdir)
         except FileNotFoundError as e:
             raise FileNotFoundError("{} cwd {} newdir {}".format(str(e), os.getcwd(),newdir))
-        #os.chdir(os.path.expanduser(newdir))
 
     def exposed_get_pipeline(self):
         return self.pipeline
@@ -130,6 +119,10 @@ class KerasModelRpycService(ModelRpycServiceBase):
     def exposed_get_keras_backend(self):
         import keras
         return keras.backend._BACKEND
+
+
+    def exposed_get_model(self):
+        return self.model.model
 
 
 add_func_to_service(KerasModelRpycService, "get_layers_and_outputs")

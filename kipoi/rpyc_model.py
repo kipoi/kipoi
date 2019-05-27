@@ -199,7 +199,7 @@ class RemoteGradientMixin(object):
 
     def input_grad(self, x, filter_idx=None, avg_func=None, layer=None, final_layer=True,
                    selected_fwd_node=None, pre_nonlinearity=False):
-        return self._c.root.input_grad(x=x, filter_idx=filter_idx, avg_func=avg_func,
+        return self._remote.input_grad(x=x, filter_idx=filter_idx, avg_func=avg_func,
                    layer=layer, final_layer=final_layer,selected_fwd_node=selected_fwd_node, 
                    pre_nonlinearity=pre_nonlinearity)
 
@@ -211,7 +211,7 @@ class RemoteLayerActivationMixin(object):
     #allowed_functions = ["sum", "max", "min", "absmax"]
 
     def predict_activation_on_batch(self, x, layer, pre_nonlinearity=False):
-        return self._c.root.predict_activation_on_batch(x=x, layer=layer, 
+        return self._remote.predict_activation_on_batch(x=x, layer=layer, 
                    pre_nonlinearity=pre_nonlinearity)
 
 class RemoteModel(BaseModel):
@@ -220,6 +220,7 @@ class RemoteModel(BaseModel):
         self.server = RpycServer(model_type=model_type, **server_settings)
         self.server.start()
         self._c = self.server.connection
+        self._remote = self._c.root
         self._model_type = model_type
         self._model_args = model_args
 
@@ -228,36 +229,36 @@ class RemoteModel(BaseModel):
             self.cwd = os.getcwd()
 
         # cd to the right dir
-        #self._c.root.cd(self.cwd)
         self.cd(self.cwd)
 
         # initalize the model 
-        self._c.root._initialize(*self._model_args.args, **self._model_args.kwargs)
-
+        self._remote._initialize(*self._model_args.args, **self._model_args.kwargs)
+    
 
     def cd(self, newdir):
         try:
             newdir_init = newdir
             if not os.path.isabs(newdir):
                 newdir = os.path.abspath(newdir)
-            self._c.root.cd(newdir)
+            self._remote.cd(newdir)
         except Exception as e:
             raise RuntimeError("{} newdir init {} newdir {} ".format(str(e),newdir_init, newdir))
 
 
+
     def predict_on_batch(self, x):
-        return self._c.root.predict_on_batch(x)
+        return self._remote.predict_on_batch(x)
 
     def _populate_model(self, **kwargs):
-        self._c.root._populate_model(**kwargs)
+        self._remote._populate_model(**kwargs)
 
     @property
     def pipeline(self):
-        return self._c.root.get_pipeline()
+        return self._remote.get_pipeline()
 
 
     def _init_pipeline(self, default_dataloader, source, model, cwd):
-        self._c.root._init_pipeline(default_dataloader, source, model, cwd)
+        self._remote._init_pipeline(default_dataloader, source, model, cwd)
 
 
     def stop_server(self):
@@ -278,12 +279,16 @@ class RemoteKerasModel(RemoteModel, RemoteGradientMixin, RemoteLayerActivationMi
 
 
     def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
-        return  self._c.root.get_layers_and_outputs( layer=layer, use_final_layer=use_final_layer, pre_nonlinearity=pre_nonlinearity)
+        return  self._remote.get_layers_and_outputs( layer=layer, use_final_layer=use_final_layer, pre_nonlinearity=pre_nonlinearity)
 
 
     @property
     def keras_backend(self):
-        return self._c.root.get_keras_backend()
+        return self._remote.get_keras_backend()
+    
+    @property
+    def model(self):
+        return self._remote.get_model()
     
 
     
