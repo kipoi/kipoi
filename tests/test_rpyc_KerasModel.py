@@ -32,26 +32,6 @@ EXAMPLES_TO_RUN = ["extended_coda","rbp"]
 PORTS =  [18838, 18839, 18838]
 
 
-@contextmanager
-def cd_local_and_remote(newdir, remote_model):
-    """Temporarily change the directory
-    """
-    prevdir = os.getcwd()
-    nd = os.path.expanduser(newdir)
-
-
-    remote_model.cd(nd)
-    os.chdir(nd)
-    
-    try:
-        yield
-    finally:
-        remote_model.cd(prevdir)
-        os.chdir(prevdir)
-        
-
-
-
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port", PORTS)
@@ -190,15 +170,13 @@ def test_predict_on_batch(example, use_current_python, port):
         with cd(example_dir + "/example_files"):
             # initialize the dataloader
             dataloader = Dl(**test_kwargs)
-            #
+            
             # sample a batch of data
             it = dataloader.batch_iter()
             batch = next(it)
-            # predict with a model
-            #res = model.predict_on_batch(batch["inputs"])
             remote_res = remote_model.predict_on_batch(batch["inputs"])
 
-            #numpy.testing.assert_allclose(res, remote_res)
+
 
 
 
@@ -241,13 +219,11 @@ def test_pipeline(example, use_current_python, port):
         newdir = example_dir + "/example_files"
         assert not os.path.isabs(example_dir)
         assert not os.path.isabs(newdir)
-        with cd_local_and_remote(newdir, remote_model):
-            # initialize the dataloader
-            dataloader = Dl(**test_kwargs)
-            
+        with remote_model.cd_local_and_remote(newdir):
 
             pipeline = remote_model.pipeline
             the_pred = pipeline.predict(dataloader_kwargs=test_kwargs)
+            assert the_pred is not None
 
 
 @pytest.mark.parametrize("port",  PORTS)

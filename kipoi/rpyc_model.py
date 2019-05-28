@@ -6,6 +6,8 @@ import os
 import signal
 import subprocess
 import sched,time
+from contextlib import contextmanager
+
 from collections import OrderedDict, Mapping
 from subprocess import Popen, PIPE, STDOUT, check_output
 import atexit
@@ -214,6 +216,8 @@ class RemoteLayerActivationMixin(object):
         return self._remote.predict_activation_on_batch(x=x, layer=layer, 
                    pre_nonlinearity=pre_nonlinearity)
 
+
+
 class RemoteModel(BaseModel):
     def __init__(self, server_settings, model_type, model_args, cwd=None):
         super(RemoteModel, self).__init__()
@@ -229,20 +233,53 @@ class RemoteModel(BaseModel):
             self.cwd = os.getcwd()
 
         # cd to the right dir
-        self.cd(self.cwd)
+        self.remote_chdir(self.cwd)
 
         # initalize the model 
         self._remote._initialize(*self._model_args.args, **self._model_args.kwargs)
     
 
-    def cd(self, newdir):
+    def remote_chdir(self, newdir):
         try:
             newdir_init = newdir
             if not os.path.isabs(newdir):
                 newdir = os.path.abspath(newdir)
-            self._remote.cd(newdir)
+            self._remote.chdir(newdir)
         except Exception as e:
             raise RuntimeError("{} newdir init {} newdir {} ".format(str(e),newdir_init, newdir))
+
+
+    @contextmanager
+    def cd_local_and_remote(self, newdir):
+        """Temporarily change the directory
+        """
+        prevdir = os.getcwd()
+        nd = os.path.expanduser(newdir)
+
+
+        self.remote_chdir(nd)
+        os.chdir(nd)
+        
+        try:
+            yield
+        finally:
+            self.remote_chdir(prevdir)
+            os.chdir(prevdir)
+
+    @contextmanager
+    def cd_remote(self, newdir):
+        """Temporarily change the directory
+        """
+        prevdir = os.getcwd()
+        nd = os.path.expanduser(newdir)
+
+
+        self.remote_chdir(nd)
+      
+        try:
+            yield
+        finally:
+            self.remote_chdir(prevdir)
 
 
 

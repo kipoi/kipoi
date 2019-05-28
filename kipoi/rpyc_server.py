@@ -56,7 +56,7 @@ class ModelRpycServiceBase(rpyc.Service):
 
         self.pipeline = None
 
-    def exposed_cd(self, newdir):
+    def exposed_chdir(self, newdir):
 
         try:
             os.chdir(newdir)
