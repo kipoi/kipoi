@@ -1,5 +1,6 @@
-import rpyc
-rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+# import rpyc
+# rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+from rpyc_config import rpyc,rpyc_protocol_config,prepare_args,rpyc_classic_obtain
 from rpyc.utils.server import ThreadedServer
 import logging
 import numpy
@@ -20,10 +21,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def prepare_args(*args, **kwargs):
-    args = [rpyc.classic.obtain(v) for v in args]
-    kwargs = {k: rpyc.classic.obtain(v)  for k, v in kwargs.items()}
-    return args, kwargs
 
 def add_func_to_service(cls, funcs):
     if isinstance(funcs, str):
@@ -67,10 +64,10 @@ class ModelRpycServiceBase(rpyc.Service):
         return self.pipeline
 
     def exposed__init_pipeline(self, default_dataloader, source, model, cwd):
-        default_dataloader = rpyc.classic.obtain(default_dataloader)
-        source = rpyc.classic.obtain(source)  
-        model = rpyc.classic.obtain(model)  
-        cwd  = rpyc.classic.obtain(cwd )  
+        default_dataloader = rpyc_classic_obtain(default_dataloader)
+        source = rpyc_classic_obtain(source)  
+        model = rpyc_classic_obtain(model)  
+        cwd  = rpyc_classic_obtain(cwd )  
 
 
         assert isinstance(default_dataloader, str)
@@ -197,5 +194,5 @@ if __name__ == "__main__":
         raise RuntimeError("'{}' is not a supported model type".format(model_type))
 
 
-    server = ThreadedServer(Service, port=args.port, protocol_config=dict(allow_all_attrs=True, allow_public_attrs=True))
+    server = ThreadedServer(Service, port=args.port, protocol_config=rpyc_protocol_config)
     server.start()

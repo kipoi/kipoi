@@ -1,5 +1,8 @@
-import rpyc
-rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+#import rpyc
+from . rpyc_config import rpyc,rpyc_connection_config
+#rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+
+
 import sys
 import json
 import os
@@ -174,8 +177,8 @@ class RpycServer(object):
 
         while True:
             try:
-                config=dict(allow_all_attrs=True, allow_public_attrs=True)
-                c = rpyc.connect(self.address, self.port, config=config)
+                config = dict(allow_all_attrs=True, allow_public_attrs=True)
+                c = rpyc.connect(self.address, self.port, config=rpyc_connection_config)
                 return c
             except ConnectionRefusedError:
                 pass
