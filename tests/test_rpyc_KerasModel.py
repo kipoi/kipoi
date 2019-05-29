@@ -38,19 +38,11 @@ PORTS =  [18838, 18839, 18838]
 def test_activation_function_model(example, use_current_python, port):
 
 
-
-    import keras
-    backend = keras.backend._BACKEND
-    if backend == 'theano' and example == "rbp":
-        pytest.skip("extended_coda example not with theano ")
-    #
     example_dir = "example/models/{0}".format(example)
-
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
     test_kwargs = get_test_kwargs(example_dir)
 
     
-
     # ensure we got the env
     env_name = create_env_if_not_exist(bypass=use_current_python, model=example_dir, source='dir')
 
@@ -139,27 +131,10 @@ def test_keras_get_layers_and_outputs(port):
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port",  PORTS)
 def test_predict_on_batch(example, use_current_python, port):
-    """Test extractor
-    """
 
-
-    import keras
-    backend = keras.backend._BACKEND
-
-
-
-
-    if backend == 'theano' and example == "rbp":
-        pytest.skip("extended_coda example not with theano ")
-    #
     example_dir = "example/models/{0}".format(example)
-
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
-    #
     test_kwargs = get_test_kwargs(example_dir)
-
-
-
 
 
     env_name = create_env_if_not_exist(bypass=use_current_python, model=example_dir, source='dir')
@@ -188,28 +163,10 @@ def test_pipeline(example, use_current_python, port):
     """Test extractor
     """
 
-    import keras
-    backend = keras.backend._BACKEND
-
-
-    if backend == 'theano' and example == "rbp":
-        pytest.skip("extended_coda example not with theano ")
-    #
-    example_dir = "example/models/{0}".format(example)
-  
-    #
-    Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
-    #
+    example_dir = "example/models/{0}".format(example)=
     test_kwargs = get_test_kwargs(example_dir)
 
-
     # get model
-    model = kipoi.get_model(example_dir, source="dir")
-    env_name = None
-
-
-
-
     env_name = create_env_if_not_exist(bypass=use_current_python, model=example_dir, source='dir')
 
     # get remote model
