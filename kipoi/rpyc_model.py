@@ -240,7 +240,7 @@ class RemoteModel(BaseModel):
         self.remote_chdir(self.cwd)
 
         # initalize the model 
-        self._remote._initialize(*self._model_args.args, defined_as=defined_as, **self._model_args.kwargs)
+        self._remote._initialize(*self._model_args.args, defined_as=defined_as,**self._model_args.kwargs)
     
 
     def remote_chdir(self, newdir):

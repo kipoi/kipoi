@@ -208,18 +208,24 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
                     'kipoi.model.KerasModel'        : 'keras', 
                     'kipoi.model.SklearnModel'      : 'sklearn', 
                 }
-                if md.defined_as is defined_as_to_short_name:
+                if md.defined_as in defined_as_to_short_name:
                     md.type = defined_as_to_short_name[md.defined_as]
                 else:
                     md.type = 'custom'
 
   
                 RemoteModelCls = AVAILABLE_REMOTE_MODELS[md.type]
-                mod = RemoteModelCls(cwd=source_dir, 
-                    server_settings=server_settings,
-                    defined_as=[None, md.defined_as][md.type == 'custom'], 
-                    **md.args
-                )
+                if md.type == 'custom':
+                    mod = RemoteModelCls(cwd=source_dir, 
+                        server_settings=server_settings,
+                        defined_as=md.defined_as,
+                        **md.args
+                    )
+                else:
+                    mod = RemoteModelCls(cwd=source_dir, 
+                        server_settings=server_settings,
+                        **md.args
+                    )
                 
     # populate the returned class
     mod.type = md.type
