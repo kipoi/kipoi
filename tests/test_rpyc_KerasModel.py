@@ -163,7 +163,7 @@ def test_pipeline(example, use_current_python, port):
     """Test extractor
     """
 
-    example_dir = "example/models/{0}".format(example)=
+    example_dir = "example/models/{0}".format(example)
     test_kwargs = get_test_kwargs(example_dir)
 
     # get model
