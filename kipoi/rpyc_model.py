@@ -222,7 +222,7 @@ class RemoteLayerActivationMixin(object):
 
 
 class RemoteModel(BaseModel):
-    def __init__(self, server_settings, model_type, model_args, cwd=None):
+    def __init__(self, server_settings, model_type, model_args, defined_as=None, cwd=None):
         super(RemoteModel, self).__init__()
         self.server = RpycServer(model_type=model_type, **server_settings)
         self.server.start()
@@ -230,6 +230,7 @@ class RemoteModel(BaseModel):
         self._remote = self._c.root
         self._model_type = model_type
         self._model_args = model_args
+        self._defined_as = defined_as
 
         self.cwd = cwd
         if cwd is None:
@@ -239,7 +240,7 @@ class RemoteModel(BaseModel):
         self.remote_chdir(self.cwd)
 
         # initalize the model 
-        self._remote._initialize(*self._model_args.args, **self._model_args.kwargs)
+        self._remote._initialize(*self._model_args.args, defined_as=defined_as, **self._model_args.kwargs)
     
 
     def remote_chdir(self, newdir):
@@ -362,9 +363,9 @@ class RemoteSklearnModel(RemoteModel):
 # input_grad and predict_activation_on_batch
 # therefore it needs the mixin
 class RemoteCustomModel(RemoteModel, RemoteGradientMixin, RemoteLayerActivationMixin):
-    def __init__(self, server_settings,cwd=None, **kwargs):
+    def __init__(self, server_settings,cwd=None, defined_as=None,**kwargs):
         model_args = ModelArgs(**kwargs)
-        super().__init__(cwd=cwd,server_settings=server_settings, model_type="custom", model_args=model_args)
+        super().__init__(cwd=cwd,server_settings=server_settings,defined_as=defined_as, model_type="custom", model_args=model_args)
 
 AVAILABLE_REMOTE_MODELS = OrderedDict([
                                 ("keras", RemoteKerasModel),

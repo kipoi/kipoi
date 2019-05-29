@@ -201,29 +201,25 @@ def get_model(model, source="kipoi", with_dataloader=True, server_settings=None)
                                      format(md.type,
                                             ['custom'] + list(AVAILABLE_MODELS.keys())))
             else:
-                # new API
-                try:
-                    Mod = load_obj(md.defined_as)
-                except ImportError:
-                    if md.defined_as.startswith("kipoi.model."):
-                        # user tried importing some of the available models
-                        logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
-                            md.defined_as,
-                            ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
-                        ))
-                    raise ImportError("Unable to import {}".format(md.defined_as))
-                if not inherits_from(Mod, BaseModel):
-                    raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".fsourceormat(md.defined_as))
-                
-                for k, v in six.iteritems(AVAILABLE_MODELS):
-                    if v==Mod:
-                        md.type = k
-                if md.type is None:
+
+                defined_as_to_short_name = {
+                    'kipoi.model.PyTorchModel'      : 'pytorch', 
+                    'kipoi.model.TensorFlowModel'   : 'tensorflow', 
+                    'kipoi.model.KerasModel'        : 'keras', 
+                    'kipoi.model.SklearnModel'      : 'sklearn', 
+                }
+                if md.defined_as is defined_as_to_short_name:
+                    md.type = defined_as_to_short_name[md.defined_as]
+                else:
                     md.type = 'custom'
 
-
+  
                 RemoteModelCls = AVAILABLE_REMOTE_MODELS[md.type]
-                mod = RemoteModelCls(cwd=source_dir, server_settings=server_settings, **md.args)
+                mod = RemoteModelCls(cwd=source_dir, 
+                    server_settings=server_settings,
+                    defined_as=[None, md.defined_as][md.type == 'custom'], 
+                    **md.args
+                )
                 
     # populate the returned class
     mod.type = md.type

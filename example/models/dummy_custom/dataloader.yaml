@@ -1,0 +1,24 @@
+type: Dataset
+defined_as: dataloader.py::DummyDataset
+args:
+info:
+    authors:
+        - name: Thorsten Beier
+          github: DerThorsten
+          email: derthorstenbeier@gmail.com
+    doc: >
+      dummy model
+
+dependencies:
+    conda:
+        - python=3.6
+        - faker # any package=, we just want to test stuff and need some fancy package
+output_schema:
+    inputs:
+        name: dummy
+        shape: (64,)
+        doc: "dummy values"
+    targets:
+        - name: dummy_out
+          shape: (1,)
+          doc: "dummy_prediction"

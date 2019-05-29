@@ -43,11 +43,17 @@ def add_func_to_service(cls, funcs):
 class ModelRpycServiceBase(rpyc.Service):
 
     def exposed__initialize(self, *args, **kwargs):
+        defined_as = kwargs.pop('defined_as')
         if self.model_type == "custom":
-            self.model_cls = load_model_custom(*args, **kwargs)
+            if defined_as is not None:
+                self.model_cls = load_obj(defined_as)
+                assert issubclass(self.model_cls, BaseModel) 
+                self.model = self.model_cls(*args, **kwargs)
+            else:
+                self.model_cls = load_model_custom(*args, **kwargs)
              # it should inherit from Model
-            assert issubclass(self.model_cls, BaseModel) 
-            self.model = Mod()
+                assert issubclass(self.model_cls, BaseModel) 
+                self.model = self.model_cls()
         else:
             self.model = self.model_cls(*args, **kwargs)
 

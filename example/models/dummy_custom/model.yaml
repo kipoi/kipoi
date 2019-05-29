@@ -1,0 +1,35 @@
+defined_as: model.DummyModel
+args:
+    foo:
+      url: https://sandbox.zenodo.org/record/248598/files/acceptor.pkl?download=1
+      md5: fca1b8467f109aefcffa415046bf3d2e
+
+default_dataloader: .
+info:
+    authors:
+        - name: Thorsten Beier
+          github: DerThorsten
+          email: derthorstenbeier@gmail.com
+    doc: >
+      dummy model
+    license: Apache License v2
+    tags:
+      - dummy
+dependencies:
+    conda:
+        - faker
+schema:
+    inputs:
+        name: dummy
+        shape: (64,)
+        doc: "dummy values"
+    targets:
+        - name: dummy_out
+          shape: (1,)
+          doc: "dummy_prediction"
+# test:
+#   expect:
+#     url: https://s3.eu-central-1.amazonaws.com/kipoi-models/predictions/14f9bf4b49e21c7b31e8f6d6b9fc69ed88e25f43/CleTimer/default/predictions.h5
+#     md5: 5752d7bcbebc7143cb9ab9308f516fd8
+
+
