@@ -136,7 +136,7 @@ class PyTorchModelRpycService(ModelRpycServiceBase):
     def __init__(self):
         super().__init__()
         self.model_type = "pytorch"
-        self.model_cls = PytorchModel
+        self.model_cls = PyTorchModel
 
 class OldPyTorchModelRpycService(ModelRpycServiceBase):
     def __init__(self):
