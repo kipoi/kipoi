@@ -2,7 +2,7 @@
 from . rpyc_config import rpyc,rpyc_connection_config
 #rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
 
-
+import psutil
 import sys
 import json
 import os
@@ -117,16 +117,16 @@ class RpycServer(object):
             self.cwd = os.getcwd()
 
         # in any case, we want the server to stop when we stop the python session 
-        def killserver_atexit():
-            try:
-                self.connection.close()  
-            except:
-                pass
-            try:
-                os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)  
-            except:
-                pass
-        atexit.register(killserver_atexit)
+        # def killserver_atexit():
+        #     try:
+        #         self.connection.close()  
+        #     except:
+        #         pass
+        #     try:
+        #         os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)  
+        #     except:
+        #         pass
+        atexit.register(self.stop)
 
     @property
     def is_running(self):
@@ -159,15 +159,33 @@ class RpycServer(object):
 
 
     def stop(self):
+
+        # try:
+        #         self.connection.root.close()
+        # except:
+        #         pass
+
         if self.server_process is None:
             raise RuntimeError("server process is not running")
+
 
         try:
             self.connection.close()  
         except:
             pass
+        #try:
+        def kill(proc_pid):
+            process = psutil.Process(proc_pid)
+            for proc in process.children(recursive=True):
+                proc.terminate()
+                proc.wait()
+            process.terminate()
+            process.wait()
+     
+
+        
         try:
-            os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)  
+            kill(os.getpgid(self.server_process.pid))
         except:
             pass
 

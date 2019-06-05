@@ -108,6 +108,9 @@ class ModelRpycServiceBase(rpyc.Service):
     def exposed_echo(self, x):
         return x
 
+    def exposed_close(self):
+        self.close()
+
 
 add_func_to_service(ModelRpycServiceBase,[ "predict_on_batch","input_grad",
                                             "predict_activation_on_batch"])
@@ -150,11 +153,11 @@ class SklearnModelRpycService(ModelRpycServiceBase):
         self.model_type = "sklearn"
         self.model_cls = SklearnModel
 
-class TensorflowModelRpycService(ModelRpycServiceBase):
+class TensorFlowModelRpycService(ModelRpycServiceBase):
     def __init__(self):
         super().__init__()
         self.model_type = "tensorflow"
-        self.model_cls = TensorflowModel
+        self.model_cls = TensorFlowModel
 
 class CustomModelRpycService(ModelRpycServiceBase):
     def __init__(self):
@@ -193,7 +196,7 @@ if __name__ == "__main__":
     elif model_type == "sklearn":
         Service = SklearnModelRpycService
     elif model_type == "tensorflow":
-        Service = TensorflowModelRpycService
+        Service = TensorFlowModelRpycService
     elif model_type == "custom":
         Service = CustomModelRpycService
     else:

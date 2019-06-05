@@ -1,5 +1,7 @@
 import rpyc
 rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
+rpyc.core.protocol.DEFAULT_CONFIG['propagate_SystemExit_locally'] = True
+
 
 
 
