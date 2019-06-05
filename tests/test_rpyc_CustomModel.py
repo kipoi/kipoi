@@ -33,7 +33,7 @@ PORTS =  [18838]
 
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("example",    EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("port",  PORTS)
 def test_pipeline(example , port):

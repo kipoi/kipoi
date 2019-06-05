@@ -31,7 +31,7 @@ INSTALL_REQ = config.install_req
 EXAMPLES_TO_RUN = ["extended_coda","rbp"]  
 PORTS =  [18838, 18839, 18838]
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port", PORTS)
@@ -68,6 +68,7 @@ def test_activation_function_model(example, use_current_python, port):
                 if example == "rbp":
                     remote_model.predict_activation_on_batch(batch["inputs"], layer="flatten_6")
 
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_keras_get_layers_and_outputs(port):
 
@@ -126,7 +127,7 @@ def test_keras_get_layers_and_outputs(port):
         assert len(sel_output_dims) == 1
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("example",             EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port",  PORTS)
@@ -156,6 +157,19 @@ def test_predict_on_batch(example, use_current_python, port):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("example",             EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port",  PORTS)
@@ -182,7 +196,36 @@ def test_pipeline(example, use_current_python, port):
             the_pred = pipeline.predict(dataloader_kwargs=test_kwargs)
             assert the_pred is not None
 
+@pytest.mark.flaky(max_runs=5)
+def test_multi_server_pipeline():
 
+    example_dir_0= "example/models/extended_coda"
+    example_dir_1= "example/models/rbp"
+    test_kwargs_0 = get_test_kwargs(example_dir_0)
+    test_kwargs_1 = get_test_kwargs(example_dir_1)
+    env_name_0 = create_env_if_not_exist(model=example_dir_0, source='dir')
+    env_name_1 = create_env_if_not_exist(model=example_dir_1, source='dir')
+
+    # get remote model
+    assert PORTS[0] != PORTS[1]
+    s0 = kipoi.rpyc_model.ServerArgs(env_name=env_name_0,use_current_python=False,  address='localhost', port=PORTS[0], logging_level=0)
+    s1 = kipoi.rpyc_model.ServerArgs(env_name=env_name_1,use_current_python=False,  address='localhost', port=PORTS[1], logging_level=0)
+
+    with  kipoi.get_model(example_dir_0, source="dir", server_settings=s0) as remote_model_0:
+        with  kipoi.get_model(example_dir_1, source="dir", server_settings=s1) as remote_model_1:   
+
+            with remote_model_0.cd_remote(example_dir_0 + "/example_files"):
+                with remote_model_1.cd_remote(example_dir_1+ "/example_files"):
+
+                    pipeline_0 = remote_model_0.pipeline
+                    pipeline_1 = remote_model_1.pipeline
+                    the_pred_0 = pipeline_0.predict(dataloader_kwargs=test_kwargs_0)
+                    the_pred_1 = pipeline_1.predict(dataloader_kwargs=test_kwargs_1)
+                    assert the_pred_0 is not None
+                    assert the_pred_1 is not None
+
+
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port",  PORTS)
 def test_returned_gradient_fmt(port):
 

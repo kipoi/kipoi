@@ -173,7 +173,7 @@ class RpycServer(object):
             self.connection.close()  
         except:
             pass
-        #try:
+
         def kill(proc_pid):
             process = psutil.Process(proc_pid)
             for proc in process.children(recursive=True):
@@ -181,9 +181,7 @@ class RpycServer(object):
                 proc.wait()
             process.terminate()
             process.wait()
-     
-
-        
+    
         try:
             kill(os.getpgid(self.server_process.pid))
         except:

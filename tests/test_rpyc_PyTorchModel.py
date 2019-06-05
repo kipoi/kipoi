@@ -136,7 +136,7 @@ def get_np(var):
 
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_a(port):
 
@@ -154,7 +154,7 @@ def test_loading_a(port):
 
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_b(port):
 
@@ -172,7 +172,7 @@ def test_loading_b(port):
         pass
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_c(port):
 
@@ -189,7 +189,7 @@ def test_loading_c(port):
     with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet") as m1:
         pass
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_c(port):
 
@@ -206,7 +206,7 @@ def test_loading_c(port):
         pass
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_e(port):
 
@@ -220,7 +220,7 @@ def test_loading_e(port):
         pass
 
 
-
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_f(port):
 
@@ -242,7 +242,7 @@ def test_loading_f(port):
 
 
 
-   
+@pytest.mark.flaky(max_runs=5)  
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_g(port):
 

@@ -40,6 +40,7 @@ test_requirements = [
     "cython",
     "keras",
     "tensorflow",
+    "flaky",
     #"genomelake>=0.1.4",     # test_10_KipoiModel.py (fails on circle-ci)
     "zarr>=2.2.0",            # test_161_writers.py
     #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
