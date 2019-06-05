@@ -55,7 +55,13 @@ class ModelRpycServiceBase(rpyc.Service):
                 assert issubclass(self.model_cls, BaseModel) 
                 self.model = self.model_cls()
         else:
-            self.model = self.model_cls(*args, **kwargs)
+
+
+
+            try:
+                self.model = self.model_cls(*args, **kwargs)
+            except TypeError as e:
+                raise RuntimeError(f"{str(e)} type {self.model_type}")
 
         self.pipeline = None
 

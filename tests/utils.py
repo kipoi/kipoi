@@ -46,7 +46,6 @@ def create_model_env(model,source,tmpdir=None):
             kwargs = {"dataloader": [], "env":None, "gpu": False, "model": self.model, "source": self.source,
                   "tmpdir": "something", "vep": False}
             return kwargs
-
     # create the tmp dir
     if tmpdir is None:
         tmpdir = "/tmp/kipoi/envfiles/" + str(uuid.uuid4())[:8]
@@ -85,10 +84,16 @@ def create_model_env(model,source,tmpdir=None):
 
 
 
+class Dummy(object):
+    def __enter__(self, *args, **kwargs):
+        pass
+    def __exit__(self, *args, **kwargs):
+        pass
+
 def port_filelock(port):
     lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'port{port}_filelock.lock')
 
-    return filelock.FileLock(lockfile)
+    return Dummy()
 
 def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
 
@@ -96,7 +101,7 @@ def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
     lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),'conda_create_env_filelock.lock')
 
 
-    with filelock.FileLock(lockfile):
+    with Dummy():#filelock.FileLock(lockfile):
 
         if not bypass:
             env_name = get_env_name(model,source=source)
