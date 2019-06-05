@@ -20,7 +20,7 @@ PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE = "tests/data/pyt_dummy_multi_i_model_weigh
 CHECKING_MODEL_WEIGHTS_FILE = "tests/data/pyt_checking_model_weight.pth"
 THISFILE = "tests/test_rpyc_PyTorchModel.py"
 
-PORTS =  [18838, 18839, 18838]
+PORTS =  [9000,4000,9000]
 
 
 # Todo - test the kwargs argument

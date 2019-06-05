@@ -188,7 +188,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=args.logging_level)
 
     logger.debug("using port %i",args.port)
-    logger.debug("model_type %i",args.port)
+    logger.debug("model_type %s",args.model_type)
     logger.debug("working dir {}".format(os.getcwd()))
 
     #raise RuntimeError(os.getcwd())

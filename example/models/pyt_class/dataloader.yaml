@@ -5,6 +5,7 @@ args:
 dependencies:
   conda:
     - numpy
+    - pip
 output_schema:
   inputs:
     name: input
