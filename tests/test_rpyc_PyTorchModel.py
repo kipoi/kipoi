@@ -139,18 +139,14 @@ def get_np(var):
 @pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_a(port):
+    with port_filelock(port):
 
-
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
-
-
-
-
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
-    with cd(model_path):
-        with RemotePyTorchModel(s, module_obj="pyt.simple_model", weights="only_weights.pth") as model:
-            pass
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
+        with cd(model_path):
+            with RemotePyTorchModel(s, module_obj="pyt.simple_model", weights="only_weights.pth") as model:
+                pass
 
 
 
@@ -158,86 +154,82 @@ def test_loading_a(port):
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_b(port):
 
-
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
-
-
-
-
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
+    with port_filelock(port):
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
 
 
-    with RemotePyTorchModel(s,module_file=model_path + "pyt.py", weights=model_path + "only_weights.pth", module_obj="simple_model") as m1:
-        pass
+        with RemotePyTorchModel(s,module_file=model_path + "pyt.py", weights=model_path + "only_weights.pth", module_obj="simple_model") as m1:
+            pass
 
 
 @pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_c(port):
+    with port_filelock(port):
+
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
 
 
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
 
 
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
 
 
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
-
-
-    with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet") as m1:
-        pass
+        with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet") as m1:
+            pass
 
 @pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_c(port):
 
-
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
-
-
+    with port_filelock(port):
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
 
 
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
 
-    with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs={}) as m1:
-        pass
+
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
+
+        with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs={}) as m1:
+            pass
 
 
 @pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_e(port):
 
+    with port_filelock(port):
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
 
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
 
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
-
-    with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs="{}") as m1:
-        pass
+        with RemotePyTorchModel(s,module_file=THISFILE, weights=PYT_NET_MODEL_WEIGHTS_FILE, module_class="PyTNet", module_kwargs="{}") as m1:
+            pass
 
 
 @pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_f(port):
 
-
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
-
-
+    with port_filelock(port):
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=True, address='localhost', port=port, logging_level=0)
 
 
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
 
 
-    
-    with kipoi.get_model(model_path_class_model, "dir", server_settings=s) as mh:
-        # Load the test files from model source
-        mh.pipeline.predict_example(batch_size=3)
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
+
+
+        
+        with kipoi.get_model(model_path_class_model, "dir", server_settings=s) as mh:
+            # Load the test files from model source
+            mh.pipeline.predict_example(batch_size=3)
 
 
 
@@ -245,16 +237,16 @@ def test_loading_f(port):
 @pytest.mark.flaky(max_runs=5)  
 @pytest.mark.parametrize("port", PORTS)
 def test_loading_g(port):
-
-    model_path = "example/models/pyt/model_files/"
-    model_path_class_model = "example/models/pyt_class/"
-    
-    # ensure we got the env
-    env_name = create_env_if_not_exist(bypass=False , model=model_path_class_model, source='dir')
-    s = kipoi.rpyc_model.ServerArgs(env_name=env_name, use_current_python=False, address='localhost', port=port, logging_level=0)
-    with kipoi.get_model(model_path_class_model, "dir", server_settings=s) as mh:
-        # Load the test files from model source
-        mh.pipeline.predict_example(batch_size=3) 
+    with port_filelock(port):
+        model_path = "example/models/pyt/model_files/"
+        model_path_class_model = "example/models/pyt_class/"
+        
+        # ensure we got the env
+        env_name = create_env_if_not_exist(bypass=False , model=model_path_class_model, source='dir')
+        s = kipoi.rpyc_model.ServerArgs(env_name=env_name, use_current_python=False, address='localhost', port=port, logging_level=0)
+        with kipoi.get_model(model_path_class_model, "dir", server_settings=s) as mh:
+            # Load the test files from model source
+            mh.pipeline.predict_example(batch_size=3) 
 
 
 

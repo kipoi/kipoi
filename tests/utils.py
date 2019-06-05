@@ -85,16 +85,18 @@ def create_model_env(model,source,tmpdir=None):
 
 
 
+def port_filelock(port):
+    lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'port{port}_filelock.lock')
 
+    return filelock.FileLock(lockfile)
 
 def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
 
 
-    import os
     lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),'conda_create_env_filelock.lock')
 
 
-    with lockfile:
+    with filelock.FileLock(lockfile):
 
         if not bypass:
             env_name = get_env_name(model,source=source)
