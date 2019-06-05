@@ -7,7 +7,7 @@ from kipoi_utils.utils import _call_command
 
 from kipoi.cli.env import *
 from kipoi_conda.utils import *
-
+import filelock
 
 def compare_vcfs(fpath1, fpath2):
     fh1 = cyvcf2.VCF(fpath1)
@@ -87,24 +87,32 @@ def create_model_env(model,source,tmpdir=None):
 
 
 
-def create_env_if_not_exist(model,  source, bypass=False):
-    if not bypass:
-        env_name = get_env_name(model,source=source)
-    else:
-        env_name = None
+def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
 
-    # check if we already have that env
-    if not env_exists(env_name):
-        # create env and register hook to delete env later
-        create_model_env(model=model, source=source)
 
-        import atexit
-        def call_atexit(env_name):
-            try:
-                args = ["env","remove","-n",env_name]
-                _call_command('conda' ,extra_args=args)
-            except:
-                pass
-        atexit.register(call_atexit, env_name=env_name)
+    import os
+    lockfile = os.join(os.path.dirname(os.path.abspath(__file__)),'conda_create_env_filelock.lock')
 
-    return env_name
+
+    with lockfile:
+
+        if not bypass:
+            env_name = get_env_name(model,source=source)
+        else:
+            env_name = None
+
+        # check if we already have that env
+        if not env_exists(env_name):
+            # create env and register hook to delete env later
+            create_model_env(model=model, source=source)
+
+            import atexit
+            def call_atexit(env_name):
+                try:
+                    args = ["env","remove","-n",env_name]
+                    _call_command('conda' ,extra_args=args)
+                except:
+                    pass
+            atexit.register(call_atexit, env_name=env_name)
+
+        return env_name

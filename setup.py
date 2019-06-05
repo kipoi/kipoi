@@ -45,7 +45,8 @@ test_requirements = [
     "zarr>=2.2.0",            # test_161_writers.py
     #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
     "kipoi-interpret>=0.1.2", # test_42_kipoi_interpret.py
-    "concise>=0.6.6"
+    "concise>=0.6.6",
+    "filelock"
 ]
 
 setup(
