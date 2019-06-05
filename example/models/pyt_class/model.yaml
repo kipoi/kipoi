@@ -15,7 +15,7 @@ info:
     doc: Simple testing model for pytorch
 dependencies:
     conda:
-        - pytorch::pytorch>=0.2.0
+        - pytorch::pytorch-cpu>=0.2.0
 schema:
     inputs:
         name: input
