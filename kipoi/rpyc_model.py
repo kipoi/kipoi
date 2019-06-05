@@ -178,9 +178,16 @@ class RpycServer(object):
             process = psutil.Process(proc_pid)
             for proc in process.children(recursive=True):
                 proc.terminate()
-                proc.wait()
+                try:
+                    proc.wait(timeout=1)
+                except TimeoutError:
+                    proc.kill()
             process.terminate()
-            process.wait()
+            try:
+                proc.wait(timeout=1)
+            except TimeoutError:
+                proc.kill()
+   
     
         try:
             kill(os.getpgid(self.server_process.pid))
