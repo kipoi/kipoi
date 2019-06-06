@@ -11,7 +11,7 @@ from kipoi.rpyc_model import *
 from utils import *
 
 
-# @pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=5)
 @pytest.mark.parametrize("port", [3000,3010])
 def test_loading(port):
 
