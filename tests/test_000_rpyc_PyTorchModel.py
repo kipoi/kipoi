@@ -20,7 +20,6 @@ PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE = "tests/data/pyt_dummy_multi_i_model_weigh
 CHECKING_MODEL_WEIGHTS_FILE = "tests/data/pyt_checking_model_weight.pth"
 THISFILE = "tests/test_000_rpyc_PyTorchModel.py"
 
-PORTS =  [9000,4000,9000]
 
 
 # Todo - test the kwargs argument
@@ -137,7 +136,7 @@ def get_np(var):
 
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2000, 2010])
 def test_loading_a(port):
     with port_filelock(port):
 
@@ -151,7 +150,7 @@ def test_loading_a(port):
 
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2020, 2030])
 def test_loading_b(port):
 
     with port_filelock(port):
@@ -165,7 +164,7 @@ def test_loading_b(port):
 
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2040, 2050])
 def test_loading_c(port):
     with port_filelock(port):
 
@@ -182,7 +181,7 @@ def test_loading_c(port):
             pass
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2060, 2070])
 def test_loading_c(port):
 
     with port_filelock(port):
@@ -199,7 +198,7 @@ def test_loading_c(port):
 
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2080, 2090])
 def test_loading_e(port):
 
     with port_filelock(port):
@@ -213,7 +212,7 @@ def test_loading_e(port):
 
 
 @pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2100, 2110])
 def test_loading_f(port):
 
     with port_filelock(port):
@@ -235,7 +234,7 @@ def test_loading_f(port):
 
 
 @pytest.mark.flaky(max_runs=5)  
-@pytest.mark.parametrize("port", PORTS)
+@pytest.mark.parametrize("port",  [2120, 2130])
 def test_loading_g(port):
     with port_filelock(port):
         model_path = "example/models/pyt/model_files/"

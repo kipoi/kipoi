@@ -9,6 +9,13 @@ from kipoi.cli.env import *
 from kipoi_conda.utils import *
 import filelock
 
+
+
+def porthash(val):
+    d = 1025-65535
+    return 1025 + hash(val)%d
+
+
 def compare_vcfs(fpath1, fpath2):
     fh1 = cyvcf2.VCF(fpath1)
     fh2 = cyvcf2.VCF(fpath2)

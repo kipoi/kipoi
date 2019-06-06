@@ -28,17 +28,13 @@ from test_16_KerasModel import (get_sample_functional_model,cd, get_sample_funct
 
 INSTALL_REQ = config.install_req
 
-EXAMPLES_TO_RUN = ["dummy_custom"]  
-PORTS =  [18838]
 
 
 
 #@pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("example",    EXAMPLES_TO_RUN)
-@pytest.mark.parametrize("port",  PORTS)
+@pytest.mark.parametrize("example",    ['dummy_custom'])
+@pytest.mark.parametrize("port",  [4000,4010])
 def test_pipeline(example , port):
-    """Test extractor
-    """
 
     example_dir = "example/models/{0}".format(example)
     test_kwargs = {}

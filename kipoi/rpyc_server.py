@@ -183,7 +183,7 @@ if __name__ == "__main__":
     parser.add_argument('model_type', type=str, help='which model')
 
     parser.add_argument('--logging_level', type=int, help='debug level',
-        default=0)
+        default=1)
 
 
     args = parser.parse_args()
