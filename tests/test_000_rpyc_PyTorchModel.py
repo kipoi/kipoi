@@ -18,7 +18,7 @@ PYT_SEQUENTIAL_MODEL_WEIGHTS_FILE = "tests/data/pyt_sequential_model_weights.pth
 PYT_NET_MODEL_WEIGHTS_FILE = "tests/data/pyt_net_model_weights.pth"
 PYT_SUMMY_MULTI_I_MODEL_WEIGHTS_FILE = "tests/data/pyt_dummy_multi_i_model_weight.pth"
 CHECKING_MODEL_WEIGHTS_FILE = "tests/data/pyt_checking_model_weight.pth"
-THISFILE = "tests/test_rpyc_PyTorchModel.py"
+THISFILE = "tests/test_000_rpyc_PyTorchModel.py"
 
 PORTS =  [9000,4000,9000]
 
