@@ -10,7 +10,16 @@ from kipoi_conda.utils import *
 import filelock
 
 
-
+def on_circle_ci():
+    if os.environ.get('CI') is not None:
+        return True
+    elif os.environ.get('CIRCLECI') is not None:
+        return True
+    elif os.environ.get('CIRCLE_BRANCH') is not None:
+        return True
+    else:
+        return False
+        
 def porthash(val):
     d = 1025-65535
     return 1025 + hash(val)%d
