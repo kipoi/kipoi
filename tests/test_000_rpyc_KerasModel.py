@@ -78,7 +78,7 @@ def test_activation_function_model(example, use_current_python, port):
 @pytest.mark.parametrize("port", [1050, 1060])
 def test_keras_get_layers_and_outputs(port):
 
-    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=use_current_python, address='localhost', port=port, logging_level=0)
+    s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=False, address='localhost', port=port, logging_level=0)
     with kipoi.model.RemoteKerasModel(s, *get_sample_functional_model()) as model:
 
         backend = model.keras_backend
