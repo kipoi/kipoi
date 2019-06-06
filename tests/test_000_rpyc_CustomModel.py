@@ -31,7 +31,7 @@ INSTALL_REQ = config.install_req
 
 
 
-#@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("example",    ['dummy_custom'])
 @pytest.mark.parametrize("port",  [4000,4010])
 def test_pipeline(example , port):

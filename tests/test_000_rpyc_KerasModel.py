@@ -36,7 +36,7 @@ E_TO_OFFSET = {
     "rbp": 4
 }
 
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port", [1030,1040])
@@ -74,7 +74,7 @@ def test_activation_function_model(example, use_current_python, port):
                 if example == "rbp":
                     remote_model.predict_activation_on_batch(batch["inputs"], layer="flatten_6")
 
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("port", [1050, 1060])
 def test_keras_get_layers_and_outputs(port):
 
@@ -131,7 +131,7 @@ def test_keras_get_layers_and_outputs(port):
         assert len(sel_output_dims) == 1
 
 
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("example",             EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port",  [1080, 1090])
@@ -163,48 +163,7 @@ def test_predict_on_batch(example, use_current_python, port):
 
 
 
-#E@pytest.mark.flaky(max_runs=5)
-@pytest.mark.parametrize("example",             EXAMPLES_TO_RUN[0:1])
-@pytest.mark.parametrize("use_current_python",  [False])
-@pytest.mark.parametrize("port",  [1100, 1110])
-def test_simple(example, use_current_python, port):
-
-    example_dir = "example/models/{0}".format(example)
-    Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
-    test_kwargs = get_test_kwargs(example_dir)
-    port += E_TO_OFFSET[example] + int(use_current_python)
-
-    env_name = create_env_if_not_exist(bypass=use_current_python, model=example_dir, source='dir')
-    # get remote model
-    s = kipoi.rpyc_model.ServerArgs(env_name=env_name,use_current_python=use_current_python,  address='localhost', port=port, logging_level=0)
-    with  kipoi.get_model(example_dir, source="dir", server_settings=s) as remote_model:
-        
-        with cd(example_dir + "/example_files"):
-            # initialize the dataloader
-            dataloader = Dl(**test_kwargs)
-            
-            # sample a batch of data
-            it = dataloader.batch_iter()
-            batch = next(it)
-            remote_res = remote_model.predict_on_batch(batch["inputs"])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("example",             EXAMPLES_TO_RUN)
 @pytest.mark.parametrize("use_current_python",  [True, False])
 @pytest.mark.parametrize("port",  [1120, 1130])
@@ -232,7 +191,7 @@ def test_pipeline(example, use_current_python, port):
             the_pred = pipeline.predict(dataloader_kwargs=test_kwargs)
             assert the_pred is not None
 
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 def test_multi_server_pipeline():
 
     example_dir_0= "example/models/extended_coda"
@@ -262,7 +221,7 @@ def test_multi_server_pipeline():
                     assert the_pred_1 is not None
 
 
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=20)
 @pytest.mark.parametrize("port",  [1140, 1150])
 def test_returned_gradient_fmt(port):
 
