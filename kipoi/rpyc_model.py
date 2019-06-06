@@ -27,19 +27,19 @@ logger.addHandler(logging.NullHandler())
 
 
 
- def kill_process_and_children(proc_pid):
-        process = psutil.Process(proc_pid)
-        for proc in process.children(recursive=True):
-            proc.terminate()
-            try:
-                proc.wait(timeout=1)
-            except TimeoutError:
-                proc.kill()
-        process.terminate()
+def kill_process_and_children(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.terminate()
         try:
             proc.wait(timeout=1)
         except TimeoutError:
             proc.kill()
+    process.terminate()
+    try:
+        proc.wait(timeout=1)
+    except TimeoutError:
+        proc.kill()
 
 
 def call_script_in_env(filename, env_name=None, use_current_python=False, args=None, cwd=None): 
