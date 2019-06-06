@@ -185,7 +185,7 @@ class RpycServer(object):
         logger.info("let the server process commit suicide")
         try:
             self.connection.root._sys_exit()
-        except EOFError:
+        except:
             pass
 
         # the next lines of code also try to
