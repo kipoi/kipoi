@@ -22,8 +22,24 @@ from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_def
                     load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 
 import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
+
+ def kill_process_and_children(proc_pid):
+        process = psutil.Process(proc_pid)
+        for proc in process.children(recursive=True):
+            proc.terminate()
+            try:
+                proc.wait(timeout=1)
+            except TimeoutError:
+                proc.kill()
+        process.terminate()
+        try:
+            proc.wait(timeout=1)
+        except TimeoutError:
+            proc.kill()
 
 
 def call_script_in_env(filename, env_name=None, use_current_python=False, args=None, cwd=None): 
@@ -160,37 +176,29 @@ class RpycServer(object):
 
     def stop(self):
 
-        # try:
-        #         self.connection.root.close()
-        # except:
-        #         pass
-
         if self.server_process is None:
             raise RuntimeError("server process is not running")
 
+        # let the server process commit suicide 
+        # we need a try except since this will
+        # throw an EOFError on success since the server will die
+        logger.info("let the server process commit suicide")
+        try:
+            self.connection.root._sys_exit()
+        except EOFError:
+            pass
 
+        # the next lines of code also try to
+        # close the server even tough it is most probably
+        # dead already but we really do not want 
+        # a zombie server
         try:
             self.connection.close()  
         except:
             pass
 
-        def kill(proc_pid):
-            process = psutil.Process(proc_pid)
-            for proc in process.children(recursive=True):
-                proc.terminate()
-                try:
-                    proc.wait(timeout=1)
-                except TimeoutError:
-                    proc.kill()
-            process.terminate()
-            try:
-                proc.wait(timeout=1)
-            except TimeoutError:
-                proc.kill()
-   
-    
         try:
-            kill(os.getpgid(self.server_process.pid))
+            kill_process_and_children(os.getpgid(self.server_process.pid))
         except:
             pass
 

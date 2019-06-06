@@ -158,6 +158,35 @@ def test_predict_on_batch(example, use_current_python, port):
 
 
 
+#E@pytest.mark.flaky(max_runs=5)
+@pytest.mark.parametrize("example",             EXAMPLES_TO_RUN[0:1])
+@pytest.mark.parametrize("use_current_python",  [False])
+@pytest.mark.parametrize("port",  PORTS[0:1])
+def test_simple(example, use_current_python, port):
+
+    with port_filelock(port):
+        example_dir = "example/models/{0}".format(example)
+        Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
+        test_kwargs = get_test_kwargs(example_dir)
+
+
+        env_name = create_env_if_not_exist(bypass=use_current_python, model=example_dir, source='dir')
+        # get remote model
+        s = kipoi.rpyc_model.ServerArgs(env_name=env_name,use_current_python=use_current_python,  address='localhost', port=port, logging_level=0)
+        with  kipoi.get_model(example_dir, source="dir", server_settings=s) as remote_model:
+            
+            with cd(example_dir + "/example_files"):
+                # initialize the dataloader
+                dataloader = Dl(**test_kwargs)
+                
+                # sample a batch of data
+                it = dataloader.batch_iter()
+                batch = next(it)
+                remote_res = remote_model.predict_on_batch(batch["inputs"])
+
+
+
+
 
 
 

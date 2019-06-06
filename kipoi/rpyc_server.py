@@ -10,7 +10,7 @@ from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_def
                     load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 
 from kipoi.model import *
-
+import sys
 # try:
 #     import concise
 # except ImportError as e:
@@ -116,6 +116,9 @@ class ModelRpycServiceBase(rpyc.Service):
 
     def exposed_close(self):
         self.close()
+
+    def exposed__sys_exit(self):
+        sys.exit(0)
 
 
 add_func_to_service(ModelRpycServiceBase,[ "predict_on_batch","input_grad",
