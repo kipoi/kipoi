@@ -13,7 +13,7 @@ dependencies:
   - pandas
   - pytest>=3.3.1
   - pytest-xdist
-  - pytest-sugar
+  #- pytest-sugar
   - flaky>=3.3.0
   - pytest-cov>=2.6.1
   - deprecation>=2.0.6
