@@ -94,15 +94,6 @@ def create_model_env(model,source,tmpdir=None):
     get_model_env_db().save()
 
 
-
-class Dummy(object):
-    def __enter__(self, *args, **kwargs):
-        pass
-    def __exit__(self, *args, **kwargs):
-        pass
-
-    return Dummy()
-
 def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
 
 
