@@ -29,7 +29,7 @@ from test_16_KerasModel import (get_sample_functional_model,cd, get_sample_funct
 INSTALL_REQ = config.install_req
 
 @pytest.mark.flaky(max_runs=20)
-class TestCustomRpyc(object)
+class TestCustomRpyc(object):
 
 
     @pytest.mark.parametrize("example",    ['dummy_custom'])
