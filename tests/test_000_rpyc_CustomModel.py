@@ -28,26 +28,26 @@ from test_16_KerasModel import (get_sample_functional_model,cd, get_sample_funct
 
 INSTALL_REQ = config.install_req
 
-
-
-
 @pytest.mark.flaky(max_runs=20)
-@pytest.mark.parametrize("example",    ['dummy_custom'])
-@pytest.mark.parametrize("port",  [4000,4010])
-def test_pipeline(example , port):
+class TestCustomRpyc(object)
 
-    example_dir = "example/models/{0}".format(example)
-    test_kwargs = {}
 
-    env_name = create_env_if_not_exist(bypass=False, model=example_dir, source='dir')
+    @pytest.mark.parametrize("example",    ['dummy_custom'])
+    @pytest.mark.parametrize("port",  [4000,4010])
+    def test_pipeline(self, example , port):
 
-    # get remote model
-    s = kipoi.rpyc_model.ServerArgs(env_name=env_name, use_current_python=False,  address='localhost', port=port, logging_level=0)
-    with  kipoi.get_model(example_dir, source="dir", server_settings=s) as remote_model:
-        
-        newdir = example_dir + "/example_files"
-        with remote_model.cd_local_and_remote(newdir):
+        example_dir = "example/models/{0}".format(example)
+        test_kwargs = {}
 
-            pipeline = remote_model.pipeline
-            the_pred = pipeline.predict(dataloader_kwargs=test_kwargs)
-            assert the_pred is not None
+        env_name = create_env_if_not_exist(bypass=False, model=example_dir, source='dir')
+
+        # get remote model
+        s = kipoi.rpyc_model.ServerArgs(env_name=env_name, use_current_python=False,  address='localhost', port=port, logging_level=0)
+        with  kipoi.get_model(example_dir, source="dir", server_settings=s) as remote_model:
+            
+            newdir = example_dir + "/example_files"
+            with remote_model.cd_local_and_remote(newdir):
+
+                pipeline = remote_model.pipeline
+                the_pred = pipeline.predict(dataloader_kwargs=test_kwargs)
+                assert the_pred is not None

@@ -19,11 +19,6 @@ def on_circle_ci():
         return True
     else:
         return False
-        
-def porthash(val):
-    d = 1025-65535
-    return 1025 + hash(val)%d
-
 
 def compare_vcfs(fpath1, fpath2):
     fh1 = cyvcf2.VCF(fpath1)
@@ -106,9 +101,6 @@ class Dummy(object):
     def __exit__(self, *args, **kwargs):
         pass
 
-def port_filelock(port):
-    lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'port{port}_filelock.lock')
-
     return Dummy()
 
 def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
@@ -117,25 +109,24 @@ def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
     lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),'conda_create_env_filelock.lock')
 
 
-    with Dummy():#filelock.FileLock(lockfile):
 
-        if not bypass:
-            env_name = get_env_name(model,source=source)
-        else:
-            env_name = None
+    if not bypass:
+        env_name = get_env_name(model,source=source)
+    else:
+        env_name = None
 
-        # check if we already have that env
-        if not env_exists(env_name):
-            # create env and register hook to delete env later
-            create_model_env(model=model, source=source)
+    # check if we already have that env
+    if not env_exists(env_name):
+        # create env and register hook to delete env later
+        create_model_env(model=model, source=source)
 
-            import atexit
-            def call_atexit(env_name):
-                try:
-                    args = ["env","remove","-n",env_name]
-                    _call_command('conda' ,extra_args=args)
-                except:
-                    pass
-            atexit.register(call_atexit, env_name=env_name)
+        import atexit
+        def call_atexit(env_name):
+            try:
+                args = ["env","remove","-n",env_name]
+                _call_command('conda' ,extra_args=args)
+            except:
+                pass
+        atexit.register(call_atexit, env_name=env_name)
 
-        return env_name
+    return env_name
