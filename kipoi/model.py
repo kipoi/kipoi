@@ -316,15 +316,15 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
         import keras
+        
+        if keras.backend() == 'tensorflow':
+            import tensorflow as tf
+            self.graph = tf.Graph()
+            self.sess = tf.Session(graph=self.graph)
 
-       
-        import tensorflow as tf
-        self.graph = tf.Graph()
-        self.sess = tf.Session(graph=self.graph)
-
-        keras.backend.set_session(self.sess)
-        from keras import backend as K 
-        keras.backend.clear_session()
+            keras.backend.set_session(self.sess)
+            from keras import backend as K 
+            keras.backend.clear_session()
 
 
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
@@ -334,7 +334,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             import keras.backend as K
             logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
             K.set_image_dim_ordering(self.image_dim_ordering)
-        import keras
+        
         from keras.models import model_from_json, load_model
 
         if self.backend is not None:
