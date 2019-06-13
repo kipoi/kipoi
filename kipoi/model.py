@@ -316,14 +316,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
         import keras
-        
+
         if keras.backend() == 'tensorflow':
             import tensorflow as tf
             self.graph = tf.Graph()
             self.sess = tf.Session(graph=self.graph)
 
             keras.backend.set_session(self.sess)
-            from keras import backend as K 
             keras.backend.clear_session()
 
 
