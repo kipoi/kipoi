@@ -228,6 +228,9 @@ class TestKerasRpyc(object):
             grad_out = model.input_grad(sample_input, final_layer=True, avg_func="absmax")
             assert isinstance(grad_out, type(sample_input))
             assert len(grad_out) == len(sample_input)
+
+        s = kipoi.rpyc_model.ServerArgs(env_name=None, use_current_python=use_current_python, address='localhost', port=port+1, logging_level=0)
+        with kipoi.model.RemoteKerasModel(s, *get_sample_functional_model()) as model:
             sample_input = get_sample_functional_model_input(kind="dict")
             grad_out = model.input_grad(sample_input, final_layer=True, avg_func="absmax")
             assert isinstance(grad_out, type(sample_input))
