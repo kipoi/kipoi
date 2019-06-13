@@ -196,7 +196,7 @@ class TestKerasRpyc(object):
         test_kwargs_1 = get_test_kwargs(example_dir_1)
         env_name_0 = create_env_if_not_exist(model=example_dir_0, source='dir')
         env_name_1 = create_env_if_not_exist(model=example_dir_1, source='dir')
-        ports = [1140, 1150]
+        # ports = [1140, 1150]    
         # get remote model
         assert ports[0] != ports[1]
         s0 = kipoi.rpyc_model.ServerArgs(env_name=env_name_0,use_current_python=False,  address='localhost', port=ports[0], logging_level=0)
@@ -217,7 +217,8 @@ class TestKerasRpyc(object):
                         assert the_pred_1 is not None
 
 
-    @pytest.mark.parametrize("port",  [1140, 1150])
+    #@pytest.mark.flaky(max_runs=1)
+    @pytest.mark.parametrize("port",  [1160, 1170])
     def test_returned_gradient_fmt(self, port):
 
         use_current_python = True

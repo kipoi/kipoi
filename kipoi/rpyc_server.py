@@ -128,6 +128,13 @@ add_func_to_service(ModelRpycServiceBase,[ "predict_on_batch","input_grad",
 class KerasModelRpycService(ModelRpycServiceBase):
     def __init__(self):
         super().__init__()
+        import keras
+        #if keras.backend.backend() == 'tensorflow':
+        #assert False
+        keras.backend.clear_session()
+        #lse:
+        #    assert False
+
         self.model_type = "keras"
         self.model_cls = KerasModel
 
