@@ -36,7 +36,18 @@ def add_func_to_service(cls, funcs):
         setattr(cls, 'exposed_{}'.format(name),make_func(name))
 
 
-
+def add_pipeline_func_to_service(cls, funcs):
+    if isinstance(funcs, str):
+        funcs =  [funcs]
+    # helper
+    def make_func(name):
+        def f(self, *args, **kwargs):
+            args,kwargs = prepare_args( *args, **kwargs)
+            return getattr(self.pipeline, name)(*args, **kwargs)
+        return f
+        
+    for name in funcs:
+        setattr(cls, 'exposed_pipeline_{}'.format(name),make_func(name))
 
 
 
@@ -72,8 +83,8 @@ class ModelRpycServiceBase(rpyc.Service):
         except FileNotFoundError as e:
             raise FileNotFoundError("{} cwd {} newdir {}".format(str(e), os.getcwd(),newdir))
 
-    def exposed_get_pipeline(self):
-        return self.pipeline
+    # def exposed_get_pipeline(self):
+    #     return self.pipeline
 
     def exposed__init_pipeline(self, default_dataloader, source, model, cwd):
         default_dataloader = rpyc_classic_obtain(default_dataloader)
@@ -124,6 +135,16 @@ class ModelRpycServiceBase(rpyc.Service):
 add_func_to_service(ModelRpycServiceBase,[ "predict_on_batch","input_grad",
                                             "predict_activation_on_batch"])
 
+pipeline_funcs = [
+    "predict_example",
+    "predict",
+    "predict_generator",
+    "predict_to_file",
+    "input_grad",
+    "input_grad_generator"
+]
+
+add_pipeline_func_to_service(ModelRpycServiceBase, pipeline_funcs)
 
 class KerasModelRpycService(ModelRpycServiceBase):
     def __init__(self):

@@ -250,7 +250,117 @@ class RemoteLayerActivationMixin(object):
         return self._remote.predict_activation_on_batch(x=x, layer=layer, 
                    pre_nonlinearity=pre_nonlinearity)
 
+  
+  
 
+
+class RemotePipelineProxy(object):
+    def __init__(self, remote_model):
+        self.remote_model = remote_model
+
+
+    def predict_example(self, batch_size=32, output_file=None):
+        """Run model prediction for the example file
+
+        # Arguments
+            batch_size: batch_size
+            output_file: if not None, inputs and predictions are stored to `output_file` path
+            **kwargs: Further arguments passed to batch_iter
+        """
+        return self.remote_model.pipeline_predict_example(batch_size=batch_size,
+            output_file=output_file)
+
+    def predict(self, dataloader_kwargs, batch_size=32, **kwargs):
+        """
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the pre-processor
+            **kwargs: Further arguments passed to batch_iter
+
+        # Returns
+            np.array, dict, list: Predict the whole array
+        """
+        return self.remote_model.pipeline_predict(dataloader_kwargs=dataloader_kwargs,
+            batch_size=batch_size, **kwargs)
+
+    def predict_generator(self, dataloader_kwargs, batch_size=32, layer=None, **kwargs):
+        """Prediction generator
+
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Size of batches produced by the dataloader
+            layer: If not None activation of specified layer will be returned. Only possible for models that are a
+            subclass of `LayerActivationMixin`.
+            **kwargs: Further arguments passed to batch_iter
+
+        # Yields
+        - `dict`: model batch prediction
+        """
+        return self.remote_model.pipeline_predict_generator(dataloader_kwargs=dataloader_kwargs,
+            batch_size=batch_size, layer=layer, **kwargs)
+
+    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, **kwargs):
+        """Make predictions and write them iteratively to a file
+
+        # Arguments
+            output_file: output file path. File format is inferred from the file path ending. Available file formats are:
+                 'bed', 'h5', 'hdf5', 'tsv'
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            keep_inputs: if True, inputs and targets will also be written to the output file.
+            **kwargs: Further arguments passed to batch_iter
+        """
+        return self.remote_model.pipeline_predict_to_file(output_file=output_file,
+            dataloader_kwargs=dataloader_kwargs, batch_size=batch_size,
+            keep_inputs=keep_inputs, **kwargs)
+
+    def input_grad(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
+                   final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
+        """Get input gradients
+
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            filter_idx: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            layer: layer from which backwards the gradient should be calculated
+            final_layer: Use the final (classification) layer as `layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
+            **kwargs: Further arguments passed to input_grad
+
+        # Returns
+            dict: A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
+        """
+
+        return self.remote_model.pipeline_input_grad(dataloader_kwargs=dataloader_kwargs, batch_size=batch_size,
+            filter_idx=filter_idx, avg_func=avg_func, layer=layer, final_layer=final_layer,
+            selected_fwd_node=selected_fwd_node, pre_nonlinearity=pre_nonlinearity, **kwargs)
+
+    def input_grad_generator(self, dataloader_kwargs, batch_size=32, filter_idx=None, avg_func=None, layer=None,
+                             final_layer=True, selected_fwd_node=None, pre_nonlinearity=False, **kwargs):
+        """Get input gradients
+
+        # Arguments
+            dataloader_kwargs: Keyword arguments passed to the dataloader
+            batch_size: Batch size used for the dataloader
+            filter_idx: filter index of `layer` for which the gradient should be returned
+            avg_func: String name of averaging function to be applied across filters in layer `layer`
+            layer: layer from which backwards the gradient should be calculated
+            final_layer: Use the final (classification) layer as `layer`
+            selected_fwd_node: None - not supported by KerasModel at the moment
+            pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
+            automatic way)
+            **kwargs: Further arguments passed to input_grad
+
+        # Yields
+        - `dict`: A dictionary of all model inputs and the gradients. Gradients are stored in key 'grads'
+        """
+
+        return self.remote_model.pipeline_input_grad_generator(dataloader_kwargs=dataloader_kwargs, batch_size=batch_size,
+                            filter_idx=filter_idx, avg_func=avg_func, layer=layer,
+                             final_layer=final_layer, selected_fwd_node=selected_fwd_node, 
+                             pre_nonlinearity=pre_nonlinearity, **kwargs)
 
 class RemoteModel(BaseModel):
     def __init__(self, server_settings, model_type, model_args, defined_as=None, cwd=None):
@@ -326,7 +436,8 @@ class RemoteModel(BaseModel):
 
     @property
     def pipeline(self):
-        return self._remote.get_pipeline()
+        return RemotePipelineProxy(remote_model=self._remote)
+        #return self._remote.get_pipeline()
 
 
     def _init_pipeline(self, default_dataloader, source, model, cwd):

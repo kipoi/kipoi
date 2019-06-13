@@ -160,10 +160,10 @@ class TestKerasRpyc(object):
                 batch = next(it)
                 remote_res = remote_model.predict_on_batch(batch["inputs"])
 
-
+    @pytest.mark.flaky(max_runs=1)
     @pytest.mark.parametrize("example",             EXAMPLES_TO_RUN)
-    @pytest.mark.parametrize("use_current_python",  [True, False])
-    @pytest.mark.parametrize("port",  [1120, 1130])
+    @pytest.mark.parametrize("use_current_python",  [True,False])
+    @pytest.mark.parametrize("port",  [1127])
     def test_pipeline(self, example, use_current_python, port):
         """Test extractor
         """
