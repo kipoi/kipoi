@@ -361,9 +361,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         
-        from keras import backend as K
-        K.clear_session()
-
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
