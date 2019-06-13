@@ -218,7 +218,7 @@ class TestKerasRpyc(object):
 
 
     #@pytest.mark.flaky(max_runs=1)
-    @pytest.mark.parametrize("port",  [1160, 1170])
+    @pytest.mark.parametrize("port",  [1161, 1171])
     def test_returned_gradient_fmt(self, port):
 
         use_current_python = True
