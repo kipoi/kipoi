@@ -19,19 +19,13 @@ variables:
     run:
       name: Install Singularity
       command: |
-        # # TODO only install if singularity is not yet present
-        # # if type singularity > /dev/null; then exit 0; fi
-        apt-get update; 
-        apt-get install -y squashfs-tools libarchive-dev
 
-        wget https://github.com/sylabs/singularity/releases/download/v3.2.1/singularity-3.2.1.tar.gz
-        tar xvf singularity-3.2.1.tar.gz
-        cd singularity
-        ./configure --prefix=/usr/local --sysconfdir=/etc
+        wget https://github.com/singularityware/singularity/releases/download/2.5.2/singularity-2.5.2.tar.gz
+        tar xvf singularity-2.5.2.tar.gz
+        cd singularity-2.5.2
+        ./configure --prefix=/usr/local
         make
         make install
-        #conda install --yes -c conda-forge singularity
-
 
   install_kipoi_plugins: &install_kipoi_plugins
     run:
