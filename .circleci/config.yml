@@ -21,7 +21,6 @@ variables:
       command: |
         # # TODO only install if singularity is not yet present
         # # if type singularity > /dev/null; then exit 0; fi
-        -=2.5.1
         apt-get update; 
         apt-get install -y squashfs-tools libarchive-dev
         wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
