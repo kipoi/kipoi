@@ -117,6 +117,7 @@ jobs:
       - checkout
       - *update_conda
       - *install_from_dev_requirements_py36
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
