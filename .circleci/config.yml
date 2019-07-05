@@ -26,7 +26,7 @@ variables:
 
         wget https://github.com/sylabs/singularity/releases/download/v3.2.1/singularity-3.2.1.tar.gz
         tar xvf singularity-3.2.1.tar.gz
-        cd singularity-3.2.1
+        cd singularity
         ./configure --prefix=/usr/local --sysconfdir=/etc
         make
         make install
