@@ -9,11 +9,30 @@ variables:
     run:
       name: install build-essential
       command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev
+  # install_singularity: &install_singularitymodel
+  #   run:
+  #     name: Install Singularity
+  #     command: |
+  #       conda install --yes -c conda-forge singularity
+
   install_singularity: &install_singularity
     run:
       name: Install Singularity
       command: |
-        conda install --yes -c conda-forge singularity
+        # # TODO only install if singularity is not yet present
+        # # if type singularity > /dev/null; then exit 0; fi
+        -=2.5.1
+        apt-get update; 
+        apt-get install -y squashfs-tools libarchive-dev
+        wget https://github.com/singularityware/singularity/releases/download/$SINGULARITY_VER/singularity-$SINGULARITY_VER.tar.gz
+        tar xvf singularity-$SINGULARITY_VER.tar.gz
+        cd singularity-$SINGULARITY_VER
+        ./configure --prefix=/usr/local --sysconfdir=/etc
+        make
+        make install
+        #conda install --yes -c conda-forge singularity
+
+
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -63,20 +82,13 @@ variables:
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
-  run_tests: &run_tests
-    run:
-      name: Run tests
-      command: |
-        mkdir test-reports
-        pytest --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 15m
   activate_and_run_tests: &activate_and_run_tests
     run:
       name: Run tests
       command: |
         source activate kipoi-env
         mkdir test-reports
-        $PYTEST --cov=kipoi/ tests/ -n 4 --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:
