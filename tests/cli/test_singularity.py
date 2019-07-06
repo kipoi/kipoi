@@ -7,7 +7,7 @@ from kipoi.cli.singularity import (singularity_pull, singularity_exec,
                                    involved_directories,
                                    singularity_command)
 
-
+@pytest.mark.skip(reason="no singularity tests atm")
 def test_singularity_pull_run(tmpdir):
     tmpdir = '/tmp/singularity'
     output_file = os.path.join(str(tmpdir), "hello-world_latest.sif")
