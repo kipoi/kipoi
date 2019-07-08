@@ -25,7 +25,7 @@ variables:
         wget https://github.com/sylabs/singularity/releases/download/$VER/singularity-$VER.tar.gz
         tar xvf singularity-$VER.tar.gz
         cd singularity-$VER
-        ./configure --prefix=$(conda info --base)/envs/kipoi-env/ --sysconfdir=/etc
+        ./configure --prefix=/usr/local --sysconfdir=/etc
         make
         make install
   install_kipoi_plugins: &install_kipoi_plugins
