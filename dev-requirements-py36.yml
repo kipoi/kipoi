@@ -43,7 +43,7 @@ dependencies:
   - zarr 
   - numcodecs
   # singularity
-  - singularity
+  #- singularity
   - git
   - git-lfs
   - cookiecutter>=1.6.0

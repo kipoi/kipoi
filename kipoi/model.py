@@ -283,6 +283,8 @@ class LayerActivationMixin():
         raise NotImplementedError
 
 
+
+
 class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads the serialized Keras model
 
@@ -313,10 +315,15 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
+        
 
+        # if keras.backend.backend() == 'tensorflow':
+        #     import tensorflow as tf
+        #     self.graph = tf.Graph()
+        #     self.sess = tf.Session(graph=self.graph)
 
-        from keras import backend as K 
-        K.clear_session()
+        #     keras.backend.set_session(self.sess)
+        #     keras.backend.clear_session()
 
 
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
@@ -326,6 +333,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             import keras.backend as K
             logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
             K.set_image_dim_ordering(self.image_dim_ordering)
+        
         import keras
         from keras.models import model_from_json, load_model
 
