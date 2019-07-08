@@ -20,7 +20,7 @@ variables:
       name: Install Singularity
       command: |
         apt-get update 
-        apt-get install python dh-autoreconf build-essential libarchive-dev\
+        apt-get install python dh-autoreconf build-essential libarchive-dev
         VER=2.5.1
         wget https://github.com/sylabs/singularity/releases/download/$VER/singularity-$VER.tar.gz
         tar xvf singularity-$VER.tar.gz
