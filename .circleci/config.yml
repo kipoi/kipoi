@@ -13,7 +13,15 @@ variables:
     run:
       name: Install Singularity
       command: |
-        conda install --yes -c conda-forge singularity
+        apt-get update 
+        apt-get install python dh-autoreconf build-essential libarchive-dev\
+        VER=2.5.1
+        wget https://github.com/sylabs/singularity/releases/download/$VER/singularity-$VER.tar.gz
+        tar xvf singularity-$VER.tar.gz
+        cd singularity-$VER
+        ./configure --prefix=/usr/local --sysconfdir=/etc
+        make
+        make install
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -103,6 +111,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_singularity
       - *update_conda
       - *install_from_dev_requirements_py36
       - *export_shortcuts
