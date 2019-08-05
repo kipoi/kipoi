@@ -2,7 +2,6 @@
 from . rpyc_config import rpyc,rpyc_connection_config
 #rpyc.core.protocol.DEFAULT_CONFIG['allow_pickle'] = True
 
-import psutil
 import sys
 import json
 import os
@@ -16,71 +15,13 @@ from subprocess import Popen, PIPE, STDOUT, check_output
 import atexit
 import numpy
 from . base_model import BaseModel
-from kipoi_conda import get_envs, get_env_path
+from kipoi_conda import get_env_path, call_script_in_env
 from kipoi.cli.env import get_envs_by_model
-from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
-                    load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
+from kipoi_utils import (cd,kill_process_and_children)
 
 import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-
-def kill_process_and_children(proc_pid):
-    process = psutil.Process(proc_pid)
-    for proc in process.children(recursive=True):
-        proc.terminate()
-        try:
-            proc.wait(timeout=1)
-        except TimeoutError:
-            proc.kill()
-    process.terminate()
-    try:
-        proc.wait(timeout=1)
-    except TimeoutError:
-        proc.kill()
-
-
-def call_script_in_env(filename, env_name=None, use_current_python=False, args=None, cwd=None): 
-    """run an python script in a certain conda enviroment in a background
-    process.
-    
-    Args:
-        filename (str): path to the python script
-        env_name (str or None, optional): Name of the conda enviroment.
-        use_current_python (bool, False) If true, the current python executable will be used
-        args (None, optional): args to pass to the script
-    
-    Returns:
-        Popen: instance of Popen / running program
-    """
-
-
-    def activate_env(env_name=None,env_path=None):
-        if env_path is None:
-            assert env_name is not None
-            env_path = get_env_path(env_name)
-        bin_path = os.path.join(env_path,'bin')
-        new_env = os.environ.copy()
-        new_env['PATH'] = bin_path + os.pathsep + new_env['PATH']
-
-    if use_current_python:
-        python_path = sys.executable
-    else:
-        env_path = get_env_path(env_name=env_name)
-        activate_env(env_path=env_path)
-        python_path = os.path.join(env_path,'bin','python')
-
-        #subprocess.run(, shell=True)
-    # The os.setsid() is passed in the argument preexec_fn so
-    # it's run after the fork() and before  exec() to run the shell.
-    if args is None:
-        args = []
-    
-    pro = subprocess.Popen([python_path, filename] + list(args), stdout=subprocess.PIPE, 
-                           shell=False, close_fds=True,  preexec_fn=os.setsid,cwd=cwd)
-    return pro
 
 
 
@@ -109,9 +50,6 @@ class ServerArgs(dict):
 
     def setEnv(self, env_name):
         self['env_name'] = str(env_name)
-
-
-
 
 class RpycServer(object):
 

@@ -20,8 +20,8 @@ requirements = [
     "h5py",
     "urllib3>=1.21.1", #,<1.23",
     "tinydb",
-    "kipoi-utils>=0.1.12",
-    "kipoi-conda>=0.1.6",
+    "kipoi-utils>=0.3.2",
+    "kipoi-conda>=0.2.0",
     "deprecation>=2.0.6",
     "rpyc"
 ]
