@@ -19,7 +19,7 @@ dependencies:
     conda:
         - faker
         - pip
-    pip:
+        - psutil
         - rpyc
 schema:
     inputs:
