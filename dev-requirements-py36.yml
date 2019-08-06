@@ -48,6 +48,7 @@ dependencies:
   - git
   - git-lfs
   - cookiecutter>=1.6.0
+  - pip
   - pip:
     - kipoi-utils>=0.1.12
     - kipoi-conda>=0.1.6
