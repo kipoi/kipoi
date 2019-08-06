@@ -18,8 +18,8 @@ info:
 dependencies:
     conda:
         - faker
-        - pip:
-          - rpyc
+    pip:
+        - rpyc
 schema:
     inputs:
         name: dummy
