@@ -13,8 +13,6 @@ dependencies:
     conda:
         - python=3.6
         - faker # any package=, we just want to test stuff and need some fancy package
-      - pip:
-          - rpyc
 output_schema:
     inputs:
         name: dummy
