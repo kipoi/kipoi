@@ -18,6 +18,7 @@ info:
 dependencies:
     conda:
         - faker
+        - pip
     pip:
         - rpyc
 schema:
