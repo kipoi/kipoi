@@ -7,7 +7,7 @@ from kipoi_utils.utils import _call_command
 
 from kipoi.cli.env import *
 from kipoi_conda.utils import *
-import filelock
+
 
 
 def on_circle_ci():
@@ -94,11 +94,7 @@ def create_model_env(model,source,tmpdir=None):
     get_model_env_db().save()
 
 
-def create_env_if_not_exist(model,  source, bypass=False, use_filelock=True):
-
-
-    lockfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),'conda_create_env_filelock.lock')
-
+def create_env_if_not_exist(model,  source, bypass=False):
 
 
     if not bypass:
