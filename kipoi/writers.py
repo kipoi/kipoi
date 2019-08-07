@@ -75,9 +75,6 @@ class MultipleBatchWriter(BatchWriter):
             bw.close()
 
 
-
-
-
 class AsyncBatchWriter(BatchWriter):
 
     def __init__(self, batch_writer, max_queue_size=10, close_wait=None):
@@ -92,9 +89,8 @@ class AsyncBatchWriter(BatchWriter):
         from multiprocessing import JoinableQueue, Process
         self.batch_writer = batch_writer
         if close_wait is not None:
-            warnings.warn("AsyncBatchWriter usage of kw close_wait is deprecated", 
-                DeprecationWarning) 
-
+            warnings.warn("AsyncBatchWriter usage of kw close_wait is deprecated",
+                          DeprecationWarning)
 
         def _write_worker(q, batch_writer):
             """Writer loop
@@ -104,7 +100,7 @@ class AsyncBatchWriter(BatchWriter):
               batch_writer.
             """
             while True:
-                batch = q.get() # <- this blocks
+                batch = q.get()  # <- this blocks
                 batch_writer.batch_write(batch)
                 q.task_done()
 
@@ -651,7 +647,7 @@ class BigWigWriter(RegionWriter):
     """
 
     # Arguments
-      file_path (str): File path of the output tsv file
+      file_path (str): File path of the output BigWig file
       genome_file: genome file containing chromosome sizes. Can
         be None. Can be overriden by `chrom_sizes`.
       chrom_sizes: a list of tuples containing chromosome sizes.
