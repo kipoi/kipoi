@@ -17,7 +17,7 @@ import numpy
 from . base_model import BaseModel
 from kipoi_conda import get_env_path, call_script_in_env
 from kipoi.cli.env import get_envs_by_model
-from kipoi_utils import (cd,kill_process_and_children)
+from kipoi_utils import cd
 
 import logging
 logger = logging.getLogger(__name__)
@@ -136,7 +136,7 @@ class RpycServer(object):
             pass
 
         try:
-            kill_process_and_children(os.getpgid(self.server_process.pid))
+            os.kill(os.getpgid(self.server_process.pid), signal.SIGTERM)
         except:
             pass
 
