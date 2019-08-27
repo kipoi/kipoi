@@ -386,7 +386,7 @@ def cli_create(cmd, raw_args):
     parser.add_argument('-t', '--tmpdir', default=None,
                         help=("Temporary directory path where to create the conda environment file"
                               "Defaults to /tmp/kipoi/envfiles/<uuid>/"))
-    parser.add_argument('-v', '--verbose', type=bool, action='store_true',
+    parser.add_argument('-v', '--verbose', action='store_true',
                         help="Increase output verbosity. Show conda stdout.")
     args = parser.parse_args(raw_args)
 
