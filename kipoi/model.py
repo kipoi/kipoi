@@ -8,7 +8,7 @@ import os
 import yaml
 import kipoi  # for .config module
 from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
-                    load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
+                         load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 import abc
 import six
 import numpy as np
@@ -283,8 +283,6 @@ class LayerActivationMixin():
         raise NotImplementedError
 
 
-
-
 class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     """Loads the serialized Keras model
 
@@ -315,7 +313,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
     def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
-        
 
         # if keras.backend.backend() == 'tensorflow':
         #     import tensorflow as tf
@@ -325,7 +322,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         #     keras.backend.set_session(self.sess)
         #     keras.backend.clear_session()
 
-
         if self.backend is not None and 'KERAS_BACKEND' not in os.environ:
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
@@ -333,14 +329,14 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             import keras.backend as K
             logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
             K.set_image_dim_ordering(self.image_dim_ordering)
-        
+
         import keras
         from keras.models import model_from_json, load_model
 
         if self.backend is not None:
             if keras.backend.backend() != self.backend:
                 logger.warning("Keras backend is {0} instead of {1}".
-                            format(keras.backend.backend(), self.backend))
+                               format(keras.backend.backend(), self.backend))
 
         if custom_objects is not None and os.path.exists(custom_objects):
             self.custom_objects = load_module(custom_objects).OBJECTS
@@ -373,7 +369,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     def predict_on_batch(self, x):
         return self.model.predict_on_batch(x)
-     
+
     def _does_model_start_with_input_layer(self):
         # the model used to start with an InputLayer,
         # since keras 2.2 (i think, maybe 2.1)
@@ -382,13 +378,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Consider:
         # "Sequential([Dense(32, input_shape=(784,), activation='relu', name="first")])"
         # for keras 2.0.x we get 2 layers:
-        #   -  keras.engine.topology.InputLayer 
-        #   - keras.layers.core.Dense object 
+        #   -  keras.engine.topology.InputLayer
+        #   - keras.layers.core.Dense object
         # for  keras 2.2.x  this will be a single layer
         #   - keras.layers.core.Dense
         import keras
         try:
-            first_layer =  self.model.get_layer(index=0)
+            first_layer = self.model.get_layer(index=0)
         except:
             # if we cannot get the 0th layer it is for sure no input layer
             return False
@@ -399,8 +395,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 return False
         except AttributeError:
                 # keras does not seem to have this attribute
-                return False
-
+            return False
 
     def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
         """
@@ -453,13 +448,11 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 # this implicit input layer is gone.
                 # => to not break anything we might need to compensate for that
                 input_layer_as_start = self._does_model_start_with_input_layer()
-                
+
                 if input_layer_as_start:
                     selected_layer = self.model.get_layer(index=layer)
                 else:
-                    selected_layer = self.model.get_layer(index=layer-1)
-
-
+                    selected_layer = self.model.get_layer(index=layer - 1)
 
             elif isinstance(layer, six.string_types):
                 selected_layer = self.model.get_layer(name=layer)
@@ -468,7 +461,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             # creates None entries when running K.gradients())
             if self.get_num_inbound_nodes(selected_layer) > 1:
                 logger.warning("Layer %s has multiple input nodes. By default outputs from all nodes "
-                            "are concatenated" % selected_layer.name)
+                               "are concatenated" % selected_layer.name)
                 for i in range(self.get_num_inbound_nodes(selected_layer)):
                     sel_output_dims.append(len(selected_layer.get_output_shape_at(i)))
                     sel_outputs.append(output_sel(selected_layer, selected_layer.get_output_at(i)))
@@ -614,9 +607,9 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if filter_slices is not None:
                 if has_concat_output:
                     logger.warning("Filter slices have been defined for output selection from layers %s, but "
-                                "layer outputs of nodes had to be concatenated. This will potentially lead to undesired "
-                                "output - please take this concatenation into consideration when "
-                                "defining `filter_slices`." % str([l.name for l in selected_layers]))
+                                   "layer outputs of nodes had to be concatenated. This will potentially lead to undesired "
+                                   "output - please take this concatenation into consideration when "
+                                   "defining `filter_slices`." % str([l.name for l in selected_layers]))
                 output_oi = output_oi[filter_slices]
 
             # Should a filter function be applied
@@ -668,9 +661,6 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             raise Exception("This Keras version is not supported!")
         return _standardize_input_data
 
-
-
-
     def _batch_to_list(self, x):
         import keras
         from keras import backend as K
@@ -698,7 +688,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if hasattr(self.model, "_feed_input_shapes"):
                 fis = self.model._feed_input_shapes
             x_standardized = _standardize_input_data(x, feed_input_names, fis)
-             
+
         return x_standardized
 
     def _match_to_input(self, to_match, input):
@@ -765,7 +755,11 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             assert avg_func in _avg_funcs
             avg_func = _avg_funcs[avg_func]
         else:
-            if K._BACKEND == "theano":
+            try:
+                backend = K._BACKEND
+            except Exception:
+                backend = K.backend()
+            if backend == "theano":
                 avg_func = _avg_funcs["sum"]
         if selected_fwd_node is not None:
             raise Exception("'selected_fwd_node' is currently not supported for Keras models!")
@@ -813,7 +807,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         import keras
         from keras import backend as K
 
-        # depending on the keras version this functions needs to be imported from 
+        # depending on the keras version this functions needs to be imported from
         # different places
         _standardize_input_data = KerasModel._get_standardize_input_data_func()
         if keras.__version__[0] == '1':
@@ -1373,7 +1367,7 @@ class OldPyTorchModel(PyTorchModel):
         Partly based on: https://stackoverflow.com/questions/42703500/best-way-to-save-a-trained-model-in-pytorch
         """
         logger.warning("You are using the old initialisation of Kipoi's pytorch models! This feature will soon be "
-                    "removed. Please convert your model to comply with the new definition of loading 'PyTorchModel's.")
+                       "removed. Please convert your model to comply with the new definition of loading 'PyTorchModel's.")
         import torch
         if build_fn is not None:
             if callable(build_fn):
