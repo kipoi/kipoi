@@ -167,8 +167,8 @@ def merge_deps(models,
                                 deps = deps.merge(KIPOISEQ_DEPS)
                             else:
                                 logger.warning("Unable to extract dataloader description. "
-                                            "Make sure the package containing the dataloader `{}` is installed".
-                                            format(model_descr.default_dataloader.defined_as))
+                                               "Make sure the package containing the dataloader `{}` is installed".
+                                               format(model_descr.default_dataloader.defined_as))
                 else:
                     dataloader = os.path.normpath(os.path.join(sub_model,
                                                                str(model_descr.default_dataloader)))
@@ -303,7 +303,7 @@ def delete_envs(to_delete):
             db.save()
         except Exception as err:
             logger.warning("Conda delete of environment {0} failed with error: {1}. This environment entry was not "
-                        "removed from the database.".format(e.create_args.env, str(err)))
+                           "removed from the database.".format(e.create_args.env, str(err)))
 
 
 def _env_db_model_name(source, model):
@@ -386,6 +386,8 @@ def cli_create(cmd, raw_args):
     parser.add_argument('-t', '--tmpdir', default=None,
                         help="Temporary directory path where to create the conda environment file" +
                              "Defaults to /tmp/kipoi/envfiles/<uuid>/")
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="Increase output verbosity. Show conda stdout.")
     args = parser.parse_args(raw_args)
 
     # create the tmp dir
@@ -456,7 +458,7 @@ def cli_create(cmd, raw_args):
 
         # setup the conda env from file
         logger.info("Creating conda env from file: {0}".format(env_file))
-        kipoi_conda.create_env_from_file(env_file)
+        kipoi_conda.create_env_from_file(env_file, use_stdout=args.verbose)
         env_db_entry.successful = True
 
         # env is environment name
