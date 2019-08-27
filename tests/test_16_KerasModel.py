@@ -1,17 +1,17 @@
+from kipoi_utils.utils import cd
+import numpy as np
+import config
+from kipoi_utils.utils import Slice_conv
+from kipoi.pipeline import install_model_requirements
+import kipoi
+from contextlib import contextmanager
+import yaml
+import os
+import sys
+import pytest
 import warnings
 
 warnings.filterwarnings('ignore')
-import pytest
-import sys
-import os
-import yaml
-from contextlib import contextmanager
-import kipoi
-from kipoi.pipeline import install_model_requirements
-from kipoi_utils.utils import Slice_conv
-import config
-import numpy as np
-from kipoi_utils.utils import cd
 
 # TODO: Implement automatic switching of backends to test on Theano model!
 
@@ -172,7 +172,7 @@ def test_activation_function_model(example):
         pytest.skip("rbp example not supported on python 2 ")
     #
     import keras
-    backend = keras.backend._BACKEND
+    backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
     #
@@ -209,7 +209,7 @@ def test_activation_function_model(example):
 
 def test_keras_get_layers_and_outputs():
     import keras
-    backend = keras.backend._BACKEND
+    backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs("shared_lstm")
     assert len(selected_layers) == 1
@@ -235,7 +235,7 @@ def test_keras_get_layers_and_outputs():
     assert len(sel_outputs) == 1
     assert sel_outputs[0] == selected_layers[0].output
     assert len(sel_output_dims) == 1
-    
+
     # using the sequential model
     model = kipoi.model.KerasModel(*get_sample_sequential_model())
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs(2)
@@ -261,7 +261,7 @@ def test_keras_get_layers_and_outputs():
 
 def test_generate_activation_output_functions():
     import keras
-    backend = keras.backend._BACKEND
+    backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     sample_input = get_sample_functional_model_input()
     act_fn = model._generate_activation_output_functions(layer="shared_lstm", pre_nonlinearity=False)
@@ -296,7 +296,7 @@ def test_gradient_function_model(example):
         pytest.skip("rbp example not supported on python 2 ")
 
     import keras
-    backend = keras.backend._BACKEND
+    backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
     #
@@ -347,7 +347,7 @@ def check_grad(input, grad):
 def test__get_gradient_function():
     import keras.backend as K
     import keras
-    backend = keras.backend._BACKEND
+    backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     with pytest.raises(Exception):  # expect exception
         grad_fn = model._get_gradient_function(use_final_layer=True)
