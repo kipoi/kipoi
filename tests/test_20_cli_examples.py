@@ -129,7 +129,7 @@ def test_preproc_example(example, new_dataloader_kwargs_format, tmpdir):
 
     if example in {"rbp"} and new_dataloader_kwargs_format:
         if example == "rbp":
-            dataloader_args=[
+            dataloader_args = [
                 "intervals_file=intervals.tsv",
                 "fasta_file=hg38_chr22.fa",
                 "preproc_transformer=../dataloader_files/encodeSplines.pkl",
@@ -148,9 +148,7 @@ def test_preproc_example(example, new_dataloader_kwargs_format, tmpdir):
                 "--source=dir",
                 "--batch_size=4",
                 "--num_workers=2",
-                "--dataloader_args"] + dataloader_args + [ "--output", tmpfile]
-
-
+                "--dataloader_args"] + dataloader_args + ["--output", tmpfile]
 
     else:
         # run the
@@ -349,7 +347,7 @@ class PseudoConda:
         else:
             return env
 
-    def add_env(self, env):
+    def add_env(self, env, **kwargs):
         env = self.strip_yaml_suffix(env)
         if env in self.existing_envs:
             return 1

@@ -92,7 +92,7 @@ def all_models_to_test(src):
     return list(models) + include
 
 
-def create_model_env(model_name, source_name, env_name, vep=False):
+def create_model_env(model_name, source_name, env_name, vep=False, verbose=False):
     """kipoi test ...
 
     Args:
@@ -112,6 +112,8 @@ def create_model_env(model_name, source_name, env_name, vep=False):
             "--source", source_name,
             "--env", env_name,
             model_name]
+    if verbose:
+        args.append("--verbose")
     if vep:
         # Add --vep to environment installation
         args.insert(-1, "--vep")
@@ -119,7 +121,8 @@ def create_model_env(model_name, source_name, env_name, vep=False):
     assert returncode == 0
 
 
-def test_model(model_name, source_name, env_name, batch_size, vep=False, create_env=True):
+def test_model(model_name, source_name, env_name, batch_size,
+               vep=False, create_env=True, verbose=False):
     """kipoi test ...
 
     Args:
@@ -127,7 +130,7 @@ def test_model(model_name, source_name, env_name, batch_size, vep=False, create_
       source_name: source name
     """
     if create_env:
-        create_model_env(model_name, source_name, env_name, vep)
+        create_model_env(model_name, source_name, env_name, vep, verbose=verbose)
 
     # run the tests in the environment
     cmd = get_kipoi_bin(env_name)
@@ -281,7 +284,8 @@ def cli_test_source(command, raw_args):
                         help='Test models in common environments.')
     parser.add_argument('--all', action='store_true',
                         help="Test all models in the source")
-
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help="Increase output verbosity. Show conda stdout during env installation.")
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     source = kipoi.get_source(args.source)
@@ -367,20 +371,20 @@ def cli_test_source(command, raw_args):
                 # Test
                 test_model(m, args.source, env_name,
                            get_batch_size(cfg, m, args.batch_size), args.vep,
-                           create_env=True)
+                           create_env=True, verbose=args.verbose)
             else:
                 # figure out the common environment name
                 env_name = get_common_env(m, model_envs)
                 if env_name is None:
                     # skip is none was found
-                    logger.info("Common environmnet not found for {}".format(m))
+                    logger.info("Common environment not found for {}".format(m))
                     continue
                 # ---------------------------
                 # Test
                 print("test_model...")
                 test_model(m, args.source, env_name,
                            get_batch_size(cfg, m, args.batch_size), args.vep,
-                           create_env=False)
+                           create_env=False, verbose=args.verbose)
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))
             failed_models += [m]
