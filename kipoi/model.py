@@ -332,7 +332,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 K.set_image_dim_ordering(self.image_dim_ordering)
             except AttributeError:
                 if image_dim_ordering != 'tf':
-                    raise RuntimeError("only tf")
+                    raise RuntimeError("only tf dim ordering at is supported")
 
 
         import keras
