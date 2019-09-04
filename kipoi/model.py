@@ -328,7 +328,12 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         if self.image_dim_ordering is not None:
             import keras.backend as K
             logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
-            K.set_image_dim_ordering(self.image_dim_ordering)
+            try:
+                K.set_image_dim_ordering(self.image_dim_ordering)
+            except AttributeError:
+                if image_dim_ordering != 'tf':
+                    raise RuntimeError("only tf")
+
 
         import keras
         from keras.models import model_from_json, load_model
