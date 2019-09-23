@@ -63,6 +63,7 @@ def pred_batch_list():
             np.arange(9).reshape((3, 3))]
 
 
+@fixture
 def pred_batch_vlen():
     return [
         np.arange(9).reshape((3, 3)),
