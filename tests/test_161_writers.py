@@ -4,9 +4,9 @@ import os
 import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
-from kipoi.writers import (AsyncBatchWriter, BedBatchWriter, 
+from kipoi.writers import (AsyncBatchWriter, BedBatchWriter,
                            TsvBatchWriter, ZarrBatchWriter, get_zarr_store,
-                           HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter, 
+                           HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter,
                            ParquetBatchWriter)
 from kipoi.readers import HDF5Reader, ZarrReader
 from kipoi.cli.main import prepare_batch
@@ -16,6 +16,7 @@ from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataT
 from collections import OrderedDict
 from kipoi_utils.utils import get_subsuffix
 import zarr
+
 
 def on_circle_ci():
     if os.environ.get('CI') is not None:
@@ -27,6 +28,7 @@ def on_circle_ci():
     else:
         return False
 
+
 @fixture
 def metadata_schema():
     return OrderedDict([("ranges", MetadataStruct(type=MetadataType.GENOMIC_RANGES, doc="ranges")),
@@ -35,16 +37,19 @@ def metadata_schema():
 
 @fixture
 def dl_batch():
-    return {"inputs": np.arange(3),
-            "metadata": {
-                "ranges": GenomicRanges(chr=np.array(["chr1", "chr1", "chr1"]),
-                                        start=np.arange(3) + 1,
-                                        end=np.arange(3) + 5,
-                                        id=np.arange(3).astype(str),
-                                        strand=np.array(["*"] * 3)
-                                        ),
-                "gene_id": np.arange(3).astype(str)
-    }}
+    return {
+        "inputs": np.arange(3),
+        "metadata": {
+            "ranges": GenomicRanges(
+                chr=np.array(["chr1", "chr1", "chr1"]),
+                start=np.arange(3) + 1,
+                end=np.arange(3) + 5,
+                id=np.arange(3).astype(str),
+                strand=np.array(["*"] * 3)
+            ),
+            "gene_id": np.arange(3).astype(str)
+        }
+    }
 
 
 @fixture
@@ -58,16 +63,30 @@ def pred_batch_list():
             np.arange(9).reshape((3, 3))]
 
 
+def pred_batch_vlen():
+    return [
+        np.arange(9).reshape((3, 3)),
+        np.asarray([np.arange(i + 3) for i in range(3)]),
+    ]
+
+
 @fixture
 def pred_batch_dict():
-    return {"first": np.arange(9).reshape((3, 3)),
-            "second": np.arange(9).reshape((3, 3))}
+    return {
+        "first": np.arange(9).reshape((3, 3)),
+        "second": np.arange(9).reshape((3, 3))
+    }
 
 
 # pred_batch_array = pred_batch_array()
+# pred_batch_list = pred_batch_list()
+# pred_batch_vlen = pred_batch_vlen()
+# pred_batch_dict = pred_batch_dict()
 # dl_batch = dl_batch()
 # tmpfile = "/tmp/kipoi/test.tsv"
 # metadata_schema = metadata_schema()
+
+
 # --------------------------------------------
 
 
@@ -96,7 +115,6 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 # from conda even tough this work very fine locally
 @pytest.mark.skipif("os.environ.get('CI_JOB_PY_YAML') is not None")
 def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
-
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = AsyncBatchWriter(TsvBatchWriter(tmpfile))
     batch = prepare_batch(dl_batch, pred_batch_array)
@@ -117,8 +135,6 @@ def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]
 
 
-
-
 def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
     batch = prepare_batch(dl_batch, pred_batch_array)
@@ -130,12 +146,24 @@ def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     with HDF5Reader(tmpfile) as f:
         assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
         out = f.load_all()
-        assert np.all(out['metadata']['gene_id'] == np.concatenate(
-            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
-        assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
-                                                                          dl_batch['metadata']['ranges']['chr']]))
-        assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
-                                                                            dl_batch['metadata']['ranges']['start']]))
+        assert np.all(
+            out['metadata']['gene_id'] == np.concatenate([
+                dl_batch['metadata']['gene_id'],
+                dl_batch['metadata']['gene_id']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["chr"] == np.concatenate([
+                dl_batch['metadata']['ranges']['chr'],
+                dl_batch['metadata']['ranges']['chr']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["start"] == np.concatenate([
+                dl_batch['metadata']['ranges']['start'],
+                dl_batch['metadata']['ranges']['start']
+            ])
+        )
         assert np.all(out['preds'][:3] == pred_batch_array)
 
 
@@ -150,13 +178,58 @@ def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
     with HDF5Reader(tmpfile) as f:
         assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
         out = f.load_all()
-        assert np.all(out['metadata']['gene_id'] == np.concatenate(
-            [dl_batch['metadata']['gene_id'], dl_batch['metadata']['gene_id']]))
-        assert np.all(out['metadata']['ranges']["chr"] == np.concatenate([dl_batch['metadata']['ranges']['chr'],
-                                                                          dl_batch['metadata']['ranges']['chr']]))
-        assert np.all(out['metadata']['ranges']["start"] == np.concatenate([dl_batch['metadata']['ranges']['start'],
-                                                                            dl_batch['metadata']['ranges']['start']]))
+        assert np.all(
+            out['metadata']['gene_id'] == np.concatenate([
+                dl_batch['metadata']['gene_id'],
+                dl_batch['metadata']['gene_id']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["chr"] == np.concatenate([
+                dl_batch['metadata']['ranges']['chr'],
+                dl_batch['metadata']['ranges']['chr']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["start"] == np.concatenate([
+                dl_batch['metadata']['ranges']['start'],
+                dl_batch['metadata']['ranges']['start']
+            ])
+        )
         assert np.all(out['preds'][0][:3] == pred_batch_list[0])
+
+
+def test_HDF5BatchWriter_vlen(dl_batch, pred_batch_vlen, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
+    batch = prepare_batch(dl_batch, pred_batch_vlen)
+    writer = HDF5BatchWriter(tmpfile, chunk_size=4)
+
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    with HDF5Reader(tmpfile) as f:
+        assert np.all(list(f.batch_iter(2))[0]['metadata']['gene_id'] == dl_batch['metadata']['gene_id'][:2])
+        out = f.load_all()
+        assert np.all(
+            out['metadata']['gene_id'] == np.concatenate([
+                dl_batch['metadata']['gene_id'],
+                dl_batch['metadata']['gene_id']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["chr"] == np.concatenate([
+                dl_batch['metadata']['ranges']['chr'],
+                dl_batch['metadata']['ranges']['chr']
+            ])
+        )
+        assert np.all(
+            out['metadata']['ranges']["start"] == np.concatenate([
+                dl_batch['metadata']['ranges']['start'],
+                dl_batch['metadata']['ranges']['start']
+            ])
+        )
+        assert np.all(
+            out['preds'][0][:3] == pred_batch_vlen[0])
 
 
 # Zarr
