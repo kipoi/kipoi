@@ -12,7 +12,6 @@ requirements = [
     "tqdm",
     "attrs>=17.4.0",
     "related>=0.6.0",
-    "enum34",
     "colorlog",
     "jinja2",
     "cookiecutter>=1.6.0",
@@ -26,7 +25,7 @@ requirements = [
 ]
 
 test_requirements = [
-    "bumpversion",
+    "bump2version",
     "wheel",
     "jedi",
     "epc",
