@@ -661,7 +661,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         elif hasattr(keras.engine.training, "_standardize_input_data"):
             from keras.engine.training import _standardize_input_data
         elif hasattr(keras.engine.training_utils, "standardize_input_data"):
-            from keras.engine.training import standardize_input_data as _standardize_input_data
+            from keras.engine.training_utils import standardize_input_data as _standardize_input_data
         else:
             raise Exception("This Keras version is not supported!")
         return _standardize_input_data
