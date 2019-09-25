@@ -24,6 +24,7 @@ from kipoi_utils.data_utils import flatten_batch, numpy_collate_concat
 from kipoi_utils.external.flatten_json import flatten
 from kipoi.specs import MetadataType
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -130,6 +131,8 @@ class AsyncBatchWriter(BatchWriter):
 
     def __del__(self):
         self.close()
+
+
 # --------------------------------------------
 
 
@@ -264,7 +267,7 @@ class BedBatchWriter(BatchWriter):
 
         bed_cols = ["chr", "start", "end", "id", "score", "strand"]
         cols = [os.path.join(self.ranges_key, x) for x in bed_cols] + \
-            sorted([x for x in fbatch if x.startswith("preds/")])
+               sorted([x for x in fbatch if x.startswith("preds/")])
         df = pd.DataFrame(fbatch)[cols]
         df.rename(columns={os.path.join(self.ranges_key, bc): bc for bc in bed_cols}, inplace=True)
         df.rename(columns={"id": "name"}, inplace=True)
@@ -295,10 +298,7 @@ class HDF5BatchWriter(BatchWriter):
                  chunk_size=10000,
                  compression='gzip'):
         import h5py
-        if sys.version_info[0] == 2:
-            self.string_type = h5py.special_dtype(vlen=unicode)
-        else:
-            self.string_type = h5py.special_dtype(vlen=str)
+        self.string_type = h5py.special_dtype(vlen=str)
 
         self.file_path = file_path
         self.chunk_size = chunk_size
@@ -326,7 +326,14 @@ class HDF5BatchWriter(BatchWriter):
         if self.first_pass:
             # have a dictionary holding
             for k in fbatch:
-                if fbatch[k].dtype.type in [np.string_, np.str_, np.unicode_]:
+                if fbatch[k].dtype.type == np.dtype("object"):
+                    import h5py
+
+                    # assume that all elements of fbatch[k] have the same dtype
+                    dtype = fbatch[k][0].dtype
+                    dtype = h5py.special_dtype(vlen=dtype)
+                    # TODO: h5py.special_dtype is deprecated from h5py >= 2.10; eventually change to h5py.vlen_dtype
+                elif fbatch[k].dtype.type in [np.string_, np.str_, np.unicode_]:
                     dtype = self.string_type
                 else:
                     dtype = fbatch[k].dtype
