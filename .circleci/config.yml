@@ -113,7 +113,6 @@ variables:
       name: build python packages
       command: |
         source activate kipoi-env
-#        conda install wheel gitpython
         python setup.py sdist bdist_wheel
   conda_install_twine: &conda_install_twine
     run:
