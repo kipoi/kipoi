@@ -191,8 +191,7 @@ jobs:
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      # do not check git tag, since e.g. pull requests will not be tagged
-      # - *verify_git_tag
+      - *verify_git_tag
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc
