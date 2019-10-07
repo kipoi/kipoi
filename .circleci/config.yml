@@ -102,12 +102,6 @@ variables:
       path: test-reports
       destination: test-reports
   # deployment
-  verify_git_tag: &verify_git_tag
-    run:
-      name: verify git tag vs. version
-      command: |
-        source activate kipoi-env
-        python setup.py verify
   build_pypi_package: &build_pypi_package
     run:
       name: build python packages
@@ -191,7 +185,6 @@ jobs:
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *verify_git_tag
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc
@@ -216,7 +209,6 @@ jobs:
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *verify_git_tag
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc

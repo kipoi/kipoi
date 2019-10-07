@@ -30,20 +30,6 @@ def git_version(version):
     return version
 
 
-class VerifyVersionCommand(install):
-    """Custom command to verify that the git tag matches our version"""
-    description = 'verify that the git tag matches our version'
-
-    def run(self):
-        tag = os.getenv('CIRCLE_TAG')
-
-        if tag != version:
-            info = "Git tag: {0} does not match the version of this app: {1}".format(
-                tag, version
-            )
-            sys.exit(info)
-
-
 # this will be overwritten by bumpversion
 version = '0.6.20'
 # append git commit hash if version is not tagged
@@ -112,7 +98,4 @@ setup(
     test_suite='tests',
     include_package_data=True,
     tests_require=test_requirements,
-    cmdclass={
-        'verify': VerifyVersionCommand,
-    }
 )
