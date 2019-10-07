@@ -7,33 +7,8 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 
-def git_version(version):
-    """Return version with local version identifier."""
-    import git
-    repo = git.Repo('.git')
-    repo.git.status()
-    sha = repo.head.commit.hexsha
-    if repo.is_dirty():
-        return '{v}.dev0+{sha}.dirty'.format(
-            v=version, sha=sha)
-    # commit is clean
-    # is it release of `version` ?
-    try:
-        tag = repo.git.describe(
-            match='v[0-9]*', exact_match=True,
-            tags=True, dirty=True)
-    except git.GitCommandError:
-        return '{v}.dev0+{sha}'.format(
-            v=version, sha=sha)
-    assert tag == 'v' + version, (tag, version)
-
-    return version
-
-
 # this will be overwritten by bumpversion
 version = '0.6.22'
-# append git commit hash if version is not tagged
-version = git_version(version)
 
 requirements = [
     "pyyaml",
@@ -57,6 +32,7 @@ requirements = [
 
 test_requirements = [
     "bump2version",
+    "gitpython",
     "wheel",
     "jedi",
     "epc",
