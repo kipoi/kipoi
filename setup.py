@@ -45,7 +45,7 @@ class VerifyVersionCommand(install):
 
 
 # this will be overwritten by bumpversion
-version = '0.6.19'
+version = '0.6.20'
 # append git commit hash if version is not tagged
 version = git_version(version)
 
