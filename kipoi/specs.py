@@ -20,8 +20,8 @@ import kipoi_conda as kconda
 from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
 from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt,
-                         load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
+from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_yaml,
+                               load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -547,12 +547,23 @@ class Dependencies(RelatedConfigMixin):
     # not really required
     conda_channels = related.SequenceField(str, default=["defaults"],
                                            required=False, repr=True)
+    conda_file = related.StringField(required=False)
 
     def __attrs_post_init__(self):
         """
         In case conda or pip are filenames pointing to existing files,
         read the files and populate the package names
         """
+        if self.conda_file:
+            # use the dependencies from the conda file. Override conda, pip and conda_file
+            deps = read_yaml(self.conda_file)
+            pip_deps = [x['pip'] for x in deps['dependencies']
+                        if isinstance(x, dict)][0]
+            conda_deps = [x for x in deps['dependencies']
+                          if not isinstance(x, dict)]
+            object.__setattr__(self, "pip", pip_deps)
+            object.__setattr__(self, "conda", conda_deps)
+            object.__setattr__(self, "conda_channels", deps['channels'])
         if len(self.conda) == 1 and self.conda[0].endswith(".txt") and \
            os.path.exists(self.conda[0]):
             # found a conda txt file
@@ -657,7 +668,7 @@ class Dependencies(RelatedConfigMixin):
         if "pysam" in packages and "bioconda" in channels:
             if channels.index("defaults") < channels.index("bioconda"):
                 logger.warning("Swapping channel order - putting defaults last. " +
-                            "Using pysam bioconda instead of anaconda")
+                               "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
                 channels.insert(len(channels), "defaults")
         return channels, packages
@@ -741,7 +752,7 @@ class Dependencies(RelatedConfigMixin):
         from sys import platform
         if platform != 'darwin':
             logger.warning("Calling osx dependency conversion on non-osx platform: {}".
-                        format(platform))
+                           format(platform))
 
         def replace_osx(dep):
             if dep.startswith("pytorch-cpu"):

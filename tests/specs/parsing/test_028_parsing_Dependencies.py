@@ -16,8 +16,19 @@ conda:
 pip:
   - pip_dep1
   - pip_dep2
-    """, ["conda_dep1", "conda_dep2"],
+""", ["conda_dep1", "conda_dep2"],
      ["pip_dep1", "pip_dep2"]
+     ),
+    ("""
+conda:
+  - conda_dep1
+  - conda_dep2
+pip:
+  - pip_dep1
+  - pip_dep2
+conda_file: tests/data/conda-env.yaml
+""", ["conda_dep3", "conda_dep4"],
+     ["pip_dep3", "pip_dep4"]
      ),
     ("""
 conda: tests/data/conda_requirements.txt
