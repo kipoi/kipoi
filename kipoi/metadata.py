@@ -35,15 +35,15 @@ class GenomicRanges(Mapping):
     @property
     def chrom(self):
         return self.chr
-    
+
     @property
     def stop(self):
         return self.end
-    
+
     @property
     def name(self):
         return self.id
-    
+
     def __getitem__(self, key):
         return self._storage[key]
 
@@ -54,7 +54,8 @@ class GenomicRanges(Mapping):
         return len(self._storage)
 
     def __repr__(self):
-        return "GenomicRanges(chr={chr!r}, start={start!r}, end={end!r}, id={id!r}, strand={strand!r})".format(**self._storage)
+        return "GenomicRanges(chr={chr!r}, start={start!r}, end={end!r}, id={id!r}, strand={strand!r})".format(
+            **self._storage)
 
     @classmethod
     def from_interval(cls, interval):
@@ -99,3 +100,9 @@ class GenomicRanges(Mapping):
                              name=self.id[i],
                              strand=self.strand[i])
                     for i in range(len(self.chr))]
+
+    def to_dataframe(self):
+        return pd.DataFrame(self._storage)
+
+    def to_dict(self):
+        return dict(self._storage)
