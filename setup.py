@@ -31,7 +31,7 @@ def git_version(version):
 
 
 # this will be overwritten by bumpversion
-version = '0.6.21'
+version = '0.6.22'
 # append git commit hash if version is not tagged
 version = git_version(version)
 
