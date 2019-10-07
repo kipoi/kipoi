@@ -247,7 +247,7 @@ workflows:
               only:
                 - test_deployment_pypi
                 - test_deployment_script
-      - deploy-pypi:
+      - productive-deploy-pypi:
           requires:
             - test-py36-yml
             - test-deploy-pypi
