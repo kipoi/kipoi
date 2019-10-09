@@ -241,6 +241,8 @@ workflows:
           requires:
             - test-py36-yml
           filters:
+            tags:
+              only: /[0-9]+(\.[0-9]+)*/
             branches:
               only:
                 - test_deployment_pypi
@@ -248,7 +250,6 @@ workflows:
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
-            - test-deploy-pypi
           filters:
             tags:
               only: /[0-9]+(\.[0-9]+)*/
