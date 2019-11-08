@@ -226,9 +226,15 @@ workflows:
 
   # TODO - consider running the deploy only on
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
-  test-n-deploy:
+  test:
     jobs:
       - test-py36-yml
+  test-n-deploy:
+    jobs:
+      - test-py36-yml:
+          filters: # required since `deploy` has tag filters AND requires `build`
+            tags:
+              only: /[0-9]+(\.[0-9]+)*/
       - build-deploy-docs:
           requires:
             - test-py36-yml
@@ -253,6 +259,6 @@ workflows:
           filters:
             tags:
               only: /[0-9]+(\.[0-9]+)*/
-            #branches:
-            #  only:
-            #    - master
+            branches:
+              only:
+                - master
