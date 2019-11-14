@@ -235,30 +235,14 @@ workflows:
           filters: # required since `deploy` has tag filters AND requires `build`
             tags:
               only: /[0-9]+(\.[0-9]+)*/
-      - build-deploy-docs:
-          requires:
-            - test-py36-yml
-          filters:
             branches:
-              only:
-                - master
-                - test_deployment_script
+              ignore: /.*/
       - test-deploy-pypi:
           requires:
             - test-py36-yml
-          filters:
-            tags:
-              only: /[0-9]+(\.[0-9]+)*/
-            branches:
-              only:
-                - test_deployment_pypi
-                - test_deployment_script
+      - build-deploy-docs:
+          requires:
+            - test-deploy-pypi
       - productive-deploy-pypi:
           requires:
-            - test-py36-yml
-          filters:
-            tags:
-              only: /[0-9]+(\.[0-9]+)*/
-            branches:
-              only:
-                - master
+            - test-deploy-pypi
