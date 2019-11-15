@@ -149,7 +149,7 @@ jobs:
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
-      - image: continuumio/anaconda3:5.0.1
+      - image: continuumio/anaconda3:latest
       # - image: circleci/python:3.5
     working_directory: ~/repo
     steps:
