@@ -242,7 +242,7 @@ workflows:
             - test-py36-yml
           filters:
             tags:
-              only: /[0-9]+(\.[0-9]+)*/
+              only: /^v.*/
             branches:
               only:
                 - test_deployment_pypi
@@ -251,8 +251,9 @@ workflows:
           requires:
             - test-py36-yml
           filters:
+            # Trigger only on a tagged commit starting with v.
+            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
             tags:
-              only: /[0-9]+(\.[0-9]+)*/
-            #branches:
-            #  only:
-            #    - master
+              only: /^v.*/
+            branches:
+              ignore: /.*/
