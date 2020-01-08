@@ -363,14 +363,18 @@ def cli_info(command, raw_args):
     src = kipoi.get_source(args.source)
 
     # load the default dataloader
-    if isinstance(md.default_dataloader, kipoi.specs.DataLoaderImport):
-        with cd(src.get_model_dir(args.model)):
-            dl_descr = md.default_dataloader.get()
-    else:
-        # load from directory
-        # attach the default dataloader already to the model
-        dl_descr = kipoi.get_dataloader_descr(os.path.join(args.model, md.default_dataloader),
-                                              source=args.source)
+    try:
+        if isinstance(md.default_dataloader, kipoi.specs.DataLoaderImport):
+            with cd(src.get_model_dir(args.model)):
+                dl_descr = md.default_dataloader.get()
+        else:
+            # load from directory
+            # attach the default dataloader already to the model
+            dl_descr = kipoi.get_dataloader_descr(os.path.join(args.model, md.default_dataloader),
+                                                  source=args.source)
+    # if kipoiseq is not installed you get an ImportError
+    except ImportError: 
+        dl_descr = None
 
     print("-" * 80)
     print("'{0}' from source '{1}'".format(str(args.model), str(args.source)))
@@ -378,9 +382,10 @@ def cli_info(command, raw_args):
     print("Model information")
     print("-----------")
     print(md.info.get_config_as_yaml())
-    print("Dataloader arguments")
-    print("--------------------")
-    dl_descr.print_args()
+    if dl_descr:
+        print("Dataloader arguments")
+        print("--------------------")
+        dl_descr.print_args()
     print("--------------------\n")
     print("Run `kipoi get-example {} -o example` to download example files.\n".format(args.model))
 

@@ -39,7 +39,7 @@ variables:
 
   export_shortcuts: &export_shortcuts
     run:
-      name: Export shortcuts 
+      name: Export shortcuts
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
         echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
@@ -52,11 +52,11 @@ variables:
         source activate kipoi-env
         pip install -e .
         git lfs install
-        ln -s /opt/conda/bin/python /usr/bin/python
+        # ln -s /opt/conda/bin/python /usr/bin/python
   install_genomelake: &install_genomelake
     run:
       name: Install pip dependencies
-      command: conda install -c bioconda genomelake 
+      command: conda install -c bioconda genomelake
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -101,11 +101,38 @@ variables:
     store_artifacts:
       path: test-reports
       destination: test-reports
+  # deployment
+  build_pypi_package: &build_pypi_package
+    run:
+      name: build python packages
+      command: |
+        source activate kipoi-env
+        python setup.py sdist bdist_wheel
+  conda_install_twine: &conda_install_twine
+    run:
+      name: Install twine
+      command: conda install twine
+  pypi_create_pypirc: &pypi_create_pypirc
+    run:
+      name: init .pypirc
+      command: |
+        echo -e "[distutils]" >> ~/.pypirc
+        echo -e "index-servers = " >> ~/.pypirc
+        echo -e "    pypi" >> ~/.pypirc
+        echo -e "    testpypi" >> ~/.pypirc
+        echo -e "" >> ~/.pypirc
+        echo -e "[testpypi]" >> ~/.pypirc
+        echo -e "repository: https://test.pypi.org/legacy/" >> ~/.pypirc
+        echo -e "username: $TEST_PYPI_USERNAME" >> ~/.pypirc
+        echo -e "password: $TEST_PYPI_PASSWORD" >> ~/.pypirc
+        echo -e "[pypi]" >> ~/.pypirc
+        echo -e "username: $PYPI_USERNAME" >> ~/.pypirc
+        echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
   test-py36-yml:
     docker:
-     - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
@@ -145,6 +172,55 @@ jobs:
       - run:
           name: Deploy docs
           command: .circleci/deploy_docs.bash
+
+  test-deploy-pypi:
+    docker:
+      - image: continuumio/miniconda3:4.7.10
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      #- *install_sys_deps
+      - *install_from_dev_requirements_py36
+      #- *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *build_pypi_package
+      - *conda_install_twine
+      - *pypi_create_pypirc
+      - run:
+          name: upload to TestPyPI
+          command: twine upload --repository testpypi dist/* --verbose
+      - run:
+          name: pip install from TestPyPI
+          command: |
+            pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
+            python -c "import kipoi; print(kipoi.__version__)"
+
+  productive-deploy-pypi:
+    docker:
+      - image: continuumio/miniconda3:4.7.10
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      #- *install_sys_deps
+      - *install_from_dev_requirements_py36
+      #- *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *build_pypi_package
+      - *conda_install_twine
+      - *pypi_create_pypirc
+      - run:
+          name: upload to PyPI
+          command: twine upload --repository pypi dist/* --verbose
+      - run:
+          name: pip install from PyPI
+          command: |
+            pip install --user kipoi --verbose
+            python -c "import kipoi; print(kipoi.__version__)"
+
 workflows:
   version: 2
 
@@ -161,3 +237,23 @@ workflows:
               only:
                 - master
                 - test_deployment_script
+      - test-deploy-pypi:
+          requires:
+            - test-py36-yml
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              only:
+                - test_deployment_pypi
+                - test_deployment_script
+      - productive-deploy-pypi:
+          requires:
+            - test-py36-yml
+          filters:
+            # Trigger only on a tagged commit starting with v.
+            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/

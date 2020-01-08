@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
+import sys
 
 from setuptools import setup, find_packages
+from setuptools.command.install import install
 
+
+# this will be overwritten by bumpversion
+version = '0.6.24'
 
 requirements = [
     "pyyaml",
@@ -12,13 +18,12 @@ requirements = [
     "tqdm",
     "attrs>=17.4.0",
     "related>=0.6.0",
-    "enum34",
     "colorlog",
     "jinja2",
     "cookiecutter>=1.6.0",
     # sometimes required
     "h5py",
-    "urllib3>=1.21.1", #,<1.23",
+    "urllib3>=1.21.1",  # ,<1.23",
     "tinydb",
     "kipoi-utils>=0.3.8",
     "kipoi-conda>=0.1.6",
@@ -26,7 +31,8 @@ requirements = [
 ]
 
 test_requirements = [
-    "bumpversion",
+    "bump2version",
+    "gitpython",
     "wheel",
     "jedi",
     "epc",
@@ -39,16 +45,16 @@ test_requirements = [
     "cython",
     "keras",
     "tensorflow",
-    #"genomelake>=0.1.4",     # test_10_KipoiModel.py (fails on circle-ci)
-    "zarr>=2.2.0",            # test_161_writers.py
-    #"cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
-    "kipoi-interpret>=0.1.2", # test_42_kipoi_interpret.py
+    # "genomelake>=0.1.4",     # test_10_KipoiModel.py (fails on circle-ci)
+    "zarr>=2.2.0",  # test_161_writers.py
+    # "cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
+    "kipoi-interpret>=0.1.2",  # test_42_kipoi_interpret.py
     "concise>=0.6.6"
 ]
 
 setup(
     name='kipoi',
-    version='0.6.16',
+    version=version,
     description="Kipoi: model zoo for genomics",
     author="Kipoi team",
     author_email='avsec@in.tum.de',
@@ -67,5 +73,5 @@ setup(
               "computational biology", "bioinformatics", "genomics"],
     test_suite='tests',
     include_package_data=True,
-    tests_require=test_requirements
+    tests_require=test_requirements,
 )
