@@ -1,0 +1,13 @@
+name: test-env
+channels:
+  - https://repo.continuum.io/pkgs/free
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - conda_dep3
+  - conda_dep4
+  - pip:
+    - pip_dep3
+    - pip_dep4
+prefix: /home/user/bin/anaconda3/envs/test-env
