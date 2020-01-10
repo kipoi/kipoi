@@ -166,18 +166,16 @@ pip install kipoi_interpret
 
 ## Citing Kipoi
 
-If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and our Biorxiv preprint: https://doi.org/10.1101/375345.
+If you use Kipoi for your research, please cite the publication of the model you are using (see model's `cite_as` entry) and the paper describing Kipoi: https://doi.org/10.1038/s41587-019-0140-0.
 
 ```bibtex
-@article {kipoi,
-	author = {Avsec, Ziga and Kreuzhuber, Roman and Israeli, Johnny and Xu, Nancy and Cheng, Jun and Shrikumar, Avanti and Banerjee, Abhimanyu and Kim, Daniel S and Urban, Lara and Kundaje, Anshul and Stegle, Oliver and Gagneur, Julien},
-	title = {Kipoi: accelerating the community exchange and reuse of predictive models for genomics},
-	year = {2018},
-	doi = {10.1101/375345},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2018/07/24/375345},
-	eprint = {https://www.biorxiv.org/content/early/2018/07/24/375345.full.pdf},
-	journal = {bioRxiv}
+@article{kipoi,
+  title={The Kipoi repository accelerates community exchange and reuse of predictive models for genomics},
+  author={Avsec, Ziga and Kreuzhuber, Roman and Israeli, Johnny and Xu, Nancy and Cheng, Jun and Shrikumar, Avanti and Banerjee, Abhimanyu and Kim, Daniel S and Beier, Thorsten and Urban, Lara and others},
+  journal={Nature biotechnology},
+  pages={1},
+  year={2019},
+  publisher={Nature Publishing Group}
 }
 ```
 
