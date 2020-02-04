@@ -65,10 +65,10 @@ variables:
     run:
       name: Install requirements for requests correctly
       command: pip install requests
-  kipoi_ls: &kipoi_ls
-    run:
-      name: List kipoi packages
-      command: kipoi ls
+#  kipoi_ls: &kipoi_ls
+#    run:
+#      name: List kipoi packages
+#      command: kipoi ls
   kipoi_ls: &activate_and_kipoi_ls
     run:
       name: List kipoi packages
@@ -102,6 +102,10 @@ variables:
       path: test-reports
       destination: test-reports
   # deployment
+  check_commit_is_tagged:
+    run:
+      name: check if git commit is tagged
+
   build_pypi_package: &build_pypi_package
     run:
       name: build python packages
@@ -190,12 +194,17 @@ jobs:
       - *pypi_create_pypirc
       - run:
           name: upload to TestPyPI
-          command: twine upload --repository testpypi dist/* --verbose
-      - run:
-          name: pip install from TestPyPI
           command: |
-            pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
-            python -c "import kipoi; print(kipoi.__version__)"
+            python3 test_commit_is_tagged.py && ( \
+              twine upload --repository testpypi dist/* --verbose && \
+              pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose && \
+              python -c "import kipoi; print(kipoi.__version__)"
+            ) || echo "git commit is not tagged"
+#      - run:
+#          name: pip install from TestPyPI
+#          command: |
+#            pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
+#            python -c "import kipoi; print(kipoi.__version__)"
 
   productive-deploy-pypi:
     docker:
@@ -214,12 +223,17 @@ jobs:
       - *pypi_create_pypirc
       - run:
           name: upload to PyPI
-          command: twine upload --repository pypi dist/* --verbose
-      - run:
-          name: pip install from PyPI
           command: |
-            pip install --user kipoi --verbose
-            python -c "import kipoi; print(kipoi.__version__)"
+            python3 test_commit_is_tagged.py && ( \
+              twine upload --repository pypi dist/* --verbose && \
+              pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose && \
+              python -c "import kipoi; print(kipoi.__version__)"
+            ) || echo "git commit is not tagged"
+#      - run:
+#          name: pip install from PyPI
+#          command: |
+#            pip install --user kipoi --verbose
+#            python -c "import kipoi; print(kipoi.__version__)"
 
 workflows:
   version: 2
@@ -242,8 +256,10 @@ workflows:
             - test-py36-yml
           filters:
             tags:
-              only: /^v.*/
+#              only: /^v.*/
+              ignore: /.*/
             branches:
+#              ignore: /.*/
               only:
                 - test_deployment_pypi
                 - test_deployment_script
@@ -254,6 +270,7 @@ workflows:
             # Trigger only on a tagged commit starting with v.
             # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
             tags:
-              only: /^v.*/
-            branches:
               ignore: /.*/
+            branches:
+              only:
+                - master
