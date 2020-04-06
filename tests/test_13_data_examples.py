@@ -19,7 +19,7 @@ EXAMPLES_TO_RUN = ["rbp", "extended_coda", "iris_model_template", "pyt"]
 
 def read_json_yaml(filepath):
     with open(filepath) as ifh:
-        return yaml.full_load(ifh)
+        return yaml.wr_load(ifh)
 
 
 def get_dataloader_cfg(model_dir):

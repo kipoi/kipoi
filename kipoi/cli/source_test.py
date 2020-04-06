@@ -338,7 +338,7 @@ def cli_test_source(command, raw_args):
         if not os.path.exists(models_yaml_path):
             logger.error("{} doesn't exists when installing the common environment".format(models_yaml_path))
             sys.exit(1)
-        model_envs = yaml.full_load(open(os.path.join(source.local_path, SPECIAL_ENV_PREFIX, "models.yaml"), "r", encoding="utf-8"))
+        model_envs = yaml.wr_load(open(os.path.join(source.local_path, SPECIAL_ENV_PREFIX, "models.yaml"), "r", encoding="utf-8"))
 
         test_envs = {get_common_env(m, model_envs) for m in test_models if get_common_env(m, model_envs) is not None}
 
