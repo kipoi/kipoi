@@ -11,7 +11,7 @@ from setuptools.command.install import install
 version = '0.6.25'
 
 requirements = [
-    "pyyaml",
+    "pyyaml>=5.1.1",
     "future",
     "numpy",
     "pandas>=0.21.0",
