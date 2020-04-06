@@ -350,7 +350,7 @@ def generate_env_db_entry(args, args_env_overload=None):
             special_env_folder = "/".join(special_env.rstrip("/").split("/")[:-1])
             source_path = kipoi.get_source(args.source).local_path
             with open(os.path.join(source_path, special_env_folder, "models.yaml"), "r", encoding="utf-8") as fh:
-                special_env_models = yaml.safe_load(fh)
+                special_env_models = yaml.load(fh)
             # extend the sub_models by all the submodels covered by the handcrafted environments (special_envs)
             # Those models **always** refer to the kipoi source
             for model_group_name in special_env_models[os.path.basename(special_env)]:
@@ -404,7 +404,7 @@ def cli_create(cmd, raw_args):
     if args.model == ['all']:
         from kipoi.cli.source_test import get_common_env
         src = kipoi.get_source(args.source)
-        model_envs = yaml.safe_load(open(os.path.join(src.local_path, SPECIAL_ENV_PREFIX, "models.yaml")))
+        model_envs = yaml.load(open(os.path.join(src.local_path, SPECIAL_ENV_PREFIX, "models.yaml")))
 
         # TODO - test this by mocking up the CLI command execution
 
