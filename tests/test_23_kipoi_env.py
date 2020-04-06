@@ -168,7 +168,7 @@ def test_generate_env_db_entry():
                                list_subcomponents(parsed_model, parsed_source, "model")])
         if len(special_envs) != 0:
             with open("example/models/shared/envs/models.yaml", "r") as fh:
-                special_env_models = yaml.load(fh)
+                special_env_models = yaml.full_load(fh)
             for special_env in special_envs:
                 for model_group_name in special_env_models[os.path.basename(special_env)]:
                     sub_models.extend([e for e in
