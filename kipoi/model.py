@@ -913,7 +913,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             kwargs = {}
             if module_kwargs is not None:
                 if isinstance(module_kwargs, six.string_types):
-                    kwargs = yaml.load(module_kwargs)
+                    kwargs = yaml.safe_load(module_kwargs)
                 else:
                     kwargs = module_kwargs
             self.model = obj(**kwargs)
