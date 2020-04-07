@@ -466,7 +466,7 @@ def cli_create(cmd, raw_args):
         get_model_env_db().save()
         logger.info("Done!")
         print("\nActivate the environment via:")
-        print("source activate {0}".format(env))
+        print("conda activate {0}".format(env))
     else:
         print("Dry run. Conda file path: {}".format(env_file))
 
