@@ -116,15 +116,11 @@ def get_model(model, source="kipoi", with_dataloader=True):
             with cd(source_dir):
                 default_dataloader = md.default_dataloader.get()
             default_dataloader.source_dir = source_dir
-            # download util links if specified under default & override the
-            # default parameters
-            override = download_default_args(
-                default_dataloader.args,
-                source.get_dataloader_download_dir(model))
+            # download util links if specified under default & override the default parameters
+            override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
             if override:
                 # override default arguments specified under default
-                default_dataloader = override_default_kwargs(
-                    default_dataloader, override)
+                default_dataloader = override_default_kwargs(default_dataloader, override)
         else:
             # load from directory
             # attach the default dataloader already to the model
@@ -134,8 +130,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
                 dl_source = source
                 dl_path = md.default_dataloader
 
-            # allow to use relative and absolute paths for referring to the
-            # dataloader
+            # allow to use relative and absolute paths for referring to the dataloader
             default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
             default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
                                                               dl_source)
@@ -149,16 +144,13 @@ def get_model(model, source="kipoi", with_dataloader=True):
         # explicitly handle downloading files for TensorFlowModel
         if md.type == 'tensorflow' or md.defined_as == 'kipoi.model.TensorFlowModel':
             output_dir = os.path.join(model_download_dir, "ckp")
-            md.args['checkpoint_path'] = _parse_tensorflow_checkpoint_path(
-                md.args['checkpoint_path'], output_dir)
+            md.args['checkpoint_path'] = _parse_tensorflow_checkpoint_path(md.args['checkpoint_path'], output_dir)
 
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
                 output_dir = os.path.join(model_download_dir, k)
-                logger.info(
-                    "Downloading model arguments {} from {}".format(
-                        k, md.args[k].url))
+                logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 makedir_exist_ok(output_dir)
 
                 if md.args[k].md5:
@@ -173,8 +165,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
             # old API
             if md.type == 'custom':
                 Mod = load_model_custom(**md.args)
-                # it should inherit from Model
-                assert issubclass(Mod, BaseModel)
+                assert issubclass(Mod, BaseModel)  # it should inherit from Model
                 mod = Mod()
             elif md.type == "pytorch":
                 mod = infer_pyt_class(md.args)(**md.args)
@@ -195,14 +186,11 @@ def get_model(model, source="kipoi", with_dataloader=True):
                     # user tried importing some of the available models
                     logger.error("{} is not a valid kipoi model. Available models are: {}\n".format(
                         md.defined_as,
-                        ", ".join(
-                            ["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
+                        ", ".join(["kipoi.model." + str(AVAILABLE_MODELS[k].__name__) for k in AVAILABLE_MODELS])
                     ))
                 raise ImportError("Unable to import {}".format(md.defined_as))
             if not inherits_from(Mod, BaseModel):
-                raise ValueError(
-                    "Model {} needs to inherit from kipoi.model.BaseModel".format(
-                        md.defined_as))
+                raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
             mod = Mod(**md.args)
             for k, v in six.iteritems(AVAILABLE_MODELS):
                 if isinstance(mod, v):
@@ -322,8 +310,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     MODEL_PACKAGE = "keras"
 
-    def __init__(self, weights, arch=None, custom_objects=None,
-                 backend=None, image_dim_ordering=None):
+    def __init__(self, weights, arch=None, custom_objects=None, backend=None, image_dim_ordering=None):
         self.backend = backend
         self.image_dim_ordering = image_dim_ordering
 
@@ -340,14 +327,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             os.environ['KERAS_BACKEND'] = self.backend
         if self.image_dim_ordering is not None:
             import keras.backend as K
-            logger.info(
-                "Using image_dim_ordering: {0}".format(
-                    self.image_dim_ordering))
+            logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
             try:
                 K.set_image_dim_ordering(self.image_dim_ordering)
             except AttributeError:
                 if image_dim_ordering != 'tf':
                     raise RuntimeError("only tf dim ordering at is supported")
+
 
         import keras
         from keras.models import model_from_json, load_model
@@ -365,14 +351,12 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         self.weights = weights
         self.arch = arch
 
-        # contains dictionaries with string reps of filter functions / slices
-        self.gradient_functions = {}
+        self.gradient_functions = {}  # contains dictionaries with string reps of filter functions / slices
         self.activation_functions = {}  # contains the activation functions
 
         if arch is None:
             # load the whole model
-            self.model = load_model(
-                weights, custom_objects=self.custom_objects)
+            self.model = load_model(weights, custom_objects=self.custom_objects)
             logger.info('successfully loaded the model from {}'.
                         format(weights))
         else:
@@ -406,7 +390,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         import keras
         try:
             first_layer = self.model.get_layer(index=0)
-        except BaseException:
+        except:
             # if we cannot get the 0th layer it is for sure no input layer
             return False
         try:
@@ -415,11 +399,10 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             else:
                 return False
         except AttributeError:
-            # keras does not seem to have this attribute
+                # keras does not seem to have this attribute
             return False
 
-    def get_layers_and_outputs(
-            self, layer=None, use_final_layer=False, pre_nonlinearity=False):
+    def get_layers_and_outputs(self, layer=None, use_final_layer=False, pre_nonlinearity=False):
         """
         Get layers and outputs either by name / index or from the final layer(s).
         If the final layer should be used it has an activation function that is not Linear, then the input to the
@@ -439,8 +422,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             If pre_nonlinearity is true run get_pre_activation_output
             """
             if pre_nonlinearity:
-                output = self.get_pre_activation_output(
-                    layer, output)[0]  # always has length 1
+                output = self.get_pre_activation_output(layer, output)[0]  # always has length 1
             return output
 
         # If the final layer should be used: (relevant for gradient)
@@ -486,21 +468,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 logger.warning("Layer %s has multiple input nodes. By default outputs from all nodes "
                                "are concatenated" % selected_layer.name)
                 for i in range(self.get_num_inbound_nodes(selected_layer)):
-                    sel_output_dims.append(
-                        len(selected_layer.get_output_shape_at(i)))
-                    sel_outputs.append(
-                        output_sel(
-                            selected_layer,
-                            selected_layer.get_output_at(i)))
+                    sel_output_dims.append(len(selected_layer.get_output_shape_at(i)))
+                    sel_outputs.append(output_sel(selected_layer, selected_layer.get_output_at(i)))
             else:
                 sel_output_dims.append(len(selected_layer.output_shape))
-                sel_outputs.append(
-                    output_sel(
-                        selected_layer,
-                        selected_layer.output))
+                sel_outputs.append(output_sel(selected_layer, selected_layer.output))
         else:
-            raise Exception(
-                "Either use_final_layer has to be set or a layer name has to be defined.")
+            raise Exception("Either use_final_layer has to be set or a layer name has to be defined.")
 
         return selected_layers, sel_outputs, sel_output_dims
 
@@ -511,10 +485,8 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # than the output from the activation function.
         # This can lead to confusion if the activation function translates to backend operations that are not a
         # single operation. (Which would also be a misuse of the activation function itself.)
-        # suggested here:
-        # https://stackoverflow.com/questions/45492318/keras-retrieve-value-of-node-before-activation-function
-        if hasattr(
-                layer, "activation") and not layer.activation == keras.activations.linear:
+        # suggested here: https://stackoverflow.com/questions/45492318/keras-retrieve-value-of-node-before-activation-function
+        if hasattr(layer, "activation") and not layer.activation == keras.activations.linear:
             new_output_ois = []
             if hasattr(output, "op"):
                 # TF
@@ -523,10 +495,8 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             else:
                 # TH
                 # As of the latest version of Theano this feature is not supported - the activation layer is too
-                # diffuse to be handeled here since Theano does not have
-                # objects for the activation.
-                raise Exception(
-                    "`get_pre_activation_output` is not supported for Theano models!")
+                # diffuse to be handeled here since Theano does not have objects for the activation.
+                raise Exception("`get_pre_activation_output` is not supported for Theano models!")
                 import theano
                 for inp_here in output.owner.inputs:
                     if not isinstance(inp_here, theano.gof.Constant):
@@ -581,8 +551,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         import keras
         import copy
         from keras.models import Model
-        # Generate the gradient functions according to the layer / filter
-        # definition
+        # Generate the gradient functions according to the layer / filter definition
         gradient_function = None
 
         layer_label = layer
@@ -591,8 +560,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             layer_label = "_KIPOI_FINAL_"
 
         if layer_label is None:
-            raise Exception(
-                "Either `layer` must be defined or `use_final_layer` set to True.")
+            raise Exception("Either `layer` must be defined or `use_final_layer` set to True.")
 
         # Cannot query the layer output shape, so only if the slice is an integer or a list of length 1 it is
         # clear that the batch dimension is missing
@@ -603,8 +571,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             self.gradient_functions[layer_label] = {}
         filter_id = str(filter_slices) + "_PNL_" + str(pre_nonlinearity)
         if filter_func is not None:
-            filter_id = str(filter_func) + ":" + \
-                str(filter_func_kwargs) + ":" + filter_id
+            filter_id = str(filter_func) + ":" + str(filter_func_kwargs) + ":" + filter_id
         if filter_id in self.gradient_functions[layer_label]:
             gradient_function = self.gradient_functions[layer_label][filter_id]
 
@@ -614,36 +581,28 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                                                                                         use_final_layer=use_final_layer,
                                                                                         pre_nonlinearity=pre_nonlinearity)
 
-            # copy the model input in case learning flag has to appended when
-            # using the gradient function.
+            # copy the model input in case learning flag has to appended when using the gradient function.
             inp = copy.copy(self.model.inputs)
 
-            # Now check if layer outputs have to be concatenated (multiple
-            # input nodes in the respective layer)
+            # Now check if layer outputs have to be concatenated (multiple input nodes in the respective layer)
             has_concat_output = False
             if len(sel_outputs) > 1:
                 has_concat_output = True
                 # Flatten layers in case dimensions don't match
                 all_filters_flat = [keras.layers.Flatten()(x) if dim > 2 else x for x, dim in
                                     zip(sel_outputs, sel_output_dims)]
-                # A new model has to be generated in order for the concatenated
-                # layer output to have a defined layer output
+                # A new model has to be generated in order for the concatenated layer output to have a defined layer output
                 if hasattr(keras.layers, "Concatenate"):
                     # Keras 2
-                    all_filters_merged = keras.layers.Concatenate(
-                        axis=-1)(all_filters_flat)
-                    gradient_model = Model(
-                        inputs=inp, outputs=all_filters_merged)
+                    all_filters_merged = keras.layers.Concatenate(axis=-1)(all_filters_flat)
+                    gradient_model = Model(inputs=inp, outputs=all_filters_merged)
                 else:
                     # Keras 1
-                    all_filters_merged = keras.layers.merge(
-                        all_filters_flat, mode='concat')
-                    gradient_model = Model(
-                        input=inp, output=all_filters_merged)
+                    all_filters_merged = keras.layers.merge(all_filters_flat, mode='concat')
+                    gradient_model = Model(input=inp, output=all_filters_merged)
                 # TODO: find a different way to get layer outputs...
                 # gradient_model.compile(optimizer=self.model.optimizer, loss=self.model.loss)
-                gradient_model.compile(
-                    optimizer='rmsprop', loss='binary_crossentropy')
+                gradient_model.compile(optimizer='rmsprop', loss='binary_crossentropy')
                 # output of interest for a given gradient
                 output_oi = gradient_model.output
             else:
@@ -665,15 +624,13 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 output_oi = filter_func(output_oi, **filter_func_kwargs)
 
             if (filter_slices is None) and (filter_func is None):
-                raise Exception(
-                    "Either filter_slices or filter_func have to be set!")
+                raise Exception("Either filter_slices or filter_func have to be set!")
 
             # generate the actual gradient function
             from keras import backend as K
             saliency = K.gradients(output_oi, inp)
 
-            if self.model.uses_learning_phase and not isinstance(
-                    K.learning_phase(), int):
+            if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
                 inp.append(K.learning_phase())
 
             gradient_function = K.function(inp, saliency)
@@ -714,8 +671,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         from keras import backend as K
         feed_input_names = self._get_feed_input_names()
 
-        # depending on the version this function needs to be imported from
-        # different places
+        # depending on the version this function needs to be imported from different places
         _standardize_input_data = KerasModel._get_standardize_input_data_func()
 
         if keras.__version__[0] == '1':
@@ -769,8 +725,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         import keras
         from keras import backend as K
         x_standardized = self._batch_to_list(x)
-        if self.model.uses_learning_phase and not isinstance(
-                K.learning_phase(), int):
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x_standardized + [0.]
         else:
             ins = x_standardized
@@ -800,12 +755,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             automatic way)
         """
         import keras.backend as K
-        _avg_funcs = {
-            "sum": K.sum,
-            "min": K.min,
-            "max": K.max,
-            "absmax": lambda x: K.max(
-                K.abs(x))}
+        _avg_funcs = {"sum": K.sum, "min": K.min, "max": K.max, "absmax": lambda x: K.max(K.abs(x))}
         if avg_func is not None:
             assert avg_func in _avg_funcs
             avg_func = _avg_funcs[avg_func]
@@ -817,8 +767,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             if backend == "theano":
                 avg_func = _avg_funcs["sum"]
         if selected_fwd_node is not None:
-            raise Exception(
-                "'selected_fwd_node' is currently not supported for Keras models!")
+            raise Exception("'selected_fwd_node' is currently not supported for Keras models!")
         return self._input_grad(x, layer=layer, filter_slices=filter_idx, use_final_layer=final_layer,
                                 filter_func=avg_func, pre_nonlinearity=pre_nonlinearity)
 
@@ -833,19 +782,15 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                                                                                     use_final_layer=False,
                                                                                     pre_nonlinearity=pre_nonlinearity)
 
-        # copy the model input in case learning flag has to appended when using
-        # the activation function.
+        # copy the model input in case learning flag has to appended when using the activation function.
         inp = copy.copy(self.model.inputs)
 
         # Can't we have multiple outputs for the function?
-        # list of outputs should work:
-        # https://keras.io/backend/#backend-functions -> backend.function
-        output_oi = sel_outputs
+        output_oi = sel_outputs  # list of outputs should work: https://keras.io/backend/#backend-functions -> backend.function
 
         from keras import backend as K
 
-        if self.model.uses_learning_phase and not isinstance(
-                K.learning_phase(), int):
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             inp.append(K.learning_phase())
 
         activation_function = K.function(inp, output_oi)
@@ -877,13 +822,11 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             x = _standardize_input_data(x, self.model._feed_input_names,
                                         self.model._feed_input_shapes)
 
-        if self.model.uses_learning_phase and not isinstance(
-                K.learning_phase(), int):
+        if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
             ins = x + [0.]
         else:
             ins = x
-        af = self._generate_activation_output_functions(
-            layer, pre_nonlinearity)
+        af = self._generate_activation_output_functions(layer, pre_nonlinearity)
         outputs = af(ins)
         return outputs
 
@@ -905,20 +848,12 @@ pt_type_conversions = {
     "ShortTensor": "short",
     "IntTensor": "int",
     "LongTensor": "long"}
-pt_type_conversions = {
-    pre +
-    k: v for pre in [
-        "torch.",
-        "torch.cuda."] for k,
-    v in pt_type_conversions.items()}
-
+pt_type_conversions = {pre + k: v for pre in ["torch.", "torch.cuda."] for k, v in pt_type_conversions.items()}
 
 def infer_pyt_class(kwargs):
-    minimum_kwargs_new = (("weights", "module_obj"),
-                          ("weights", "module_class"))
+    minimum_kwargs_new = (("weights", "module_obj"), ("weights", "module_class"))
     given_kwargs = set(kwargs.keys())
-    if any([set(kwargs_new).issubset(given_kwargs)
-            for kwargs_new in minimum_kwargs_new]):
+    if any([set(kwargs_new).issubset(given_kwargs) for kwargs_new in minimum_kwargs_new]):
         return PyTorchModel
     else:
         return OldPyTorchModel
@@ -957,8 +892,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         from kipoi_utils.utils import load_obj
 
         if (module_obj is None) and (module_class is None):
-            raise Exception(
-                "Either 'module_obj' or 'module_class' have to be defined.")
+            raise Exception("Either 'module_obj' or 'module_class' have to be defined.")
 
         obj_name = module_class
         if module_obj is not None:
@@ -1035,27 +969,15 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         import torch
         if isinstance(x, np.ndarray):
             # convert to a pytorch tensor and then to a pytorch variable
-            input = self._torch_var(
-                torch.from_numpy(
-                    self.correct_neg_stride(x)),
-                requires_grad)
+            input = self._torch_var(torch.from_numpy(self.correct_neg_stride(x)), requires_grad)
 
         elif isinstance(x, dict):
             # convert all entries in the dict to pytorch variables
-            input = {
-                k: self._torch_var(
-                    torch.from_numpy(
-                        self.correct_neg_stride(
-                            x[k])),
-                    requires_grad) for k in x}
+            input = {k: self._torch_var(torch.from_numpy(self.correct_neg_stride(x[k])), requires_grad) for k in x}
 
         elif isinstance(x, list):
             # convert all entries in the list to pytorch variables
-            input = [
-                self._torch_var(
-                    torch.from_numpy(
-                        self.correct_neg_stride(el)),
-                    requires_grad) for el in x]
+            input = [self._torch_var(torch.from_numpy(self.correct_neg_stride(el)), requires_grad) for el in x]
 
         else:
             raise Exception("Input not supported!")
@@ -1172,20 +1094,16 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         x must be a pytorch Variable compatible with the model input
         """
         trace = self._get_trace(x)
-        layer_idxs = [self.extract_module_id(n)
-                      for n in trace.graph().outputs()]
+        layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
         return [self.get_layer(i) for i in layer_idxs]
 
     def get_downstream_layers(self, x, layer_id):
-        # layers that are only created in the forward call (e.g. activation
-        # layers?) cannot be referred to properly
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
         raise Exception("No safe graph taversal is implemented yet!")
-        # unique names of layer outputs (data streams)
-        layer_output_unames = []
+        layer_output_unames = []  # unique names of layer outputs (data streams)
         trace = self._get_trace(x)
 
-        # Iterate over all modules in the graph and remember the module outputs
-        # (so that they can be checked later)
+        # Iterate over all modules in the graph and remember the module outputs (so that they can be checked later)
         for mod in trace.graph().nodes():
             if self.extract_module_id(mod) == layer_id:
                 layer_output_unames += [n.uniqueName() for n in mod.outputs()]
@@ -1200,14 +1118,12 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                 next_layer_ids.append(self.extract_module_id(mod))
 
         if "" in next_layer_ids:
-            raise Exception(
-                "The model is not compatible with the current implementation")
+            raise Exception("The model is not compatible with the current implementation")
 
         # some values are fed back to the layer itself.
         next_layer_ids = [lid for lid in next_layer_ids if lid != layer_id]
 
-        # layers receiving from the given layer, is the layer (also) an output
-        # leaf node
+        # layers receiving from the given layer, is the layer (also) an output leaf node
         return next_layer_ids, [self.get_layer(i) for i in next_layer_ids], \
             any([iuname in layer_output_unames for iuname in model_output_unames])
 
@@ -1228,21 +1144,14 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         import torch
         import six
         if (filter_slices is None) and (filter_func is None):
-            raise Exception(
-                "Either filter slices or filter function have to be defined")
+            raise Exception("Either filter slices or filter function have to be defined")
         if filter_func is not None:
-            if not (isinstance(filter_func, six.string_types)
-                    and filter_func in self.allowed_functions):
-                raise Exception(
-                    "filter_func has to be a string within %s" % str(
-                        self.allowed_functions))
+            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+                raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
 
         # perform given operations in numpy, simpler implementation...
         if filter_slices is not None:
-            pt_filt_slice = torch.from_numpy(
-                get_filter_array(
-                    filter_slices, tuple(
-                        forward_values.size()))).byte()
+            pt_filt_slice = torch.from_numpy(get_filter_array(filter_slices, tuple(forward_values.size()))).byte()
         else:
             pt_filt_slice = torch.ByteTensor(*forward_values.size())
             pt_filt_slice[:] = 1
@@ -1253,32 +1162,25 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             else:
                 float_mask = self._pt_type_match(pt_filt_slice, forward_values)
                 subset_dataset = forward_values.cpu().data * float_mask
-                pt_filt_slice_new = torch.ByteTensor(
-                    *pt_filt_slice.size()).zero_()
+                pt_filt_slice_new = torch.ByteTensor(*pt_filt_slice.size()).zero_()
                 if filter_func == "max":
                     # reset so that the masked values are the minimum
-                    subset_dataset = subset_dataset + \
-                        (1 - float_mask) * subset_dataset.min()
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.min()
                     # Find the maximum output value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].max(
-                        )
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].max()
                 elif filter_func == "min":
                     # reset so that the masked values are the maximum
-                    subset_dataset = subset_dataset + \
-                        (1 - float_mask) * subset_dataset.max()
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.max()
                     # Find the minimum value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].min(
-                        )
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].min()
                 elif filter_func == "absmax":
                     # Find the absmax value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].abs(
-                        ).max()
+                        pt_filt_slice_new[i] = subset_dataset[i] == subset_dataset[i].abs().max()
                 pt_filt_slice = pt_filt_slice_new
-        pt_filt_slice = self._pt_type_match(
-            pt_filt_slice, forward_values, match_cuda=True)
+        pt_filt_slice = self._pt_type_match(pt_filt_slice, forward_values, match_cuda=True)
         return pt_filt_slice
 
     def _register_fwd_hook(self, layer):
@@ -1287,12 +1189,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns a PytorchFwdHook object that contains a
         """
         fwd_hook_obj = PyTorchFwdHook()
-        removable_hook_obj = layer.register_forward_hook(
-            fwd_hook_obj.run_forward_hook)
+        removable_hook_obj = layer.register_forward_hook(fwd_hook_obj.run_forward_hook)
         return fwd_hook_obj, removable_hook_obj
 
-    def _input_grad(self, x, layer=None, filter_slices=None,
-                    filter_func=None, selected_fwd_node=None):
+    def _input_grad(self, x, layer=None, filter_slices=None, filter_func=None, selected_fwd_node=None):
         import torch
         # Register hooks for the layers
         fwd_hook_obj, removable_hook_obj = self._register_fwd_hook(layer)
@@ -1308,16 +1208,11 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                 raise Exception("'selected_fwd_node' can either be None or an integer indicating the PyTorch model"
                                 "forward-iteration of the sepcified layer / module.")
         else:
-            # in Keras at the moment the tensors are flattened and then
-            # concatenated for every position.
-            flat_fwds = [el.view(el.size(0), -1)
-                         for el in fwd_hook_obj.forward_values]
+            # in Keras at the moment the tensors are flattened and then concatenated for every position.
+            flat_fwds = [el.view(el.size(0), -1) for el in fwd_hook_obj.forward_values]
             grad_concat = torch.cat(flat_fwds, 1)
 
-        replacement_grad = self.get_grad_tens(
-            grad_concat,
-            filter_slices=filter_slices,
-            filter_func=filter_func)
+        replacement_grad = self.get_grad_tens(grad_concat, filter_slices=filter_slices, filter_func=filter_func)
         grad_concat.backward(gradient=replacement_grad)
         removable_hook_obj.remove()
 
@@ -1330,10 +1225,8 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                 ret_arr[:] = np.nan
                 return ret_arr
 
-        if isinstance(x_in, torch.autograd.Variable) or isinstance(
-                x_in, torch.Tensor):
-            # make sure it is on the cpu, then extract the gradient data as
-            # numpy arrays
+        if isinstance(x_in, torch.autograd.Variable) or isinstance(x_in, torch.Tensor):
+            # make sure it is on the cpu, then extract the gradient data as numpy arrays
             grad_out = extract_grad(x_in)
 
         elif isinstance(x_in, dict):
@@ -1376,12 +1269,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         elif final_layer:
             selected_layers = self.get_last_layers(x)
         else:
-            raise Exception(
-                "Either `layer` must be defined or `final_layer` set to True.")
+            raise Exception("Either `layer` must be defined or `final_layer` set to True.")
 
         if pre_nonlinearity:
-            raise Exception(
-                "pre_nonlinearity is not implemented for PyTorch models.")
+            raise Exception("pre_nonlinearity is not implemented for PyTorch models.")
 
         if len(selected_layers) > 1:
             # This could be implemented by sequentially looping over layers
@@ -1394,14 +1285,12 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
                                 selected_fwd_node=selected_fwd_node)
 
     def get_upstream_layers(self, x, layer_id):
-        # layers that are only created in the forward call (e.g. activation
-        # layers?) cannot be referred to properly
+        # layers that are only created in the forward call (e.g. activation layers?) cannot be referred to properly
         raise Exception("No safe graph taversal is implemented yet!")
         layer_input_unames = []  # unique names of layer outputs (data streams)
         trace = self._get_trace(x)
 
-        # Iterate over all modules in the graph and remember the module inputs
-        # (so that they can be checked later)
+        # Iterate over all modules in the graph and remember the module inputs (so that they can be checked later)
         for mod in trace.graph().nodes():
             if self.extract_module_id(mod) == layer_id:
                 layer_input_unames += [n.uniqueName() for n in mod.inputs()]
@@ -1419,8 +1308,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         # some values are fed back to the layer itself.
         prev_layer_ids = [lid for lid in prev_layer_ids if lid != layer_id]
 
-        # layers feeding into the given layer, is the layer (also) an output
-        # leaf node
+        # layers feeding into the given layer, is the layer (also) an output leaf node
         return prev_layer_ids, [self.get_layer(i) for i in prev_layer_ids], \
             any([iuname in layer_input_unames for iuname in model_input_unames])
 
@@ -1439,8 +1327,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
             raise ValueError("Unable to get layer {}".format(layer))
 
         if pre_nonlinearity:
-            raise Exception(
-                "pre_nonlinearity is not implemented for PyTorch models.")
+            raise Exception("pre_nonlinearity is not implemented for PyTorch models.")
             # Currently inactive code because graph traversal is not yet failsafe for all imaginable model architectures
             # if not self._is_nonlinear_activation(selected_layers[0]):
             #    selected_layer_ids, selected_layers, is_leaf = self.get_upstream_layers(x, selected_layers[0])
@@ -1456,8 +1343,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         fwd_hook_objs = []
         removable_hook_objs = []
         for selected_layer in selected_layers:
-            fwd_hook_obj, removable_hook_obj = self._register_fwd_hook(
-                selected_layer)
+            fwd_hook_obj, removable_hook_obj = self._register_fwd_hook(selected_layer)
             fwd_hook_objs.append(fwd_hook_obj)
             removable_hook_objs.append(removable_hook_obj)
 
@@ -1466,15 +1352,11 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Remove hook to avoid future use
         [rho.remove() for rho in removable_hook_objs]
         # convert results back and return values.
-        # First loop over the hook (= layers) then over the calls of the hooks
-        # (inner loop)
-        return [[self.pred_to_np(fv) for fv in fho.forward_values]
-                for fho in fwd_hook_objs]
-
+        # First loop over the hook (= layers) then over the calls of the hooks (inner loop)
+        return [[self.pred_to_np(fv) for fv in fho.forward_values] for fho in fwd_hook_objs]
 
 class OldPyTorchModel(PyTorchModel):
-    def __init__(self, file=None, build_fn=None,
-                 weights=None, auto_use_cuda=True):
+    def __init__(self, file=None, build_fn=None, weights=None, auto_use_cuda=True):
         """
         Load model
         `weights`: Path to the where the weights are stored (may also contain model architecture, see below)
@@ -1502,8 +1384,7 @@ class OldPyTorchModel(PyTorchModel):
                 gen_fn_callable = getattr(load_module(file_path), obj_name)
 
             else:
-                raise Exception(
-                    "gen_fn has to be callable or a string pointing to the callable.")
+                raise Exception("gen_fn has to be callable or a string pointing to the callable.")
 
             # Load model using generator function
             self.model = gen_fn_callable()
@@ -1517,8 +1398,7 @@ class OldPyTorchModel(PyTorchModel):
             self.model = torch.load(weights)
 
         else:
-            raise Exception(
-                "At least one of the arguments 'weights' or 'gen_fn' has to be set.")
+            raise Exception("At least one of the arguments 'weights' or 'gen_fn' has to be set.")
 
         if auto_use_cuda and torch.cuda.is_available():
             self.model = self.model.cuda()
@@ -1558,10 +1438,7 @@ class SklearnModel(BaseModel):
 
         from sklearn.externals import joblib
         self.model = joblib.load(self.pkl_file)
-        assert predict_method in [
-            'predict_proba',
-            'predict',
-            'predict_log_proba']
+        assert predict_method in ['predict_proba', 'predict', 'predict_log_proba']
         assert hasattr(self.model, predict_method)
         self.predict_method = predict_method
 
@@ -1594,8 +1471,7 @@ def get_op_outputs(graph, node_names):
 def get_filter_array(filter_slices, input_shape):
     def index_is_none(index_el):
         if isinstance(index_el, slice):
-            if all([getattr(index_el, att) is None for att in [
-                   "start", "stop", "step"]]):
+            if all([getattr(index_el, att) is None for att in ["start", "stop", "step"]]):
                 return True
         return False
 
@@ -1706,18 +1582,13 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
     def get_grad_tens(self, forward_values, filter_slices, filter_func):
         import six
         if (filter_slices is None) and (filter_func is None):
-            raise Exception(
-                "Either filter slices or filter function have to be defined")
+            raise Exception("Either filter slices or filter function have to be defined")
         if filter_func is not None:
-            if not (isinstance(filter_func, six.string_types)
-                    and filter_func in self.allowed_functions):
-                raise Exception(
-                    "filter_func has to be a string within %s" % str(
-                        self.allowed_functions))
+            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+                raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
         # perform given operations in numpy, simpler implementation...
         if filter_slices is not None:
-            pt_filt_slice = get_filter_array(
-                filter_slices, forward_values.shape)
+            pt_filt_slice = get_filter_array(filter_slices, forward_values.shape)
         else:
             pt_filt_slice = np.zeros_like(forward_values)
             pt_filt_slice[:] = 1
@@ -1731,25 +1602,20 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
                 pt_filt_slice_new = np.zeros_like(forward_values)
                 if filter_func == "max":
                     # reset so that the masked values are the minimum
-                    subset_dataset = subset_dataset + \
-                        (1 - float_mask) * subset_dataset.min()
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.min()
                     # Find the maximum output value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].max(
-                        )
+                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].max()
                 elif filter_func == "min":
                     # reset so that the masked values are the maximum
-                    subset_dataset = subset_dataset + \
-                        (1 - float_mask) * subset_dataset.max()
+                    subset_dataset = subset_dataset + (1 - float_mask) * subset_dataset.max()
                     # Find the minimum value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].min(
-                        )
+                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == subset_dataset[i, ...].min()
                 elif filter_func == "absmax":
                     # Find the absmax value among the selected
                     for i in range(subset_dataset.shape[0]):
-                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == np.abs(
-                            subset_dataset[i, ...]).max()
+                        pt_filt_slice_new[i, ...] = subset_dataset[i, ...] == np.abs(subset_dataset[i, ...]).max()
                 pt_filt_slice = pt_filt_slice_new * pt_filt_slice
         return pt_filt_slice
 
@@ -1772,8 +1638,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
         """
 
         if selected_fwd_node is not None:
-            raise Exception(
-                "TensorFlowModel does not support the use of selected_fwd_node!")
+            raise Exception("TensorFlowModel does not support the use of selected_fwd_node!")
 
         if pre_nonlinearity:
             raise Exception("TensorFlowModel does not support the use of pre_nonlinearity as desired nodes can be "
@@ -1783,8 +1648,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
 
         feed_dict = self._build_feed_dict(x)
 
-        # get the correct layer with respect to which the gradients should be
-        # calculated
+        # get the correct layer with respect to which the gradients should be calculated
         assert isinstance(layer, six.string_types)
         if not final_layer:
             new_target_ops = get_op_outputs(self.graph, layer)
@@ -1808,8 +1672,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             raise ValueError
 
         # Run the gradient prediction
-        # get_grad_tens avoids rebuilding the model which is necessary for TF
-        # models!
+        # get_grad_tens avoids rebuilding the model which is necessary for TF models!
         grad_op = tf.gradients(new_target_ops, input_ops, name='gradient_%s' % str(layer),
                                grad_ys=self.get_grad_tens(fwd_values, filter_idx, avg_func))
         grad_pred = self.sess.run(grad_op, feed_dict=feed_dict)
@@ -1861,32 +1724,23 @@ def _parse_tensorflow_checkpoint_path(ckp_path, output_dir):
                         "checkpoint_path needs to be either or a dictionary with " + \
                         "keys: meta, index, data"
         if not isinstance(ckp_path, Mapping):
-            raise ValueError(
-                error_message +
-                "\n detected class {}".format(
-                    type(ckp_path)))
+            raise ValueError(error_message + "\n detected class {}".format(type(ckp_path)))
         if set(ckp_path.keys()) != {'meta', 'index', 'data'}:
-            raise ValueError(error_message +
-                             "\n detected keys {}".format(set(ckp_path.keys())))
+            raise ValueError(error_message + "\n detected keys {}".format(set(ckp_path.keys())))
 
         # either all are string or all are remote paths
         types = {type(ckp_path[k]) for k in ckp_path}
         if len(types) != 1:
-            raise ValueError(
-                "All types in checkpoint_path need to be the same. Found: {}".format(types))
-        if not (isinstance(ckp_path['meta'], str)
-                or isinstance(ckp_path['meta'], RemoteFile)):
+            raise ValueError("All types in checkpoint_path need to be the same. Found: {}".format(types))
+        if not (isinstance(ckp_path['meta'], str) or isinstance(ckp_path['meta'], RemoteFile)):
             raise ValueError("Values of the checkpoint_path ckp_path need to be either "
                              "str or RemoteFile. Found: {}".format(ckp_path['meta']))
         if isinstance(ckp_path['meta'], RemoteFile):
             # download files
             makedir_exist_ok(output_dir)
-            ckp_path['meta'] = ckp_path['meta'].get_file(
-                os.path.join(output_dir, "model.meta"))
-            ckp_path['index'] = ckp_path['index'].get_file(
-                os.path.join(output_dir, "model.index"))
-            ckp_path['data'] = ckp_path['data'].get_file(
-                os.path.join(output_dir, "model.data-00000-of-00001"))
+            ckp_path['meta'] = ckp_path['meta'].get_file(os.path.join(output_dir, "model.meta"))
+            ckp_path['index'] = ckp_path['index'].get_file(os.path.join(output_dir, "model.index"))
+            ckp_path['data'] = ckp_path['data'].get_file(os.path.join(output_dir, "model.data-00000-of-00001"))
 
         if isinstance(ckp_path['meta'], str):
             assert ckp_path['meta'].endswith(".meta")
