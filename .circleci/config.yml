@@ -65,11 +65,11 @@ variables:
     run:
       name: Install requirements for requests correctly
       command: pip install requests
-  kipoi_ls: &kipoi_ls
+  kipoi_ls1: &kipoi_ls
     run:
       name: List kipoi packages
       command: kipoi ls
-  kipoi_ls: &activate_and_kipoi_ls
+  kipoi_ls2: &activate_and_kipoi_ls
     run:
       name: List kipoi packages
       command: |

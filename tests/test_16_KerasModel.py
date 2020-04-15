@@ -32,7 +32,7 @@ def cd(newdir):
 
 def read_json_yaml(filepath):
     with open(filepath) as ifh:
-        return yaml.load(ifh)
+        return yaml.safe_load(ifh)
 
 
 def get_extractor_cfg(model_dir):
