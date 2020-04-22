@@ -69,8 +69,6 @@ kipoi-conda==0.2.2
 kipoi-interpret==0.1.2
 kipoi-utils==0.3.8
 kipoi-veff==0.3.0
-# Editable install with no version control (kipoiseq==0.3.1)
--e /data/nasif12/modules_if12/SL7/i12g/anaconda/3-2018.12/envs/kipoi-dev/lib/python3.6/site-packages
 kiwisolver==1.1.0
 llvmlite==0.31.0
 locket==0.2.0
