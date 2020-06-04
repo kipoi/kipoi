@@ -7,7 +7,7 @@ fastparquet==0.4.0
 genomelake==0.1.4
 h5py==2.10.0
 Jinja2==2.11.2
-joblib==0.14.1
+joblib==0.15.1
 keras==2.3.1
 kipoi_conda==0.2.2
 kipoi_interpret==0.1.2
