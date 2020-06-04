@@ -1436,7 +1436,7 @@ class SklearnModel(BaseModel):
     def __init__(self, pkl_file, predict_method="predict"):
         self.pkl_file = pkl_file
 
-        from sklearn.externals import joblib
+        import joblib
         self.model = joblib.load(self.pkl_file)
         assert predict_method in ['predict_proba', 'predict', 'predict_log_proba']
         assert hasattr(self.model, predict_method)
