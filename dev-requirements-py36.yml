@@ -34,7 +34,7 @@ dependencies:
   - htslib>=1.7
   - genomelake>=0.1.4
   # ML
-  - scikit-learn>=0.19.1
+  - scikit-learn>=0.19.1,<=0.22
   - tensorflow>=1.4.0
   - pytorch-cpu>=0.3.1
   - keras>=2.2.4
