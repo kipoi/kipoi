@@ -49,6 +49,7 @@ dependencies:
   - cookiecutter>=1.6.0
   - wheel
   - gitpython
+  - pip
   - pip:
     - kipoi-utils>=0.3.8
     - kipoi-conda>=0.1.6
