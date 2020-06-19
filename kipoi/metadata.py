@@ -6,6 +6,7 @@ All classes inherit from `collections.Mapping` which allows to use
 from collections import Mapping
 from kipoi_utils.data_utils import numpy_collate, numpy_collate_concat
 
+import pandas as pd
 
 class GenomicRanges(Mapping):
     """Container for genomic interval(s)

@@ -17,7 +17,8 @@ import kipoi
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
 from kipoi.plugin import get_model_yaml_parser, get_dataloader_yaml_parser, is_installed
 import kipoi_conda as kconda
-from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, UNSPECIFIED
+from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingField, TupleIntField, AnyField, \
+    UNSPECIFIED
 from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
 from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_yaml,
@@ -25,6 +26,7 @@ from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_ya
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
 
 # --------------------------------------------
 # Common specs (model and dataloader)
@@ -68,7 +70,8 @@ class ModelInfo(Info):
     contributors = related.SequenceField(Author, default=[], repr=True, required=False)
     cite_as = related.StringField(required=False)  # a link or a description how to cite the paper (say a doi link)
     trained_on = related.StringField(required=False)  # a link or a description of the training dataset
-    training_procedure = related.StringField(required=False)  # brief description about the training procedure for the trained_on dataset.
+    training_procedure = related.StringField(
+        required=False)  # brief description about the training procedure for the trained_on dataset.
 
 
 @enum.unique
@@ -98,7 +101,9 @@ class ArraySchema(RelatedConfigMixin):
     name = related.StringField(required=False)
     special_type = related.ChildField(ArraySpecialType, required=False)
     associated_metadata = StrSequenceField(str, default=[], required=False)
-    column_labels = StrSequenceField(str, default=[], required=False)  # either a list or a path to a file --> need to check whether it's a list
+    column_labels = StrSequenceField(str, default=[],
+                                     required=False)  # either a list or a path to a file --> need to check whether it's a list
+
     # TODO shall we have
     # - associated_metadata in ArraySchema
     # OR
@@ -146,6 +151,7 @@ class ArraySchema(RelatedConfigMixin):
           ignore_batch_axis: if True, the batch axis is not considered
           verbose: print the fail reason
         """
+
         def print_msg(msg):
             if verbose:
                 print("ArraySchema mismatch")
@@ -172,6 +178,7 @@ class ArraySchema(RelatedConfigMixin):
           name_schema: analogously to name_self for the schema ArraySchema
           verbose: bool, describe what went wrong through print()
         """
+
         def print_msg(msg):
             if verbose:
                 # print("ArraySchema mismatch")
@@ -236,6 +243,7 @@ class ModelSchema(RelatedConfigMixin):
         # Returns
            bool: True only if everyhing is ok
         """
+
         def print_msg(msg):
             if verbose:
                 print(msg)
@@ -320,7 +328,6 @@ class MetadataType(enum.Enum):
 
 @related.mutable(strict=False)
 class MetadataStruct(RelatedConfigMixin):
-
     doc = related.StringField()
     type = related.ChildField(MetadataType, required=False)
     name = related.StringField(required=False)
@@ -414,6 +421,7 @@ class DataLoaderSchema(RelatedConfigMixin):
         # Returns
            bool: True only if everyhing is ok
         """
+
         def print_msg(msg):
             if verbose:
                 print(msg)
@@ -494,13 +502,16 @@ class DataLoaderSchema(RelatedConfigMixin):
 # --------------------------------------------
 @related.mutable(strict=False)
 class RemoteFile(RelatedConfigMixin):
-
     url = related.StringField()
     md5 = related.StringField("", required=False)
+    name = related.StringField("", required=False)
 
     def __attrs_post_init__(self):
         if self.md5 == "":
             logger.warning("md5 not specified for url: {}".format(self.url))
+        if os.path.basename(self.name) != self.name:
+            logger.warning("'name' does not seem to be a valid file name: {}".format(self.name))
+            self.name = os.path.basename(self.name)
 
     def validate(self, path):
         """Validate if the path complies with the provided md5 hash
@@ -565,12 +576,12 @@ class Dependencies(RelatedConfigMixin):
             object.__setattr__(self, "conda", conda_deps)
             object.__setattr__(self, "conda_channels", deps['channels'])
         if len(self.conda) == 1 and self.conda[0].endswith(".txt") and \
-           os.path.exists(self.conda[0]):
+                os.path.exists(self.conda[0]):
             # found a conda txt file
             object.__setattr__(self, "conda", read_txt(self.conda[0]))
 
         if len(self.pip) == 1 and self.pip[0].endswith(".txt") and \
-           os.path.exists(self.pip[0]):
+                os.path.exists(self.pip[0]):
             # found a pip txt file
             object.__setattr__(self, "pip", read_txt(self.pip[0]))
 
@@ -729,6 +740,7 @@ class Dependencies(RelatedConfigMixin):
     def gpu(self):
         """Get the gpu - version of the dependencies
         """
+
         def replace_gpu(dep):
             if dep.startswith("tensorflow") and "gpu" not in dep:
                 new_dep = dep.replace("tensorflow", "tensorflow-gpu")
@@ -817,6 +829,7 @@ class ModelTest(RelatedLoadSaveMixin):
     # predictions = related.
     expect = AnyField(default=None, required=False)
     precision_decimal = related.IntegerField(default=7, required=False)
+
     # Arrays should be almost equal to `precision_decimal` places
     # https://docs.scipy.org/doc/numpy-1.15.1/reference/generated/numpy.testing.assert_almost_equal.html
     # abs(desired-actual) < 1.5 * 10**(-precision_decimal)
@@ -850,6 +863,7 @@ class ModelDescription(RelatedLoadSaveMixin):
                               default=ModelTest(),
                               required=False)
     path = related.StringField(required=False)
+
     # TODO - add after loading validation for the arguments class?
 
     def __attrs_post_init__(self):
@@ -896,7 +910,15 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
                 dl_dir = cache_path
             if not os.path.exists(dl_dir):
                 os.makedirs(dl_dir)
-            path = os.path.join(dl_dir, k)
+
+            # determine target path of the example file
+            if v.example.name != "":
+                # use file name as provided in the example
+                path = os.path.join(dl_dir, v.example.name)
+            else:
+                # otherwise just call it like the argument
+                path = os.path.join(dl_dir, k)
+
             example_files[k] = path
             if os.path.exists(path):
                 if v.example.validate(path):
@@ -941,7 +963,10 @@ def download_default_args(args, output_dir):
                 args[k].default = args[k].default.get_file(os.path.join(output_dir, fname))
 
             # build up a override dict from .default args
-            if os.path.exists(args[k].default):
+            if isinstance(args[k].default, bool):
+                # necessary check for booleans
+                override[k] = args[k].default
+            elif os.path.exists(args[k].default):
                 # for files, make sure we are using absolute paths
                 override[k] = os.path.abspath(args[k].default)
             else:
@@ -1037,6 +1062,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     #         else:
     #             example_files[k] = v
     #     return example_files
+
 
 # ---------------------
 # Global source config

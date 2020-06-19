@@ -14,14 +14,15 @@ import related
 import kipoi  # for .config module
 from kipoi.specs import DataLoaderDescription, Info, example_kwargs, RemoteFile, download_default_args
 from kipoi_utils import (load_module, cd, getargs, classproperty, inherits_from, rsetattr,
-                    _get_arg_name_values, load_obj, infer_parent_class, override_default_kwargs)
+                         _get_arg_name_values, load_obj, infer_parent_class, override_default_kwargs)
 from kipoi_utils.external.torch.data import DataLoader
 from kipoi_utils.data_utils import (numpy_collate, numpy_collate_concat, get_dataset_item,
-                              DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
+                                    DataloaderIterable, batch_gen, get_dataset_lens, iterable_cycle)
 from tqdm import tqdm
 import types
 
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -195,7 +196,8 @@ def kipoi_dataloader(override=dict()):
         # figure out the right dataloader type
         dl_type_inferred = infer_parent_class(cls, AVAILABLE_DATALOADERS)
         if dl_type_inferred is None:
-            raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
+            raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(
+                list(AVAILABLE_DATALOADERS)))
 
         # or not inherits_from(cls, Dataset)
         doc = cls.__doc__
@@ -226,14 +228,16 @@ def kipoi_dataloader(override=dict()):
             optional = i >= len(arg_names) - len(default_values)
             if dl_descr.args[arg].optional and not optional:
                 logger.warning("Parameter {} was specified as optional. However, there "
-                            "are no defaults for it. Specifying it as not optinal".format(arg))
+                               "are no defaults for it. Specifying it as not optinal".format(arg))
             dl_descr.args[arg].optional = optional
 
         dl_descr.info.name = cls.__name__
 
         # enrich the class with dataloader description
         return cls._add_description_factory(dl_descr)
+
     return wrap
+
 
 # --------------------------------------------
 # Different implementations
@@ -555,6 +559,8 @@ class BatchGenerator(BaseDataLoader):
 
     def _batch_iterable(self, **kwargs):
         return DataloaderIterable(self, kwargs)
+
+
 # --------------------------------------------
 
 
@@ -644,12 +650,14 @@ def get_dataloader(dataloader, source="kipoi"):
     # infer the type
     if descr.type is None:
         if inspect.isfunction(CustomDataLoader):
-            raise ValueError("Datalodaers implemented as functions/generator need to specify the type flag in dataloader.yaml")
+            raise ValueError(
+                "Dataloaders implemented as functions/generator need to specify the type flag in dataloader.yaml")
         else:
             # figure out the right dataloader type
             descr.type = infer_parent_class(CustomDataLoader, AVAILABLE_DATALOADERS)
             if descr.type is None:
-                raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(list(AVAILABLE_DATALOADERS)))
+                raise ValueError("Dataloader needs to inherit from one of the available dataloaders {}".format(
+                    list(AVAILABLE_DATALOADERS)))
 
         # check that descr.type is correct
     if descr.type not in AVAILABLE_DATALOADERS:
@@ -658,9 +666,21 @@ def get_dataloader(dataloader, source="kipoi"):
 
     # check that the extractor arguments match yaml arguments
     if not getargs(CustomDataLoader) == set(descr.args.keys()):
-        raise ValueError("DataLoader arguments: \n{0}\n don't match ".format(set(getargs(CustomDataLoader))) +
-                         "the specification in the dataloader.yaml file:\n{0}".
-                         format(set(descr.args.keys())))
+        # if kwargs is defined, we can assume that the dataloader accepts more than its explicitly defined arguments
+        if "kwargs" in getargs(CustomDataLoader):
+            missing_required_args = getargs(CustomDataLoader) - set(descr.args.keys()) - {"kwargs"}
+            if len(missing_required_args) > 0:
+                raise ValueError(
+                    "DataLoader arguments:\n\t{args}\n are missing required arguments:\n\t{missing}".format(
+                        args=set(descr.args.keys()),
+                        missing=missing_required_args,
+                    )
+                )
+        else:
+            raise ValueError(
+                "DataLoader arguments: \n{0}\n don't match ".format(set(getargs(CustomDataLoader))) +
+                "the specification in the dataloader.yaml file:\n{0}".format(set(descr.args.keys()))
+            )
 
     # check that CustomDataLoader indeed interits from the right DataLoader
     if descr.type in DATALOADERS_AS_FUNCTIONS:
