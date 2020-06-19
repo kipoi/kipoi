@@ -963,7 +963,10 @@ def download_default_args(args, output_dir):
                 args[k].default = args[k].default.get_file(os.path.join(output_dir, fname))
 
             # build up a override dict from .default args
-            if os.path.exists(args[k].default):
+            if isinstance(args[k].default, bool):
+                # necessary check for booleans
+                override[k] = args[k].default
+            elif os.path.exists(args[k].default):
                 # for files, make sure we are using absolute paths
                 override[k] = os.path.abspath(args[k].default)
             else:
