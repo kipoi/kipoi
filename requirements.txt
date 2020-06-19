@@ -8,7 +8,7 @@ genomelake==0.1.4
 h5py==2.10.0
 Jinja2==2.11.2
 joblib==0.15.1
-keras==2.3.1
+keras==2.4.2
 kipoi_conda==0.2.2
 kipoi_interpret==0.1.2
 kipoi_utils==0.3.8
