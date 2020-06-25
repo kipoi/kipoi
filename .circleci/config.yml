@@ -197,7 +197,8 @@ jobs:
       - run:
           name: pip install from TestPyPI
           command: |
-            pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
+            source activate kipoi-env
+            python -m pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
 
   productive-deploy-pypi:
@@ -224,7 +225,8 @@ jobs:
       - run:
           name: pip install from PyPI
           command: |
-            pip install --user kipoi --verbose
+            source activate kipoi-env
+            python -m pip install --user kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
 
 workflows:
