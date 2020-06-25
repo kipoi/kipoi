@@ -189,6 +189,9 @@ jobs:
       - *conda_install_twine
       - *pypi_create_pypirc
       - run:
+          name: check if commit is tagged
+          command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
+      - run:
           name: upload to TestPyPI
           command: twine upload --repository testpypi dist/* --verbose
       - run:
@@ -212,6 +215,9 @@ jobs:
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc
+      - run:
+          name: check if commit is tagged
+          command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
       - run:
           name: upload to PyPI
           command: twine upload --repository pypi dist/* --verbose
@@ -241,8 +247,8 @@ workflows:
           requires:
             - test-py36-yml
           filters:
-            tags:
-              only: /^v.*/
+#            tags:
+#              only: /^v.*/
             branches:
               only:
                 - test_deployment_pypi
@@ -251,9 +257,10 @@ workflows:
           requires:
             - test-py36-yml
           filters:
-            # Trigger only on a tagged commit starting with v.
-            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
-            tags:
-              only: /^v.*/
+#            # Trigger only on a tagged commit starting with v.
+#            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+#            tags:
+#              only: /^v.*/
             branches:
-              ignore: /.*/
+              only:
+                - master
