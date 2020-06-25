@@ -125,7 +125,7 @@ class EnvDb:
         self.entries.append(entry)
 
     def save(self):
-        self.db.purge()
+        self.db.truncate()
         for entry in self.entries:
             self.db.insert(entry.get_config())
 
