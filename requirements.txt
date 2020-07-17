@@ -3,7 +3,7 @@ concise==0.6.9
 cookiecutter==1.7.2
 cyvcf2==0.20.0
 deprecation==2.1.0
-fastparquet==0.4.0
+fastparquet==0.4.1
 genomelake==0.1.4
 h5py==2.10.0
 Jinja2==2.11.2
