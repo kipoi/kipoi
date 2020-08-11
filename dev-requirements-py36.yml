@@ -9,7 +9,7 @@ dependencies:
   # general packages
   # - git-lfs 
   # General
-  - numpy>=1.13.0
+  - numpy==1.18.5
   - pandas
   - pytest>=3.3.1
   - pytest-xdist
@@ -18,7 +18,7 @@ dependencies:
   - deprecation>=2.0.6
   #- coveralls
   - h5py>=2.7.0
-  - scipy>=1.0.0
+  - scipy==1.5.0
   - attrs>=18.2.0
   - matplotlib
   - tinydb>=3.12.2
@@ -35,11 +35,11 @@ dependencies:
   - genomelake>=0.1.4
   # ML
   - scikit-learn>=0.19.1,<=0.22
-  - tensorflow>=1.4.0
-  - pytorch-cpu>=0.3.1
-  - keras>=2.2.4
+  - tensorflow==1.13.1
+  - pytorch-cpu==1.1.0
+  - keras==2.3.1
   # for plugins (double check)
-  - fastparquet==0.4.0
+  - fastparquet
   - zarr 
   - numcodecs
   # singularity
