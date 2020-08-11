@@ -35,7 +35,7 @@ dependencies:
   - genomelake>=0.1.4
   # ML
   - scikit-learn>=0.19.1,<=0.22
-  - tensorflow>=1.4.0
+  - tensorflow==1.13.1
   - pytorch-cpu>=0.3.1
   - keras>=2.2.4
   # for plugins (double check)
