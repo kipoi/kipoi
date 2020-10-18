@@ -135,10 +135,11 @@ class Pipeline(object):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warning("First batch of data is not compatible with the dataloader schema.")
                 pred_batch = self.model.predict_on_batch(batch['inputs'])
-                pred_list.append(pred_batch)
+                metadata_batch = batch['metadata']
+                pred_list.append({'pred':pred_batch, 'metadata': metadata_batch})
 
                 if output_file is not None:
-                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=False, keep_metadata=True)
                     writer.batch_write(output_batch)
 
             if output_file is not None:
@@ -191,7 +192,7 @@ class Pipeline(object):
             else:
                 yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
 
-    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, **kwargs):
+    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, keep_metadata=False, **kwargs):
         """Make predictions and write them iteratively to a file
 
         # Arguments
@@ -200,6 +201,7 @@ class Pipeline(object):
             dataloader_kwargs: Keyword arguments passed to the dataloader
             batch_size: Batch size used for the dataloader
             keep_inputs: if True, inputs and targets will also be written to the output file.
+            keep_metadata: if True, metadata will also be written to the output file.
             **kwargs: Further arguments passed to batch_iter
         """
         from kipoi.writers import get_writer

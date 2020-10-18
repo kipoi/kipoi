@@ -30,12 +30,15 @@ logger.addHandler(logging.NullHandler())
 
 
 def prepare_batch(dl_batch, pred_batch,
-                  keep_inputs=False):
+                  keep_inputs=False,
+                  keep_metadata=False):
     dl_batch["preds"] = pred_batch
 
     if not keep_inputs:
         dl_batch.pop("inputs", None)
         dl_batch.pop("targets", None)
+    if not keep_metadata:
+        dl_batch.pop("metadata", None)
     return dl_batch
 
 
@@ -274,7 +277,7 @@ def cli_predict(command, raw_args):
             pred_batch = model.predict_activation_on_batch(batch['inputs'], layer=args.layer)
 
         # write out the predictions, metadata (, inputs, targets)
-        output_batch = prepare_batch(batch, pred_batch, keep_inputs=args.keep_inputs)
+        output_batch = prepare_batch(batch, pred_batch, keep_inputs=args.keep_inputs, keep_metadata=args.keep_metadata)
         output_writers.batch_write(output_batch)
 
     output_writers.close()
