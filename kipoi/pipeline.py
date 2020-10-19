@@ -189,7 +189,7 @@ class Pipeline(object):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
                 if 'keep_metadata' in kwargs and kwargs.get('keep_metadata'):
-                    yield {'preds':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
+                    yield {'pred':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
                 else:
                     yield self.model.predict_on_batch(batch['inputs'])
             else:
