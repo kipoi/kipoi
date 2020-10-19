@@ -139,7 +139,7 @@ class Pipeline(object):
                 pred_list.append({'pred':pred_batch, 'metadata': metadata_batch})
 
                 if output_file is not None:
-                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=False, keep_metadata=True)
+                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True, keep_metadata=True)
                     writer.batch_write(output_batch)
 
             if output_file is not None:
@@ -188,7 +188,10 @@ class Pipeline(object):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
-                yield self.model.predict_on_batch(batch['inputs'])
+                if 'keep_metadata' in kwargs and kwargs.get('keep_metadata'):
+                    yield {'preds':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
+                else:
+                    yield self.model.predict_on_batch(batch['inputs'])
             else:
                 yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
 
@@ -217,7 +220,7 @@ class Pipeline(object):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             pred_batch = self.model.predict_on_batch(batch['inputs'])
-            output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs)
+            output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs, keep_metadata=keep_metadata)
             writer.batch_write(output_batch)
         writer.close()
 
