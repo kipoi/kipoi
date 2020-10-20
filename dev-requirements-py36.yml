@@ -42,6 +42,8 @@ dependencies:
   - fastparquet
   - zarr 
   - numcodecs
+  # For test_101_pipeline.py::test_predict_to_file_with_metadata_hdf5
+  - mmsplice
   # singularity
   #- singularity
   - git
