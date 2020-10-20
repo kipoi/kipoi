@@ -189,11 +189,14 @@ class Pipeline(object):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
                 if 'keep_metadata' in kwargs and kwargs.get('keep_metadata'):
-                    yield {'pred':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
+                    yield {'preds':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
                 else:
                     yield self.model.predict_on_batch(batch['inputs'])
             else:
-                yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
+                if 'keep_metadata' in kwargs and kwargs.get('keep_metadata'):
+                    yield {'preds':self.model.predict_activation_on_batch(batch['inputs'], layer=layer), 'metadata': batch['metadata']}
+                else:
+                    yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
 
     def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, keep_metadata=False, **kwargs):
         """Make predictions and write them iteratively to a file
