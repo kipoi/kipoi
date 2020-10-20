@@ -52,13 +52,26 @@ def test_predict_to_file_with_metadata_hdf5(tmpdir):
     assert len(preds_and_metadata['preds']) == 2034
 
 def test_predict_to_file_with_metadata_tsv(tmpdir):
-    tsv_tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
+    tsv_tmpfile_metadata = str(tmpdir.mkdir("example").join("out_with_metadata.tsv"))
     model = kipoi.get_model("Basset", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
     with cd(model.source_dir):
-        model.pipeline.predict_to_file(tsv_tmpfile, dl_kwargs,keep_metadata=True)
-    preds_and_metadata = pd.read_csv(tsv_tmpfile, sep='\t')
+        model.pipeline.predict_to_file(tsv_tmpfile_metadata, dl_kwargs,keep_metadata=True)
+    preds_and_metadata = pd.read_csv(tsv_tmpfile_metadata, sep='\t')
     assert 'metadata/ranges/chr' in preds_and_metadata.columns 
     assert 'preds/100' in preds_and_metadata.columns
     assert len(preds_and_metadata['metadata/ranges/chr']) == 10
     assert len(preds_and_metadata['preds/100']) == 10
+    assert preds_and_metadata.at[0,'preds/100'] == pytest.approx(0.4168229)
+
+
+def test_predict_to_file_without_metadata_tsv(tmpdir):
+    tsv_tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
+    model = kipoi.get_model("Basset", source="kipoi")
+    dl_kwargs = model.default_dataloader.example_kwargs
+    with cd(model.source_dir):
+        model.pipeline.predict_to_file(tsv_tmpfile, dl_kwargs)
+    preds = pd.read_csv(tsv_tmpfile, sep='\t')
+    assert 'metadata/ranges/chr' not in preds.columns 
+    assert 'preds/100' in preds.columns
+    assert preds.at[0,'preds/100'] == pytest.approx(0.4168229)
