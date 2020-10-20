@@ -136,7 +136,7 @@ class Pipeline(object):
                     logger.warning("First batch of data is not compatible with the dataloader schema.")
                 pred_batch = self.model.predict_on_batch(batch['inputs'])
                 metadata_batch = batch['metadata']
-                pred_list.append({'pred':pred_batch, 'metadata': metadata_batch})
+                pred_list.append({'preds':pred_batch, 'metadata': metadata_batch})
 
                 if output_file is not None:
                     output_batch = prepare_batch(batch, pred_batch, keep_inputs=True, keep_metadata=True)
