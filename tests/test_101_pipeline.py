@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from kipoi_utils.utils import cd
 import kipoi
 import pytest
@@ -38,14 +39,26 @@ def test_predict_to_file(tmpdir):
     assert 'preds' in preds
 
 
-def test_predict_to_file_with_metadata(tmpdir):
+def test_predict_to_file_with_metadata_hdf5(tmpdir):
     h5_tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
     model = kipoi.get_model("MMSplice/deltaLogitPSI", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
     with cd(model.source_dir):
         model.pipeline.predict_to_file(h5_tmpfile, dl_kwargs,keep_metadata=True)
-    preds = kipoi.readers.HDF5Reader.load(h5_tmpfile)
-    assert 'preds' in preds
-    assert 'metadata' in preds
-    assert len(preds['metadata']['variant']['chrom']) == 2034
-    assert len(preds['preds']) == 2034
+    preds_and_metadata = kipoi.readers.HDF5Reader.load(h5_tmpfile)
+    assert 'preds' in preds_and_metadata
+    assert 'metadata' in preds_and_metadata
+    assert len(preds_and_metadata['metadata']['variant']['chrom']) == 2034
+    assert len(preds_and_metadata['preds']) == 2034
+
+def test_predict_to_file_with_metadata_tsv(tmpdir):
+    tsv_tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
+    model = kipoi.get_model("Basset", source="kipoi")
+    dl_kwargs = model.default_dataloader.example_kwargs
+    with cd(model.source_dir):
+        model.pipeline.predict_to_file(tsv_tmpfile, dl_kwargs,keep_metadata=True)
+    preds_and_metadata = pd.read_csv(tsv_tmpfile, sep='\t')
+    assert 'metadata/ranges/chr' in preds_and_metadata.columns 
+    assert 'preds/100' in preds_and_metadata.columns
+    assert len(preds_and_metadata['metadata/ranges/chr']) == 10
+    assert len(preds_and_metadata['preds/100']) == 10
