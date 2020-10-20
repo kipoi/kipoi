@@ -139,7 +139,7 @@ class Pipeline(object):
                 pred_list.append({'pred':pred_batch, 'metadata': metadata_batch})
 
                 if output_file is not None:
-                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=False, keep_metadata=True)
+                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True, keep_metadata=True)
                     writer.batch_write(output_batch)
 
             if output_file is not None:
