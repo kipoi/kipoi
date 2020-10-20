@@ -42,8 +42,6 @@ dependencies:
   - fastparquet
   - zarr 
   - numcodecs
-  # For test_101_pipeline.py::test_predict_to_file_with_metadata_hdf5
-  - mmsplice
   # singularity
   #- singularity
   - git
@@ -59,3 +57,4 @@ dependencies:
     - kipoi-veff>=0.3.0
     - kipoiseq>=0.2.3
     - concise>=0.6.5
+    - mmsplice==1.0.3
