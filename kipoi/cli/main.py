@@ -54,6 +54,8 @@ def cli_test(command, raw_args):
     add_model(parser, source="dir")
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in prediction')
+    parser.add_argument("--keep_metadata", type=bool, default=True,
+                        help="Keep the metadata in the output file. ")
     parser.add_argument("-o", "--output", default=None, required=False,
                         help="Output hdf5 file")
     parser.add_argument("-s", "--skip-expect", action='store_true',
@@ -71,7 +73,7 @@ def cli_test(command, raw_args):
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
-    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output)
+    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **{'keep_metadata': args.keep_metadata})
 
     if (mh.test.expect is not None or args.expect is not None) \
             and not args.skip_expect and args.output is None:
@@ -155,6 +157,8 @@ def cli_preproc(command, raw_args):
     add_dataloader_main(parser, with_args=True)
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size to use in data loading')
+    parser.add_argument("-m", "--keep_metadata", type=bool, default=True,
+                        help="Keep the metadata in the output file. ")                    
     parser.add_argument("-n", "--num_workers", type=int, default=0,
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-o", "--output", required=True,
@@ -199,6 +203,8 @@ def cli_predict(command, raw_args):
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
+    parser.add_argument("-m", "--keep_metadata", action='store_true',
+                        help="Keep the metadata in the output file. ")
     parser.add_argument("-l", "--layer",
                         help="Which output layer to use to make the predictions. If specified," +
                         "`model.predict_activation_on_batch` will be invoked instead of `model.predict_on_batch`")
