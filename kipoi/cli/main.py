@@ -203,7 +203,7 @@ def cli_predict(command, raw_args):
                         help="Number of parallel workers for loading the dataset")
     parser.add_argument("-k", "--keep_inputs", action='store_true',
                         help="Keep the inputs in the output file. ")
-    parser.add_argument("-m", "--keep_metadata", action='store_true',
+    parser.add_argument("-m", "--keep_metadata", type=bool, default=True,
                         help="Keep the metadata in the output file. ")
     parser.add_argument("-l", "--layer",
                         help="Which output layer to use to make the predictions. If specified," +
