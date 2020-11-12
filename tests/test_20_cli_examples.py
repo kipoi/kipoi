@@ -59,6 +59,7 @@ def test_test_example(example, tmpdir):
 
     args = ["python", "./kipoi/__main__.py", "test",
             "--batch_size=4",
+            "--keep_metadata=True",
             example_dir]
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
@@ -223,6 +224,7 @@ def test_predict_example(example, tmpdir):
             "--batch_size=4",
             "--num_workers=2",
             "--dataloader_args=test.json",
+            "--keep_metadata=True",
             "--output", tmpfile]
     if INSTALL_FLAG:
         args.append(INSTALL_FLAG)
@@ -272,6 +274,7 @@ def test_predict_activation_example(example, tmpdir):
             "--layer", predict_activation_layers[example],
             "--batch_size=4",
             "--num_workers=2",
+            "--keep_metadata=True",
             "--dataloader_args=test.json",
             "--output", tmpfile]
     if INSTALL_FLAG:

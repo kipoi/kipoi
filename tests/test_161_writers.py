@@ -94,7 +94,7 @@ def pred_batch_dict():
 def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = TsvBatchWriter(tmpfile)
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer.batch_write(batch)
     writer.batch_write(batch)
     writer.close()
@@ -118,7 +118,7 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = AsyncBatchWriter(TsvBatchWriter(tmpfile))
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer.batch_write(batch)
     writer.batch_write(batch)
     writer.close()
@@ -138,7 +138,7 @@ def test_AsyncTsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 
 def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer = HDF5BatchWriter(tmpfile, chunk_size=4)
 
     writer.batch_write(batch)
@@ -170,7 +170,7 @@ def test_HDF5BatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 
 def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
-    batch = prepare_batch(dl_batch, pred_batch_list)
+    batch = prepare_batch(dl_batch, pred_batch_list, keep_metadata=True)
     writer = HDF5BatchWriter(tmpfile, chunk_size=4)
 
     writer.batch_write(batch)
@@ -202,7 +202,7 @@ def test_HDF5BatchWriter_list(dl_batch, pred_batch_list, tmpdir):
 
 def test_HDF5BatchWriter_vlen(dl_batch, pred_batch_vlen, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.h5"))
-    batch = prepare_batch(dl_batch, pred_batch_vlen)
+    batch = prepare_batch(dl_batch, pred_batch_vlen, keep_metadata=True)
     writer = HDF5BatchWriter(tmpfile, chunk_size=4)
 
     writer.batch_write(batch)
@@ -251,7 +251,7 @@ def test_zarr_store():
 
 def test_ZarrBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.zip.zarr"))
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer = ZarrBatchWriter(tmpfile, chunk_size=4)
 
     writer.batch_write(batch)
@@ -271,7 +271,7 @@ def test_ZarrBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
 
 def test_ZarrBatchWriter_list(dl_batch, pred_batch_list, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.zip.zarr"))
-    batch = prepare_batch(dl_batch, pred_batch_list)
+    batch = prepare_batch(dl_batch, pred_batch_list, keep_metadata=True)
     writer = ZarrBatchWriter(tmpfile, chunk_size=4)
 
     writer.batch_write(batch)
@@ -293,7 +293,7 @@ def test_MultipleBatchWriter(dl_batch, pred_batch_array, tmpdir):
     tmpdir = tmpdir.mkdir("example")
     h5_tmpfile = str(tmpdir.join("out.h5"))
     tsv_tmpfile = str(tmpdir.join("out.tsv"))
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer = MultipleBatchWriter([TsvBatchWriter(tsv_tmpfile), HDF5BatchWriter(h5_tmpfile)])
     writer.batch_write(batch)
     writer.batch_write(batch)
@@ -316,7 +316,7 @@ def test_MultipleBatchWriter(dl_batch, pred_batch_array, tmpdir):
 def test_BedBatchWriter(dl_batch, pred_batch_array, metadata_schema, tmpdir):
     tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     writer = BedBatchWriter(tmpfile, metadata_schema=metadata_schema)
-    batch = prepare_batch(dl_batch, pred_batch_array)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
     writer.batch_write(batch)
     writer.batch_write(batch)
     writer.close()

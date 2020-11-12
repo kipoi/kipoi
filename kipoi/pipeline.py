@@ -102,7 +102,7 @@ class Pipeline(object):
         else:
             logger.info("dataloader.output_schema is compatible with model.schema")
 
-    def predict_example(self, batch_size=32, output_file=None):
+    def predict_example(self, batch_size=32, output_file=None, **kwargs):
         """Run model prediction for the example file
 
         # Arguments
@@ -135,10 +135,12 @@ class Pipeline(object):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warning("First batch of data is not compatible with the dataloader schema.")
                 pred_batch = self.model.predict_on_batch(batch['inputs'])
-                pred_list.append(pred_batch)
-
+                if 'keep_metadata' in kwargs and kwargs.get('keep_metadata') and 'metadata' in batch:
+                    pred_list.append({'preds':pred_batch, 'metadata': batch['metadata']})
+                else:
+                    pred_list.append(pred_batch)
                 if output_file is not None:
-                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True)
+                    output_batch = prepare_batch(batch, pred_batch, keep_inputs=True, keep_metadata='keep_metadata' in kwargs and kwargs.get('keep_metadata'))
                     writer.batch_write(output_batch)
 
             if output_file is not None:
@@ -187,11 +189,17 @@ class Pipeline(object):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             if layer is None:
-                yield self.model.predict_on_batch(batch['inputs'])
+                if 'keep_metadata' in kwargs and kwargs.get('keep_metadata') and 'metadata' in batch:
+                    yield {'preds':self.model.predict_on_batch(batch['inputs']), 'metadata': batch['metadata']}
+                else:
+                    yield self.model.predict_on_batch(batch['inputs'])
             else:
-                yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
+                if 'keep_metadata' in kwargs and kwargs.get('keep_metadata') and 'metadata' in batch:
+                    yield {'preds':self.model.predict_activation_on_batch(batch['inputs'], layer=layer), 'metadata': batch['metadata']}
+                else:
+                    yield self.model.predict_activation_on_batch(batch['inputs'], layer=layer)
 
-    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, **kwargs):
+    def predict_to_file(self, output_file, dataloader_kwargs, batch_size=32, keep_inputs=False, keep_metadata=False, **kwargs):
         """Make predictions and write them iteratively to a file
 
         # Arguments
@@ -200,6 +208,7 @@ class Pipeline(object):
             dataloader_kwargs: Keyword arguments passed to the dataloader
             batch_size: Batch size used for the dataloader
             keep_inputs: if True, inputs and targets will also be written to the output file.
+            keep_metadata: if True, metadata will also be written to the output file.
             **kwargs: Further arguments passed to batch_iter
         """
         from kipoi.writers import get_writer
@@ -215,7 +224,7 @@ class Pipeline(object):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                 logger.warning("First batch of data is not compatible with the dataloader schema.")
             pred_batch = self.model.predict_on_batch(batch['inputs'])
-            output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs)
+            output_batch = prepare_batch(batch, pred_batch, keep_inputs=keep_inputs, keep_metadata=keep_metadata)
             writer.batch_write(output_batch)
         writer.close()
 
