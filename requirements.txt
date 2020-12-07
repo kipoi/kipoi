@@ -1,7 +1,7 @@
 colorlog==4.1.0
 concise==0.6.9
 cookiecutter==1.7.2
-cyvcf2==0.20.0
+cyvcf2==0.30.1
 deprecation==2.1.0
 fastparquet==0.4.0
 genomelake==0.1.4
