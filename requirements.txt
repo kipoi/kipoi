@@ -26,6 +26,6 @@ six==1.15.0
 tensorflow==2.2.0
 theano==1.0.4
 tinydb==4.1.1
-torch==1.5.0
+torch==1.7.1
 tqdm==4.46.1
 zarr==2.4.0
