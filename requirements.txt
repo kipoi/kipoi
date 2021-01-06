@@ -13,7 +13,7 @@ kipoi_conda==0.2.2
 kipoi_interpret==0.1.2
 kipoi_utils==0.3.8
 numcodecs==0.6.4
-numpy==1.18.5
+numpy==1.19.5
 pandas==1.1.1
 pybedtools==0.8.1
 pyBigWig==0.3.17
