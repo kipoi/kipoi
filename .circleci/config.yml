@@ -162,7 +162,7 @@ jobs:
           command: pip install -e .
       - run:
           name: Install build deps
-          command: pip install nbconvert==5.4.0 tornado==5.1.1 mkdocs git+https://github.com/kipoi/pydoc-markdown@master
+          command: pip install pandas==0.20.3 jinja2==2.10.1 nbconvert==5.4.0 tornado==5.1.1 mkdocs git+https://github.com/kipoi/pydoc-markdown@master
       - run:
           name: Build docs
           command: |
