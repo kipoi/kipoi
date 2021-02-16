@@ -41,7 +41,7 @@ def test_export(tmpdir):
     env, env_file = export_env(["rbp_eclip/UPF1"],
                                env_dir=str(tmpdir))
     env_dict = read_yaml(env_file)
-    assert env_dict['channels'] == ['bioconda', 'conda-forge', 'defaults']
+    assert sorted(env_dict['channels']) == ['bioconda', 'conda-forge', 'defaults']
 
     pip_idx = [i for i, x in enumerate(env_dict['dependencies']) if isinstance(x, dict)][0]
     assert [p for p in env_dict['dependencies'][pip_idx]['pip']
@@ -57,7 +57,7 @@ def test_export(tmpdir):
                                gpu=True
                                )
     env_dict = read_yaml(env_file)
-    assert env_dict['channels'] == ['bioconda', 'conda-forge', 'defaults']
+    assert sorted(env_dict['channels']) == ['bioconda', 'conda-forge', 'defaults']
     assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p or "tensorflow-gpu>=" in p]
 
     # vep
