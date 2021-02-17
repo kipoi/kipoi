@@ -273,6 +273,6 @@ workflows:
           filters:
             branches:
               only:
-                - add-nightly-test
+                - master
     jobs:
       - test-py36-yml
