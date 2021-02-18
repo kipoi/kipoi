@@ -22,7 +22,7 @@ requirements = [
     "jinja2",
     "cookiecutter>=1.6.0",
     # sometimes required
-    "h5py==2.10.0",
+    "h5py==3.1.0",
     "urllib3>=1.21.1",  # ,<1.23",
     "tinydb",
     "kipoi-utils>=0.3.8",
