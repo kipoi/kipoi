@@ -92,7 +92,7 @@ def test_export_multiple(tmpdir):
 
     tmpdir = "/tmp/test/"
     # makefile
-    env, env_file = export_env(["rbp_eclip/XRCC6", "rbp_eclip/XRN2"],
+    env, env_file = export_env(["rbp_eclip/XRCC6", "rbp_eclip/TIA1"],
                                env_dir=str(tmpdir))
     env_dict = read_yaml(env_file)
     del env_dict['name']
