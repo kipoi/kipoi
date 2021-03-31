@@ -38,7 +38,7 @@ def test_export(tmpdir):
 
     tmpdir = "/tmp/test/"
     # makefile
-    env, env_file = export_env(["rbp_eclip/UPF1"],
+    env, env_file = export_env(["rbp_eclip/XRCC6"],
                                env_dir=str(tmpdir))
     env_dict = read_yaml(env_file)
     assert sorted(env_dict['channels']) == ['bioconda', 'conda-forge', 'defaults']
@@ -52,7 +52,7 @@ def test_export(tmpdir):
                 if dep in p]
 
     # gpu version
-    env, env_file = export_env(["rbp_eclip/UPF1"],
+    env, env_file = export_env(["rbp_eclip/XRCC6"],
                                env_dir=str(tmpdir),
                                gpu=True
                                )
@@ -61,7 +61,7 @@ def test_export(tmpdir):
     assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p or "tensorflow-gpu>=" in p]
 
     # vep
-    env, env_file = export_env(["rbp_eclip/UPF1"],
+    env, env_file = export_env(["rbp_eclip/XRCC6"],
                                env_dir=str(tmpdir),
                                gpu=True,
                                vep=True,
@@ -75,12 +75,12 @@ def test_export(tmpdir):
 def test_cli(tmpdir):
     env_file = os.path.join(str(tmpdir), "env.yml")
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "export",
-            "rbp_eclip/UPF1",
+            "rbp_eclip/XRCC6",
             "-o", env_file]
     returncode = subprocess.call(args=args)
     assert returncode == 0
     env_dict = read_yaml(env_file)
-    env, env_file2 = export_env(["rbp_eclip/UPF1"],
+    env, env_file2 = export_env(["rbp_eclip/XRCC6"],
                                 env_dir=str(tmpdir))
     env_dict2 = read_yaml(env_file2)
     assert env_dict == env_dict2
@@ -92,18 +92,18 @@ def test_export_multiple(tmpdir):
 
     tmpdir = "/tmp/test/"
     # makefile
-    env, env_file = export_env(["rbp_eclip/UPF1", "rbp_eclip/XRN2"],
+    env, env_file = export_env(["rbp_eclip/XRCC6", "rbp_eclip/TIA1"],
                                env_dir=str(tmpdir))
     env_dict = read_yaml(env_file)
     del env_dict['name']
-    env, env_file = export_env(["rbp_eclip/UPF1"],
+    env, env_file = export_env(["rbp_eclip/XRCC6"],
                                env_dir=str(tmpdir))
     env_dict2 = read_yaml(env_file)
     del env_dict2['name']
 
     assert env_dict == env_dict2
 
-    env, env_file = export_env(["rbp_eclip/UPF1", "HAL"],
+    env, env_file = export_env(["rbp_eclip/XRCC6", "HAL"],
                                env_dir=str(tmpdir))
     env_dict2 = read_yaml(env_file)
     del env_dict2['name']
