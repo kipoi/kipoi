@@ -10,6 +10,7 @@ import os
 import re
 import sys
 from copy import deepcopy
+from math import ceil
 
 from colorlog import escape_codes, default_log_colors
 
@@ -286,16 +287,23 @@ def cli_test_source(command, raw_args):
                         help="Test all models in the source")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Increase output verbosity. Show conda stdout during env installation.")
+    parser.add_argument('--shard_id', type=int,
+                        help="Shard id")
+    parser.add_argument('--num_of_shards', type=int, 
+                        help="Number of shards")
+
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     source = kipoi.get_source(args.source)
     all_models = all_models_to_test(source)
+
     if args.k is not None:
         all_models = [x for x in all_models if re.match(args.k, x)]
 
     if len(all_models) == 0:
         logger.info("No models found in the source")
         sys.exit(1)
+
     if args.all:
         test_models = all_models
         logger.info('Testing all models:\n- {0}'.
@@ -309,10 +317,22 @@ def cli_test_source(command, raw_args):
             sys.exit(0)
         logger.info('{0}/{1} models modified according to git:\n- {2}'.
                     format(len(test_models), len(all_models),
-                           '\n- '.join(test_models)))
+                        '\n- '.join(test_models)))
     # Sort the models alphabetically
     test_models = sorted(test_models)
 
+    if args.num_of_shards > 0 and args.shard_id >= 0:
+        if args.shard_id >= args.num_of_shards:
+            logger.info("Shard id is invalid. It should be a value between 0 and {0}.".format(args.num_of_shards-1))
+            sys.exit(1)
+        else:
+            all_test_models = test_models
+            n = len(all_test_models)
+            chunk_size = ceil(n / args.num_of_shards)
+            list_of_shards = [all_test_models[i:i+chunk_size] for i in range(0,n,chunk_size)]
+            test_models = list_of_shards[args.shard_id]
+    
+    logger.info(test_models)
     # Parse the repo config
     cfg_path = get_file_path(source.local_path, "config",
                              extensions=[".yml", ".yaml"],
