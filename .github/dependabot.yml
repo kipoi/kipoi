@@ -1,0 +1,48 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: h5py
+    versions:
+    - ">= 3.a, < 4"
+  - dependency-name: tqdm
+    versions:
+    - 4.56.0
+    - 4.56.1
+    - 4.56.2
+  - dependency-name: numpy
+    versions:
+    - 1.19.5
+    - 1.20.0
+    - 1.20.1
+  - dependency-name: colorlog
+    versions:
+    - 4.7.2
+  - dependency-name: cyvcf2
+    versions:
+    - 0.30.4
+  - dependency-name: fastparquet
+    versions:
+    - 0.5.0
+  - dependency-name: tensorflow
+    versions:
+    - 2.4.0
+  - dependency-name: torch
+    versions:
+    - 1.7.1
+  - dependency-name: pyfaidx
+    versions:
+    - 0.5.9.2
+  - dependency-name: theano
+    versions:
+    - 1.0.5
+  - dependency-name: keras
+    versions:
+    - 2.4.3
+  - dependency-name: pysam
+    versions:
+    - 0.16.0.1
