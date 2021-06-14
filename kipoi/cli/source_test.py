@@ -287,9 +287,9 @@ def cli_test_source(command, raw_args):
                         help="Test all models in the source")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Increase output verbosity. Show conda stdout during env installation.")
-    parser.add_argument('--shard_id', type=int,
+    parser.add_argument('--shard_id', type=int, default=-1,
                         help="Shard id")
-    parser.add_argument('--num_of_shards', type=int, 
+    parser.add_argument('--num_of_shards', type=int, default=-1,
                         help="Number of shards")
 
     args = parser.parse_args(raw_args)
