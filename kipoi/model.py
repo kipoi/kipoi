@@ -84,6 +84,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     - **source** (`str`): model source
     - **source_dir** (`str`): local path to model source storage
     - **postprocessing** (`dict`): dictionary of loaded plugin specifications
+    - **writers** (dict): dictionary of arguments for writers
     - **pipeline** (`kipoi.pipeline.Pipeline`): handle to a `Pipeline` object
 
     """
@@ -212,6 +213,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.source_dir = source_dir
     # parse the postprocessing module
     mod.postprocessing = md.postprocessing
+    mod.writers = mod.writers
     if with_dataloader:
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
     else:

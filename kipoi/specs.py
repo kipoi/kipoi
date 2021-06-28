@@ -863,6 +863,7 @@ class ModelDescription(RelatedLoadSaveMixin):
                               default=ModelTest(),
                               required=False)
     path = related.StringField(required=False)
+    writers = related.ChildField(dict, default=OrderedDict(), required=False)
 
     # TODO - add after loading validation for the arguments class?
 
@@ -883,6 +884,14 @@ class ModelDescription(RelatedLoadSaveMixin):
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warning("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
+
+        try:
+            parser = get_model_yaml_parser(self.writers)
+            self.writers[chunk_size] = parser.from_config(self.writers[chunk_size])
+            object.__setattr__(self, "writers", self.writers)
+        except Exception:
+            logger.warning("Unable to parse {} filed in ModelDescription: {}".format(chunk_size, self))
+
 
         # parse args
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
@@ -986,6 +995,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
+    writers = related.ChildField(dict, default=OrderedDict(), required=False)
 
     def get_example_kwargs(self):
         # return self.download_example()
@@ -1037,6 +1047,13 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warning("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
+
+        try:
+            parser = get_model_yaml_parser(self.writers)
+            self.writers[chunk_size] = parser.from_config(self.writers[chunk_size])
+            object.__setattr__(self, "writers", self.writers)
+        except Exception:
+            logger.warning("Unable to parse {} filed in ModelDescription: {}".format(chunk_size, self))
 
     # download example files
     # def download_example(self):

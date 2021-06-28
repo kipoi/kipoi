@@ -48,6 +48,7 @@ class BaseDataLoader(object):
     # optionally set in get_dataloader_factory
     source = None
     source_dir = None
+    writers = None
 
     # ---------------------------------
     # Core data-loading methods
@@ -98,7 +99,7 @@ class BaseDataLoader(object):
           new dataloader class
         """
         for field in ['type', 'defined_as', 'args', 'output_schema',
-                      'info', 'dependencies', 'path', 'postprocessing']:
+                      'info', 'dependencies', 'path', 'postprocessing', 'writers']:
             setattr(cls, field, getattr(descr, field))
         return cls
 
@@ -615,6 +616,7 @@ def get_dataloader(dataloader, source="kipoi"):
     - **source** (str): model source
     - **source_dir** (str): local path to model source storage
     - **postprocessing** (dict): dictionary of loaded plugin specifications
+    - **writers** (dict): dictionary of arguments for writers
     - **example_kwargs** (dict): kwargs for running the provided example
     """
     # if source == 'py':
