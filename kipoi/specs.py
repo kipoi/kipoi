@@ -885,14 +885,6 @@ class ModelDescription(RelatedLoadSaveMixin):
                 except Exception:
                     logger.warning("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
 
-        try:
-            parser = get_model_yaml_parser(self.writers)
-            self.writers[chunk_size] = parser.from_config(self.writers[chunk_size])
-            object.__setattr__(self, "writers", self.writers)
-        except Exception:
-            logger.warning("Unable to parse {} filed in ModelDescription: {}".format(chunk_size, self))
-
-
         # parse args
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
 
@@ -1048,12 +1040,6 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                 except Exception:
                     logger.warning("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
-        try:
-            parser = get_model_yaml_parser(self.writers)
-            self.writers[chunk_size] = parser.from_config(self.writers[chunk_size])
-            object.__setattr__(self, "writers", self.writers)
-        except Exception:
-            logger.warning("Unable to parse {} filed in ModelDescription: {}".format(chunk_size, self))
 
     # download example files
     # def download_example(self):
