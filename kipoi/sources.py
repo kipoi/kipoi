@@ -170,7 +170,6 @@ def list_models_by_group(df, group_filter=""):
             ("cite_as", unique_list([c for c in x.cite_as if c is not None])),
             ("tags", unique_list([tag for tags in x.tags
                                   for tag in tags])),
-            ("hdf5batchwriter_chunk_size", x.hdf5batchwriter_chunk_size.any()),
         ]))
 
     return df.groupby("group").apply(fn).reset_index()
@@ -374,7 +373,6 @@ class Source(object):
                 ("trained_on", d.info.trained_on),
                 ("training_procedure", d.info.training_procedure),
                 ("tags", d.info.tags),
-                ("hdf5batchwriter_chunk_size", "chunk_size" in d.writers),
             ])
 
         df = pd.DataFrame([dict2df_dict(self.get_model_descr(model), model)

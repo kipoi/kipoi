@@ -63,8 +63,7 @@ def cli_test(command, raw_args):
     parser.add_argument("-e", "--expect", default=None,
                         help="File path to the hdf5 file of predictions produced by kipoi test -o file.h5 "
                         "or kipoi predict -o file.h5 --keep_inputs. Overrides test.expect in model.yaml")
-    parser.add_argument('--chunk_size', type=int, default=10000,
-                        help='Chunk size to use with Hdf5BatchWriter')
+
 
     args = parser.parse_args(raw_args)
     # --------------------------------------------
@@ -77,7 +76,7 @@ def cli_test(command, raw_args):
 
     # Load the test files from model source
     mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **{'keep_metadata': args.keep_metadata,
-                                            'chunk_size': args.chunk_size})
+                                            'hdf5_chunk_size': mh.writers['hdf5_chunk_size']})
 
     if (mh.test.expect is not None or args.expect is not None) \
             and not args.skip_expect and args.output is None:
@@ -187,7 +186,7 @@ def cli_preproc(command, raw_args):
         # check that the first batch was indeed correct
         if i == 0 and not Dataloader.get_output_schema().compatible_with_batch(batch):
             logger.warning("First batch of data is not compatible with the dataloader schema.")
-        writer.batch_write(batch, chunk_size=args.chunk_size)
+        writer.batch_write(batch)
 
     writer.close()
     logger.info("Done!")
