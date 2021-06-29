@@ -571,7 +571,7 @@ def get_writer(output_file, metadata_schema=None, **kwargs):
                               dataloader_schema=metadata_schema,
                               header=True, **kwargs)
     elif ending in ["hdf5", "h5"]:
-        return HDF5BatchWriter(file_path=output_file, **kwargs)
+        return HDF5BatchWriter(file_path=output_file, chunk_size=kwargs['chunk_size'])
     else:
         return None
 

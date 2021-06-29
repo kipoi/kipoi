@@ -125,7 +125,7 @@ class Pipeline(object):
             logger.info('Returned data schema correct')
 
             if output_file is not None:
-                writer = get_writer(output_file, dl.get_output_schema().metadata)
+                writer = get_writer(output_file, dl.get_output_schema().metadata, **kwargs)
 
             it = dl.batch_iter(batch_size=batch_size)
 

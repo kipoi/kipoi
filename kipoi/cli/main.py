@@ -76,7 +76,8 @@ def cli_test(command, raw_args):
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
-    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **{'keep_metadata': args.keep_metadata})
+    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **{'keep_metadata': args.keep_metadata,
+                                            'chunk_size': args.chunk_size})
 
     if (mh.test.expect is not None or args.expect is not None) \
             and not args.skip_expect and args.output is None:

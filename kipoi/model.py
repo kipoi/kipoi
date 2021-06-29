@@ -213,7 +213,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     mod.source_dir = source_dir
     # parse the postprocessing module
     mod.postprocessing = md.postprocessing
-    mod.writers = mod.writers
+    mod.writers = md.writers
     if with_dataloader:
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
     else:
