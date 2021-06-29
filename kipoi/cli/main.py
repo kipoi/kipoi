@@ -265,7 +265,7 @@ def cli_predict(command, raw_args):
     # Setup the writers
     use_writers = []
     for output in args.output:
-        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata)
+        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata, **{'hdf5_chunk_size': mh.writers['hdf5_chunk_size']})
         if writer is None:
             logger.error("Unknown file format: {0}".format(ending))
             sys.exit()
