@@ -75,8 +75,11 @@ def cli_test(command, raw_args):
                     format(mh.MODEL_PACKAGE, mh.type))
 
     # Load the test files from model source
-    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **{'keep_metadata': args.keep_metadata,
-                                            'hdf5_chunk_size': mh.writers['hdf5_chunk_size']})
+    config_kwargs =  {'keep_metadata': args.keep_metadata}
+    if mh.writers and 'hdf5_chunk_size' in mh.writers:
+        config_kwargs['hdf5_chunk_size'] = mh.writers['hdf5_chunk_size']
+
+    mh.pipeline.predict_example(batch_size=args.batch_size, output_file=args.output, **config_kwargs)
 
     if (mh.test.expect is not None or args.expect is not None) \
             and not args.skip_expect and args.output is None:
@@ -265,7 +268,10 @@ def cli_predict(command, raw_args):
     # Setup the writers
     use_writers = []
     for output in args.output:
-        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata, **{'hdf5_chunk_size': mh.writers['hdf5_chunk_size']})
+        config_kwargs = {}
+        if mh.writers and 'hdf5_chunk_size' in mh.writers:
+            config_kwargs['hdf5_chunk_size'] = mh.writers['hdf5_chunk_size']
+        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata, **{config_kwargs})
         if writer is None:
             logger.error("Unknown file format: {0}".format(ending))
             sys.exit()
