@@ -271,7 +271,7 @@ def cli_predict(command, raw_args):
         config_kwargs = {}
         if model.writers and 'hdf5_chunk_size' in model.writers:
             config_kwargs['hdf5_chunk_size'] = model.writers['hdf5_chunk_size']
-        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata, **{config_kwargs})
+        writer = writers.get_writer(output, metadata_schema=dl.get_output_schema().metadata, **config_kwargs)
         if writer is None:
             logger.error("Unknown file format: {0}".format(ending))
             sys.exit()
