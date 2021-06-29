@@ -218,7 +218,7 @@ class Pipeline(object):
         validate_kwargs(self.dataloader_cls, dataloader_kwargs)
         dl = self.dataloader_cls(**dataloader_kwargs)
         it = dl.batch_iter(batch_size=batch_size, **kwargs)
-        writer = get_writer(output_file, dl.get_output_schema().metadata)
+        writer = get_writer(output_file, dl.get_output_schema().metadata, **kwargs)
 
         for i, batch in enumerate(tqdm(it)):
             if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
