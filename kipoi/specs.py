@@ -863,6 +863,7 @@ class ModelDescription(RelatedLoadSaveMixin):
                               default=ModelTest(),
                               required=False)
     path = related.StringField(required=False)
+    writers = related.ChildField(dict, default=OrderedDict(), required=False)
 
     # TODO - add after loading validation for the arguments class?
 
@@ -986,6 +987,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
     postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
+    writers = related.ChildField(dict, default=OrderedDict(), required=False)
 
     def get_example_kwargs(self):
         # return self.download_example()
@@ -1037,6 +1039,7 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
                     object.__setattr__(self, "postprocessing", self.postprocessing)
                 except Exception:
                     logger.warning("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
+
 
     # download example files
     # def download_example(self):
