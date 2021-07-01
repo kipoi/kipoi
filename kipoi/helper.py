@@ -1,11 +1,9 @@
 import six
 import json
 from typing import Any
-
+import os
 import numpy as np
 from pysam import FastaFile
-
-
 # Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L15
 NUM_SEQ_CHARS = 4
 
@@ -124,7 +122,7 @@ class FastaExtractor(BaseExtractor):
         for index, interval in enumerate(intervals):
             seq = self.fasta.fetch(str(interval.chrom), interval.start,
                                        interval.stop)
-            one_hot_encode_sequence(seq, out[index, :, :])
+            out[index, :, :] = one_hot_encode_sequence(seq)
 
             # reverse-complement seq the negative strand
             if self.use_strand and interval.strand == "-":
