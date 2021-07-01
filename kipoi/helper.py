@@ -4,6 +4,8 @@ from typing import Any
 import os
 import numpy as np
 from pysam import FastaFile
+import bcolz
+
 # Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L15
 NUM_SEQ_CHARS = 4
 
