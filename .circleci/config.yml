@@ -50,7 +50,6 @@ variables:
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py36.yml
         source activate kipoi-env
-        conda install gcc_linux-64
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python

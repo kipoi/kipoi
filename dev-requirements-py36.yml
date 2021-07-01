@@ -6,6 +6,7 @@ channels:
   - defaults
 dependencies:
   - python=3.6
+  - gcc_linux-64
   # general packages
   # - git-lfs 
   # General
