@@ -12,13 +12,16 @@ import pybedtools
 from pybedtools import BedTool
 
 from sklearn.preprocessing import FunctionTransformer
-from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
 from pysam import FastaFile
 from concise.preprocessing.splines import encodeSplines
 from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 from kipoi.metadata import GenomicRanges
 import linecache
 from kipoi.data import Dataset
+from helper import one_hot_encode_sequence
+
+from genomelake.extractors import BaseExtractor, FastaExtractor, NUM_SEQ_CHARS
+
 
 filename = inspect.getframeinfo(inspect.currentframe()).filename
 DATALOADER_DIR = os.path.dirname(os.path.abspath(filename))

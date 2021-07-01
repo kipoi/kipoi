@@ -9,13 +9,12 @@ import pandas as pd
 import pybedtools
 from pybedtools import BedTool
 
-from genomelake.extractors import BaseExtractor, FastaExtractor, one_hot_encode_sequence, NUM_SEQ_CHARS
 from pysam import FastaFile
 from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 
-
 from kipoi.data import Dataset
-
+from helper import one_hot_encode_sequence
+from genomelake.extractors import BaseExtractor, FastaExtractor, NUM_SEQ_CHARS
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
     """Extract distances to the closest genomic landmark
