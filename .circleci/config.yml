@@ -53,10 +53,7 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-  install_genomelake: &install_genomelake
-    run:
-      name: Install pip dependencies
-      command: conda install -c bioconda genomelake
+
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
