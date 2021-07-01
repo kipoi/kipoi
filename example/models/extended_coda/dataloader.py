@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import pybedtools
 
-from genomelake.extractors import ArrayExtractor
+from kipoi.helper import ArrayExtractor
 
 
 def batch_iter(iterable, batch_size):

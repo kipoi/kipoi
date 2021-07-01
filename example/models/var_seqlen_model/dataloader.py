@@ -14,8 +14,7 @@ from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 
 
 from kipoi.data import Dataset
-from helper import one_hot_encode_sequence
-from genomelake.extractors import BaseExtractor, FastaExtractor, NUM_SEQ_CHARS
+from kipoi.helper import BaseExtractor, FastaExtractor, NUM_SEQ_CHARS, one_hot_encode_sequence
 
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
