@@ -1,6 +1,6 @@
 ## Python API
 
-See the ipython notebook [tutorials/python-api](../../tutorials/python-api.html) for additional information and a working example of the API. Here is a list of most useful python commands.
+See the ipython notebook [tutorials/python-api](../tutorials/python-api.html) for additional information and a working example of the API. Here is a list of most useful python commands.
 
 ```python
 import kipoi
