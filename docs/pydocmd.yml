@@ -7,7 +7,7 @@ theme:
 extra_css: [css/extra.css]
 # --------------------------
 repo_url: http://github.com/kipoi/kipoi
-site_url: http://kipoi.org/docs/
+site_url: http://kipoi.org/docs
 edit_uri: edit/master/docs/templates/
 site_description: 'Documentation of Kipoi, model zoo for genomics.'
 

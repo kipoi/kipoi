@@ -27,7 +27,7 @@ This repository implements a python package and a command-line interface (CLI) t
 ## Installation
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX/). Supported python versions: 2.7 and >=3.5<=3.7.
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Supported python versions: 2.7 and >=3.5<=3.7.
 
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
@@ -128,15 +128,15 @@ kipoi predict <Model> --dataloader_args='{
   -o '<Model>.preds.h5'
 ```
 
-Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/cli/](http://kipoi.org/docs/using/cli/) for more information.
+Explore the CLI usage by running `kipoi <command> -h`. Also, see [docs/using/cli/](http://kipoi.org/docs/using/cli) for more information.
 
 ### Configure Kipoi in `.kipoi/config.yaml`
 
-You can add your own (private) model sources. See [docs/using/03_Model_sources/](http://kipoi.org/docs/using/03_Model_sources/).
+You can add your own (private) model sources. See [docs/using/03_Model_sources/](http://kipoi.org/docs/using/03_Model_sources).
 
 ### Contributing models
 
-See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started/) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models/) for more information.
+See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models) for more information.
 
 ## Plugins
 Kipoi supports plug-ins which are published as additional python packages. Two plug-ins that are available are:
