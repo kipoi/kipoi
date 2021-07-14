@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 INSTALL_REQ = config.install_req
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda"]  # "pyt" not used as gradients are not yet supported for pytorch model.
+EXAMPLES_TO_RUN = ["rbp"]  # "pyt" not used as gradients are not yet supported for pytorch model.
 
 
 @contextmanager
