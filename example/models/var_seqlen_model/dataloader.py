@@ -14,8 +14,46 @@ from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 
 
 from kipoi.data import Dataset
-from kipoi.helper import BaseExtractor, FastaExtractor, NUM_SEQ_CHARS, one_hot_encode_sequence
+from kipoi.helper import one_hot_encode_sequence
+from kipoiseq.extractors import FastaStringExtractor
 
+# Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L15
+NUM_SEQ_CHARS = 4
+# Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L18-L51
+class BaseExtractor(object):
+    dtype = np.float32
+
+    def __init__(self, datafile, **kwargs):
+        self._datafile = datafile
+
+    def __call__(self, intervals, out=None, **kwargs):
+        data = self._check_or_create_output_array(intervals, out)
+        self._extract(intervals, data, **kwargs)
+        return data
+
+    def _check_or_create_output_array(self, intervals, out):
+        width = intervals[0].stop - intervals[0].start
+        output_shape = self._get_output_shape(len(intervals), width)
+
+        if out is None:
+            out = np.zeros(output_shape, dtype=self.dtype)
+        else:
+            if out.shape != output_shape:
+                raise ValueError('out array has incorrect shape: {} '
+                                 '(need {})'.format(out.shape, output_shape))
+            if out.dtype != self.dtype:
+                raise ValueError('out array has incorrect dtype: {} '
+                                 '(need {})'.format(out.dtype, self.dtype))
+        return out
+
+    def _extract(self, intervals, out, **kwargs):
+        'Subclassses should implement this and return the data'
+        raise NotImplementedError
+
+    @staticmethod
+    def _get_output_shape(num_intervals, width):
+        'Subclasses should implement this and return the shape of output'
+        raise NotImplementedError
 
 class DistToClosestLandmarkExtractor(BaseExtractor):
     """Extract distances to the closest genomic landmark
@@ -133,7 +171,7 @@ class SeqDistDataset(Dataset):
     def __getitem__(self, idx):
         if self.input_data_extractors is None:
             self.input_data_extractors = {
-                "seq": FastaExtractor(self.fasta_file),
+                "seq": FastaStringExtractor(self.fasta_file),
                 "dist_polya_st": DistToClosestLandmarkExtractor(gtf_file=self.gtf,
                                                                 landmarks=["polya"])
             }

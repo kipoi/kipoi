@@ -27,7 +27,7 @@ class BaseExtractor(object):
 
     def __call__(self, intervals, out=None, **kwargs):
         data = self._check_or_create_output_array(intervals, out)
-        self.extract(intervals, data, **kwargs)
+        self._extract(intervals, data, **kwargs)
         return data
 
     def _check_or_create_output_array(self, intervals, out):
@@ -45,7 +45,7 @@ class BaseExtractor(object):
                                  '(need {})'.format(out.dtype, self.dtype))
         return out
 
-    def extract(self, intervals, out, **kwargs):
+    def _extract(self, intervals, out, **kwargs):
         'Subclassses should implement this and return the data'
         raise NotImplementedError
 
@@ -76,7 +76,7 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
         self.landmarks = {k: v.set_index(["seqname", "strand"])
                           for k, v in six.iteritems(self.landmarks)}
 
-    def extract(self, intervals, out, **kwargs):
+    def _extract(self, intervals, out, **kwargs):
 
         def find_closest(ldm, interval, use_strand=True):
             """Uses

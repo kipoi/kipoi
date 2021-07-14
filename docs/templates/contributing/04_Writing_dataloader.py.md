@@ -87,7 +87,6 @@ import numpy as np
 from pybedtools import BedTool
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
-from kipoi.helper import FastaExtractor
 
 class SeqDataset(Dataset):
     """
