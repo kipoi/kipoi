@@ -1,6 +1,6 @@
 ## Python API
 
-See the ipython notebook [tutorials/python-api](../../tutorials/python-api/) for additional information and a working example of the API. Here is a list of most useful python commands.
+See the ipython notebook [tutorials/python-api](../tutorials/python-api.html) for additional information and a working example of the API. Here is a list of most useful python commands.
 
 ```python
 import kipoi
@@ -19,7 +19,7 @@ Before getting started with models take a short look what a Kipoi model actually
 ├── dataloader.yaml   # (optional) describes the dataloader
 └── dataloader.py     # (optional) implements the dataloader
 ```
-The core file that defines a model is `model.yaml`, for more details please look at the docs for [contributing models](../contributing/01_Getting_started/).
+The core file that defines a model is `model.yaml`, for more details please look at the docs for [contributing models](../contributing/01_Getting_started.html).
 
 Now let's get started with the model:
 

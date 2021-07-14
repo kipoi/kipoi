@@ -126,7 +126,7 @@ Since `FastaExtractor` is not multi-processing safe, we have initialized it on t
 ### Required static files
 
 If your dataloader requires an external data file as for example in 
-[tutorials/contributing_models](../../tutorials/contributing_models), then the Kipoi way of automatically downloading 
+[tutorials/contributing_models](../tutorials/contributing_models.html), then the Kipoi way of automatically downloading 
 and using that file is by adding an argument to the dataloader implementation:
 
 ```python

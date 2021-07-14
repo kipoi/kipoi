@@ -1,6 +1,6 @@
 ### What type of models are suitable for the Kipoi model repository?
 
-The Kipoi model repository is restricted to trained models with application in genomics,. Specifically, we request at least one input data modality to be derived from DNA sequence (which includes amino acid sequences) or from a functional genomics assay such as ChIP-seq or protein mass-spectrometry. Moreover, models must be able to satisfy the specifications of the API ([model](http://kipoi.org/docs/contributing/05_Writing_model.py/) and [dataloader](http://kipoi.org/docs/contributing/04_Writing_dataloader.py/)).
+The Kipoi model repository is restricted to trained models with application in genomics,. Specifically, we request at least one input data modality to be derived from DNA sequence (which includes amino acid sequences) or from a functional genomics assay such as ChIP-seq or protein mass-spectrometry. Moreover, models must be able to satisfy the specifications of the API ([model](http://kipoi.org/docs/contributing/05_Writing_model.py) and [dataloader](http://kipoi.org/docs/contributing/04_Writing_dataloader.py)).
 Please contact us if the model you would like to share a model that doesn’t fit the scope. We would be happy to help you instantiate a new model repository for a different domain (say imaging).
 
 
@@ -11,7 +11,7 @@ Basically, models that don't fit [the above requirements](#what-models-go-to-kip
 
 ### What licenses are allowed?
 
-Any license that allows the redistribution model of files uploaded to file-sharing services like Zenodo or Figshare. We encourage users to use one of the standard open-source software licenses such as MIT, BSD License, GNU Public License or Apache License ([Comparison of free and open-source software licenses](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses)). Please contact us if you would like to host the files on your own servers. We note that it is the users' responsibility not to break copy rights when (re-)using models that are available in the Kipoi model zoo. License is specified either in the LICENSE file present in the model directory or the license type is specified in [model.yaml](http://kipoi.org/docs/contributing/02_Writing_model.yaml/).
+Any license that allows the redistribution model of files uploaded to file-sharing services like Zenodo or Figshare. We encourage users to use one of the standard open-source software licenses such as MIT, BSD License, GNU Public License or Apache License ([Comparison of free and open-source software licenses](https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses)). Please contact us if you would like to host the files on your own servers. We note that it is the users' responsibility not to break copy rights when (re-)using models that are available in the Kipoi model zoo. License is specified either in the LICENSE file present in the model directory or the license type is specified in [model.yaml](http://kipoi.org/docs/contributing/02_Writing_model.yaml).
 
 ### Versioning of models
 
