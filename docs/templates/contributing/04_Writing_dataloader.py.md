@@ -85,7 +85,6 @@ Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.h
 from __future__ import absolute_import, division, print_function
 import numpy as np
 from pybedtools import BedTool
-from genomelake.extractors import FastaExtractor
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
 

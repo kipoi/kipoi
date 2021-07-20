@@ -63,7 +63,7 @@ def test_list_models_group():
 
 
 def test_github_permalink():
-    link = "https://github.com/kipoi/models/tree/7d3ea7800184de414aac16811deba6c8eefef2b6/pwm_HOCOMOCO/human/CTCF"
+    link = "https://github.com/kipoi/models/tree/d415dad747acd95272f29b0f7e993a9ac0565881/Basset/"
     kipoi.get_model(link, source="github-permalink")
     kipoi.get_model_descr(link, source="github-permalink")
     assert len(kipoi.get_source("github-permalink").list_models()) == 0

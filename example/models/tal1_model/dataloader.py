@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pybedtools
 from pybedtools import BedTool
-#from genomelake.extractors import FastaExtractor
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
 import linecache

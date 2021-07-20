@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 import pybedtools
 from pybedtools import BedTool
-from genomelake.extractors import FastaExtractor
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
+from kipoiseq.extractors import FastaStringExtractor
 import linecache
+from kipoiseq.transforms.functional import one_hot_dna
+
 # --------------------------------------------
 
 
@@ -55,7 +57,7 @@ class SeqDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.fasta_extractor is None:
-            self.fasta_extractor = FastaExtractor(self.fasta_file)
+            self.fasta_extractor = FastaStringExtractor(self.fasta_file)
 
         interval = self.bt[idx]
 
@@ -68,7 +70,7 @@ class SeqDataset(Dataset):
             y = {}
 
         # Run the fasta extractor
-        seq = np.squeeze(self.fasta_extractor([interval]), axis=0)
+        seq = one_hot_dna(self.fasta_extractor.extract(interval))
         return {
             "inputs": seq,
             "targets": y,

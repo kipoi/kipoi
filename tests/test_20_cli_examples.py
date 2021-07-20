@@ -22,8 +22,9 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "sklearn_iris", "iris_model_template",
-                   "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
+# EXAMPLES_TO_RUN = ["rbp", "sklearn_iris", "iris_model_template",
+#                    "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
+EXAMPLES_TO_RUN = ["non_bedinput_model"]
 
 predict_activation_layers = {
     "rbp": "concatenate_6",
@@ -119,7 +120,7 @@ def test_preproc_example(example, new_dataloader_kwargs_format, tmpdir):
     """
     if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
-    if example in {"extended_coda", "kipoi_dataloader_decorator"}:
+    if example in {"kipoi_dataloader_decorator"}:
         # extended_coda will anyway be tested in models
         pytest.skip("randomly failing on circleci without any reason. Skipping this test.")
 
@@ -136,12 +137,6 @@ def test_preproc_example(example, new_dataloader_kwargs_format, tmpdir):
                 "preproc_transformer=../dataloader_files/encodeSplines.pkl",
                 "gtf_file=gencode_v25_chr22.gtf.pkl.gz",
                 "tarOget_file=targets.tsv"
-            ]
-        elif example == "extended_coda":
-            dataloader_args = [
-                "intervals_file=intervals.tsv",
-                "input_data_sources={'H3K27AC_subsampled':'H3K27AC_subsampled.bw'}",
-                "batch_size=4"
             ]
         # run the
         args = ["python", os.path.abspath("./kipoi/__main__.py"), "preproc",

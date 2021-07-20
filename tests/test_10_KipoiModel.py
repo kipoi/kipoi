@@ -11,10 +11,9 @@ from kipoi.pipeline import install_model_requirements
 
 # HACK - prevents ImportError: dlopen: cannot load any more object with static TLS
 import torch
-import genomelake
 import keras
 
-EXAMPLES_TO_RUN = ["rbp", "extended_coda", "sklearn_iris", "iris_model_template", "pyt"]
+EXAMPLES_TO_RUN = ["rbp", "sklearn_iris", "iris_model_template", "pyt"]
 # TODO - finish the unit-test
 INSTALL_REQ = config.install_req
 

@@ -34,7 +34,6 @@ dependencies:
   - cyvcf2>=0.8.4
   - bedtools>=2.27.1
   - htslib>=1.7
-  - genomelake>=0.1.4
   # ML
   - scikit-learn>=0.19.1,<=0.22
   - tensorflow==1.13.1
@@ -57,6 +56,6 @@ dependencies:
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
     - kipoi-veff>=0.3.0
-    - kipoiseq>=0.2.3
+    - git+https://github.com/kipoi/kipoiseq.git@add-one-hot-encode
     - concise>=0.6.5
     - joblib==0.17.0
