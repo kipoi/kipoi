@@ -19,7 +19,7 @@ from kipoi.metadata import GenomicRanges
 import linecache
 from kipoi.data import Dataset
 from kipoiseq.extractors import FastaStringExtractor
-from kipoi.helper import one_hot_encode_sequence
+from kipoiseq.transforms.functional import one_hot_dna
 
 # Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L15
 NUM_SEQ_CHARS = 4
@@ -242,7 +242,7 @@ class SeqDistDataset(Dataset):
 
         out = {}
 
-        out['inputs'] = {  "seq": one_hot_encode_sequence(FastaStringExtractor(self.fasta_file).extract(interval)),
+        out['inputs'] = {  "seq": one_hot_dna(FastaStringExtractor(self.fasta_file).extract(interval)),
                            "dist_polya_st": np.squeeze(DistToClosestLandmarkExtractor(gtf_file=self.gtf,
                                                                 landmarks=["polya"])([interval]), axis=0)
                         }

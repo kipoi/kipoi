@@ -11,7 +11,7 @@ from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
 from kipoiseq.extractors import FastaStringExtractor
 import linecache
-from kipoi.helper import one_hot_encode_sequence
+from kipoiseq.transforms.functional import one_hot_dna
 
 # --------------------------------------------
 
@@ -70,7 +70,7 @@ class SeqDataset(Dataset):
             y = {}
 
         # Run the fasta extractor
-        seq = one_hot_encode_sequence(self.fasta_extractor.extract(interval))
+        seq = one_hot_dna(self.fasta_extractor.extract(interval))
         return {
             "inputs": seq,
             "targets": y,

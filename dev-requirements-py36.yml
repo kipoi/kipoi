@@ -56,6 +56,6 @@ dependencies:
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
     - kipoi-veff>=0.3.0
-    - kipoiseq>=0.2.3
+    - git+https://github.com/kipoi/kipoiseq.git@add-one-hot-encode
     - concise>=0.6.5
     - joblib==0.17.0

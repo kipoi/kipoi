@@ -14,7 +14,7 @@ from concise.utils.position import extract_landmarks, ALL_LANDMARKS
 
 
 from kipoi.data import Dataset
-from kipoi.helper import one_hot_encode_sequence
+from kipoiseq.transforms.functional import one_hot_dna
 from kipoiseq.extractors import FastaStringExtractor
 
 # Reference: https://github.com/kundajelab/genomelake/blob/3f53f490c202fcbca83d6e4a9f1e5f2c68066133/genomelake/extractors.py#L15
