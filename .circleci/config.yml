@@ -43,12 +43,12 @@ variables:
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
         echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
-  install_from_dev_requirements_py36: &install_from_dev_requirements_py36
+  install_from_dev_requirements_py38: &install_from_dev_requirements_py38
     run:
-      name: Install from dev-requirements-py36.yml
+      name: Install from dev-requirements-py38.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        conda env create --name kipoi-env -f dev-requirements-py38.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -127,15 +127,15 @@ variables:
         echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
-  test-py36-yml:
+  test-py38-yml:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:latest
     working_directory: ~/repo
     steps:
       - checkout
       - *update_conda
       #- *install_sys_deps
-      - *install_from_dev_requirements_py36
+      - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -178,7 +178,7 @@ jobs:
       - checkout
       - *update_conda
       #- *install_sys_deps
-      - *install_from_dev_requirements_py36
+      - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -206,7 +206,7 @@ jobs:
       - checkout
       - *update_conda
       #- *install_sys_deps
-      - *install_from_dev_requirements_py36
+      - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -233,10 +233,10 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - test-py36-yml
+      - test-py38-yml
       - build-deploy-docs:
           requires:
-            - test-py36-yml
+            - test-py38-yml
           filters:
             branches:
               only:
@@ -244,7 +244,7 @@ workflows:
                 - test_deployment_script
       - test-deploy-pypi:
           requires:
-            - test-py36-yml
+            - test-py38-yml
           filters:
 #            tags:
 #              only: /^v.*/
@@ -254,7 +254,7 @@ workflows:
                 - test_deployment_script
       - productive-deploy-pypi:
           requires:
-            - test-py36-yml
+            - test-py38-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -272,4 +272,4 @@ workflows:
               only:
                 - master
     jobs:
-      - test-py36-yml
+      - test-py38-yml
