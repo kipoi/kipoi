@@ -134,7 +134,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
@@ -177,7 +177,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
@@ -205,7 +205,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
