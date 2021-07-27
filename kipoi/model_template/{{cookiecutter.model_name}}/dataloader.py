@@ -264,7 +264,7 @@ def my{{ cookiecutter.dataloader_type }}(features_file, targets_file=None, batch
                 {{return_dict(True, "yield"|indent(16))}}
     except StopIteration:
         if len(x_feat) == 0:
-            raise StopIteration
+            return # https://www.python.org/dev/peps/pep-0479/
         idx = np.array(idx)
         if targets_file is None:
             {{return_dict(False, "yield")|indent(12)}}
