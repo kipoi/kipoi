@@ -8,7 +8,7 @@ variables:
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
-      command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev
+      command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc
   # install_singularity: &install_singularitymodel
   #   run:
   #     name: Install Singularity
@@ -134,7 +134,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
@@ -177,7 +177,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
@@ -205,7 +205,7 @@ jobs:
     steps:
       - checkout
       - *update_conda
-      #- *install_sys_deps
+      - *install_sys_deps
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
