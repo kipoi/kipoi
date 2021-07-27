@@ -242,6 +242,7 @@ workflows:
               only:
                 - master
                 - test_deployment_script
+                - python3.8
       - test-deploy-pypi:
           requires:
             - test-py38-yml
