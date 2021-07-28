@@ -13,10 +13,19 @@ dependencies:
   - keras
   - torchvision
   - pytorch
-  - pip
+  - pytest
   - zarr
   - git-lfs
-  - pytest
+  - pytest-cov
+  - pybigwig
+  - scikit-learn=0.22
+  - fastparquet
+  - matplotlib
+  - pyvcf
+  - pyfaidx
+  - git
+  - pip
+  - cookiecutter
   - pip:
     - kipoi-utils
     - kipoi-conda
