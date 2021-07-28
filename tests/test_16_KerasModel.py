@@ -68,10 +68,10 @@ def get_single_layer_model():
 
 def get_sample_functional_model():
     # Keras ["2.0.4", "2.1.5"]
-    import keras
+    from tensorflow import keras
     if keras.__version__.startswith("2."):
         # from the Keras Docs - functional models
-        import keras
+        from tensorflow import keras
         from keras.layers import Input, LSTM, Dense
         from keras.models import Model
         #
@@ -101,7 +101,7 @@ def get_sample_functional_model():
                       metrics=['accuracy'])
     elif keras.__version__.startswith("1."):
         # from the Keras Docs - functional models
-        import keras
+        from tensorflow import keras
         from keras.layers import Input, LSTM, Dense, merge
         from keras.models import Model
         #
@@ -171,7 +171,7 @@ def test_activation_function_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
     #
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
@@ -208,7 +208,7 @@ def test_activation_function_model(example):
             model.predict_activation_on_batch(batch["inputs"], layer="flatten_6")
 
 def test_keras_get_layers_and_outputs():
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     selected_layers, sel_outputs, sel_output_dims = model.get_layers_and_outputs("shared_lstm")
@@ -260,7 +260,7 @@ def test_keras_get_layers_and_outputs():
     assert len(sel_output_dims) == 1
 
 def test_generate_activation_output_functions():
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     sample_input = get_sample_functional_model_input()
@@ -295,7 +295,7 @@ def test_gradient_function_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
 
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
@@ -345,8 +345,9 @@ def check_grad(input, grad):
         assert input.shape == grad.shape
 
 def test__get_gradient_function():
+    from tensorflow import keras
     import keras.backend as K
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     model = kipoi.model.KerasModel(*get_sample_functional_model())
     with pytest.raises(Exception):  # expect exception

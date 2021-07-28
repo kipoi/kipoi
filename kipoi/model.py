@@ -328,7 +328,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             logger.info("Using Keras backend: {0}".format(self.backend))
             os.environ['KERAS_BACKEND'] = self.backend
         if self.image_dim_ordering is not None:
-            import keras.backend as K
+            import tensorflow.keras.backend as K
             logger.info("Using image_dim_ordering: {0}".format(self.image_dim_ordering))
             try:
                 K.set_image_dim_ordering(self.image_dim_ordering)
@@ -389,7 +389,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         #   - keras.layers.core.Dense object
         # for  keras 2.2.x  this will be a single layer
         #   - keras.layers.core.Dense
-        import keras
+        from tensorflow import keras
         try:
             first_layer = self.model.get_layer(index=0)
         except:
@@ -415,7 +415,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             layer: layer index (int) or name (non-int)
             use_final_layer:  instead of using `layer` return the final model layer(s) + outputs
         """
-        import keras
+        from tensorflow import keras
         sel_outputs = []
         sel_output_dims = []
 
@@ -482,7 +482,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     @staticmethod
     def get_pre_activation_output(layer, output):
-        import keras
+        from tensorflow import keras
         # if the current layer uses an activation function then grab the input to the activation function rather
         # than the output from the activation function.
         # This can lead to confusion if the activation function translates to backend operations that are not a
@@ -550,7 +550,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 `filter_func` are defined, then `filter_slices` will be applied first and then `filter_func`.
             filter_func_kwargs: keyword argument dict passed on to `filter_func`
         """
-        import keras
+        from tensorflow import keras
         import copy
         from keras.models import Model
         # Generate the gradient functions according to the layer / filter definition
@@ -643,7 +643,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         return gradient_function
 
     def _get_feed_input_names(self):
-        import keras
+        from tensorflow import keras
         from keras import backend as K
         feed_input_names = None
         if keras.__version__[0] == '1':
@@ -657,7 +657,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     @staticmethod
     def _get_standardize_input_data_func():
-        import keras
+        from tensorflow import keras
         if keras.__version__[0] == '1':
             from keras.engine.training import standardize_input_data as _standardize_input_data
         elif hasattr(keras.engine.training, "_standardize_input_data"):
@@ -669,7 +669,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         return _standardize_input_data
 
     def _batch_to_list(self, x):
-        import keras
+        from tensorflow import keras
         from keras import backend as K
         feed_input_names = self._get_feed_input_names()
 
@@ -724,7 +724,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Returns
             Numpy array(s) of predictions.
         """
-        import keras
+        from tensorflow import keras
         from keras import backend as K
         x_standardized = self._batch_to_list(x)
         if self.model.uses_learning_phase and not isinstance(K.learning_phase(), int):
@@ -756,7 +756,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
             pre_nonlinearity: Try to use the layer output prior to activation (will not always be possible in an
             automatic way)
         """
-        import keras.backend as K
+        import tensorflow.keras.backend as K
         _avg_funcs = {"sum": K.sum, "min": K.min, "max": K.max, "absmax": lambda x: K.max(K.abs(x))}
         if avg_func is not None:
             assert avg_func in _avg_funcs
@@ -811,7 +811,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns
             Numpy array(s) of predictions.
         """
-        import keras
+        from tensorflow import keras
         from keras import backend as K
 
         # depending on the keras version this functions needs to be imported from
