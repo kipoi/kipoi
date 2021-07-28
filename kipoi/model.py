@@ -14,6 +14,7 @@ import six
 import numpy as np
 import json
 import yaml
+import importlib
 
 from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
 from .pipeline import Pipeline
@@ -55,7 +56,7 @@ class BaseModel(object):
             return False
 
 
-def get_model(model, source="kipoi", with_dataloader=True):
+def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
     """Load the `model` from `source`, as well as the default dataloder to model.default_dataloder.
 
     # Arguments
@@ -89,6 +90,12 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     """
     # TODO - model can be a yaml file or a directory
+    if "default_dataloader_name" in kwargs and with_dataloader: #TODO: Maybe not use with_dataloader?
+        default_dataloader_name = kwargs.get("default_dataloader_name")
+        mod_name, func_name = default_dataloader_name.rsplit(".", 1)
+        mod = importlib.import_module(mod_name)
+        default_dataloader = getattr(mod, func_name)
+    print(f"default dataloader = {default_dataloader}")
     if isinstance(source, str):
         source_name = source
         source = kipoi.config.get_source(source)
@@ -111,7 +118,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
     # TODO - validate md.default_dataloader <-> model
 
     # Load the dataloader
-    if with_dataloader:
+    if with_dataloader and not default_dataloader:
         # load from python
         if isinstance(md.default_dataloader, DataLoaderImport):
             with cd(source_dir):

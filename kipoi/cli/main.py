@@ -221,10 +221,9 @@ def cli_predict(command, raw_args):
     parser.add_argument('-o', '--output', required=True, nargs="+",
                         help="Output files. File format is inferred from the file path ending. Available file formats are: " +
                         ", ".join(["." + k for k in writers.FILE_SUFFIX_MAP]))
+
     args = parser.parse_args(raw_args)
-
     dataloader_kwargs = parse_json_file_str_or_arglist(args.dataloader_args, parser)
-
     # setup the files
     if not isinstance(args.output, list):
         args.output = [args.output]
@@ -251,7 +250,7 @@ def cli_predict(command, raw_args):
         return None
     # --------------------------------------------
     # load model & dataloader
-    model = kipoi.get_model(args.model, args.source)
+    model = kipoi.get_model(args.model, args.source, **{"default_dataloader_name": args.dataloader})
 
     if args.dataloader is not None:
         Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
@@ -374,7 +373,6 @@ def cli_info(command, raw_args):
     add_model(parser)
     add_dataloader(parser, with_args=False)
     args = parser.parse_args(raw_args)
-
     # --------------------------------------------
     # load model & dataloader
     md = kipoi.get_model_descr(args.model, args.source)

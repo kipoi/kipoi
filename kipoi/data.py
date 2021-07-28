@@ -623,9 +623,9 @@ def get_dataloader(dataloader, source="kipoi"):
     #     # load it from the python object
     #     sys.path.append(os.path.getcwd())
     #     return DataLoaderImport(defined_as=dataloader).get()
-    # TODO - allow source=py
 
     # pull the dataloader & get the dataloader directory
+    print(f"source = {source}, dataloader={dataloader}")
     if isinstance(source, str):
         source = kipoi.config.get_source(source)
     source.pull_dataloader(dataloader)
