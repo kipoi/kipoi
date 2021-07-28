@@ -337,8 +337,8 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                     raise RuntimeError("only tf dim ordering at is supported")
 
 
-        import keras
-        from keras.models import model_from_json, load_model
+        from tensorflow import keras
+        from tensorflow.keras.models import model_from_json, load_model
 
         if self.backend is not None:
             if keras.backend.backend() != self.backend:

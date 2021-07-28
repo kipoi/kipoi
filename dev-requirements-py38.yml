@@ -10,7 +10,6 @@ dependencies:
   - cyvcf2
   - cython=0.29.23
   - tensorflow
-  - keras
   - torchvision
   - pytorch
   - pytest
@@ -26,6 +25,7 @@ dependencies:
   - git
   - pip
   - cookiecutter
+  - pyyaml
   - pip:
     - kipoi-utils
     - kipoi-conda
