@@ -621,10 +621,12 @@ def get_dataloader(dataloader, source="kipoi"):
     """
     if source == 'py':
         # load it from the python object
+        logger.info(f"Using user specified dataloader from cli {dataloader}")
         sys.path.append(os.getcwd())
         return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
+    logger.info(f"Using user specified dataloader from {source}")
     if isinstance(source, str):
         source = kipoi.config.get_source(source)
     source.pull_dataloader(dataloader)
