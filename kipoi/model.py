@@ -120,7 +120,6 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
             mod_name, func_name = default_dataloader_name.rsplit(".", 1)
             mod = importlib.import_module(mod_name)
             default_dataloader = getattr(mod, func_name)
-            print(default_dataloader)
         # load from python
         elif isinstance(md.default_dataloader, DataLoaderImport):
             with cd(source_dir):
@@ -224,7 +223,6 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
     mod.postprocessing = md.postprocessing
     mod.writers = md.writers
     if with_dataloader:
-        print(default_dataloader)
         mod.pipeline = Pipeline(model=mod, dataloader_cls=default_dataloader)
     else:
         mod.pipeline = None
