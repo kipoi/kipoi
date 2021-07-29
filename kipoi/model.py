@@ -91,14 +91,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
     """
     # TODO - model can be a yaml file or a directory
-    if "default_dataloader_name" in kwargs and with_dataloader: #TODO: Maybe not use with_dataloader?
-        default_dataloader_name = kwargs.get("default_dataloader_name")
-        mod_name, func_name = default_dataloader_name.rsplit(".", 1)
-        mod = importlib.import_module(mod_name)
-        default_dataloader = getattr(mod, func_name)
-    else:
-        default_dataloader = None
-    print(f"default dataloader = {default_dataloader}")
+   
     if isinstance(source, str):
         source_name = source
         source = kipoi.config.get_source(source)
@@ -122,30 +115,37 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
     # Load the dataloader
     if with_dataloader:
-        if default_dataloader is None:
+        if "default_dataloader_name" in kwargs: #TODO: Maybe not use with_dataloader?
+            default_dataloader_name = kwargs.get("default_dataloader_name")
+            mod_name, func_name = default_dataloader_name.rsplit(".", 1)
+            mod = importlib.import_module(mod_name)
+            default_dataloader = getattr(mod, func_name)
+            print(default_dataloader)
         # load from python
-            if isinstance(md.default_dataloader, DataLoaderImport):
-                with cd(source_dir):
-                    default_dataloader = md.default_dataloader.get()
-                default_dataloader.source_dir = source_dir
-                # download util links if specified under default & override the default parameters
-                override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
-                if override:
-                    # override default arguments specified under default
-                    default_dataloader = override_default_kwargs(default_dataloader, override)
+        elif isinstance(md.default_dataloader, DataLoaderImport):
+            with cd(source_dir):
+                default_dataloader = md.default_dataloader.get()
+            default_dataloader.source_dir = source_dir
+            # download util links if specified under default & override the default parameters
+            override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
+            if override:
+                # override default arguments specified under default
+                default_dataloader = override_default_kwargs(default_dataloader, override)
+        else:
+            # load from directory
+            # attach the default dataloader already to the model
+            if ":" in md.default_dataloader:
+                dl_source, dl_path = md.default_dataloader.split(":")
             else:
-                # load from directory
-                # attach the default dataloader already to the model
-                if ":" in md.default_dataloader:
-                    dl_source, dl_path = md.default_dataloader.split(":")
-                else:
-                    dl_source = source
-                    dl_path = md.default_dataloader
+                dl_source = source
+                dl_path = md.default_dataloader
 
                 # allow to use relative and absolute paths for referring to the dataloader
                 default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
                 default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
                                                                 dl_source)
+    else:
+        default_dataloader = None
 
     model_download_dir = source.get_model_download_dir(model)
     # Read the Model - append methods, attributes to self
