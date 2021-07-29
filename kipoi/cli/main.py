@@ -251,8 +251,10 @@ def cli_predict(command, raw_args):
     # --------------------------------------------
     # load model & dataloader
     model = kipoi.get_model(args.model, args.source, **{"default_dataloader_name": args.dataloader})
+    print(f"dataloader = {args.dataloader}, dataloader_source={args.dataloader_source}")
 
     if args.dataloader is not None:
+        args.dataloader_source = "py"
         Dl = kipoi.get_dataloader_factory(args.dataloader, args.dataloader_source)
     else:
         Dl = model.default_dataloader

@@ -115,7 +115,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
     # Load the dataloader
     if with_dataloader:
-        if "default_dataloader_name" in kwargs: #TODO: Maybe not use with_dataloader?
+        if kwargs.get("default_dataloader_name"): #TODO: Maybe not use with_dataloader?
             default_dataloader_name = kwargs.get("default_dataloader_name")
             mod_name, func_name = default_dataloader_name.rsplit(".", 1)
             mod = importlib.import_module(mod_name)

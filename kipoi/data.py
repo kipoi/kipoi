@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 import related
 import kipoi  # for .config module
-from kipoi.specs import DataLoaderDescription, Info, example_kwargs, RemoteFile, download_default_args
+from kipoi.specs import DataLoaderDescription, Info, example_kwargs, RemoteFile, download_default_args, DataLoaderImport
 from kipoi_utils import (load_module, cd, getargs, classproperty, inherits_from, rsetattr,
                          _get_arg_name_values, load_obj, infer_parent_class, override_default_kwargs)
 from kipoi_utils.external.torch.data import DataLoader
@@ -619,13 +619,12 @@ def get_dataloader(dataloader, source="kipoi"):
     - **writers** (dict): dictionary of arguments for writers
     - **example_kwargs** (dict): kwargs for running the provided example
     """
-    # if source == 'py':
-    #     # load it from the python object
-    #     sys.path.append(os.path.getcwd())
-    #     return DataLoaderImport(defined_as=dataloader).get()
+    if source == 'py':
+        # load it from the python object
+        sys.path.append(os.getcwd())
+        return DataLoaderImport(defined_as=dataloader).get()
 
     # pull the dataloader & get the dataloader directory
-    print(f"source = {source}, dataloader={dataloader}")
     if isinstance(source, str):
         source = kipoi.config.get_source(source)
     source.pull_dataloader(dataloader)
