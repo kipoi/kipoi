@@ -43,16 +43,18 @@ variables:
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
         echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
+
   install_from_dev_requirements_py36: &install_from_dev_requirements_py36
-  run:
-    name: Install from dev-requirements-py36.yml
-    command: |
-      echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-      conda env create --name kipoi-env -f dev-requirements-py36.yml
-      source activate kipoi-env
-      pip install -e .
-      git lfs install
-      # ln -s /opt/conda/bin/python /usr/bin/python
+    run:
+      name: Install from dev-requirements-py36.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        source activate kipoi-env
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python
+
   install_from_dev_requirements_py37: &install_from_dev_requirements_py37
     run:
       name: Install from dev-requirements-py37.yml
