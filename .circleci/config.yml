@@ -62,7 +62,7 @@ variables:
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
-        conda install -y matplotlib tinydb
+        conda install -y -c conda-forge matplotlib tinydb
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
@@ -263,10 +263,8 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
+      - test-py36-yml
       - test-py37-yml
-      - test-py36-yml:
-          requires:
-            - test-py37-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
@@ -309,6 +307,4 @@ workflows:
                 - master
     jobs:
       - test-py36-yml
-      - test-py37-yml:
-          requires:
-            - test-py36-yml
+      - test-py37-yml
