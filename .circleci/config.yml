@@ -262,10 +262,10 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - test-py36-yml
-      - test-py37-yml:
+      - test-py37-yml
+      - test-py36-yml:
           requires:
-            - test-py36-yml
+            - test-py37-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
