@@ -142,7 +142,7 @@ variables:
 jobs:
   test-py36-yml:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:latest
     working_directory: ~/repo
     steps:
       - checkout
@@ -158,7 +158,7 @@ jobs:
       - *store_test_artifacts
   test-py37-yml:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:latest
     working_directory: ~/repo
     steps:
       - checkout
@@ -201,7 +201,7 @@ jobs:
 
   test-deploy-pypi:
     docker:
-      - image: continuumio/miniconda3:4.7.10
+      - image: continuumio/miniconda3:latest
     working_directory: ~/repo
     steps:
       - checkout
@@ -229,7 +229,7 @@ jobs:
 
   productive-deploy-pypi:
     docker:
-      - image: continuumio/miniconda3:4.7.10
+      - image: continuumio/miniconda3:latest
     working_directory: ~/repo
     steps:
       - checkout
