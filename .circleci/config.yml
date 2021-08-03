@@ -263,7 +263,7 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36-yml
-      - test-py37-yml
+      - test-py37-yml:
           requires:
             - test-py36-yml
       - build-deploy-docs:
@@ -308,6 +308,6 @@ workflows:
                 - master
     jobs:
       - test-py36-yml
-      - test-py37-yml
+      - test-py37-yml:
           requires:
             - test-py36-yml
