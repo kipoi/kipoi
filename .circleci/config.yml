@@ -5,7 +5,7 @@ variables:
     run:
       name: Install miniconda3
       command: |
-       sudo apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
+        sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
         wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
         /bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
@@ -177,7 +177,6 @@ jobs:
       - checkout
       - *install_conda
       - *update_conda
-      - *install_sys_deps
       - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
