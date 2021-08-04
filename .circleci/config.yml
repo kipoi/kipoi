@@ -55,7 +55,6 @@ variables:
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
         echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
-
   install_from_dev_requirements_py36: &install_from_dev_requirements_py36
     run:
       name: Install from dev-requirements-py36.yml
@@ -66,19 +65,6 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-
-  install_from_dev_requirements_py37: &install_from_dev_requirements_py37
-    run:
-      name: Install from dev-requirements-py37.yml
-      command: |
-        source ~/.bashrc
-        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py37.yml
-        source activate kipoi-env
-        pip install -e .
-        git lfs install
-        # ln -s /opt/conda/bin/python /usr/bin/python
-        
 
   install_kipoi: &install_kipoi
     run:
@@ -220,7 +206,7 @@ jobs:
       - checkout
       - *update_conda
       - *install_sys_deps
-      - *install_from_dev_requirements_py37
+      - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -248,7 +234,7 @@ jobs:
       - checkout
       - *update_conda
       - *install_sys_deps
-      - *install_from_dev_requirements_py37
+      - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -276,11 +262,9 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36-yml
-      - test-py37-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
-            - test-py37-yml
           filters:
             branches:
               only:
@@ -289,7 +273,6 @@ workflows:
       - test-deploy-pypi:
           requires:
             - test-py36-yml
-            - test-py37-yml
           filters:
 #            tags:
 #              only: /^v.*/
@@ -300,7 +283,6 @@ workflows:
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
-            - test-py37-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -319,4 +301,3 @@ workflows:
                 - master
     jobs:
       - test-py36-yml
-      - test-py37-yml
