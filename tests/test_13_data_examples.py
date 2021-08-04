@@ -9,6 +9,7 @@ import kipoi
 import kipoi_utils.utils
 from kipoi.pipeline import install_model_requirements
 import config
+import numpy as np 
 
 # TODO - check if you are on travis or not regarding the --install-req flag
 # INSTALL_REQ = True
@@ -42,7 +43,6 @@ def test_dataloader_model(example):
     Dl = kipoi.get_dataloader_factory(example_dir, source="dir")
 
     test_kwargs = Dl.example_kwargs
-
     # get dataloader
 
     # get model
@@ -55,5 +55,8 @@ def test_dataloader_model(example):
         # sample a batch of data
         it = dataloader.batch_iter()
         batch = next(it)
-        # predict with a model
-        model.predict_on_batch(batch["inputs"])
+        # predict with a model        
+        if isinstance(batch["inputs"], np.ndarray):
+            model.predict_on_batch(batch["inputs"].astype(np.float32))
+        else:
+            model.predict_on_batch(batch["inputs"])

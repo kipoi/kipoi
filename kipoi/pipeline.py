@@ -14,6 +14,7 @@ import six
 import deprecation
 from ._version import __version__
 import logging
+import numpy as np
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -134,7 +135,10 @@ class Pipeline(object):
             for i, batch in enumerate(tqdm(it)):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warning("First batch of data is not compatible with the dataloader schema.")
-                pred_batch = self.model.predict_on_batch(batch['inputs'])
+                if isinstance(batch["inputs"], np.ndarray):
+                    pred_batch = self.model.predict_on_batch(batch['inputs'].astype(np.float32))
+                else:
+                    pred_batch = self.model.predict_on_batch(batch['inputs'])
                 if 'keep_metadata' in kwargs and kwargs.get('keep_metadata') and 'metadata' in batch:
                     pred_list.append({'preds':pred_batch, 'metadata': batch['metadata']})
                 else:
