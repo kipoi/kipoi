@@ -24,7 +24,7 @@ def test_all_args(model_type,
                   tmpdir,
                   caplog):
     caplog.set_level(logging.INFO)
-    
+
     # initialize the repo
     cli_init("init", "",
              no_input=True,
@@ -40,4 +40,4 @@ def test_all_args(model_type,
 
     # check that there were no warnings in the logs
     for record in caplog.records:
-        assert record.levelname not in ['ERROR', 'CRITICAL']
+        assert record.levelname not in ['WARN', 'WARNING', 'ERROR', 'CRITICAL']
