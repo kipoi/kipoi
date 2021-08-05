@@ -65,7 +65,16 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-
+  install_from_dev_requirements_py37: &install_from_dev_requirements_py37
+    run:
+      name: Install from dev-requirements-py37.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py37.yml
+        source activate kipoi-env
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
