@@ -274,9 +274,11 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36-yml
+      - test-py37-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
             branches:
               only:
@@ -285,6 +287,7 @@ workflows:
       - test-deploy-pypi:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
 #            tags:
 #              only: /^v.*/
@@ -295,6 +298,7 @@ workflows:
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -313,3 +317,4 @@ workflows:
                 - master
     jobs:
       - test-py36-yml
+      - test-py37-yml
