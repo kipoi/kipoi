@@ -31,7 +31,6 @@ dependencies:
   - fastparquet
   - zarr 
   - numcodecs
-  - matplotlib
   - tinydb>=3.12.2
   # singularity
   #- singularity
