@@ -21,7 +21,7 @@ model_input_type = '{{ cookiecutter.model_input_type }}'
 model_output_type = '{{ cookiecutter.model_output_type }}'
 
 if model_type == "sklearn":
-    if model_input_type != "np.array" or model_output_type != "np.array":
+    if model_input_type is not "np.array" or model_output_type is not "np.array":
         print(bcolors.FAIL + "\nERROR: " + bcolors.ENDC + "model_input_type and model_output_type need to be 'np.array' for model_type == 'sklearn'")
         # exits with status 1 to indicate failure
         sys.exit(1)
