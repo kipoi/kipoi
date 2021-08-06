@@ -1,10 +1,22 @@
 version: 2
 
 variables:
+  install_conda: &install_conda
+    run:
+      name: Install miniconda3
+      command: |
+        sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+        /bin/bash ~/miniconda.sh -b && \
+        rm ~/miniconda.sh && \
+        ~/miniconda3/bin/conda clean -tipsy && \
+        sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc && \
+        echo "conda activate base" >> ~/.bashrc && \
   update_conda: &update_conda
     run:
       name: Update conda
-      command: conda update -n base conda -c anaconda
+      command: source ~/.bashrc && conda update -n base conda -c anaconda
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -33,7 +45,7 @@ variables:
       command: |
         pip install kipoi_interpret
         pip install kipoi_veff
-        pip install git+https://github.com/kipoi/kipoiseq.git@add-one-hot-encode
+        pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
 
@@ -53,7 +65,17 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-
+  install_from_dev_requirements_py37: &install_from_dev_requirements_py37
+    run:
+      name: Install from dev-requirements-py37.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py37.yml
+        source activate kipoi-env
+        conda install -c conda-forge matplotlib
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -136,6 +158,25 @@ jobs:
       - *update_conda
       - *install_sys_deps
       - *install_from_dev_requirements_py38
+      #- *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+  test-py37-yml:
+    # machine: # executor type
+    #   image: ubuntu-1604:202104-01
+    docker:
+      - image: continuumio/miniconda3:4.5.12
+    working_directory: ~/repo
+    steps:
+      - checkout
+      # - *install_conda
+      - *update_conda
+      - *install_sys_deps
+      - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -233,9 +274,13 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
+      - test-py36-yml
+      - test-py37-yml
       - test-py38-yml
       - build-deploy-docs:
           requires:
+            - test-py36-yml
+            - test-py37-yml
             - test-py38-yml
           filters:
             branches:
@@ -245,6 +290,8 @@ workflows:
                 - python3.8
       - test-deploy-pypi:
           requires:
+            - test-py36-yml
+            - test-py37-yml
             - test-py38-yml
           filters:
 #            tags:
@@ -255,6 +302,8 @@ workflows:
                 - test_deployment_script
       - productive-deploy-pypi:
           requires:
+            - test-py36-yml
+            - test-py37-yml
             - test-py38-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
@@ -273,4 +322,6 @@ workflows:
               only:
                 - master
     jobs:
+      - test-py36-yml
+      - test-py37-yml
       - test-py38-yml

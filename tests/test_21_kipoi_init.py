@@ -24,7 +24,7 @@ def test_all_args(model_type,
                   tmpdir,
                   caplog):
     caplog.set_level(logging.INFO)
-
+    
     # initialize the repo
     cli_init("init", "",
              no_input=True,
