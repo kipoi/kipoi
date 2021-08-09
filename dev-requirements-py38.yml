@@ -5,20 +5,18 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bedtools=2.30.0
-  - cookiecutter=1.7.3
-  - cython=0.29.23
-  - cyvcf2=0.30.9
-  - dataclasses=0.8
-  - fastparquet=0.7.0
-  - git=2.23.0
-  - git-lfs=2.13.3
-  - gitdb=4.0.7
-  - gitpython=3.1.20
+  - bedtools
+  - cookiecutter
+  - cython
+  - cyvcf2
+  - dataclasses
+  - fastparquet
+  - git
+  - git-lfs
+  - gitpython
   - h5py=2.10.0
   - hdf5=1.10.6
   - htslib=1.10.2
-  - humanfriendly=9.2
   - joblib=1.0.1
   - keras-preprocessing=1.1.2
   - matplotlib=3.4.2
@@ -50,14 +48,12 @@ dependencies:
   - pip:
     - concise==0.6.9
     - deprecation==2.1.0
-    - descartes==1.1.0
+    - kipoi-veff
     - keras==2.2.4
     - keras-applications==1.0.8
     - kipoi-conda==0.2.2
     - kipoi-interpret==0.1.2
     - kipoi-utils==0.6.0
     - kipoiseq==0.6.0
-    - tabulate==0.8.9
-    - tinydb==4.5.1
-    - tqdm==4.61.2
+
 prefix: /Users/b260/opt/miniconda3/envs/kipoipy38

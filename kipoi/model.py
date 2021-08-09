@@ -1076,8 +1076,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Versions of Pytorch prior to '0.4.0':
         if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
             trace_fn = torch.jit.trace
-        else:
+        elif LooseVersion(torch.__version__) < LooseVersion('1.2.0'):
             trace_fn = torch.jit.get_trace_graph
+        else:
+            trace_fn = torch.jit._get_trace_graph
 
         trace = None
 
