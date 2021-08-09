@@ -1541,7 +1541,9 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             provided by the Dataloader.
         """
         import tensorflow as tf
-
+        if LooseVersion(tf.__version__) >= LooseVersion('2.0.0'):
+            import tensorflow.compat.v1 as tf
+            tf.disable_v2_behavior()
         self.input_nodes = input_nodes
         self.target_nodes = target_nodes
         self.checkpoint_path = checkpoint_path
