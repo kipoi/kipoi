@@ -65,6 +65,16 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
+  install_from_dev_requirements_py36: &install_from_dev_requirements_py36
+    run:
+      name: Install from dev-requirements-py36.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        source activate kipoi-env
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python
   install_from_dev_requirements_py37: &install_from_dev_requirements_py37
     run:
       name: Install from dev-requirements-py37.yml
@@ -149,15 +159,15 @@ variables:
         echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
-  test-py38-yml:
+  test-py36-yml:
     docker:
-      - image: continuumio/miniconda3:latest
+      - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
       - *update_conda
       - *install_sys_deps
-      - *install_from_dev_requirements_py38
+      - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -184,6 +194,23 @@ jobs:
       - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
+  test-py38-yml:
+    docker:
+      - image: continuumio/miniconda3:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *update_conda
+      - *install_sys_deps
+      - *install_from_dev_requirements_py38
+      #- *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
