@@ -1097,8 +1097,13 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns the model output layers
         x must be a pytorch Variable compatible with the model input
         """
+        import torch
         trace = self._get_trace(x)
-        layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
+        if LooseVersion(torch.__version__) < LooseVersion('1.4.0'):
+            layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
+        else:
+            layer_idxs = [self.extract_module_id(n) for n in trace.outputs()]
+
         return [self.get_layer(i) for i in layer_idxs]
 
     def get_downstream_layers(self, x, layer_id):
