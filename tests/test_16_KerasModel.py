@@ -171,7 +171,7 @@ def test_activation_function_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
     #
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")

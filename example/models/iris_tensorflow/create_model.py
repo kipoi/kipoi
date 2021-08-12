@@ -1,10 +1,11 @@
 import os
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import pickle
 
 def write_graph():
     """
     """
+    tf.disable_v2_behavior()
     inp = tf.placeholder(tf.float32, shape=(None, 4), name="inputs")
     constant_input = tf.placeholder(tf.int32, name="const_input")
     W = tf.Variable(tf.random_normal((4, 3)), name="W")
