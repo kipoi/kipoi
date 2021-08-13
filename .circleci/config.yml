@@ -113,7 +113,8 @@ variables:
     run:
       name: activate and run coveralls
       command: |
-        source activate kipoi-env
+        source ~/.bashrc
+        conda activate kipoi-env
         coveralls || true
   store_test_results: &store_test_results
     store_test_results:
@@ -127,7 +128,8 @@ variables:
     run:
       name: build python packages
       command: |
-        source activate kipoi-env
+        source ~/.bashrc
+        conda activate kipoi-env
         python setup.py sdist bdist_wheel
   conda_install_twine: &conda_install_twine
     run:
@@ -234,7 +236,8 @@ jobs:
       - run:
           name: pip install from TestPyPI
           command: |
-            source activate kipoi-env
+            source ~/.bashrc
+            conda activate kipoi-env
             python -m pip install --user --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
 
@@ -262,7 +265,8 @@ jobs:
       - run:
           name: pip install from PyPI
           command: |
-            source activate kipoi-env
+            source ~/.bashrc
+            conda activate kipoi-env
             python -m pip install --user kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
 
