@@ -69,6 +69,7 @@ variables:
     run:
       name: Install from dev-requirements-py37.yml
       command: |
+        source ~/.bashrc
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
