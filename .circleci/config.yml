@@ -72,7 +72,6 @@ variables:
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
-        conda install -c conda-forge matplotlib
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
@@ -166,14 +165,14 @@ jobs:
       - *store_test_results
       - *store_test_artifacts
   test-py37-yml:
-    # machine: # executor type
-    #   image: ubuntu-1604:202104-01
-    docker:
-      - image: continuumio/miniconda3:4.5.12
+    machine: # executor type
+      image: ubuntu-1604:202104-01
+    # docker:
+    #   - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
-      # - *install_conda
+      - *install_conda
       - *update_conda
       - *install_sys_deps
       - *install_from_dev_requirements_py37
