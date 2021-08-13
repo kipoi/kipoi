@@ -24,12 +24,12 @@ else:
 
 # EXAMPLES_TO_RUN = ["rbp", "sklearn_iris", "iris_model_template",
 #                    "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
-EXAMPLES_TO_RUN = ["iris_tensorflow"]
+EXAMPLES_TO_RUN = ["non_bedinput_model"]
 
 predict_activation_layers = {
-    "pyt": "3"  # two before the last layer
+    "rbp": "concatenate_6",
 }
-ACTIVATION_EXAMPLES = ['pyt']
+ACTIVATION_EXAMPLES = ['rbp']
 
 
 def test_cli_get_example(tmpdir):

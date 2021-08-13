@@ -113,6 +113,15 @@ variables:
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
+  # Special case for running without concise 
+  activate_and_run_tests_py38: &activate_and_run_tests_py38
+  run:
+    name: Run tests
+    command: |
+      source activate kipoi-env
+      mkdir test-reports
+      $PYTEST --cov=kipoi/ tests/ -k "not legacy-keras" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
+    no_output_timeout: 15m
   run_coveralls: &run_coveralls
     run:
       name: run coveralls
@@ -206,7 +215,7 @@ jobs:
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests
+      - *activate_and_run_tests_py38
       - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts

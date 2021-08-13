@@ -42,12 +42,11 @@ dependencies:
   - tensorflow=2.4.1
   - keras
   - pip:
-    - concise==0.6.9
     - deprecation==2.1.0
     - kipoi-veff
-    - kipoi-conda==0.2.2
-    - kipoi-interpret==0.1.2
-    - kipoi-utils==0.6.0
-    - kipoiseq==0.6.0
+    - kipoi-conda
+    - kipoi-interpret
+    - kipoi-utils
+    - kipoiseq
 
 prefix: /Users/b260/opt/miniconda3/envs/kipoipy38
