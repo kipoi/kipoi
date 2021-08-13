@@ -167,14 +167,11 @@ jobs:
   test-py37-yml:
     machine: # executor type
       image: ubuntu-1604:202104-01
-    # docker:
-    #   - image: continuumio/miniconda3:4.5.12
     working_directory: ~/repo
     steps:
       - checkout
       - *install_conda
       - *update_conda
-      - *install_sys_deps
       - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
