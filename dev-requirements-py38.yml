@@ -24,7 +24,7 @@ dependencies:
   - pandas
   - pillow
   - pip=21.2.1
-  - pybedtool
+  - pybedtools
   - pybigwig
   - pyfaidx
   - pysam
