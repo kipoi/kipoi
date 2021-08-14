@@ -6,17 +6,19 @@ variables:
       name: Install miniconda3
       command: |
         sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
+        cd $HOME && \
         wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
         /bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
-        ~/miniconda3/bin/conda clean -tipsy && \
+        ~/miniconda3/bin/conda clean -tipsy && \  
         sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
         echo ". ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc && \
-        echo "conda activate base" >> ~/.bashrc 
+        echo "conda activate base" >> ~/.bashrc && \
+        export PATH=$HOME/miniconda/bin:$PATH
   update_conda: &update_conda
     run:
       name: Update conda
-      command: source ~/.bashrc && conda update -n base conda -c anaconda
+      command: export PATH="$HOME/miniconda/bin:$PATH" && conda update -n base conda -c anaconda
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -69,10 +71,10 @@ variables:
     run:
       name: Install from dev-requirements-py37.yml
       command: |
-        source ~/.bashrc
+        export PATH="$HOME/miniconda/bin:$PATH"
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
-        conda activate kipoi-env
+        source activate kipoi-env
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
@@ -92,16 +94,16 @@ variables:
     run:
       name: List kipoi packages
       command: |
-        source ~/.bashrc
-        conda activate kipoi-env
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
   activate_and_run_tests: &activate_and_run_tests
     run:
       name: Run tests
       command: |
-        source ~/.bashrc
-        conda activate kipoi-env
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
@@ -113,8 +115,8 @@ variables:
     run:
       name: activate and run coveralls
       command: |
-        source ~/.bashrc
-        conda activate kipoi-env
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source activate kipoi-env
         coveralls || true
   store_test_results: &store_test_results
     store_test_results:
@@ -128,8 +130,8 @@ variables:
     run:
       name: build python packages
       command: |
-        source ~/.bashrc
-        conda activate kipoi-env
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source activate kipoi-env
         python setup.py sdist bdist_wheel
   conda_install_twine: &conda_install_twine
     run:
