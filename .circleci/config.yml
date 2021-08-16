@@ -70,8 +70,8 @@ variables:
     run:
       name: Install from dev-requirements-py37.yml
       command: |
+        export PATH="~/miniconda3/bin:$PATH"
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        source ~/.bashrc
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
         pip install -e .
@@ -93,8 +93,8 @@ variables:
     run:
       name: List kipoi packages
       command: |  
+        export PATH="~/miniconda3/bin:$PATH"
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        source ~/.bashrc
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
@@ -102,8 +102,8 @@ variables:
     run:
       name: Run tests
       command: |
+        export PATH="~/miniconda3/bin:$PATH"
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        source ~/.bashrc
         source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
