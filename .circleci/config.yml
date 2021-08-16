@@ -54,6 +54,7 @@ variables:
       name: Export shortcuts
       command: |
         # for no good reason the wrong version of pytest is choosen by default...
+        source ~/.bashrc
         echo 'export PYTEST=$(conda info --base)/envs/kipoi-env/bin/pytest' >> $BASH_ENV
   install_from_dev_requirements_py36: &install_from_dev_requirements_py36
     run:
@@ -92,7 +93,7 @@ variables:
     run:
       name: List kipoi packages
       command: |
-        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
@@ -100,7 +101,7 @@ variables:
     run:
       name: Run tests
       command: |
-        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
         source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
