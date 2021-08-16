@@ -93,6 +93,7 @@ variables:
     run:
       name: List kipoi packages
       command: |
+        export PATH="$HOME/miniconda/bin:$PATH"
         source ~/.bashrc
         source activate kipoi-env
         kipoi ls
@@ -101,6 +102,7 @@ variables:
     run:
       name: Run tests
       command: |
+        export PATH="$HOME/miniconda/bin:$PATH"
         source ~/.bashrc
         source activate kipoi-env
         mkdir test-reports
