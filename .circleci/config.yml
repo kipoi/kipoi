@@ -6,14 +6,17 @@ variables:
       name: Install miniconda3
       command: |
         sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
-        cd $HOME && \
-        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O $HOME/miniconda.sh && \
-        /usr/bin/bash $HOME/miniconda.sh -b && \
-        export PATH=$HOME/miniconda/bin:$PATH
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+        /usr/bin/bash ~/miniconda.sh -b && \
+        rm ~/miniconda.sh && \
+        ~/miniconda3/bin/conda clean -tipsy && \
+        sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc && \
+        echo "conda activate base" >> ~/.bashrc 
   update_conda: &update_conda
     run:
       name: Update conda
-      command: export PATH="$HOME/miniconda/bin:$PATH" && conda update -n base conda -c anaconda
+      command: source ~/.bashrc && conda update -n base conda -c anaconda
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
