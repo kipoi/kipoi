@@ -11,9 +11,7 @@ variables:
         /bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
         ~/miniconda3/bin/conda clean -tipsy && \  
-        sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc && \
-        echo "conda activate base" >> ~/.bashrc && \
+
         export PATH=$HOME/miniconda/bin:$PATH
   update_conda: &update_conda
     run:
