@@ -304,6 +304,7 @@ workflows:
             branches:
               only:
                 - master
+                - upgrade
   kipoi-nightly-test:
     triggers:
       - schedule:
