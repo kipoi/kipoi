@@ -72,7 +72,8 @@ variables:
       command: |
         source ~/.bashrc
         conda env create --name kipoi-env -f dev-requirements-py37.yml
-        source activate kipoi-env
+        source ~/.bashrc
+        conda activate kipoi-env
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
