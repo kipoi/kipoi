@@ -69,11 +69,10 @@ variables:
   install_from_dev_requirements_py37: &install_from_dev_requirements_py37
     run:
       name: Install from dev-requirements-py37.yml
-      command: |
-        source ~/.bashrc
+      command: |  
+        export PATH="~/miniconda3/bin:$PATH"
         conda env create --name kipoi-env -f dev-requirements-py37.yml
-        source ~/.bashrc
-        conda activate kipoi-env
+        source activate kipoi-env
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
@@ -103,6 +102,7 @@ variables:
       command: |
         source ~/.bashrc
         source activate kipoi-env
+        export PATH="~/miniconda3/bin:$PATH"
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 15m
