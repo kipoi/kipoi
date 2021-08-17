@@ -6,7 +6,7 @@ variables:
       name: Install miniconda3
       command: |
         sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
-        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh -O ~/miniconda.sh && \
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh -O ~/miniconda.sh && \
         /usr/bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
         ~/miniconda3/bin/conda clean -tipsy && \
@@ -150,7 +150,7 @@ variables:
 jobs:
   test-py36-yml:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:4.7.10
     working_directory: ~/repo
     steps:
       - checkout
