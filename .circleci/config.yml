@@ -6,17 +6,17 @@ variables:
       name: Install miniconda3
       command: |
         sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
-        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
-        /bin/bash ~/miniconda.sh -b && \
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh -O ~/miniconda.sh && \
+        /usr/bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
         ~/miniconda3/bin/conda clean -tipsy && \
         sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> ~/.bashrc && \
-        echo "conda activate base" >> ~/.bashrc && \
+        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> $BASH_ENV && \
+        echo "conda activate base" >> $BASH_ENV
   update_conda: &update_conda
     run:
       name: Update conda
-      command: source ~/.bashrc && conda update -n base conda -c anaconda
+      command: conda update -n base conda -c anaconda
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -78,11 +78,10 @@ variables:
   install_from_dev_requirements_py37: &install_from_dev_requirements_py37
     run:
       name: Install from dev-requirements-py37.yml
-      command: |
+      command: |  
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
-        conda install -c conda-forge matplotlib
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
@@ -101,7 +100,7 @@ variables:
   kipoi_ls2: &activate_and_kipoi_ls
     run:
       name: List kipoi packages
-      command: |
+      command: |  
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
@@ -185,16 +184,13 @@ jobs:
       - *store_test_results
       - *store_test_artifacts
   test-py37-yml:
-    # machine: # executor type
-    #   image: ubuntu-1604:202104-01
-    docker:
-      - image: continuumio/miniconda3:4.5.12
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      # - *install_conda
+      - *install_conda
       - *update_conda
-      - *install_sys_deps
       - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts

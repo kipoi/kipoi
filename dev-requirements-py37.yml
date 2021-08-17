@@ -40,6 +40,7 @@ dependencies:
   - wheel
   - gitpython
   - pip
+  - matplotlib
   - pip:
     - kipoi-utils>=0.3.8
     - kipoi-conda>=0.1.6
