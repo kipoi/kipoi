@@ -6,7 +6,7 @@ variables:
       name: Install miniconda3
       command: |
         sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
-        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86_64.sh -O ~/miniconda.sh && \
         /usr/bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
         ~/miniconda3/bin/conda clean -tipsy && \
@@ -16,7 +16,7 @@ variables:
   update_conda: &update_conda
     run:
       name: Update conda
-      command: source ~/.bashrc && conda update -n base conda -c anaconda
+      command: conda update -n base conda -c anaconda
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -69,6 +69,7 @@ variables:
     run:
       name: Install from dev-requirements-py37.yml
       command: |  
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
         pip install -e .
@@ -258,7 +259,7 @@ jobs:
       - run:
           name: pip install from PyPI
           command: |
-            conda activate kipoi-env
+            source activate kipoi-env
             python -m pip install --user kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
 
