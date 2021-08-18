@@ -5,6 +5,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - python=3.9
   - bedtools
   - cookiecutter
   - cython
@@ -12,16 +13,15 @@ dependencies:
   - fastparquet
   - git
   - git-lfs
-  # - gitpython
   - h5py
   - hdf5
-  - htslib=1.10.2
+  - htslib
   - matplotlib
   - numcodecs
   - numpy
   - pandas
   - pillow
-  - pip=21.2.1
+  - pip
   - pybedtools
   - pybigwig
   - pyfaidx
@@ -29,11 +29,10 @@ dependencies:
   - pytorch
   - pytest
   - pytest-cov
-  - python=3.9
   - pyvcf
-  # - pyyaml=5.4.1
+  - pyyaml
   - scikit-learn
-  - scipy=1.7.0
+  - scipy
   - setuptools
   - wheel
   - zarr
@@ -41,7 +40,6 @@ dependencies:
   - keras
   - pkgconfig
   - pip:
-  #   - kipoi-veff
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
