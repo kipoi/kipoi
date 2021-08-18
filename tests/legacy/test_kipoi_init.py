@@ -9,7 +9,7 @@ from kipoi.cli.main import cli_init, cli_test
 
 # Build up all configs
 test_all = [(m, inp, inp, dl)
-            for m in ["custom"]
+            for m in ["custom", "keras"]
             for inp in ["np.array", "list of np.arrays", "dict of np.arrays"]
             for dl in ["Dataset", "PreloadedDataset", "BatchDataset", "SampleIterator",
                        "SampleGenerator", "BatchIterator", "BatchGenerator"]] + \
