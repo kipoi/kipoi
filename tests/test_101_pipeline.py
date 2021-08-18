@@ -62,7 +62,7 @@ def test_predict_to_file_with_metadata_tsv(tmpdir):
     assert 'preds/100' in preds_and_metadata.columns
     assert len(preds_and_metadata['metadata/ranges/chr']) == 10
     assert len(preds_and_metadata['preds/100']) == 10
-    assert preds_and_metadata.at[0,'preds/100'] == pytest.approx(0.4168229)
+    assert preds_and_metadata.at[0,'preds/100'] == pytest.approx(0.4168229, rel=1e-05)
 
 
 def test_predict_to_file_without_metadata_tsv(tmpdir):
@@ -74,4 +74,4 @@ def test_predict_to_file_without_metadata_tsv(tmpdir):
     preds = pd.read_csv(tsv_tmpfile, sep='\t')
     assert 'metadata/ranges/chr' not in preds.columns 
     assert 'preds/100' in preds.columns
-    assert preds.at[0,'preds/100'] == pytest.approx(0.4168229)
+    assert preds.at[0,'preds/100'] == pytest.approx(0.4168229, rel=1e-05)
