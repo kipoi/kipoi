@@ -147,7 +147,7 @@ def test_model(model_name, source_name, env_name, batch_size,
     new_env = os.environ.copy()
     new_env['PATH'] = os.path.dirname(cmd) + os.pathsep + new_env['PATH']
     try:
-        proc = sp.Popen(cmd.extend(args), stdout=sp.PIPE, stderr=sp.PIPE)
+        proc = sp.Popen([cmd].extend(args), stdout=sp.PIPE, stderr=sp.PIPE)
         # returncode, logs = _call_command(cmd, args, use_stdout=True,
         #                                 return_logs_with_stdout=True,
         #                                 env=new_env
