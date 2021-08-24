@@ -47,16 +47,18 @@ def test_single_model_dry():
 
 def test_single_model():
     MODEL = "HAL"
-    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
-                          "test-source",
+    try:
+        proc = sp.Popen(["python", os.path.abspath("./kipoi/__main__.py"), "test-source",
                           "kipoi",
                           "--git-range", "master", "HEAD",
                           "--all",
-                          "-x",  # Exit immediately
-                          "-c",  # clean environment
-                          "-k", MODEL])
-    assert returncode == 0
-
+                          "-x",
+                          "-c",
+                          f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
+        proc.wait()
+        (stdout, stderr) = proc.communicate()
+    except sp.CalledProcessError as err:
+        print(f"Error: {err.stderr}")
 
 @pytest.fixture
 def source():
