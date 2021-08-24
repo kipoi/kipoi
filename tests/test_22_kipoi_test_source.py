@@ -56,7 +56,7 @@ def test_single_model():
                           "-c",
                           f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
         proc.wait()
-        (stdout, stderr) = proc.communicate()
+        stdout, stderr = proc.communicate()
     except sp.CalledProcessError as err:
         print(f"Error: {err.stderr}")
 
