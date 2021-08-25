@@ -471,12 +471,12 @@ class LocalSource(Source):
 
                 if not self.config.dependencies.all_installed(verbose=False):
                     import colorlog
-                    print(colorlog.escape_codes['red'])
+                    print(colorlog.escape_codes.escape_codes['red'])
                     print("WARNING: Dependencies for model source '{}' stored at local_path {} not satisfied.: \n---".
                           format(self.name, self._local_path))
                     self.config.dependencies.all_installed(verbose=True)
                     print("---\ninstall or update the missing packages")
-                    print(colorlog.escape_codes['reset'])
+                    print(colorlog.escape_codes.escape_codes['reset'])
                     print("Note: If you don't want to auto_update the model source, \n"
                           "add `auto_update: False` to ~/.kipoi/config.yaml\n")
             else:
