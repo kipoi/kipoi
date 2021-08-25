@@ -154,8 +154,8 @@ def test_model(model_name, source_name, env_name, batch_size,
     # detect WARNING in the output log
     warn = 0
     for line in logs:
-        warn_start = escape_codes[default_log_colors['WARNING']] + \
-            'WARNING' + escape_codes['reset']
+        warn_start = escape_codes.escape_codes[default_log_colors['WARNING']] + \
+            'WARNING' + escape_codes.escape_codes['reset']
         if line.startswith(warn_start):
             logger.error("Warning present: {0}".format(line))
             warn += 1
