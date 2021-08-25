@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import sys
-import subprocess as sp
 from copy import deepcopy
 from math import ceil
 
@@ -146,22 +145,17 @@ def test_model(model_name, source_name, env_name, batch_size,
     # - PATH=$conda_bin:$PATH
     new_env = os.environ.copy()
     new_env['PATH'] = os.path.dirname(cmd) + os.pathsep + new_env['PATH']
-    try:
-        proc = sp.Popen([cmd].extend(args), stdout=sp.PIPE, stderr=sp.PIPE)
-        # returncode, logs = _call_command(cmd, args, use_stdout=True,
-        #                                 return_logs_with_stdout=True,
-        #                                 env=new_env
-        #                                 )
-        proc.wait()
-        logs, stderr = proc.communicate()
-    except sp.CalledProcessError as err:
-        logger.error(f"Error: {err.stderr}")
+    returncode, logs = _call_command(cmd, args, use_stdout=True,
+                                     return_logs_with_stdout=True,
+                                     env=new_env
+                                     )
+    assert returncode == 0
 
     # detect WARNING in the output log
     warn = 0
     for line in logs:
-        warn_start = escape_codes[default_log_colors['WARNING']] + \
-            'WARNING' + escape_codes['reset']
+        warn_start = escape_codes.escape_codes[default_log_colors['WARNING']] + \
+            'WARNING' + escape_codes.escape_codes['reset']
         if line.startswith(warn_start):
             logger.error("Warning present: {0}".format(line))
             warn += 1
