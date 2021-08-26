@@ -568,8 +568,11 @@ class Dependencies(RelatedConfigMixin):
         if self.conda_file:
             # use the dependencies from the conda file. Override conda, pip and conda_file
             deps = read_yaml(self.conda_file)
-            pip_deps = [x['pip'] for x in deps['dependencies']
-                        if isinstance(x, dict)][0]
+            if 'pip' in deps['dependencies']:
+                pip_deps = [x.get('pip', []) for x in deps['dependencies']
+                            if isinstance(x, dict)][0]
+            else:
+                pip_deps = []
             conda_deps = [x for x in deps['dependencies']
                           if not isinstance(x, dict)]
             object.__setattr__(self, "pip", pip_deps)
