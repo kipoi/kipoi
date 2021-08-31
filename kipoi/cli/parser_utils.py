@@ -40,7 +40,7 @@ def add_dataloader(parser, with_args=True):
     parser.add_argument('--dataloader', default=None,
                         help="Dataloader name. If not specified, the model's default" +
                         "DataLoader will be used")
-    parser.add_argument('--dataloader_source', default="kipoi",
+    parser.add_argument('--dataloader_source', default=None,
                         help="Dataloader source")
 
     if with_args:

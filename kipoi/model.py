@@ -15,6 +15,8 @@ import numpy as np
 import json
 import yaml
 
+import importlib
+
 from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
 from .pipeline import Pipeline
 import logging
@@ -55,7 +57,7 @@ class BaseModel(object):
             return False
 
 
-def get_model(model, source="kipoi", with_dataloader=True):
+def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
     """Load the `model` from `source`, as well as the default dataloder to model.default_dataloder.
 
     # Arguments
@@ -89,6 +91,7 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     """
     # TODO - model can be a yaml file or a directory
+   
     if isinstance(source, str):
         source_name = source
         source = kipoi.config.get_source(source)
@@ -112,8 +115,13 @@ def get_model(model, source="kipoi", with_dataloader=True):
 
     # Load the dataloader
     if with_dataloader:
+        if kwargs.get("default_dataloader_name"): #TODO: Maybe not use with_dataloader?
+            default_dataloader_name = kwargs.get("default_dataloader_name")
+            mod_name, func_name = default_dataloader_name.rsplit(".", 1)
+            mod = importlib.import_module(mod_name)
+            default_dataloader = getattr(mod, func_name)
         # load from python
-        if isinstance(md.default_dataloader, DataLoaderImport):
+        elif isinstance(md.default_dataloader, DataLoaderImport):
             with cd(source_dir):
                 default_dataloader = md.default_dataloader.get()
             default_dataloader.source_dir = source_dir
@@ -131,10 +139,10 @@ def get_model(model, source="kipoi", with_dataloader=True):
                 dl_source = source
                 dl_path = md.default_dataloader
 
-            # allow to use relative and absolute paths for referring to the dataloader
-            default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
-            default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
-                                                              dl_source)
+                # allow to use relative and absolute paths for referring to the dataloader
+                default_dataloader_path = os.path.join("/" + model, dl_path)[1:]
+                default_dataloader = kipoi.get_dataloader_factory(default_dataloader_path,
+                                                                dl_source)
     else:
         default_dataloader = None
 
