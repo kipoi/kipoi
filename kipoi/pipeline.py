@@ -135,7 +135,7 @@ class Pipeline(object):
             for i, batch in enumerate(tqdm(it)):
                 if i == 0 and not self.dataloader_cls.get_output_schema().compatible_with_batch(batch):
                     logger.warning("First batch of data is not compatible with the dataloader schema.")
-                if isinstance(batch["inputs"], np.ndarray):
+                if isinstance(batch["inputs"], np.ndarray) and batch["inputs"].dtype == np.float64:
                     pred_batch = self.model.predict_on_batch(batch['inputs'].astype(np.float32))
                 else:
                     pred_batch = self.model.predict_on_batch(batch['inputs'])
