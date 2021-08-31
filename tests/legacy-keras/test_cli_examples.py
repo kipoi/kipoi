@@ -24,12 +24,12 @@ else:
 
 # EXAMPLES_TO_RUN = ["rbp", "sklearn_iris", "iris_model_template",
 #                    "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
-EXAMPLES_TO_RUN = ["iris_tensorflow"]
+EXAMPLES_TO_RUN = ["non_bedinput_model"]
 
 predict_activation_layers = {
-    "pyt": "3"  # two before the last layer
+    "rbp": "concatenate_6",
 }
-ACTIVATION_EXAMPLES = ['pyt']
+ACTIVATION_EXAMPLES = ['rbp']
 
 
 def test_cli_get_example(tmpdir):
@@ -507,29 +507,3 @@ def test_kipoi_env_create_all_dry_run():
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "all", "--dry-run"]
     # pretend to run the CLI
     cli_create(*process_args(args))
-
-def test_kipoi_datalaoder_from_cli(tmp_path):
-    tmp_output_dir = tmp_path / "output"
-    tmp_output_dir.mkdir()
-    output_model_dataloader = tmp_output_dir / "out_model_dataloader.tsv"
-    output_cli_dataloader = tmp_output_dir / "out_cli_dataloader.tsv"
-    example_dir = "example"
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
-            "DeepBind/Homo_sapiens/RBP/D00084.001_RNAcompete_A1CF",  # directory
-            "--dataloader_args={'intervals_file': 'dataloadercliexample/intervals_file', 'fasta_file': 'dataloadercliexample/fasta_file'}",
-            "--output", str(output_model_dataloader)]
-    returncode = subprocess.call(args=args,
-                                 cwd=os.path.realpath(example_dir))
-    assert returncode == 0
-    output_model_dataloader_df = pd.read_csv(output_model_dataloader)
-
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
-            "DeepBind/Homo_sapiens/RBP/D00084.001_RNAcompete_A1CF",  # directory
-            "--dataloader=kipoiseq.dataloaders.SeqIntervalDl",
-            "--dataloader_args={'intervals_file': 'dataloadercliexample/intervals_file', 'fasta_file': 'dataloadercliexample/fasta_file', 'auto_resize_len': 101}",
-            "--output", str(output_cli_dataloader)]
-    returncode = subprocess.call(args=args,
-                                 cwd=os.path.realpath(example_dir))
-    output_cli_dataloader_df = pd.read_csv(output_cli_dataloader)
-    assert returncode == 0
-    assert output_model_dataloader_df.equals(output_cli_dataloader_df)

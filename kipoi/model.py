@@ -345,7 +345,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                     raise RuntimeError("only tf dim ordering at is supported")
 
 
-        import keras
+        from tensorflow import keras
         from keras.models import model_from_json, load_model
 
         if self.backend is not None:
@@ -1084,8 +1084,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         # Versions of Pytorch prior to '0.4.0':
         if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
             trace_fn = torch.jit.trace
-        else:
+        elif LooseVersion(torch.__version__) < LooseVersion('1.2.0'):
             trace_fn = torch.jit.get_trace_graph
+        else:
+            trace_fn = torch.jit._get_trace_graph
 
         trace = None
 
@@ -1103,8 +1105,13 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         Returns the model output layers
         x must be a pytorch Variable compatible with the model input
         """
+        import torch
         trace = self._get_trace(x)
-        layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
+        if LooseVersion(torch.__version__) < LooseVersion('1.4.0'):
+            layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
+        else:
+            layer_idxs = [self.extract_module_id(n) for n in trace.outputs()]
+
         return [self.get_layer(i) for i in layer_idxs]
 
     def get_downstream_layers(self, x, layer_id):
@@ -1542,7 +1549,9 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             provided by the Dataloader.
         """
         import tensorflow as tf
-
+        if LooseVersion(tf.__version__) >= LooseVersion('2.0.0'):
+            import tensorflow.compat.v1 as tf
+            tf.disable_v2_behavior()
         self.input_nodes = input_nodes
         self.target_nodes = target_nodes
         self.checkpoint_path = checkpoint_path

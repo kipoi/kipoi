@@ -15,7 +15,7 @@ import numpy as np
 # INSTALL_REQ = True
 INSTALL_REQ = config.install_req
 
-EXAMPLES_TO_RUN = ["iris_model_template", "pyt"]
+EXAMPLES_TO_RUN = ["rbp"]
 
 
 def read_json_yaml(filepath):

@@ -13,10 +13,13 @@ info:
           github: avsecz
     doc: RBP binding prediction
 dependencies:
+    conda:
+        - python=3.6
+        - pip=20.3.3
     pip:
         - concise>=0.6.5
-        - tensorflow>=1.0.0
-        - keras>=2.0.4
+        - tensorflow==1.4.1
+        - keras==2.1.6
 schema:
     inputs:
         seq:

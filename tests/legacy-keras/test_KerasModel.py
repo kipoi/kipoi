@@ -171,7 +171,7 @@ def test_activation_function_model(example):
     if example == "rbp" and sys.version_info[0] == 2:
         pytest.skip("rbp example not supported on python 2 ")
     #
-    import keras
+    from tensorflow import keras
     backend = keras.backend.backend()
     if backend == 'theano' and example == "rbp":
         pytest.skip("extended_coda example not with theano ")
@@ -179,6 +179,14 @@ def test_activation_function_model(example):
     example_dir = "example/models/{0}".format(example)
     # install the dependencies
     # - TODO maybe put it implicitly in load_dataloader?
+    # args = ["python", "./kipoi/__main__.py", "env",
+    #     "create",
+    #     example_dir,
+    #     "--source=dir",
+    #     "--verbose"]
+    # returncode = subprocess.call(args=args)
+    # assert returncode == 0
+
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir", and_dataloaders=True)
     #

@@ -22,7 +22,7 @@ def test_load_models_kipoi():
 
 
 def test_load_models_local():
-    model = "example/models/iris_model_template"
+    model = "example/models/pyt"
     kipoi.get_model(model, source="dir")
     kipoi.get_dataloader_factory(model, source="dir")
 
