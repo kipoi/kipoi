@@ -1,6 +1,18 @@
 version: 2
 
 variables:
+  install_conda: &install_conda
+    run:
+      name: Install miniconda3
+      command: |
+        sudo apt-get update && sudo apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc && \
+        wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_64.sh -O ~/miniconda.sh && \
+        /usr/bin/bash ~/miniconda.sh -b && \
+        rm ~/miniconda.sh && \
+        ~/miniconda3/bin/conda clean -tipsy && \
+        sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+        echo ". ~/miniconda3/etc/profile.d/conda.sh" >> $BASH_ENV && \
+        echo "conda activate base" >> $BASH_ENV
   update_conda: &update_conda
     run:
       name: Update conda
@@ -8,7 +20,7 @@ variables:
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
-      command: apt-get update && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc
+      command: apt-get update --allow-releaseinfo-change && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc
   # install_singularity: &install_singularitymodel
   #   run:
   #     name: Install Singularity
@@ -33,7 +45,7 @@ variables:
       command: |
         pip install kipoi_interpret
         pip install kipoi_veff
-        pip install git+https://github.com/kipoi/kipoiseq.git@add-one-hot-encode
+        pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
 
@@ -53,7 +65,16 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-
+  install_from_dev_requirements_py37: &install_from_dev_requirements_py37
+    run:
+      name: Install from dev-requirements-py37.yml
+      command: |  
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py37.yml
+        source activate kipoi-env
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -69,7 +90,7 @@ variables:
   kipoi_ls2: &activate_and_kipoi_ls
     run:
       name: List kipoi packages
-      command: |
+      command: |  
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
@@ -129,13 +150,29 @@ variables:
 jobs:
   test-py36-yml:
     docker:
-      - image: continuumio/miniconda3:4.5.12
+      - image: continuumio/miniconda3:4.7.10
     working_directory: ~/repo
     steps:
       - checkout
       - *update_conda
       - *install_sys_deps
       - *install_from_dev_requirements_py36
+      #- *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+  test-py37-yml:
+    machine: # executor type
+      image: ubuntu-2004:202104-01
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *install_conda
+      - *update_conda
+      - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -234,9 +271,11 @@ workflows:
   test-n-deploy:
     jobs:
       - test-py36-yml
+      - test-py37-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
             branches:
               only:
@@ -245,6 +284,7 @@ workflows:
       - test-deploy-pypi:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
 #            tags:
 #              only: /^v.*/
@@ -255,6 +295,7 @@ workflows:
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
+            - test-py37-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -263,6 +304,7 @@ workflows:
             branches:
               only:
                 - master
+                - upgrade
   kipoi-nightly-test:
     triggers:
       - schedule:
@@ -273,3 +315,4 @@ workflows:
                 - master
     jobs:
       - test-py36-yml
+      - test-py37-yml
