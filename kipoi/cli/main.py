@@ -289,7 +289,7 @@ def cli_predict(command, raw_args):
         if args.layer is None:
             pred_batch = model.predict_on_batch(batch['inputs'])
         else:
-            if isinstance(batch["inputs"], np.ndarray):
+            if isinstance(batch["inputs"], np.ndarray) and batch["inputs"].dtype == np.float64:
                 pred_batch = model.predict_activation_on_batch(batch['inputs'].astype(np.float32), layer=args.layer)
             else:      
                 pred_batch = model.predict_activation_on_batch(batch['inputs'], layer=args.layer)
