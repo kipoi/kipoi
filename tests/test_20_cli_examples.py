@@ -351,7 +351,7 @@ def test_kipoi_datalaoder_from_cli(tmp_path):
     output_cli_dataloader = tmp_output_dir / "out_cli_dataloader.tsv"
     example_dir = "example"
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
-            "DeepBind/Homo_sapiens/RBP/D00084.001_RNAcompete_A1CF",  # directory
+            "Basset",  # directory
             "--dataloader_args={'intervals_file': 'dataloadercliexample/intervals_file', 'fasta_file': 'dataloadercliexample/fasta_file'}",
             "--output", str(output_model_dataloader)]
     returncode = subprocess.call(args=args,
@@ -360,9 +360,9 @@ def test_kipoi_datalaoder_from_cli(tmp_path):
     output_model_dataloader_df = pd.read_csv(output_model_dataloader)
 
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
-            "DeepBind/Homo_sapiens/RBP/D00084.001_RNAcompete_A1CF",  # directory
+            "Basset",  # directory
             "--dataloader=kipoiseq.dataloaders.SeqIntervalDl",
-            "--dataloader_args={'intervals_file': 'dataloadercliexample/intervals_file', 'fasta_file': 'dataloadercliexample/fasta_file', 'auto_resize_len': 101}",
+            "--dataloader_args={'intervals_file': 'dataloadercliexample/intervals_file', 'fasta_file': 'dataloadercliexample/fasta_file', 'auto_resize_len': 600, 'alphabet_axis': 0, 'dtype': np.float32, 'dummy_axis': 2}",
             "--output", str(output_cli_dataloader)]
     returncode = subprocess.call(args=args,
                                  cwd=os.path.realpath(example_dir))
