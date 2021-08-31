@@ -1003,6 +1003,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         input = self.numpy_to_torch(x, requires_grad=requires_grad)
         if isinstance(x, np.ndarray):
             # convert to a pytorch tensor and then to a pytorch variable
+            input = input.float()
             pred = self.model(input)
 
         elif isinstance(x, dict):
