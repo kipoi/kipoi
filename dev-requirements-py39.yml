@@ -1,0 +1,48 @@
+name: kipoipy38
+channels:
+  - pytorch
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - bedtools
+  - cookiecutter
+  - cython
+  - cyvcf2
+  - fastparquet
+  - git
+  - git-lfs
+  - h5py
+  - hdf5
+  - htslib
+  - matplotlib
+  - numcodecs
+  - numpy
+  - pandas
+  - pillow
+  - pip
+  - pybedtools
+  - pybigwig
+  - pyfaidx
+  - pysam
+  - pytorch
+  - pytest
+  - pytest-cov
+  - pyvcf
+  - pyyaml
+  - scikit-learn
+  - scipy
+  - setuptools
+  - wheel
+  - zarr
+  - tensorflow=2.4.1
+  - keras
+  - pkgconfig
+  - pip:
+    - kipoi-conda
+    - kipoi-interpret
+    - kipoi-utils
+    - kipoiseq
+
+prefix: /Users/b260/opt/miniconda3/envs/kipoipy38

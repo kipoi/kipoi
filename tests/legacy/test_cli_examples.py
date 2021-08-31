@@ -24,7 +24,7 @@ else:
 
 # EXAMPLES_TO_RUN = ["rbp", "sklearn_iris", "iris_model_template",
 #                    "non_bedinput_model", "pyt", "iris_tensorflow", "kipoi_dataloader_decorator"]
-EXAMPLES_TO_RUN = ["non_bedinput_model"]
+EXAMPLES_TO_RUN = ["non_bedinput_model", "iris_tensorflow"]
 
 predict_activation_layers = {
     "rbp": "concatenate_6",

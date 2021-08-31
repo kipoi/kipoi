@@ -13,7 +13,7 @@ from kipoi.pipeline import install_model_requirements
 import torch
 from tensorflow import keras
 
-EXAMPLES_TO_RUN = ["sklearn_iris", "pyt"]
+EXAMPLES_TO_RUN = ["pyt"]
 # TODO - finish the unit-test
 INSTALL_REQ = config.install_req
 
