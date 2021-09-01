@@ -70,7 +70,7 @@ class SeqDataset(Dataset):
             y = {}
 
         # Run the fasta extractor
-        seq = one_hot_dna(self.fasta_extractor.extract(interval))
+        seq = one_hot_dna(self.fasta_extractor.extract(interval), dtype=np.float32) # TODO: Remove additional dtype after kipoiseq gets a new release
         return {
             "inputs": seq,
             "targets": y,
