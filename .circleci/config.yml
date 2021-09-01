@@ -211,7 +211,6 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_conda
       - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
@@ -291,7 +290,7 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py38
+      - *install_from_dev_requirements_py39
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -320,7 +319,7 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py38
+      - *install_from_dev_requirements_py39
       #- *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
