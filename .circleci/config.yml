@@ -186,13 +186,14 @@ variables:
 
 jobs:
   test-py36-yml:
-    docker:
-      - image: continuumio/miniconda3:latest
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      - *update_conda
-      - *install_sys_deps
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
       #- *install_singularity
       - *export_shortcuts
@@ -208,7 +209,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
-      - *update_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
+      - *install_conda
       - *install_from_dev_requirements_py37
       #- *install_singularity
       - *export_shortcuts
@@ -218,13 +221,14 @@ jobs:
       - *store_test_results
       - *store_test_artifacts
   test-py38-yml:
-    docker:
-      - image: continuumio/miniconda3:latest
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      - *update_conda
-      - *install_sys_deps
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
@@ -234,13 +238,14 @@ jobs:
       - *store_test_results
       - *store_test_artifacts
   test-py39-yml:
-    docker:
-      - image: continuumio/miniconda3:latest
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      - *update_conda
-      - *install_sys_deps
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
       #- *install_singularity
       - *export_shortcuts
@@ -278,13 +283,14 @@ jobs:
           command: .circleci/deploy_docs.bash
 
   test-deploy-pypi:
-    docker:
-      - image: continuumio/miniconda3:latest
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      - *update_conda
-      - *install_sys_deps
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
@@ -306,13 +312,14 @@ jobs:
             python -c "import kipoi; print(kipoi.__version__)"
 
   productive-deploy-pypi:
-    docker:
-      - image: continuumio/miniconda3:latest
+    machine: # executor type
+      image: ubuntu-2004:202104-01
     working_directory: ~/repo
     steps:
       - checkout
-      - *update_conda
-      - *install_sys_deps
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
       #- *install_singularity
       - *export_shortcuts
@@ -355,7 +362,7 @@ workflows:
               only:
                 - master
                 - test_deployment_script
-                - python3.9
+                - fix-ci
       - test-deploy-pypi:
           requires:
             - test-py36-yml
@@ -369,6 +376,7 @@ workflows:
               only:
                 - test_deployment_pypi
                 - test_deployment_script
+                - fix-ci
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
