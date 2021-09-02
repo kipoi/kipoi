@@ -361,7 +361,6 @@ workflows:
               only:
                 - master
                 - test_deployment_script
-                - fix-ci
       - test-deploy-pypi:
           requires:
             - test-py36-yml
@@ -375,7 +374,6 @@ workflows:
               only:
                 - test_deployment_pypi
                 - test_deployment_script
-                - fix-ci
       - productive-deploy-pypi:
           requires:
             - test-py36-yml
