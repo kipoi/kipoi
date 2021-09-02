@@ -13,7 +13,7 @@ from kipoi.pipeline import install_model_requirements
 import torch
 from tensorflow import keras
 
-EXAMPLES_TO_RUN = ["pyt"]
+EXAMPLES_TO_RUN = ["pyt", "upgradedkeras"]
 # TODO - finish the unit-test
 INSTALL_REQ = config.install_req
 
@@ -24,6 +24,8 @@ def test_load_model(example):
 
     if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
         pytest.skip("example not supported on python 2 ")
+    if example == "upgradedkeras" and sys.version_info.major == 3 and sys.version_info.minor < 8:
+        pytest.skip("example is only supported >= python 3.8 ")
 
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir")

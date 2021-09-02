@@ -1,0 +1,48 @@
+type: Dataset
+defined_as: dataloader.MyDataset
+args:
+    features_file:
+        # descr: > allows multi-line fields
+        doc: >
+          Csv file of the Iris Plants Database from
+          http://archive.ics.uci.edu/ml/datasets/Iris features.
+        type: str
+        example: example_files/example_features.csv  # example files
+    x_transformer:
+        default: model_files/x_transformer.pkl
+        #default:
+        #      url: https://github.com/kipoi/kipoi/raw/57734d716b8dedaffe460855e7cfe8f37ec2d48d/example/models/sklearn_iris/dataloader_files/x_transformer.pkl
+        #      md5: bc1bf3c61c418b2d07506a7d0521a893
+    y_transformer:
+        default: model_files/y_transformer.pkl
+    targets_file:
+        doc: >
+          Csv file of the Iris Plants Database targets.
+          Not required for making the prediction.
+        type: str
+        example: example_files/example_targets.csv
+        optional: True  # if not present, the `targets` field will not be present in the dataloader output
+
+info:
+    authors: 
+        - name: Haimasree Bhattacharya
+          github: haimasree
+          email: haimasree.bhattacharya@embl.de
+    version: 0.1
+    doc: Model predicting the Iris species
+dependencies:
+    conda:
+      - python=3.9
+      - pandas
+      - sklearn
+output_schema:
+    inputs:
+        features:
+            shape: (4,)
+            doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+    targets:
+        shape: (3, )
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+    metadata:  # field providing additional information to the samples (not directly required by the model)
+        example_row_number:
+            doc: Just an example metadata column
