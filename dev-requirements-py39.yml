@@ -40,7 +40,7 @@ dependencies:
   - keras
   - pkgconfig
   - pip:
-    - pyranges-0.0.106
+    - pyranges==0.0.104
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils

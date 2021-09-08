@@ -51,7 +51,7 @@ dependencies:
   - gitpython
   - pip
   - pip:
-    - pyranges-0.0.106
+    - pyranges==0.0.104
     - kipoi-utils>=0.3.8
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
