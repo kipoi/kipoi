@@ -42,7 +42,6 @@ dependencies:
   - tensorflow=2.4.1
   - keras
   - pip:
-    - pyranges==0.0.104
     - kipoi-veff
     - kipoi-conda
     - kipoi-interpret
