@@ -1465,6 +1465,17 @@ class SklearnModel(BaseModel):
         # x = x.popitem()[1]
         return getattr(self.model, self.predict_method)(x)
 
+class TensorFlow2Model(BaseModel):
+    MODEL_PACKAGE = "tensorflow"
+
+    def __init__(self, checkpoint_path):
+        import tensorflow as tf
+        if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+            raise IOError("Please use kipoi.model.TensorFlow")
+        self.reconstructed_model = tf.saved_model.load(checkpoint_path)
+
+    def predict_on_batch(self, x):
+        return self.reconstructed_model(x).numpy()
 # --------------------------------------------
 # Tensorflow
 
@@ -1780,8 +1791,12 @@ def _parse_tensorflow_checkpoint_path(ckp_path, output_dir):
 # --------------------------------------------
 
 
+
+
 AVAILABLE_MODELS = OrderedDict([("keras", KerasModel),
                                 ("pytorch", PyTorchModel),
                                 ("sklearn", SklearnModel),
-                                ("tensorflow", TensorFlowModel)])
+                                ("tensorflow", TensorFlowModel),
+                                ("tensorflow2", TensorFlow2Model)])
 # "custom": load_model_custom}
+
