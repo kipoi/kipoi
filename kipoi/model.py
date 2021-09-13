@@ -1475,7 +1475,7 @@ class TensorFlow2Model(BaseModel):
         self.reconstructed_model = tf.saved_model.load(checkpoint_path)
 
     def predict_on_batch(self, x):
-        return self.reconstructed_model(x).numpy()
+        return self.reconstructed_model(x)
 # --------------------------------------------
 # Tensorflow
 
