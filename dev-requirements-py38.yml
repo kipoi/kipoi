@@ -28,7 +28,7 @@ dependencies:
   - pybigwig=0.3.18
   - pyfaidx=0.6.1
   - pysam=0.16.0.1
-  - pytorch=1.4.0
+  - pytorch
   - pytest=6.2.4
   - pytest-cov=2.12.1
   - python=3.8.10
@@ -39,7 +39,7 @@ dependencies:
   - setuptools=49.6.0
   - wheel=0.36.2
   - zarr=2.8.3
-  - tensorflow=2.4.1
+  - tensorflow
   - keras
   - pip:
     - kipoi-veff
