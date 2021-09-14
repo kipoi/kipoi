@@ -1,10 +1,16 @@
 defined_as: kipoi.model.TensorFlow2Model
 args:
-    savedmodel_path: example/models/iris_tensorflow2/model_files
+  savedmodel_path:
+    # explicitly provide each individual file
+    pb:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/saved_model.pb?raw=true
+      # md5: 38760b7242b10111af97dcfc00f1acd7
+    index:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.index?raw=true
+    data:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.data-00000-of-00001?raw=true
 default_dataloader:
   defined_as: kipoiseq.dataloaders.SeqIntervalDl
-  default_args:
-    auto_resize_len: 3
   dependencies:
     pip:
       - kipoiseq
@@ -12,15 +18,13 @@ info:
     authors:
         - name: Your Name
           github: your_github_username
-    doc: Model predicting the Iris species
+    doc: Basic tensorflow model 
 dependencies:
     pip:
-      - tensorflow
+      - tensorflow>=2.0.0
 schema:
     inputs:
-        features:
-          shape: (4,)
-          doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+      name: seq
+      shape: (None, 4)
     targets:
-        shape: (3,)
-        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."
+      shape: (None, )
