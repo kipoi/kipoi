@@ -1468,11 +1468,11 @@ class SklearnModel(BaseModel):
 class TensorFlow2Model(BaseModel):
     MODEL_PACKAGE = "tensorflow"
 
-    def __init__(self, checkpoint_path):
+    def __init__(self, savedmodel_path):
         import tensorflow as tf
         if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
-            raise IOError("Please use kipoi.model.TensorFlow")
-        self.reconstructed_model = tf.saved_model.load(checkpoint_path)
+            raise IOError("kipoi.model.TensorFlow2 is only available with tensorflow >= 2")
+        self.reconstructed_model = tf.saved_model.load(savedmodel_path)
 
     def predict_on_batch(self, x):
         return self.reconstructed_model(x)

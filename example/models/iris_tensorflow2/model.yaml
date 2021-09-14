@@ -1,11 +1,13 @@
 defined_as: kipoi.model.TensorFlow2Model
 args:
-    input_nodes:
-      features: inputs  # input = dictionary of np.arrays
-    target_nodes: probas  # output = np.array
-    checkpoint_path: example/models/iris_tensorflow2/model_files
-    # const_feed_dict_pkl - dict with additional inputs not provided by dataloader
-default_dataloader: . # path to the directory
+    savedmodel_path: example/models/iris_tensorflow2/model_files
+default_dataloader:
+  defined_as: kipoiseq.dataloaders.SeqIntervalDl
+  default_args:
+    auto_resize_len: 3
+  dependencies:
+    pip:
+      - kipoiseq
 info:
     authors:
         - name: Your Name
