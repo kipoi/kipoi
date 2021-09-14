@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-class BasicModel(tf.train.Checkpoint):
+class BasicModel(tf.Module):
   def __init__(self):
     super().__init__()
     self.bias = tf.Variable(1.)
@@ -10,7 +10,6 @@ class BasicModel(tf.train.Checkpoint):
   @tf.function(input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
   def __call__(self, inputs):
     logits = tf.identity(tf.matmul(inputs, self.weight) + self.bias)
-    print(self.weight.shape)
     y_pred = tf.nn.softmax(logits, name="probas")
     return y_pred
 
