@@ -10,7 +10,7 @@ class BasicModel(tf.Module):
   @tf.function(input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
   def __call__(self, inputs):
     logits = tf.identity(tf.matmul(inputs, self.weight) + self.bias)
-    y_pred = tf.nn.softmax(logits, name="probas")
+    y_pred = tf.nn.softmax(logits)
     return y_pred
 
 if __name__ == "__main__":
