@@ -1,4 +1,4 @@
-name: kipoipy38
+name: kipoi-dev
 channels:
   - pytorch
   - conda-forge
@@ -36,7 +36,7 @@ dependencies:
   - setuptools
   - wheel
   - zarr
-  - tensorflow=2.4.1
+  - tensorflow
   - keras
   - pkgconfig
   - pip:
@@ -44,5 +44,3 @@ dependencies:
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
-
-prefix: /Users/b260/opt/miniconda3/envs/kipoipy38

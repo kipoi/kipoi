@@ -138,9 +138,9 @@ info: # General information about the model
 
 dependencies:
     conda: # install via conda
-      - python=3.5
+      - python
       - h5py
-      # - soumith::pytorch  # &lt;channel&gt;::&lt;package&gt; syntax
+      - pip
     pip:   # install via pip
       - keras&gt;=2.0.4
       - tensorflow&gt;=1.0
@@ -199,12 +199,13 @@ info:
 
 dependencies:
     conda:
-      - python=3.5
+      - python
       - bioconda::pybedtools
       - bioconda::pysam
       - bioconda::pyfaidx
       - numpy
       - pandas
+      - pip
     pip:
       - kipoiseq
 

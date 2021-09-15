@@ -155,6 +155,11 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
             output_dir = os.path.join(model_download_dir, "ckp")
             md.args['checkpoint_path'] = _parse_tensorflow_checkpoint_path(md.args['checkpoint_path'], output_dir)
 
+        if md.defined_as == 'kipoi.model.TensorFlow2Model':
+            output_dir = os.path.join(model_download_dir, "sdm")
+            md.args['savedmodel_path'] = _parse_tensorflow2_savedmodel_path(md.args['savedmodel_path'], output_dir)
+
+
         # download url links if specified under args
         for k in md.args:
             if isinstance(md.args[k], RemoteFile):
@@ -1465,6 +1470,26 @@ class SklearnModel(BaseModel):
         # x = x.popitem()[1]
         return getattr(self.model, self.predict_method)(x)
 
+class TensorFlow2Model(BaseModel):
+    MODEL_PACKAGE = "tensorflow"
+    """Tensorflow >=2 model class
+
+        Args:
+          savedmodel_path: Path to the saved model using:
+            `tf.saved_model.save(model, savedmodel_path)`
+    """
+    def __init__(self, savedmodel_path):
+        import tensorflow as tf
+        if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+            raise IOError("kipoi.model.TensorFlow2 is only available with tensorflow >= 2")
+        self.reconstructed_model = tf.saved_model.load(savedmodel_path)
+
+    def predict_on_batch(self, x):
+        import tensorflow as tf
+        preds = self.reconstructed_model(x)
+        if tf.is_tensor(preds):
+            preds = preds.numpy()
+        return preds
 # --------------------------------------------
 # Tensorflow
 
@@ -1777,11 +1802,59 @@ def _parse_tensorflow_checkpoint_path(ckp_path, output_dir):
     else:
         return ckp_path
 
+def _parse_tensorflow2_savedmodel_path(sdm_path, output_dir):
+    """Parse and download tensorflow's checkpoint_path
+    """
+    if not isinstance(sdm_path, str):
+        # need to handle the special case
+        error_message = "savedmodel_path needs to be either a string " + \
+                        "savedmodel_path needs to be either or a dictionary with " + \
+                        "keys: pb, index, data"
+        if not isinstance(sdm_path, Mapping):
+            raise ValueError(error_message + "\n detected class {}".format(type(sdm_path)))
+        if set(sdm_path.keys()) != {'pb', 'index', 'data'}:
+            raise ValueError(error_message + "\n detected keys {}".format(set(sdm_path.keys())))
+
+        # either all are string or all are remote paths
+        types = {type(sdm_path[k]) for k in sdm_path}
+        if len(types) != 1:
+            raise ValueError("All types in savedmodel_path need to be the same. Found: {}".format(types))
+        if not (isinstance(sdm_path['pb'], str) or isinstance(sdm_path['pb'], RemoteFile)):
+            raise ValueError("Values of the savedmodel_path sdm_path need to be either "
+                             "str or RemoteFile. Found: {}".format(sdm_path['pb']))
+        if isinstance(sdm_path['pb'], RemoteFile):
+            # download files
+            makedir_exist_ok(output_dir)
+            makedir_exist_ok(f"{output_dir}/variables")
+            makedir_exist_ok(f"{output_dir}/assets")
+
+            sdm_path['pb'] = sdm_path['pb'].get_file(os.path.join(output_dir, "saved_model.pb"))
+            sdm_path['index'] = sdm_path['index'].get_file(os.path.join(output_dir, "variables", "variables.index"))
+            sdm_path['data'] = sdm_path['data'].get_file(os.path.join(output_dir, "variables", "variables.data-00000-of-00001"))
+
+        if isinstance(sdm_path['pb'], str):
+            assert sdm_path['pb'].endswith(".pb")
+            assert sdm_path['index'].endswith(".index")
+            assert sdm_path['data'].endswith(".data-00000-of-00001")
+            # figure out the prefix
+            sdm_path_prefix = os.path.dirname(sdm_path['pb'])
+            assert sdm_path['index'].startswith(sdm_path_prefix)
+
+            return sdm_path_prefix
+        else:
+            raise ValueError("Values of the savedmodel_path sdm_path need to be either "
+                             "str or RemoteFile. Found: {}".format(sdm_path['pb']))
+    else:
+        return sdm_path
 # --------------------------------------------
+
+
 
 
 AVAILABLE_MODELS = OrderedDict([("keras", KerasModel),
                                 ("pytorch", PyTorchModel),
                                 ("sklearn", SklearnModel),
-                                ("tensorflow", TensorFlowModel)])
+                                ("tensorflow", TensorFlowModel),
+                                ("tensorflow2", TensorFlow2Model)])
 # "custom": load_model_custom}
+

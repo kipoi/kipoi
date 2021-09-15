@@ -3,9 +3,9 @@
 <a href='https://circleci.com/gh/kipoi/kipoi'>
 	<img alt='CircleCI' src='https://circleci.com/gh/kipoi/kipoi.svg?style=svg' style="max-height:20px;width:auto">
 </a>
-<a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
+<!-- <a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
 	<img alt='Coverage status' src=https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master style="max-height:20px;width:auto;">
-</a>
+</a> -->
 <a href=https://gitter.im/kipoi>
 	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
 </a>
@@ -27,14 +27,12 @@ This repository implements a python package and a command-line interface (CLI) t
 ## Installation
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Supported python versions: 2.7 and >=3.5<=3.7.
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.9. 
 
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
-conda create -n py36 python=3.6
-conda activate py36
 pip install kipoi
 ```
 
@@ -186,14 +184,15 @@ If you use Kipoi for your research, please cite the publication of the model you
 
 If you want to help with the development of Kipoi, you are more than welcome to join in! 
 
-For the local setup for development, you should install `kipoi` using:
+For the local setup for development, you should install all required dependencies using one of the provided dev-requirements-py<36|37|38|39>.yml files
 
 ```bash
-conda install pytorch-cpu
-pip install -e '.[develop]'
+conda env create -f dev-requirements-py39.yml
+conda activate kipoi-dev
+pip install -e .
 ```
 
-This will install some additional packages like `pytest`. You can test the package by running `py.test`. 
+You can test the package by running `py.test`. 
 
 If you wish to run tests in parallel, run `py.test -n 6`.
 

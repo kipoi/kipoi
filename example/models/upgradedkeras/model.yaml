@@ -1,0 +1,27 @@
+defined_as: kipoi.model.KerasModel  # use `kipoi.model.KerasModel`
+args:  # arguments of `kipoi.model.KerasModel`
+    arch: model_files/model.json
+    weights: model_files/weights.h5
+default_dataloader: . # path to the dataloader directory. Here it's defined in the same directory
+info: # General information about the model
+    authors: 
+        - name: Haimasree Bhattacharya
+          github: haimasree
+          email: haimasree.bhattacharya@embl.de    
+    doc: Model predicting the Iris species
+    cite_as: https://doi.org:/... # preferably a doi url to the paper
+    trained_on: Iris species dataset (http://archive.ics.uci.edu/ml/datasets/Iris) # short dataset description
+    license: MIT # Software License - defaults to MIT
+dependencies:
+    conda: # install via conda
+      - python=3.9
+      - keras
+      - h5py
+schema:  # Model schema
+    inputs:
+        features:
+            shape: (4,)  # array shape of a single sample (omitting the batch dimension)
+            doc: "Features in cm: sepal length, sepal width, petal length, petal width."
+    targets:
+        shape: (3,)
+        doc: "One-hot encoded array of classes: setosa, versicolor, virginica."

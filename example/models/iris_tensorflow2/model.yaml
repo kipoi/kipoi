@@ -1,0 +1,32 @@
+defined_as: kipoi.model.TensorFlow2Model
+args:
+  savedmodel_path:
+    # explicitly provide each individual file
+    pb:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/saved_model.pb?raw=true
+      # md5: 38760b7242b10111af97dcfc00f1acd7
+    index:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.index?raw=true
+    data:
+      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.data-00000-of-00001?raw=true
+default_dataloader:
+  defined_as: kipoiseq.dataloaders.SeqIntervalDl
+  default_args:
+    auto_resize_len: 3
+  dependencies:
+    pip:
+      - kipoiseq
+info:
+    authors:
+        - name: Your Name
+          github: your_github_username
+    doc: Basic tensorflow model 
+dependencies:
+    pip:
+      - tensorflow>=2.0.0
+schema:
+    inputs:
+      name: seq
+      shape: (3, 4)
+    targets:
+      shape: (None, )
