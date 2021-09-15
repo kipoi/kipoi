@@ -1,4 +1,4 @@
-name: kipoipy38
+name: kipoi-dev
 channels:
   - pytorch
   - conda-forge
@@ -47,5 +47,3 @@ dependencies:
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
-
-prefix: /Users/b260/opt/miniconda3/envs/kipoipy38
