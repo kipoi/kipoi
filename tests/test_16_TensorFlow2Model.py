@@ -17,16 +17,16 @@ def test_loading():
 
     savedmodel_path = "example/models/iris_tensorflow2/model_files/"
     a = TensorFlow2Model(savedmodel_path=savedmodel_path)
-    o = a.predict_on_batch(np.ones((3, 4)))
-    assert o.shape == (3, 3)
+    o = a.predict_on_batch([np.ones((3, 4))])
+    assert o.shape == (1, 3, 3)
 
 def test_loading_from_kipoi():
     if sys.version_info.major == 3 and sys.version_info.minor < 8:
         pytest.skip("example is only supported >= python 3.8 ")
 
     m = kipoi.get_model("example/models/iris_tensorflow2", source="dir")
-    o = m.predict_on_batch(np.ones((3, 4)))
-    assert o.shape == (3, 3)
+    o = m.predict_on_batch([np.ones((3, 4))])
+    assert o.shape == (1, 3, 3)
     
 def test_test_example(tmpdir):
     """kipoi test ..., add also output file writing
