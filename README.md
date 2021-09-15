@@ -27,7 +27,7 @@ This repository implements a python package and a command-line interface (CLI) t
 ## Installation
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Supported python versions: 2.7 and >=3.5<=3.9.
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.9. 
 
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
