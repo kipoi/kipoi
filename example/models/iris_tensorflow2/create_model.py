@@ -7,7 +7,7 @@ class BasicModel(tf.Module):
     self.bias = tf.Variable(1.)
     self.weight = tf.Variable(tf.random.normal((4, 3))) 
 
-  @tf.function(input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
+  @tf.function(input_signature=[tf.TensorSpec(shape=(3, 4), dtype=tf.float32)])
   def __call__(self, inputs):
     logits = tf.identity(tf.matmul(inputs, self.weight) + self.bias)
     y_pred = tf.nn.softmax(logits)

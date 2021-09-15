@@ -11,6 +11,8 @@ args:
       url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.data-00000-of-00001?raw=true
 default_dataloader:
   defined_as: kipoiseq.dataloaders.SeqIntervalDl
+  default_args:
+    auto_resize_len: 3
   dependencies:
     pip:
       - kipoiseq
@@ -25,6 +27,6 @@ dependencies:
 schema:
     inputs:
       name: seq
-      shape: (None, 4)
+      shape: (3, 4)
     targets:
       shape: (None, )
