@@ -1487,6 +1487,8 @@ class TensorFlow2Model(BaseModel):
     def predict_on_batch(self, x):
         import tensorflow as tf
         preds = self.reconstructed_model(x)
+        if tf.is_tensor(preds):
+            preds = preds.numpy()
         return preds
 # --------------------------------------------
 # Tensorflow
