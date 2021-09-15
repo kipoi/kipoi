@@ -1,4 +1,4 @@
-"""TensorFlowModel tests
+"""TensorFlow2Model tests
 """
 import os
 import subprocess

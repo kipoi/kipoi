@@ -1472,7 +1472,12 @@ class SklearnModel(BaseModel):
 
 class TensorFlow2Model(BaseModel):
     MODEL_PACKAGE = "tensorflow"
-    
+    """Tensorflow >=2 model class
+
+        Args:
+          savedmodel_path: Path to the saved model using:
+            `tf.saved_model.save(model, savedmodel_path)`
+    """
     def __init__(self, savedmodel_path):
         import tensorflow as tf
         if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
