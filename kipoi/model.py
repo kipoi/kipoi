@@ -1472,7 +1472,7 @@ class SklearnModel(BaseModel):
 
 class TensorFlow2Model(BaseModel):
     MODEL_PACKAGE = "tensorflow"
-
+    
     def __init__(self, savedmodel_path):
         import tensorflow as tf
         if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
@@ -1480,7 +1480,11 @@ class TensorFlow2Model(BaseModel):
         self.reconstructed_model = tf.saved_model.load(savedmodel_path)
 
     def predict_on_batch(self, x):
-        return self.reconstructed_model(x)
+        import tensorflow as tf
+        preds = self.reconstructed_model(x)
+        if tf.is_tensor(preds):
+            preds = preds.numpy()
+        return preds
 # --------------------------------------------
 # Tensorflow
 
