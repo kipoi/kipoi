@@ -44,7 +44,7 @@ info:
     doc: Model predicting the Iris species
 dependencies:
     conda:
-      - python=3.5
+      - python
       - pandas
       - numpy
       - sklearn
