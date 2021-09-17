@@ -30,8 +30,9 @@ info: # General information about the model
     license: MIT # Software License - defaults to MIT
 dependencies:
     conda: # install via conda
-      - python=3.5
+      - python
       - h5py
+      - pip
       # - soumith::pytorch  # specify packages from other channels via <channel>::<package>      
     pip:   # install via pip
       - keras>=2.0.4
