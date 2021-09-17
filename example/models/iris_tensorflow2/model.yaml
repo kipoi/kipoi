@@ -3,12 +3,14 @@ args:
   savedmodel_path:
     # explicitly provide each individual file
     pb:
-      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/saved_model.pb?raw=true
-      # md5: 38760b7242b10111af97dcfc00f1acd7
+      url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow2/model_files/saved_model.pb?raw=true
+      md5: 94de0fb75c26b70e4e4c3518144eebda
     index:
-      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.index?raw=true
+      url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow2/model_files/variables/variables.index?raw=true
+      md5: 4abb2e326da10496122390731533c437
     data:
-      url: https://github.com/kipoi/kipoi/blob/add-more-tests/example/models/iris_tensorflow2/model_files/variables/variables.data-00000-of-00001?raw=true
+      url: https://github.com/kipoi/kipoi/blob/master/example/models/iris_tensorflow2/model_files/variables/variables.data-00000-of-00001?raw=true
+      md5: 5d14568835bbf06d0ecd8851540cec44
 default_dataloader:
   defined_as: kipoiseq.dataloaders.SeqIntervalDl
   default_args:
