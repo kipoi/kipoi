@@ -17,7 +17,7 @@ dependencies:
   - pytest-cov>=2.6.1
   - deprecation>=2.0.6
   #- coveralls
-  - h5py==2.10.0
+  - h5py
   - scipy>=1.0.0
   - attrs>=18.2.0
   - matplotlib
