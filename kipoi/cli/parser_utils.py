@@ -60,8 +60,6 @@ def add_env_args(parser, source="kipoi"):
                         help="Dataloader name(s). If not specified, the model's default " +
                         "Dataloader will be used. You can use <source>::<dataloader> to use dataloaders from different sources\n"
                         "As for the --model tag, you can specify whole dataloader groups.")
-    parser.add_argument("--vep", action="store_true",
-                        help="Include also the dependencies for the kipoi-veff package")
     parser.add_argument("--interpret", action="store_true",
                         help="Include also the dependencies for the kipoi-interpret package")
     parser.add_argument("--gpu", action="store_true",

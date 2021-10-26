@@ -93,7 +93,7 @@ def all_models_to_test(src):
     return list(models) + include
 
 
-def create_model_env(model_name, source_name, env_name, vep=False, verbose=False):
+def create_model_env(model_name, source_name, env_name, verbose=False):
     """kipoi test ...
 
     Args:
@@ -115,15 +115,13 @@ def create_model_env(model_name, source_name, env_name, vep=False, verbose=False
             model_name]
     if verbose:
         args.append("--verbose")
-    if vep:
-        # Add --vep to environment installation
-        args.insert(-1, "--vep")
+
     returncode = _call_command(cmd, args, use_stdout=True)
     assert returncode == 0
 
 
 def test_model(model_name, source_name, env_name, batch_size,
-               vep=False, create_env=True, verbose=False):
+               create_env=True, verbose=False):
     """kipoi test ...
 
     Args:
@@ -131,7 +129,7 @@ def test_model(model_name, source_name, env_name, batch_size,
       source_name: source name
     """
     if create_env:
-        create_model_env(model_name, source_name, env_name, vep, verbose=verbose)
+        create_model_env(model_name, source_name, env_name, verbose=verbose)
 
     # run the tests in the environment
     cmd = get_kipoi_bin(env_name)

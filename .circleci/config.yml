@@ -98,7 +98,7 @@ variables:
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
-      command: pip install '.[develop,vep]'
+      command: pip install '.[develop]'
   install_requests: &install_requests
     run:
       name: Install requirements for requests correctly

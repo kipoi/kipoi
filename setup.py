@@ -63,7 +63,6 @@ setup(
     install_requires=requirements,
     extras_require={
         "develop": test_requirements,
-        "vep": ["kipoi_veff"],  # backcompatibily
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
