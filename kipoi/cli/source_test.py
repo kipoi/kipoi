@@ -277,7 +277,7 @@ def cli_test_source(command, raw_args):
                         help='only run tests which match the given substring expression')
     parser.add_argument('-c', '--clean_env', action='store_true',
                         help='clean the environment after running.')
-    parser.add_argument("--vep", action="ignore",
+    parser.add_argument("--vep", action=kipoi.cli.main.DeprecateAction,
                         help="This argument is deprecated. Please use https://github.com/kipoi/kipoi-veff2 directly")
     parser.add_argument('--common_env', action='store_true',
                         help='Test models in common environments.')
