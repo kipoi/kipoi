@@ -5,10 +5,11 @@ import pandas as pd
 import sys
 import os
 import subprocess
+import logging
 from kipoi.readers import HDF5Reader
 
 @pytest.mark.parametrize("file_format", ["hdf5"])
-def test_predict_variants_example_multimodel(file_format, tmpdir):
+def test_predict_variants_example_multimodel(file_format, caplog, tmpdir):
     """kipoi predict ...
     """
     import json
@@ -42,8 +43,10 @@ def test_predict_variants_example_multimodel(file_format, tmpdir):
             "--std_var_id",
             "--extra_output", tmpfile]
    
-    # kipoi-veff is no longer used for variant effect prediction. Please use https://github.com/kipoi/kipoi-veff2 directly
+    # kipoi-veff is no longer used for variant effect prediction. 
+    # Please use https://github.com/kipoi/kipoi-veff2 directly
 
-    returncode = subprocess.call(args=args)
+    with caplog.at_level(logging.ERROR):
+        returncode = subprocess.call(args=args)
     assert returncode > 0
-    
+    assert "ggjgj" in caplog.text
