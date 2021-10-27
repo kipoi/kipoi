@@ -67,11 +67,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
 
-postproc_cmd_map = {"score_variants": "veff",
-                    "create_mutation_map": "veff",
-                    "plot_mutation_map": "veff",
+postproc_cmd_map = {
                     "grad": "interepret",
-                    "gr_inp_to_file": "interepret"}
+                    "gr_inp_to_file": "interepret"
+                    }
 
 
 def main():

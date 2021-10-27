@@ -873,8 +873,6 @@ class ModelDescription(RelatedLoadSaveMixin):
         # load additional objects
         for k in self.postprocessing:
             k_observed = k
-            if k == 'variant_effects':
-                k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
                 try:
@@ -1029,8 +1027,6 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
         # load additional objects
         for k in self.postprocessing:
             k_observed = k
-            if k == 'variant_effects':
-                k = 'kipoi_veff'
             if is_installed(k):
                 # Load the config properly if the plugin is installed
                 try:

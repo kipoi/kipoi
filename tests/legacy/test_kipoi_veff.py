@@ -14,7 +14,7 @@ if config.install_req:
 else:
     INSTALL_FLAG = ""
 
-
+@pytest.mark.skip(reason="kipoi-veff is no longer used for variant effect prediction. Please use https://github.com/kipoi/kipoi-veff2 directly")
 @pytest.mark.parametrize("file_format", ["hdf5"])
 def test_predict_variants_example_multimodel(file_format, tmpdir):
     """kipoi predict ...

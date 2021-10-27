@@ -60,16 +60,6 @@ def test_export(tmpdir):
     assert sorted(env_dict['channels']) == ['bioconda', 'conda-forge', 'defaults']
     assert [p for p in env_dict['dependencies'][pip_idx]['pip'] if "tensorflow-gpu=" in p or "tensorflow-gpu>=" in p]
 
-    # vep
-    env, env_file = export_env(["rbp_eclip/XRCC6"],
-                               env_dir=str(tmpdir),
-                               gpu=True,
-                               vep=True,
-                               )
-    env_dict = read_yaml(env_file)
-    assert sorted(env_dict['channels']) == ['bioconda', 'conda-forge', 'defaults']
-    assert [p for p in env_dict['dependencies'] if "cyvcf2" in p]
-    assert env_dict['name'] == env
 
 
 def test_cli(tmpdir):
@@ -151,7 +141,7 @@ def test_generate_env_db_entry():
     import time
     from kipoi.cli.parser_utils import parse_source_name
     kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
-              "tmpdir": "something", "vep": True}
+              "tmpdir": "something"}
     source_path = kipoi.get_source("dir").local_path
     kipoi_path = kipoi.get_source("kipoi").local_path
     for model in [["example/models/pyt"], ["example/models/shared/envs/kipoi-py3-keras1.2", "example/models/pyt"]]:

@@ -24,15 +24,6 @@ kipoi env create shared/envs/kipoi-py3-keras1.2
 ## Running models
 kipoi_cmd=$(kipoi env get_cli {wildcards.model})
 
-$kipoi_cmd veff score_variants \
-    {wildcards.model} \
-    --dataloader_args='{{"fasta_file": "{input.fasta_file}"}}' \
-    -i {input.vcf} \
-    -n {params.workers} \
-    --batch_size={params.batch_size} \
-    {params.output_flag} {output.f} \
-    -s {params.score} \
-    --std_var_id
 """
 import os
 import kipoi

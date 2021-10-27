@@ -116,7 +116,6 @@ usage: kipoi <command> [-h] ...
     test-source      Runs a set of unit-tests for many/all models in a source
     
     # - plugin commands:
-    veff             Variant effect prediction
     interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT
 ```
 
@@ -140,17 +139,11 @@ You can add your own (private) model sources. See [docs/using/03_Model_sources/]
 
 See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models) for more information.
 
+
+
+
 ## Plugins
-Kipoi supports plug-ins which are published as additional python packages. Two plug-ins that are available are:
-
-### [kipoi_veff](https://github.com/kipoi/kipoi-veff)
-
-Variant effect prediction plugin compatible with (DNA) sequence based models. It allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new VCF file. For more information see <https://kipoi.org/veff-docs/>.
-
-```bash
-pip install kipoi_veff
-```
-
+Kipoi supports plug-ins which are published as additional python packages. Currently available plug-in is:
 
 ### [kipoi_interpret](https://github.com/kipoi/kipoi-interpret)
 
@@ -159,6 +152,11 @@ Model interpretation plugin for Kipoi. Allows to use feature importance scores l
 ```bash
 pip install kipoi_interpret
 ```
+
+### Variant effect prediction with a subset of Kipoi models
+
+Variant effect prediction allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new tsv file. For more information see <https://github.com/kipoi/kipoi-veff2>.
+
 
 ## Documentation
 

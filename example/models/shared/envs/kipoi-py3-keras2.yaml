@@ -23,7 +23,6 @@ dependencies:
 - gtfparse>=1.0.7
 - scikit-learn==0.18.1
 - pip:
-  - kipoi_veff
   - kipoi
   - tensorflow==1.4.1
   - keras==2.1.6

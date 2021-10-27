@@ -44,7 +44,6 @@ variables:
       name: Install kipoi plugins
       command: |
         pip install kipoi_interpret
-        pip install kipoi_veff
         pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
