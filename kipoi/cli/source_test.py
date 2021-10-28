@@ -93,7 +93,7 @@ def all_models_to_test(src):
     return list(models) + include
 
 
-def create_model_env(model_name, source_name, env_name, vep=False, verbose=False):
+def create_model_env(model_name, source_name, env_name, verbose=False):
     """kipoi test ...
 
     Args:
@@ -115,15 +115,13 @@ def create_model_env(model_name, source_name, env_name, vep=False, verbose=False
             model_name]
     if verbose:
         args.append("--verbose")
-    if vep:
-        # Add --vep to environment installation
-        args.insert(-1, "--vep")
+
     returncode = _call_command(cmd, args, use_stdout=True)
     assert returncode == 0
 
 
 def test_model(model_name, source_name, env_name, batch_size,
-               vep=False, create_env=True, verbose=False):
+               create_env=True, verbose=False):
     """kipoi test ...
 
     Args:
@@ -131,7 +129,7 @@ def test_model(model_name, source_name, env_name, batch_size,
       source_name: source name
     """
     if create_env:
-        create_model_env(model_name, source_name, env_name, vep, verbose=verbose)
+        create_model_env(model_name, source_name, env_name, verbose=verbose)
 
     # run the tests in the environment
     cmd = get_kipoi_bin(env_name)
@@ -279,8 +277,8 @@ def cli_test_source(command, raw_args):
                         help='only run tests which match the given substring expression')
     parser.add_argument('-c', '--clean_env', action='store_true',
                         help='clean the environment after running.')
-    parser.add_argument('--vep', action='store_true',
-                        help='Install the vep dependency.')
+    parser.add_argument("--vep", action=kipoi.cli.main.DeprecateAction,
+                        help="This argument is deprecated. Please use https://github.com/kipoi/kipoi-veff2 directly")
     parser.add_argument('--common_env', action='store_true',
                         help='Test models in common environments.')
     parser.add_argument('--all', action='store_true',
@@ -372,7 +370,7 @@ def cli_test_source(command, raw_args):
                 logger.info("Common environment already exists: {}. Skipping the installation".format(env))
             else:
                 logger.info("Installing environment: {}".format(env))
-                create_model_env(os.path.join(SPECIAL_ENV_PREFIX, env), args.source, env, vep=args.vep)
+                create_model_env(os.path.join(SPECIAL_ENV_PREFIX, env), args.source, env)
 
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
@@ -390,7 +388,7 @@ def cli_test_source(command, raw_args):
                 env_name = "test-" + env_name
                 # Test
                 test_model(m, args.source, env_name,
-                           get_batch_size(cfg, m, args.batch_size), args.vep,
+                           get_batch_size(cfg, m, args.batch_size),
                            create_env=True, verbose=args.verbose)
             else:
                 # figure out the common environment name
@@ -403,7 +401,7 @@ def cli_test_source(command, raw_args):
                 # Test
                 print("test_model...")
                 test_model(m, args.source, env_name,
-                           get_batch_size(cfg, m, args.batch_size), args.vep,
+                           get_batch_size(cfg, m, args.batch_size), 
                            create_env=False, verbose=args.verbose)
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))

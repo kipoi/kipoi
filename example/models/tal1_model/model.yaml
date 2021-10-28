@@ -31,9 +31,3 @@ schema:
     name: binding_prob
     shape: (1, )
     doc: Protein binding probability
-postprocessing:
-    variant_effects:
-      seq_input:
-        - seq
-      scoring_functions:
-          - type: diff

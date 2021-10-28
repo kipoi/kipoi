@@ -164,7 +164,6 @@ def list_models_by_group(df, group_filter=""):
                                      for author in authors])),
             ("contributors", unique_list([contributor for contributors in x.contributors
                                           for contributor in contributors])),
-            ("veff_score_variants", x.veff_score_variants.any()),
             ("type", unique_list([t for t in x.type])),
             ("license", unique_list([l for l in x.license])),
             ("cite_as", unique_list([c for c in x.cite_as if c is not None])),
@@ -367,7 +366,6 @@ class Source(object):
                 ("type", d.type),
                 ("inputs", to_namelist(d.schema.inputs)),
                 ("targets", to_namelist(d.schema.targets)),
-                ("veff_score_variants", "variant_effects" in d.postprocessing),
                 ("license", d.info.license),
                 ("cite_as", d.info.cite_as),
                 ("trained_on", d.info.trained_on),

@@ -79,12 +79,6 @@ conda_env_name = get_env_name
 
 # constant dependencies
 KIPOI_DEPS = Dependencies(pip=["kipoi"])
-# TODO - update once kipoi_veff will be on bioconda
-VEP_DEPS = Dependencies(conda=["bioconda::pyvcf",
-                               "bioconda::cyvcf2",
-                               "bioconda::pybedtools",
-                               "bioconda::pysam"],
-                        pip=["kipoi_veff"])
 INTERPRET_DEPS = Dependencies(pip=["kipoi_interpret"])
 
 # Hard-code kipoi-seq dataloaders
@@ -105,7 +99,6 @@ def split_models_special_envs(models):
 def merge_deps(models,
                dataloaders=None,
                source="kipoi",
-               vep=False,
                interpret=False,
                gpu=False):
     """Setup the dependencies
@@ -194,13 +187,7 @@ def merge_deps(models,
     # add Kipoi to the dependencies
     deps = KIPOI_DEPS.merge(deps)
 
-    if vep:
-        # add vep dependencies
-        logger.info("Adding the vep dependencies")
-        deps = VEP_DEPS.merge(deps)
-
     if interpret:
-        # add vep dependencies
         logger.info("Adding the interpret dependencies")
         deps = INTERPRET_DEPS.merge(deps)
 
@@ -234,7 +221,6 @@ def export_env(models,
                env_file=None,
                env_dir=".",
                env=None,
-               vep=False,
                interpret=False,
                gpu=False):
     """Write a conda environment file. Helper function for the cli_export and cli_create.
@@ -248,7 +234,6 @@ def export_env(models,
       env_dir: Becomes relevant when env_file is None. Then the env_file is inferred
         from env and env_dir
       env: env name for the environment. If None, it will be automatically inferred.
-      vep: Add variant effect prediction dependencies
       gpu: Use gpu-compatible dependencies. Example: instead of using 'tensorflow',
         'tensorflow-gpu' will be used
 
@@ -263,7 +248,6 @@ def export_env(models,
     deps = merge_deps(models=models,
                       dataloaders=dataloaders,
                       source=source,
-                      vep=vep,
                       interpret=interpret,
                       gpu=gpu)
     return export_deps_to_env(deps, env_file=env_file, env_dir=env_dir, env=env)
@@ -286,7 +270,6 @@ def cli_export(cmd, raw_args):
                                args.source,
                                env_file=args.output,
                                env=args.env,
-                               vep=args.vep,
                                interpret=args.interpret,
                                gpu=args.gpu)
 
@@ -446,7 +429,6 @@ def cli_create(cmd, raw_args):
                                env_file=None,
                                env_dir=tmpdir,
                                env=args.env,
-                               vep=args.vep,
                                interpret=args.interpret,
                                gpu=args.gpu)
 
@@ -634,7 +616,6 @@ def cli_install(cmd, raw_args):
     deps = merge_deps(models=args.model,
                       dataloaders=args.dataloader,
                       source=args.source,
-                      vep=args.vep,
                       interpret=args.interpret,
                       gpu=args.gpu)
     deps.install()

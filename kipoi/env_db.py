@@ -35,7 +35,6 @@ class EnvCreateArgs(RelatedConfigMixin):
     env = related.StringField(default=None, required=False)
     gpu = related.BooleanField(default=False, required=False)
     tmpdir = related.StringField(default=None, required=False)
-    vep = related.BooleanField(default=False, required=False)
 
 
 @related.mutable

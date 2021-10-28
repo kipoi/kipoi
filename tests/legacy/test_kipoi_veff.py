@@ -5,23 +5,14 @@ import pandas as pd
 import sys
 import os
 import subprocess
-import config
+import logging
 from kipoi.readers import HDF5Reader
-from utils import compare_vcfs
-
-if config.install_req:
-    INSTALL_FLAG = "--install_req"
-else:
-    INSTALL_FLAG = ""
-
 
 @pytest.mark.parametrize("file_format", ["hdf5"])
-def test_predict_variants_example_multimodel(file_format, tmpdir):
+def test_kipoi_veff_fail(file_format, caplog, tmpdir):
     """kipoi predict ...
     """
     import json
-    if sys.version_info[0] == 2:
-        pytest.skip("Only rbp example testable at the moment, which only runs on py3")
 
     example_dir = "example/models/non_bedinput_model/"
 
@@ -51,36 +42,9 @@ def test_predict_variants_example_multimodel(file_format, tmpdir):
             "--output_vcf", vcf_tmpfile,
             "--std_var_id",
             "--extra_output", tmpfile]
-    # run the
-    if INSTALL_FLAG:
-        args.append(INSTALL_FLAG)
+   
+    # kipoi-veff is no longer used for variant effect prediction. 
+    # Please use https://github.com/kipoi/kipoi-veff2 directly
 
-    returncode = subprocess.call(args=args, cwd=".")
-    assert returncode == 0
-
-    assert os.path.exists(tmpfile)
-
-    # assert filecmp.cmp(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
-    # import pdb
-    # pdb.set_trace()
-
-    compare_vcfs(example_dir + "/example_files/variants_ref_out.vcf", vcf_tmpfile)
-
-    if file_format == "hdf5":
-        data = HDF5Reader.load(tmpfile)
-    else:
-        table_labels = []
-        table_starts = []
-        table_ends = []
-        tables = {}
-        head_line_id = "KPVEP_"
-        with open(tmpfile, "r") as ifh:
-            for i, l in enumerate(ifh):
-                if head_line_id in l:
-                    if (len(table_starts) > 0):
-                        table_ends.append(i - 1)
-                    table_labels.append(l.rstrip()[len(head_line_id):])
-                    table_starts.append(i + 1)
-            table_ends.append(i)
-        for label, start, end in zip(table_labels, table_starts, table_ends):
-            tables[label] = pd.read_csv(tmpfile, sep="\t", skiprows=start, nrows=end - start, index_col=0)
+    returncode = subprocess.call(args=args)
+    assert returncode > 0
