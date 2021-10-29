@@ -186,6 +186,7 @@ jobs:
   test-py36-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -203,6 +204,7 @@ jobs:
   test-py37-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -220,6 +222,7 @@ jobs:
   test-py38-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -237,6 +240,7 @@ jobs:
   test-py39-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -282,6 +286,7 @@ jobs:
   test-deploy-pypi:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -311,6 +316,7 @@ jobs:
   productive-deploy-pypi:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
