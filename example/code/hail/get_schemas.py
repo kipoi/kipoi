@@ -129,6 +129,7 @@ df = kipoi.list_models()
 
 
 # get all models supporting variant effect prediction
+# TODO: The following code will not work as is. Remove it?
 dfv = df[df.veff_score_variants]
 
 # not sure why this wasn't kicked out
