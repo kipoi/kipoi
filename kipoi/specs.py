@@ -855,7 +855,6 @@ class ModelDescription(RelatedLoadSaveMixin):
     defined_as = related.StringField(required=False)
     type = related.StringField(required=False)
     default_dataloader = AnyField(default='.', required=False)
-    postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     dependencies = related.ChildField(Dependencies,
                                       default=Dependencies(),
                                       required=False)
@@ -870,19 +869,6 @@ class ModelDescription(RelatedLoadSaveMixin):
     def __attrs_post_init__(self):
         if self.defined_as is None and self.type is None:
             raise ValueError("Either defined_as or type need to be specified")
-        # load additional objects
-        for k in self.postprocessing:
-            k_observed = k
-            if is_installed(k):
-                # Load the config properly if the plugin is installed
-                try:
-                    parser = get_model_yaml_parser(k)
-                    self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
-
-                    object.__setattr__(self, "postprocessing", self.postprocessing)
-                except Exception:
-                    logger.warning("Unable to parse {} filed in ModelDescription: {}".format(k_observed, self))
-
         # parse args
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
 
@@ -984,7 +970,6 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
     info = related.ChildField(Info, default=Info(), required=False)
     dependencies = related.ChildField(Dependencies, default=Dependencies(), required=False)
     path = related.StringField(required=False)
-    postprocessing = related.ChildField(dict, default=OrderedDict(), required=False)
     writers = related.ChildField(dict, default=OrderedDict(), required=False)
 
     def get_example_kwargs(self):
@@ -1023,18 +1008,6 @@ class DataLoaderDescription(RelatedLoadSaveMixin):
 
     print_args = print_kwargs
 
-    def __attrs_post_init__(self):
-        # load additional objects
-        for k in self.postprocessing:
-            k_observed = k
-            if is_installed(k):
-                # Load the config properly if the plugin is installed
-                try:
-                    parser = get_dataloader_yaml_parser(k)
-                    self.postprocessing[k_observed] = parser.from_config(self.postprocessing[k_observed])
-                    object.__setattr__(self, "postprocessing", self.postprocessing)
-                except Exception:
-                    logger.warning("Unable to parse {} filed in DataLoaderDescription: {}".format(k_observed, self))
 
 
     # download example files

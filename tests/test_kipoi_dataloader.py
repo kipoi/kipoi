@@ -170,10 +170,6 @@ def test_path():
     assert Dl.path is None
 
 
-def test_postprocessing():
-    assert Dl.postprocessing == OrderedDict()
-
-
 def test_error():
     dec = kipoi_dataloader(override={"dependencies": deps, 'info.authors': package_authors})
     with pytest.raises(ValueError):
