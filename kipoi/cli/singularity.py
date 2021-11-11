@@ -32,6 +32,7 @@ logger.addHandler(logging.NullHandler())
 #     """
 #     pass
 
+CONTAINER_PREFIX = "shared/containers"
 
 def singularity_pull(remote_path, local_path):
     """Run `singularity pull`
@@ -121,7 +122,7 @@ def singularity_exec(container, command, bind_directories=[], dry_run=False):
 def container_remote_url(model, source='kipoi'):
     import json
     src = get_source(source)
-    singularity_container_json = os.path.join(src.local_path, "containerinfo", "model-to-singularity.json")
+    singularity_container_json = os.path.join(src.local_path, CONTAINER_PREFIX, "model-to-singularity.json")
     with open(singularity_container_json, 'r') as singularity_container_json_filehandle:
         model_to_singularity_container_dict = json.load(singularity_container_json_filehandle)
     if source == 'kipoi':
