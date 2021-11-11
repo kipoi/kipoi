@@ -19,6 +19,7 @@ import six
 import os
 from kipoi_utils.utils import unique_list, makedir_exist_ok, is_subdir
 from kipoi_conda import _call_command
+from kipoi import get_source
 import subprocess
 import logging
 logger = logging.getLogger(__name__)
@@ -117,9 +118,19 @@ def singularity_exec(container, command, bind_directories=[], dry_run=False):
 # - container path (e.g. shub://kipoi/models:latest)
 # - local path (e.g. ~/.kipoi/envs/singularity/kipoi/models_latest.sif)
 
-def container_remote_url(source='kipoi'):
+def container_remote_url(model, source='kipoi'):
+    import json
+    src = get_source(source)
+    singularity_container_json = os.path.join(src.local_path, "containerinfo", "model-to-singularity.json")
+    with open(singularity_container_json, 'r') as singularity_container_json_filehandle:
+        model_to_singularity_container_dict = json.load(singularity_container_json_filehandle)
     if source == 'kipoi':
-        return 'shub://kipoi/models:latest'
+        if model in model_to_singularity_container_dict: # Exact match such as MMSplice/mtsplice and APARENT/veff, Basset
+            return model_to_singularity_container_dict[model]['url']
+        elif model.split('/')[0] in model_to_singularity_container_dict:
+            return model_to_singularity_container_dict[model.split('/')[0]]['url']
+        else:
+            raise ValueError(f"Singularity container for {model} is not available")
     else:
         raise NotImplementedError("Containers for sources other than Kipoi are not yet implemented")
 
@@ -199,7 +210,7 @@ source deactivate $env
 
 def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], source='kipoi', dry_run=False):
 
-    remote_path = container_remote_url(source)
+    remote_path = container_remote_url(model, source)
     local_path = container_local_path(remote_path)
     singularity_pull(remote_path, local_path)
 
