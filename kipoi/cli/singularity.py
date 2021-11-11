@@ -17,11 +17,13 @@ from __future__ import print_function
 
 import six
 import os
+import json
 from kipoi_utils.utils import unique_list, makedir_exist_ok, is_subdir
 from kipoi_conda import _call_command
 from kipoi import get_source
 import subprocess
 import logging
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -120,32 +122,29 @@ def singularity_exec(container, command, bind_directories=[], dry_run=False):
 # - local path (e.g. ~/.kipoi/envs/singularity/kipoi/models_latest.sif)
 
 def container_remote_url(model, source='kipoi'):
-    import json
     src = get_source(source)
     singularity_container_json = os.path.join(src.local_path, CONTAINER_PREFIX, "model-to-singularity.json")
     with open(singularity_container_json, 'r') as singularity_container_json_filehandle:
         model_to_singularity_container_dict = json.load(singularity_container_json_filehandle)
     if source == 'kipoi':
         if model in model_to_singularity_container_dict: # Exact match such as MMSplice/mtsplice and APARENT/veff, Basset
-            return model_to_singularity_container_dict[model]['url']
+            return model_to_singularity_container_dict[model]['url'], model_to_singularity_container_dict[model]['name']
         elif model.split('/')[0] in model_to_singularity_container_dict:
-            return model_to_singularity_container_dict[model.split('/')[0]]['url']
+            return model_to_singularity_container_dict[model.split('/')[0]]['url'], model_to_singularity_container_dict[model.split('/')[0]]['name']
         else:
             raise ValueError(f"Singularity container for {model} is not available")
     else:
         raise NotImplementedError("Containers for sources other than Kipoi are not yet implemented")
 
 
-def container_local_path(remote_path):
+def container_local_path(remote_path, container_name):
     from kipoi.config import _kipoi_dir
-    tmp = os.path.join(remote_path.split("://")[1])
-    if ":" in tmp:
-        relative_path, tag = tmp.split(":")
-    else:
-        relative_path = tmp
-        tag = 'latest'
-    return os.path.join(_kipoi_dir, "envs/singularity/", relative_path + "_" + tag + ".sif")
-
+    local_path = os.path.join(_kipoi_dir, "envs/singularity/")
+    if "versionId" in remote_path:
+        version_id = remote_path.split("versionId=")[1]
+        local_path = os.path.join(local_path, f"{container_name}/{version_id}")
+    return local_path
+    
 # ---------------------------------
 
 
@@ -210,10 +209,10 @@ source deactivate $env
 
 
 def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], source='kipoi', dry_run=False):
-
-    remote_path = container_remote_url(model, source)
-    local_path = container_local_path(remote_path)
-    singularity_pull(remote_path, local_path)
+    remote_path, container_name = container_remote_url(model, source)
+    local_path = container_local_path(remote_path, container_name)
+    from kipoi_utils.external.torchvision.dataset_utils import download_url
+    download_url(remote_path, local_path, f"{container_name}.sif")
 
     assert kipoi_cmd[0] == 'kipoi'
 
