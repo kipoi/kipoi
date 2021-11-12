@@ -2,10 +2,7 @@
 """
 import os
 import pytest
-from kipoi.cli.singularity import (singularity_pull, singularity_exec,
-                                   container_remote_url, container_local_path,
-                                   involved_directories,
-                                   singularity_command)
+from kipoi.cli.singularity import singularity_command
 
 def test_singularity_command_dry_run():
     singularity_command(['kipoi', 'test', 'Basset', '--source=kipoi'], 'Basset', {}, dry_run=True)
