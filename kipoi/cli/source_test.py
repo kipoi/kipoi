@@ -308,9 +308,9 @@ def cli_test_source(command, raw_args):
     source = kipoi.get_source(args.source)
     all_models = all_models_to_test(source)
     if args.singularity and args.source != "kipoi":
-        raise ValueError("Singularity containers are available for kipoi models only")
+        raise IOError("Singularity containers are available for kipoi models only")
     if args.singularity and args.common_env:
-        raise ValueError("Singularity containers are self contained - no need to use common_env")
+        raise IOError("Singularity containers are self contained - no need to use common_env")
     if args.k is not None:
         all_models = [x for x in all_models if re.match(args.k, x)]
 
@@ -390,7 +390,6 @@ def cli_test_source(command, raw_args):
 
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
-    sys.exit(1)
     for i in range(len(test_models)):
         m = test_models[i]
         print('-' * 20)
@@ -399,7 +398,7 @@ def cli_test_source(command, raw_args):
                                             m))
         print('-' * 20)
         try:
-            if not args.common_env:
+            if not args.common_env and not args.singularity:
                 # Prepend "test-" to the standard kipoi env name
                 env_name = conda_env_name(m, source=args.source)
                 env_name = "test-" + env_name
@@ -407,12 +406,12 @@ def cli_test_source(command, raw_args):
                 test_model(m, args.source, env_name,
                            get_batch_size(cfg, m, args.batch_size),
                            create_env=True, verbose=args.verbose)
-            elif args.singularity:
+            elif args.singularity and not args.common_env:
                 print("Testing within singularity container....")
                 test_model_singularity(m, args.source, 
                            get_batch_size(cfg, m, args.batch_size),  
                            verbose=args.verbose)
-            else:
+            elif args.common_env and not args.singularity:
                 # figure out the common environment name
                 env_name = get_common_env(m, model_envs)
                 if env_name is None:
@@ -425,6 +424,8 @@ def cli_test_source(command, raw_args):
                 test_model(m, args.source, env_name,
                            get_batch_size(cfg, m, args.batch_size), 
                            create_env=False, verbose=args.verbose)
+            else:
+                raise IOError("Please either choose --common_env or --singularity or none")
         except Exception as e:
             logger.error("Model {0} failed: {1}".format(m, e))
             failed_models += [m]
