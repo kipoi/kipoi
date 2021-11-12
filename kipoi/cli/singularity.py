@@ -128,9 +128,9 @@ def container_remote_url(model, source='kipoi'):
         model_to_singularity_container_dict = json.load(singularity_container_json_filehandle)
     if source == 'kipoi':
         if model in model_to_singularity_container_dict: # Exact match such as MMSplice/mtsplice and APARENT/veff, Basset
-            return model_to_singularity_container_dict[model]['url'], model_to_singularity_container_dict[model]['name']
+            return model_to_singularity_container_dict[model]
         elif model.split('/')[0] in model_to_singularity_container_dict:
-            return model_to_singularity_container_dict[model.split('/')[0]]['url'], model_to_singularity_container_dict[model.split('/')[0]]['name']
+            return model_to_singularity_container_dict[model.split('/')[0]]
         else:
             raise ValueError(f"Singularity container for {model} is not available")
     else:
@@ -209,10 +209,12 @@ source deactivate $env
 
 
 def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], source='kipoi', dry_run=False):
-    remote_path, container_name = container_remote_url(model, source)
+    singularity_container_dict = container_remote_url(model, source)
+    remote_path = singularity_container_dict['url']
+    container_name = singularity_container_dict['name']
     local_path = container_local_path(remote_path, container_name)
     from kipoi_utils.external.torchvision.dataset_utils import download_url
-    download_url(remote_path, local_path, f"{container_name}.sif")
+    download_url(url=remote_path, root=local_path, filename=f"{container_name}.sif", md5=singularity_container_dict['md5'])
 
     assert kipoi_cmd[0] == 'kipoi'
 
