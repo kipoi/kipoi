@@ -19,7 +19,6 @@ import six
 import os
 import json
 from kipoi_utils.utils import unique_list, makedir_exist_ok, is_subdir
-from kipoi_conda import _call_command
 from kipoi import get_source
 import subprocess
 import logging
