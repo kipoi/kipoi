@@ -172,6 +172,6 @@ def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], so
     # create/get the `conda_run` command
 
     singularity_exec(f"{local_path}/{container_name}.sif",
-                     [conda_run, env_name] + kipoi_cmd,
+                     kipoi_cmd,
                      # kipoi_cmd_conda,
                      bind_directories=involved_directories(dataloader_kwargs, output_files, exclude_dirs=['/tmp', '~']), dry_run=dry_run)
