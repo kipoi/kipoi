@@ -169,14 +169,9 @@ def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], so
     # remove all spaces within each command
     kipoi_cmd = [x.replace(" ", "").replace("\n", "").replace("\t", "") for x in kipoi_cmd]
 
-    # figure out the right environment name
-    stdout, stderr = _call_command('singularity', ['exec', local_path, 'kipoi', 'env', 'get', model], stdin=subprocess.PIPE)
-    env_name = stdout.decode().strip()
-
     # create/get the `conda_run` command
-    conda_run = create_conda_run()
 
-    singularity_exec(local_path,
+    singularity_exec(f"{local_path}/{container_name}.sif",
                      [conda_run, env_name] + kipoi_cmd,
                      # kipoi_cmd_conda,
                      bind_directories=involved_directories(dataloader_kwargs, output_files, exclude_dirs=['/tmp', '~']), dry_run=dry_run)
