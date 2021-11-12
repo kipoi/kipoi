@@ -36,61 +36,6 @@ logger.addHandler(logging.NullHandler())
 
 CONTAINER_PREFIX = "shared/containers"
 
-def singularity_pull(remote_path, local_path):
-    """Run `singularity pull`
-
-    Args:
-      remote_path: singularity remote path. Example: shub://kipoi/models:latest
-      local_path: local file path to the ".sif" file
-    """
-    makedir_exist_ok(os.path.dirname(local_path))
-    if os.path.exists(local_path):
-        logger.info("Container file {} already exists. Skipping `singularity pull`".
-                    format(local_path))
-    else:
-        if os.environ.get('SINGULARITY_CACHEDIR'):
-            downloaded_path = os.path.join(os.environ.get('SINGULARITY_CACHEDIR'),
-                                           os.path.basename(local_path))
-            pull_dir = os.path.dirname(downloaded_path)
-            logger.info("SINGULARITY_CACHEDIR is set to {}".
-                        format(os.environ.get('SINGULARITY_CACHEDIR')))
-            if os.path.exists(downloaded_path):
-                logger.info("Container file {} already exists. Skipping `singularity pull` and softlinking it".
-                            format(downloaded_path))
-                if os.path.islink(local_path):
-                    logger.info("Softlink {} already exists. Removing it".format(local_path))
-                    os.remove(local_path)
-
-                logger.info("Soflinking the downloaded file: ln -s {} {}".
-                            format(downloaded_path,
-                                   local_path))
-                os.symlink(downloaded_path, local_path)
-                return None
-        else:
-            pull_dir = os.path.dirname(local_path)
-
-        logger.info("Container file {} doesn't exist. Pulling the container from {}. Saving it to: {}".
-                    format(local_path, remote_path, pull_dir))
-        cmd = ['singularity', 'pull', '--name', os.path.basename(local_path), remote_path]
-        logger.info(" ".join(cmd))
-        returncode = subprocess.call(cmd,
-                                     cwd=pull_dir)
-        if returncode != 0:
-            raise ValueError("Command: {} failed".format(" ".join(cmd)))
-
-        # softlink it
-        if os.environ.get('SINGULARITY_CACHEDIR'):
-            if os.path.islink(local_path):
-                logger.info("Softlink {} already exists. Removing it".format(local_path))
-                os.remove(local_path)
-            logger.info("Soflinking the downloaded file: ln -s {} {}".
-                        format(downloaded_path,
-                               local_path))
-            os.symlink(downloaded_path, local_path)
-
-        if not os.path.exists(local_path):
-            raise ValueError("Container doesn't exist at the download path: {}".format(local_path))
-
 
 def singularity_exec(container, command, bind_directories=[], dry_run=False):
     """Run `singularity exec`
@@ -139,7 +84,10 @@ def container_remote_url(model, source='kipoi'):
 
 def container_local_path(remote_path, container_name):
     from kipoi.config import _kipoi_dir
-    local_path = os.path.join(_kipoi_dir, "envs/singularity/")
+    if os.environ.get('SINGULARITY_CACHEDIR'):
+        local_path = os.environ.get('SINGULARITY_CACHEDIR')
+    else:
+        local_path = os.path.join(_kipoi_dir, "envs/singularity/")
     if "versionId" in remote_path:
         version_id = remote_path.split("versionId=")[1]
         local_path = os.path.join(local_path, f"{container_name}/{version_id}")
