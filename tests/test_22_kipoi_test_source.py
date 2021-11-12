@@ -10,50 +10,65 @@ import kipoi
 import os
 
 
-def test_list_softlink_dependencies():
-    """Test if finding model dependencies works
-    """
-    component_dir = kipoi.get_source("kipoi").local_path
-    deps = list_softlink_dependencies(os.path.join(component_dir, 'HAL'),
-                                      component_dir)
-    # one of these two, depending on the model source
-    assert (deps == {'MaxEntScan'}) or (deps == {'MaxEntScan/template',
-                                                 'MaxEntScan/template/example_files',
-                                                 'labranchor/example_files'})
-    assert list_softlink_dependencies(os.path.join(component_dir, 'deepTarget'),
-                                      component_dir) == set()
+# def test_list_softlink_dependencies():
+#     """Test if finding model dependencies works
+#     """
+#     component_dir = kipoi.get_source("kipoi").local_path
+#     deps = list_softlink_dependencies(os.path.join(component_dir, 'HAL'),
+#                                       component_dir)
+#     # one of these two, depending on the model source
+#     assert (deps == {'MaxEntScan'}) or (deps == {'MaxEntScan/template',
+#                                                  'MaxEntScan/template/example_files',
+#                                                  'labranchor/example_files'})
+#     assert list_softlink_dependencies(os.path.join(component_dir, 'deepTarget'),
+#                                       component_dir) == set()
 
 
-def dont_test_diff():
-    git_range = ["master", "HEAD"]
-    local_path = "/home/avsec/.kipoi/models"
-    modified_files(["master", "HEAD"], "/home/avsec/.kipoi/models", relative=True)
+# def dont_test_diff():
+#     git_range = ["master", "HEAD"]
+#     local_path = "/home/avsec/.kipoi/models"
+#     modified_files(["master", "HEAD"], "/home/avsec/.kipoi/models", relative=True)
 
-    sp.call(['git', 'diff', '--relative=/home/avsec/.kipoi/models',
-             '--name-only', 'master...HEAD',
-             '--', '/home/avsec/.kipoi/models/*', '/home/avsec/.kipoi/models/*/*'])
-
-
-def test_single_model_dry():
-    # Dry run
-    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
-                          "test-source",
-                          "kipoi",
-                          "--git-range", "master", "HEAD",
-                          "-n"])
-
-    assert returncode == 0
+#     sp.call(['git', 'diff', '--relative=/home/avsec/.kipoi/models',
+#              '--name-only', 'master...HEAD',
+#              '--', '/home/avsec/.kipoi/models/*', '/home/avsec/.kipoi/models/*/*'])
 
 
-def test_single_model():
-    MODEL = "HAL"
+# def test_single_model_dry():
+#     # Dry run
+#     returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
+#                           "test-source",
+#                           "kipoi",
+#                           "--git-range", "master", "HEAD",
+#                           "-n"])
+
+#     assert returncode == 0
+
+
+# def test_single_model():
+#     MODEL = "HAL"
+#     try:
+#         proc = sp.Popen(["python", os.path.abspath("./kipoi/__main__.py"), "test-source",
+#                           "kipoi",
+#                           "--git-range", "master", "HEAD",
+#                           "--all",
+#                           "-x",
+#                           "-c",
+#                           f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
+#         proc.wait()
+#         stdout, stderr = proc.communicate()
+#     except sp.CalledProcessError as err:
+#         print(f"Error: {err.stderr}")
+
+def test_single_model_singularity():
+    MODEL = "epidermal_basset"
     try:
         proc = sp.Popen(["python", os.path.abspath("./kipoi/__main__.py"), "test-source",
                           "kipoi",
                           "--git-range", "master", "HEAD",
                           "--all",
                           "-x",
-                          "-c",
+                          "--singularity",
                           f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
         proc.wait()
         stdout, stderr = proc.communicate()

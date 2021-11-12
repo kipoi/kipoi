@@ -16,6 +16,7 @@ from colorlog import escape_codes, default_log_colors
 
 import kipoi
 from kipoi.cli.env import conda_env_name, SPECIAL_ENV_PREFIX
+from kipoi.cli.singularity import singularity_command
 from kipoi_conda import get_kipoi_bin, env_exists, remove_env, _call_command
 from kipoi.sources import list_softlink_dependencies
 from kipoi_utils.utils import list_files_recursively, read_txt, get_file_path, cd
@@ -161,6 +162,15 @@ def test_model(model_name, source_name, env_name, batch_size,
         raise ValueError("{0} warnings were observed for model {1}".
                          format(warn, model_name))
 
+def test_model_singularity(model_name, source_name, batch_size, verbose=False):
+    """kipoi test ...
+
+    Args:
+      model_name (str)
+      source_name: source name
+    """
+    kipoi_cmd = ["kipoi", "test", f"{model_name}", f"--batch_size={batch_size}", "--source=kipoi"]
+    singularity_command(kipoi_cmd, model_name, {})
 
 def restrict_models_to_test(all_models, source, git_range):
     """Subset all_models to the ones with changed files
@@ -289,12 +299,18 @@ def cli_test_source(command, raw_args):
                         help="Shard id")
     parser.add_argument('--num_of_shards', type=int, default=-1,
                         help="Number of shards")
+    parser.add_argument('--singularity', action='store_true',
+                    help='Test models within their singularity containers')
+
 
     args = parser.parse_args(raw_args)
     # --------------------------------------------
     source = kipoi.get_source(args.source)
     all_models = all_models_to_test(source)
-
+    if args.singularity and args.source != "kipoi":
+        raise ValueError("Singularity containers are available for kipoi models only")
+    if args.singularity and args.common_env:
+        raise ValueError("Singularity containers are self contained - no need to use common_env")
     if args.k is not None:
         all_models = [x for x in all_models if re.match(args.k, x)]
 
@@ -374,6 +390,7 @@ def cli_test_source(command, raw_args):
 
     logger.info("Running {0} tests..".format(len(test_models)))
     failed_models = []
+    sys.exit(1)
     for i in range(len(test_models)):
         m = test_models[i]
         print('-' * 20)
@@ -390,6 +407,11 @@ def cli_test_source(command, raw_args):
                 test_model(m, args.source, env_name,
                            get_batch_size(cfg, m, args.batch_size),
                            create_env=True, verbose=args.verbose)
+            elif args.singularity:
+                print("Testing within singularity container....")
+                test_model_singularity(m, args.source, 
+                           get_batch_size(cfg, m, args.batch_size),  
+                           verbose=args.verbose)
             else:
                 # figure out the common environment name
                 env_name = get_common_env(m, model_envs)
