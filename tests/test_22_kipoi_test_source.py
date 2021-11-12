@@ -9,6 +9,28 @@ from kipoi.sources import list_softlink_dependencies, LocalSource
 import kipoi
 import os
 
+def test_singularity_non_kipoi_src_fail():
+    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
+                          "test-source",
+                          "dir",
+                          "--all",
+                          "-x",
+                          "--singularity"]
+                          )
+
+    assert returncode == 1
+
+def test_singularity_commonenv_together_fail():
+    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
+                          "test-source",
+                          "kipoi",
+                          "--all",
+                          "-x",
+                          "--singularity",
+                          "--common_env"]
+                          )
+
+    assert returncode == 1
 
 
 def test_list_softlink_dependencies():

@@ -304,13 +304,14 @@ def cli_test_source(command, raw_args):
 
 
     args = parser.parse_args(raw_args)
-    # --------------------------------------------
-    source = kipoi.get_source(args.source)
-    all_models = all_models_to_test(source)
     if args.singularity and args.source != "kipoi":
         raise IOError("Singularity containers are available for kipoi models only")
     if args.singularity and args.common_env:
-        raise IOError("Singularity containers are self contained - no need to use common_env")
+        raise IOError("Please use only one of --singularity and --common_env")
+
+    # --------------------------------------------
+    source = kipoi.get_source(args.source)
+    all_models = all_models_to_test(source)
     if args.k is not None:
         all_models = [x for x in all_models if re.match(args.k, x)]
 
