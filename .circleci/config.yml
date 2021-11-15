@@ -107,7 +107,8 @@ variables:
       name: Run tests
       command: |
         source activate kipoi-env
-        $PYTEST tests/
+        mkdir test-reports
+        $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
   # Special case for running without concise 
   activate_and_run_tests_py38: &activate_and_run_tests_py38
