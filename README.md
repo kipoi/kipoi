@@ -13,8 +13,12 @@
 	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
 </a>
 <a href=https://www.python.org/downloads>
-	<img alt='Python' src=https://img.shields.io/badge/python-3.6+-blue.svg style="max-height:20px;width:auto;">
+	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-cyan style="max-height:20px;width:auto;">
 </a>
+<a href=https://opensource.org/licenses/MIT>
+	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
+</a>
+
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
 <img src="http://kipoi.org/static/img/fig1_v8_hires.png" width=600>
