@@ -9,7 +9,12 @@
 <a href=https://gitter.im/kipoi>
 	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
 </a>
-
+<a href=https://pypi.org/project/kipoi>
+	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
+</a>
+<a href=https://www.python.org/downloads>
+	<img alt='Python' src=https://img.shields.io/badge/python-3.6+-blue.svg style="max-height:20px;width:auto;">
+</a>
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
 <img src="http://kipoi.org/static/img/fig1_v8_hires.png" width=600>
