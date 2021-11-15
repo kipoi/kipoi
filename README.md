@@ -3,11 +3,20 @@
 <a href='https://circleci.com/gh/kipoi/kipoi'>
 	<img alt='CircleCI' src='https://circleci.com/gh/kipoi/kipoi.svg?style=svg' style="max-height:20px;width:auto">
 </a>
-<!-- <a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
+<a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
 	<img alt='Coverage status' src=https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master style="max-height:20px;width:auto;">
-</a> -->
+</a>
 <a href=https://gitter.im/kipoi>
 	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
+</a>
+<a href=https://pypi.org/project/kipoi>
+	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
+</a>
+<a href=https://www.python.org/downloads>
+	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-cyan style="max-height:20px;width:auto;">
+</a>
+<a href=https://opensource.org/licenses/MIT>
+	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
 </a>
 
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
