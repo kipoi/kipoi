@@ -135,7 +135,7 @@ variables:
       name: activate and run coveralls
       command: |
         source activate kipoi-env
-        coveralls || true
+        coveralls
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -205,7 +205,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-py38-yml:
@@ -223,7 +223,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py38
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-py39-yml:
@@ -241,7 +241,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py39
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
 

@@ -3,9 +3,9 @@
 <a href='https://circleci.com/gh/kipoi/kipoi'>
 	<img alt='CircleCI' src='https://circleci.com/gh/kipoi/kipoi.svg?style=svg' style="max-height:20px;width:auto">
 </a>
-<!-- <a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
+<a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
 	<img alt='Coverage status' src=https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master style="max-height:20px;width:auto;">
-</a> -->
+</a>
 <a href=https://gitter.im/kipoi>
 	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
 </a>
