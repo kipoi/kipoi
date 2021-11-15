@@ -58,7 +58,9 @@ Before using a model in any way, activate the right conda enviroment:
 source activate $(kipoi env get <model>)
 ```
 
-Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi` commands.
+### Using pre-made containers 
+
+Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi predict` commands. For example: Look at the sigularity tab under http://kipoi.org/models/Xpresso/human_median/. Alternatively, you can use the docker containers directly. For more information: Look at the docker tab under any model web page on kipoi.org such as http://kipoi.org/models/Xpresso/human_median/
 
 ### Python
 
