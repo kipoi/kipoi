@@ -3,11 +3,20 @@
 <a href='https://circleci.com/gh/kipoi/kipoi'>
 	<img alt='CircleCI' src='https://circleci.com/gh/kipoi/kipoi.svg?style=svg' style="max-height:20px;width:auto">
 </a>
-<!-- <a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
+<a href=https://coveralls.io/github/kipoi/kipoi?branch=master>
 	<img alt='Coverage status' src=https://coveralls.io/repos/github/kipoi/kipoi/badge.svg?branch=master style="max-height:20px;width:auto;">
-</a> -->
+</a>
 <a href=https://gitter.im/kipoi>
 	<img alt='Gitter' src=https://badges.gitter.im/kipoi/kipoi.svg style="max-height:20px;width:auto;">
+</a>
+<a href=https://pypi.org/project/kipoi>
+	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
+</a>
+<a href=https://www.python.org/downloads>
+	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-cyan style="max-height:20px;width:auto;">
+</a>
+<a href=https://opensource.org/licenses/MIT>
+	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
 </a>
 
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
@@ -58,7 +67,9 @@ Before using a model in any way, activate the right conda enviroment:
 source activate $(kipoi env get <model>)
 ```
 
-Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi` commands.
+### Using pre-made containers 
+
+Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi predict` commands. For example: Look at the sigularity tab under http://kipoi.org/models/Xpresso/human_median/. Alternatively, you can use the docker containers directly. For more information: Look at the docker tab under any model web page on kipoi.org such as http://kipoi.org/models/Xpresso/human_median/
 
 ### Python
 
@@ -116,7 +127,6 @@ usage: kipoi <command> [-h] ...
     test-source      Runs a set of unit-tests for many/all models in a source
     
     # - plugin commands:
-    veff             Variant effect prediction
     interpret        Model interpretation using feature importance scores like ISM, grad*input or DeepLIFT
 ```
 
@@ -140,17 +150,11 @@ You can add your own (private) model sources. See [docs/using/03_Model_sources/]
 
 See [docs/contributing getting started](http://kipoi.org/docs/contributing/01_Getting_started) and [docs/tutorials/contributing/models](http://kipoi.org/docs/tutorials/contributing_models) for more information.
 
+
+
+
 ## Plugins
-Kipoi supports plug-ins which are published as additional python packages. Two plug-ins that are available are:
-
-### [kipoi_veff](https://github.com/kipoi/kipoi-veff)
-
-Variant effect prediction plugin compatible with (DNA) sequence based models. It allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new VCF file. For more information see <https://kipoi.org/veff-docs/>.
-
-```bash
-pip install kipoi_veff
-```
-
+Kipoi supports plug-ins which are published as additional python packages. Currently available plug-in is:
 
 ### [kipoi_interpret](https://github.com/kipoi/kipoi-interpret)
 
@@ -159,6 +163,11 @@ Model interpretation plugin for Kipoi. Allows to use feature importance scores l
 ```bash
 pip install kipoi_interpret
 ```
+
+### Variant effect prediction with a subset of Kipoi models
+
+Variant effect prediction allows to annotate a vcf file using model predictions for the reference and alternative alleles. The output is written to a new tsv file. For more information see <https://github.com/kipoi/kipoi-veff2>.
+
 
 ## Documentation
 

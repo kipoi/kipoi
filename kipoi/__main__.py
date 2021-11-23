@@ -20,6 +20,9 @@ logging.config.fileConfig(pkg_resources.resource_filename(__name__, "logging.con
 logger = logging.getLogger(__name__)
 
 
+
+
+
 # def not_implemented(command, arg_list):
 #     print("{0} not implemented yet!".format(command))
 
@@ -67,16 +70,15 @@ parser = argparse.ArgumentParser(
 parser.add_argument('command', help='Subcommand to run; possible commands: {}'.format(commands_str))
 
 
-postproc_cmd_map = {"score_variants": "veff",
-                    "create_mutation_map": "veff",
-                    "plot_mutation_map": "veff",
+postproc_cmd_map = {
                     "grad": "interepret",
-                    "gr_inp_to_file": "interepret"}
+                    "gr_inp_to_file": "interepret"
+                    }
 
 
 def main():
     args = parser.parse_args(sys.argv[1:2])
-    if args.command != "postproc" and args.command not in command_functions:
+    if args.command not in ["postproc", "veff"] and args.command not in command_functions:
         parser.print_help()
         parser.exit(
             status=1,
@@ -94,6 +96,10 @@ def main():
         else:
             logger.error("Unable to map kipoi postproc <command> to kipoi <plugin> <command>")
             sys.exit(1)
+
+    if args.command == "veff":
+        logger.error("`kipoi veff` has been deprecated. Please use https://github.com/kipoi/kipoi-veff2 directly")
+        sys.exit(1)
 
     # check if the user used the plugin commands
     if kipoi.plugin.is_plugin("kipoi_" + args.command):

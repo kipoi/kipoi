@@ -21,30 +21,18 @@ variables:
     run:
       name: install build-essential
       command: apt-get update --allow-releaseinfo-change && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc
-  # install_singularity: &install_singularitymodel
-  #   run:
-  #     name: Install Singularity
-  #     command: |
-  #       conda install --yes -c conda-forge singularity
-
   install_singularity: &install_singularity
     run:
       name: Install Singularity
       command: |
-
-        wget https://github.com/singularityware/singularity/releases/download/2.5.2/singularity-2.5.2.tar.gz
-        tar xvf singularity-2.5.2.tar.gz
-        cd singularity-2.5.2
-        ./configure --prefix=/usr/local
-        make
-        make install
+        source activate kipoi-env
+        conda install --yes -c conda-forge singularity
 
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
       command: |
         pip install kipoi_interpret
-        pip install kipoi_veff
         pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
@@ -98,7 +86,7 @@ variables:
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
-      command: pip install '.[develop,vep]'
+      command: pip install '.[develop]'
   install_requests: &install_requests
     run:
       name: Install requirements for requests correctly
@@ -121,7 +109,7 @@ variables:
         source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 15m
+      no_output_timeout: 30m
   # Special case for running without concise 
   activate_and_run_tests_py38: &activate_and_run_tests_py38
     run:
@@ -130,7 +118,7 @@ variables:
         source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 15m
+      no_output_timeout: 30m
   activate_and_run_tests_py39: &activate_and_run_tests_py39
     run:
       name: Run tests
@@ -138,7 +126,7 @@ variables:
         source activate kipoi-env
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 15m
+      no_output_timeout: 30m
   run_coveralls: &run_coveralls
     run:
       name: run coveralls
@@ -148,7 +136,7 @@ variables:
       name: activate and run coveralls
       command: |
         source activate kipoi-env
-        coveralls || true
+        coveralls
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -188,6 +176,7 @@ jobs:
   test-py36-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -195,7 +184,7 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
@@ -205,6 +194,7 @@ jobs:
   test-py37-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -212,16 +202,17 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py37
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-py38-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -229,16 +220,17 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py38
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-py39-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -246,11 +238,11 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py39
-      - *activate_and_run_coveralls
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
 
@@ -284,6 +276,7 @@ jobs:
   test-deploy-pypi:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -291,7 +284,7 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -313,6 +306,7 @@ jobs:
   productive-deploy-pypi:
     machine: # executor type
       image: ubuntu-2004:202104-01
+    resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
@@ -320,7 +314,7 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      #- *install_singularity
+      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package

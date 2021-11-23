@@ -42,7 +42,7 @@ def test_env_db_kipoi(tmpdir, monkeypatch):
 
     db = EnvDb(json_file)
     kwargs = {"dataloader": [], "gpu": True, "model": None, "source": "kipoi",
-              "tmpdir": "something", "vep": True}
+              "tmpdir": "something"}
 
     # generate the kipoi entries
     kipoi_entries = []
@@ -90,7 +90,7 @@ def test_env_db(tmpdir):
 
     db = EnvDb(json_file)
     kwargs = {"dataloader": [], "env": "test_env", "gpu": True, "model": None, "source": "dir",
-              "tmpdir": "something", "vep": True}
+              "tmpdir": "something"}
 
     entries = []
     source_path = kipoi.get_source("dir").local_path

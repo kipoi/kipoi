@@ -35,7 +35,6 @@ def test_list_models():
 
     # column names
     df_model_columns = ['model', 'version', 'authors', 'contributors', 'doc', 'type', 'inputs', 'targets',
-                        'veff_score_variants',
                         'license', 'cite_as', 'trained_on', 'training_procedure', 'tags']
     assert df_model_columns == list(df.columns)
 
@@ -54,8 +53,7 @@ def test_list_models():
 def test_list_models_group():
     dfg = kipoi.get_source("kipoi").list_models_by_group()
     dfg_columns = ["group", "N_models", "N_subgroups", "is_group", "authors",
-                   "contributors",
-                   "veff_score_variants",
+                   "contributors", 
                    "type", "license", "cite_as", "tags"]
     assert dfg_columns == list(dfg.columns)
     assert len(dfg) > 0

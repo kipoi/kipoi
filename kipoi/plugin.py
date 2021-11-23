@@ -5,10 +5,7 @@ import pkgutil
 import pandas as pd
 
 PLUGINS = [
-    {"plugin": "kipoi_veff",
-     "url": "https://github.com/kipoi/kipoi-veff",
-     "cli": True,
-     "description": "Variant effect prediction"},
+    
     {"plugin": "kipoi_interpret",
      "url": "https://github.com/kipoi/kipoi-interpret",
      "cli": True,

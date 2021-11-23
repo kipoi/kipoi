@@ -9,6 +9,29 @@ from kipoi.sources import list_softlink_dependencies, LocalSource
 import kipoi
 import os
 
+def test_singularity_non_kipoi_src_fail():
+    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
+                          "test-source",
+                          "dir",
+                          "--all",
+                          "-x",
+                          "--singularity"]
+                          )
+
+    assert returncode == 1
+
+def test_singularity_commonenv_together_fail():
+    returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
+                          "test-source",
+                          "kipoi",
+                          "--all",
+                          "-x",
+                          "--singularity",
+                          "--common_env"]
+                          )
+
+    assert returncode == 1
+
 
 def test_list_softlink_dependencies():
     """Test if finding model dependencies works
@@ -59,6 +82,21 @@ def test_single_model():
         stdout, stderr = proc.communicate()
     except sp.CalledProcessError as err:
         print(f"Error: {err.stderr}")
+
+def test_single_model_singularity():
+    MODEL = "epidermal_basset"
+    try:
+        proc = sp.Popen(["python", os.path.abspath("./kipoi/__main__.py"), "test-source",
+                          "kipoi",
+                          "--all",
+                          "-x",
+                          "--singularity",
+                          f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
+        proc.wait()
+        stdout, stderr = proc.communicate()
+    except sp.CalledProcessError as err:
+        print(f"Error: {err.stderr}")
+
 
 @pytest.fixture
 def source():

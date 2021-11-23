@@ -26,7 +26,10 @@ import ast
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-
+class DeprecateAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        warnings.warn("Argument %s is deprecated and is *ignored*." % self.option_strings)
+        delattr(namespace, self.dest)
 
 
 def prepare_batch(dl_batch, pred_batch,

@@ -18,6 +18,7 @@ dependencies:
   - deprecation>=2.0.6
   #- coveralls
   - h5py
+  - coveralls
   - scipy>=1.0.0
   - attrs>=18.2.0
   - matplotlib
@@ -54,7 +55,6 @@ dependencies:
     - kipoi-utils>=0.3.8
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
-    - kipoi-veff>=0.3.0
     - kipoiseq
     - concise>=0.6.5
     - joblib==0.17.0

@@ -15,7 +15,6 @@ dependencies:
 - pandas
 - cython
 - pip:
-  - kipoi_veff
   - kipoi
   - tensorflow==1.4.1
   - keras==1.2.2

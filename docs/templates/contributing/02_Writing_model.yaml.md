@@ -412,7 +412,7 @@ The `inputs` fields of `schema` may be lists, dictionaries or single occurences 
 * `shape`: Required: A tuple defining the shape of a single input sample. E.g. for a model that predicts a batch of `(1000, 4)` inputs `shape: (1000, 4)` should be set. If a dimension is of variable size then the numerical should be replaced by `None`.
 * `doc`: A free text description of the model input
 * `name`: Name of model input , not required if input is a dictionary.
-* `special_type`: Possibility to flag that respective input is a 1-hot encoded DNA sequence (`special_type: DNASeq`) or a string DNA sequence (`special_type: DNAStringSeq`), which is important for variant effect prediction.
+* `special_type`: Possibility to flag that respective input is a 1-hot encoded DNA sequence (`special_type: DNASeq`) or a string DNA sequence (`special_type: DNAStringSeq`).
 
 ### `targets`
 
@@ -497,8 +497,3 @@ If conda packages need to be loaded from a channel then the nomenclature `channe
 ###pip
 Pip dependencies can be defined as lists or if the dependencies are defined in a text file then the path of the text 
 must be given (ending in `.txt`).
-
-## postprocessing
-
-The postprocessing section of a model.yaml is necessary to indicate that a model is compatible with a certain kind of 
-postprocessing feature available in Kipoi. At the moment only variant effect prediction is available for postprocessing. To understand how to set your model up for variant effect prediction, please take a look at the documentation of variant effect prediction.

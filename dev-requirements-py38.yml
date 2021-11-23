@@ -42,7 +42,6 @@ dependencies:
   - tensorflow
   - keras
   - pip:
-    - kipoi-veff
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils

@@ -31,8 +31,3 @@ schema:
         doc: Predicted binding strength
         column_labels:
             - rbp_prb
-postprocessing:
-    variant_effects:
-      seq_input:
-        - seq
-      use_rc: true

@@ -8,7 +8,7 @@ from setuptools.command.install import install
 
 
 # this will be overwritten by bumpversion
-version = '0.6.35'
+version = '0.7.0'
 
 requirements = [
     "pyyaml",
@@ -63,7 +63,6 @@ setup(
     install_requires=requirements,
     extras_require={
         "develop": test_requirements,
-        "vep": ["kipoi_veff"],  # backcompatibily
     },
     entry_points={'console_scripts': ['kipoi = kipoi.__main__:main']},
     license="MIT license",
