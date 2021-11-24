@@ -14,8 +14,8 @@ dependencies:
   - git
   - git-lfs
   - gitpython
-  - h5py=2.10.0
-  - hdf5=1.10.6
+  - h5py
+  - hdf5
   - htslib=1.10.2
   - joblib=1.0.1
   - matplotlib=3.4.2

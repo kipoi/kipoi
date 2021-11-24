@@ -38,10 +38,10 @@ This repository implements a python package and a command-line interface (CLI) t
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
 Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.9. 
 
-For systems using python 3.8 and 3.9, is necessary to install hdf5=1.10.6 and pkgconfig prior to installing kipoi.
+For systems using python 3.8 and 3.9, is necessary to install hdf5 and pkgconfig prior to installing kipoi.
 
 ```bash
-conda install --yes -c conda-forge hdf5=1.10.6 pkgconfig
+conda install --yes -c conda-forge hdf5 pkgconfig
 ```
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
