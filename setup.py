@@ -8,7 +8,7 @@ from setuptools.command.install import install
 
 
 # this will be overwritten by bumpversion
-version = '0.7.0'
+version = '0.7.1'
 
 requirements = [
     "pyyaml",
