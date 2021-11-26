@@ -46,24 +46,18 @@ pip install kipoi
 
 ### Known issue: h5py
 
-For systems using python 3.6 and 3.7, kipoi.model.KerasModel and kipoi.model.TensorFlowModel are incompatible with h5py >= 3.*. Please downgrade h5py after
-installing kipoi
+For systems using python 3.6 and 3.7, pretrained kipoi models of type kipoi.model.KerasModel and kipoi.model.TensorflowModel which were saved with h5py <3.* are incompatible with h5py >= 3.*. Please downgrade h5py after installing kipoi
 
 ```bash
 pip install h5py==2.10.0
 ```
-This is not a problem with systems using python 3.8 and 3.9
+This is not a problem with systems using python 3.8 and 3.9.
 More information available [here](https://github.com/tensorflow/tensorflow/issues/44467)
 
 For systems using python 3.8 and 3.9, it is necessary to install hdf5 and pkgconfig prior to installing kipoi.
 
 ```bash
 conda install --yes -c conda-forge hdf5 pkgconfig
-```
-
-Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
-```bash
-pip install kipoi
 ```
 
 ## Quick start
