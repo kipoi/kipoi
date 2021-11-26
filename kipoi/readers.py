@@ -6,6 +6,7 @@ import numpy as np
 from kipoi_utils.external.flatten_json import unflatten_list
 from abc import abstractmethod
 
+from distutils.version import LooseVersion
 
 class Reader(object):
 
@@ -26,6 +27,10 @@ def _h5py_dataset_iterator(g, prefix=''):
         item = g[key]
         path = '{}/{}'.format(prefix, key)
         if isinstance(item, h5py.Dataset):  # test for dataset
+            if h5py.__version__ > LooseVersion('2.10.0'):
+                string_type = h5py.check_string_dtype(item.dtype)
+                if (string_type is not None) and (string_type.encoding == "utf-8"):
+                    item = item.asstr()[:]
             yield (path, item)
         elif isinstance(item, h5py.Group):  # test for group (go down)
             for x in _h5py_dataset_iterator(item, path):
