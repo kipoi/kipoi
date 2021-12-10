@@ -10,7 +10,7 @@ import os
 import re
 import sys
 from copy import deepcopy
-from math import ceil
+from math import floor
 
 from colorlog import escape_codes, default_log_colors
 
@@ -335,7 +335,6 @@ def cli_test_source(command, raw_args):
                         '\n- '.join(test_models)))
     # Sort the models alphabetically
     test_models = sorted(test_models)
-
     if args.num_of_shards > 0 and args.shard_id >= 0:
         if args.shard_id >= args.num_of_shards:
             logger.info("Shard id is invalid. It should be a value between 0 and {0}.".format(args.num_of_shards-1))
@@ -343,7 +342,7 @@ def cli_test_source(command, raw_args):
         else:
             all_test_models = test_models
             n = len(all_test_models)
-            chunk_size = ceil(n / args.num_of_shards)
+            chunk_size = floor(n / args.num_of_shards)
             list_of_shards = [all_test_models[i:i+chunk_size] for i in range(0,n,chunk_size)]
             test_models = list_of_shards[args.shard_id]
     
