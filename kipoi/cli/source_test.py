@@ -10,9 +10,9 @@ import os
 import re
 import sys
 from copy import deepcopy
-from math import floor
 
 from colorlog import escape_codes, default_log_colors
+import numpy as np
 
 import kipoi
 from kipoi.cli.env import conda_env_name, SPECIAL_ENV_PREFIX
@@ -341,9 +341,8 @@ def cli_test_source(command, raw_args):
             sys.exit(1)
         else:
             all_test_models = test_models
-            n = len(all_test_models)
-            chunk_size = floor(n / args.num_of_shards)
-            list_of_shards = [all_test_models[i:i+chunk_size] for i in range(0,n,chunk_size)]
+            sublists = np.array_split(all_test_models, args.num_of_shards)
+            list_of_shards = [list(split) for split in sublists]
             test_models = list_of_shards[args.shard_id]
     
     logger.info(test_models)
