@@ -70,15 +70,13 @@ def container_remote_url(model, source='kipoi'):
     singularity_container_json = os.path.join(src.local_path, CONTAINER_PREFIX, "model-to-singularity.json")
     with open(singularity_container_json, 'r') as singularity_container_json_filehandle:
         model_to_singularity_container_dict = json.load(singularity_container_json_filehandle)
-    if source == 'kipoi':
-        if model in model_to_singularity_container_dict: # Exact match such as MMSplice/mtsplice and APARENT/veff, Basset
-            return model_to_singularity_container_dict[model]
-        elif model.split('/')[0] in model_to_singularity_container_dict:
-            return model_to_singularity_container_dict[model.split('/')[0]]
-        else:
-            raise ValueError(f"Singularity container for {model} is not available")
+    if model in model_to_singularity_container_dict: # Exact match such as MMSplice/mtsplice and APARENT/veff, Basset
+        return model_to_singularity_container_dict[model]
+    elif model.split('/')[0] in model_to_singularity_container_dict:
+        return model_to_singularity_container_dict[model.split('/')[0]]
     else:
-        raise NotImplementedError("Containers for sources other than Kipoi are not yet implemented")
+        return {}
+
 
 
 def container_local_path(remote_path, container_name):
@@ -119,23 +117,28 @@ def involved_directories(dataloader_kwargs, output_files=[], exclude_dirs=[]):
 
 
 def singularity_command(kipoi_cmd, model, dataloader_kwargs, output_files=[], source='kipoi', dry_run=False):
+    if source != 'kipoi':
+        raise NotImplementedError("Containers for sources other than Kipoi are not yet implemented")
     singularity_container_dict = container_remote_url(model, source)
-    remote_path = singularity_container_dict['url']
-    container_name = singularity_container_dict['name']
-    local_path = container_local_path(remote_path, container_name)
-    from kipoi_utils.external.torchvision.dataset_utils import download_url
-    download_url(url=remote_path, root=local_path, filename=f"{container_name}.sif", md5=singularity_container_dict['md5'])
+    if singularity_container_dict:
+        remote_path = singularity_container_dict['url']
+        container_name = singularity_container_dict['name']
+        local_path = container_local_path(remote_path, container_name)
+        from kipoi_utils.external.torchvision.dataset_utils import download_url
+        download_url(url=remote_path, root=local_path, filename=f"{container_name}.sif", md5=singularity_container_dict['md5'])
 
-    assert kipoi_cmd[0] == 'kipoi'
+        assert kipoi_cmd[0] == 'kipoi'
 
-    # remove all spaces within each command
-    kipoi_cmd = [x.replace(" ", "").replace("\n", "").replace("\t", "") for x in kipoi_cmd]
+        # remove all spaces within each command
+        kipoi_cmd = [x.replace(" ", "").replace("\n", "").replace("\t", "") for x in kipoi_cmd]
 
 
-    singularity_exec(f"{local_path}/{container_name}.sif",
-                     kipoi_cmd,
-                     # kipoi_cmd_conda,
-                     bind_directories=involved_directories(dataloader_kwargs, output_files, 
-                     exclude_dirs=['/tmp', '~']), 
-                     dry_run=dry_run
-                     )
+        singularity_exec(f"{local_path}/{container_name}.sif",
+                        kipoi_cmd,
+                        # kipoi_cmd_conda,
+                        bind_directories=involved_directories(dataloader_kwargs, output_files, 
+                        exclude_dirs=['/tmp', '~']), 
+                        dry_run=dry_run
+                        )
+    else:
+        logger.warning(f"Singularity container for {model} either is not available yet or {model} is not in Kipoi.")
