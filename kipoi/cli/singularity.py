@@ -74,6 +74,8 @@ def container_remote_url(model, source='kipoi'):
         return model_to_singularity_container_dict[model]
     elif model.split('/')[0] in model_to_singularity_container_dict:
         return model_to_singularity_container_dict[model.split('/')[0]]
+    else:
+        return {}
 
 
 
