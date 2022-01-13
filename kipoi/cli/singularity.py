@@ -76,7 +76,7 @@ def container_remote_url(model, source='kipoi'):
         elif model.split('/')[0] in model_to_singularity_container_dict:
             return model_to_singularity_container_dict[model.split('/')[0]]
         else:
-            raise ValueError(f"Singularity container for {model} is not available")
+            print(f"WARNING: Singularity container for {model} is not available")
     else:
         raise NotImplementedError("Containers for sources other than Kipoi are not yet implemented")
 
