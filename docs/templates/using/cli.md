@@ -46,6 +46,12 @@ Test whether a model is defined correctly and whether is execution using the exa
 kipoi test ~/.kipoi/models/Basset/example_files
 ```
 
+In detail, `kipoi test <model>` checks for three things:
+- Whether the model specific conda environment can be created and activated successfully (which runs fine here since the dependencies did not change)
+- Whether the data scheme that the dataloader outputs and the model expects match or not
+- Optionally, if there is a test field in model.yaml the predictions in the h5 file is compared with the prediction produced by the the model
+
+
 ### env 
 #### install
 Install model dependencies
