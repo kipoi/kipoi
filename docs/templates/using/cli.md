@@ -49,7 +49,7 @@ kipoi test ~/.kipoi/models/Basset/example_files
 In detail, `kipoi test <model>` checks for three things:
 - Whether the model specific conda environment can be created and activated successfully
 - Whether the data scheme that the dataloader outputs and the model expects match or not
-- Optionally, if there is a `'test'.'expect'` field in `model.yaml`, the predictions in the h5 file is compared with the prediction produced by the the model. E.g.:
+- Optionally, if there is a `'test'.'expect'` field in `model.yaml` pointing to some `*.h5` file, the predictions in the file are compared with the prediction produced by the the model. E.g.:
   ```yaml
   test:
     expect:
