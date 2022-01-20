@@ -46,6 +46,18 @@ Test whether a model is defined correctly and whether is execution using the exa
 kipoi test ~/.kipoi/models/Basset/example_files
 ```
 
+In detail, `kipoi test <model>` checks for three things:
+- Whether the model specific conda environment can be created and activated successfully
+- Whether the data scheme that the dataloader outputs and the model expects match or not
+- Optionally, if there is a `'test'.'expect'` field in `model.yaml` pointing to some `*.h5` file, the predictions in the file are compared with the prediction produced by the the model. E.g.:
+  ```yaml
+  test:
+    expect:
+      url: https://zenodo.org/record/5511940/files/APARENT.site_probabilities.predictions.hdf5?download=1
+      md5: 1adb12be84240ffb7d7ca556eeb19e01
+  ```
+
+
 ### env 
 #### install
 Install model dependencies
