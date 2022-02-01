@@ -219,11 +219,101 @@ class KipoiModelTest:
     expect: Any = None
     precision_decimal: int = 7
 
+class ModelSchema:
+    """Describes the model schema
+    """
+    # can be a dictionary, list or a single array
+    inputs: Dict 
+    targets: Dict
+    def compatible_with_schema(self, dataloader_schema, verbose=True):
+        """Check the compatibility: model.schema <-> dataloader.output_schema
+
+        Checks preformed:
+        - nested structure is the same (i.e. dictionary names, list length etc)
+        - array shapes are compatible
+        - returned obj classess are compatible
+
+        # Arguments
+            dataloader_schema: a dataloader_schema of data returned by one iteraton of dataloader's dataloader_schema_iter
+                nested dictionary
+            verbose: verbose error logging if things don't match
+
+        # Returns
+           bool: True only if everyhing is ok
+        """
+        def print_msg(msg):
+            if verbose:
+                print(msg)
+
+        # Inputs check
+        def compatible_nestedmapping(dschema, descr, cls, verbose=True):
+            """Recursive function of checks
+
+            shapes match, dschema-dim matches
+            """
+            if isinstance(descr, cls):
+                # Recursion stop
+                return descr.compatible_with_schema(dschema,
+                                                    name_self="Model",
+                                                    name_schema="Dataloader",
+                                                    verbose=verbose)
+            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
+                if not set(descr.keys()).issubset(set(dschema.keys())):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("dataloader fields: {0}".format(dschema.keys()))
+                    print_msg("model fields: {0}".format(descr.keys()))
+                    return False
+                return all([compatible_nestedmapping(dschema[key], descr[key], cls, verbose) for key in descr])
+            elif isinstance(dschema, collections.Sequence) and isinstance(descr, collections.Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
+            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                compatible = []
+                for i in range(len(descr)):
+                    if descr[i].name in dschema:
+                        compatible.append(compatible_nestedmapping(dschema[descr[i].name], descr[i], cls, verbose))
+                    else:
+                        print_msg("Model array name: {0} not found in dataloader keys: {1}".
+                                  format(descr[i].name, list(dschema.keys())))
+                        return False
+                return all(compatible)
+
+            print_msg("Invalid types:")
+            print_msg("type(Dataloader schema): {0}".format(type(dschema)))
+            print_msg("type(Model schema): {0}".format(type(descr)))
+            return False
+
+        if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, ArraySchema, verbose):
+            return False
+
+        # checking targets
+        if dataloader_schema.targets is None:
+            return True
+
+        if (isinstance(dataloader_schema.targets, ArraySchema) or
+            len(dataloader_schema.targets) > 0) and not compatible_nestedmapping(dataloader_schema.targets,
+                                                                                 self.targets,
+                                                                                 ArraySchema,
+                                                                                 verbose):
+            return False
+
+        return True
+
+
 
 @dataclass
 class KipoiModelDescription:
     args: Dict
-    schema: Dict # Model schema class perhaps?
+    schema: ModelSchema 
     defined_as: str 
     model_type: str = ""
     default_dataloader: str = '.'
