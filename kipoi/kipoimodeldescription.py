@@ -15,12 +15,18 @@ logger.addHandler(logging.NullHandler())
 
 @dataclass
 class Dependencies:
-    conda: List[str] = field(default_factory=list)
-    pip: List[str] = field(default_factory=list)
-    conda_channels: List[str] = field(default_factory=["defaults"])
+    conda: Tuple[str] = ()
+    pip: Tuple[str] = ()
+    conda_channels: Tuple[str] = ()
     # TODO:  __attrs_post_init__ is not necessary right? Populating conda and pip 
     # dependencies from file will not work and unncessary in this case
     # TODO: Is all_installed necessary?
+
+    def __post_init__(self) -> None:
+        self.conda = list(self.conda)
+        self.pip = list(self.pip)
+        self.conda_channels = list(self.conda_channels)
+    
 
     def install_pip(self, dry_run=False):
         print("pip dependencies to be installed:")
@@ -217,7 +223,8 @@ class KipoiModelTest:
     expect: Dict = None
     precision_decimal: int = 7
 
-class ModelSchema:
+@dataclass
+class KipoiModelSchema:
     """Describes the model schema
     """
     # can be a dictionary, list or a single array
@@ -311,17 +318,20 @@ class ModelSchema:
 @dataclass
 class KipoiModelDescription:
     args: Dict
-    schema: ModelSchema 
+    schema: KipoiModelSchema 
     defined_as: str 
     model_type: str = ""
     default_dataloader: str = '.'
     dependencies: Dependencies = Dependencies()
     model_test: Any = KipoiModelTest() 
-    writers: Dict = OrderedDict()
+    writers: Dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.defined_as and not self.model_type:
             raise ValueError("Either defined_as or type need to be specified")
+        if self.writers:
+            self.writers = OrderedDict(self.writers)
+
 
         # parse default_dataloader
         if isinstance(self.default_dataloader, dict):
