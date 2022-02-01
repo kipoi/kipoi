@@ -1,8 +1,8 @@
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import logging
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 
 import kipoi_conda as kconda
 from kipoi_utils.utils import inherits_from, load_obj, override_default_kwargs, unique_list
@@ -15,10 +15,9 @@ logger.addHandler(logging.NullHandler())
 
 @dataclass
 class Dependencies:
-    conda: List = []
-    pip: List = []
-    conda_channels: List = ["defaults"]
-    conda_file: ''
+    conda: List[str] = field(default_factory=list)
+    pip: List[str] = field(default_factory=list)
+    conda_channels: List[str] = field(default_factory=["defaults"])
     # TODO:  __attrs_post_init__ is not necessary right? Populating conda and pip 
     # dependencies from file will not work and unncessary in this case
     # TODO: Is all_installed necessary?
@@ -108,7 +107,6 @@ class Dependencies:
     def gpu(self):
         """Get the gpu - version of the dependencies
         """
-
         def replace_gpu(dep):
             if dep.startswith("tensorflow") and "gpu" not in dep:
                 new_dep = dep.replace("tensorflow", "tensorflow-gpu")
@@ -185,7 +183,7 @@ class KipoiDataLoaderImport:
     """Dataloader specification for the import
     """
     defined_as: str
-    default_args: dict = {}
+    default_args: Dict =  field(default_factory=dict)
     dependencies: Dependencies = Dependencies() # Dependencies class, a default value need to be added
     parse_dependencies: bool = True 
 
@@ -216,7 +214,7 @@ class KipoiDataLoaderImport:
 
 @dataclass
 class KipoiModelTest:
-    expect: Any = None
+    expect: Dict = None
     precision_decimal: int = 7
 
 class ModelSchema:
