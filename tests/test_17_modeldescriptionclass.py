@@ -71,5 +71,5 @@ def test_basic_modeldescription_class(model_parameters):
     assert mdc.dependencies.pip == []
     assert mdc.test.expect['md5'] == '1adb12be84240ffb7d7ca556eeb19e01'
     assert mdc.default_dataloader == '.'
-
-    
+    assert len(mdc.info.authors) == 2
+    assert mdc.info.contributors[0].github == "shabnamsadegh"
