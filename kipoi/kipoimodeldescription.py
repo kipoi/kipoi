@@ -323,7 +323,7 @@ class KipoiModelDescription:
     model_type: str = ""
     default_dataloader: str = '.'
     dependencies: Dependencies = Dependencies()
-    model_test: Any = KipoiModelTest() 
+    test: KipoiModelTest = KipoiModelTest() 
     writers: Dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
