@@ -1,6 +1,6 @@
 import pytest
 
-from kipoi.kipoimodeldescription import KipoiModelDescription, KipoiModelSchema, Dependencies, KipoiModelTest
+from kipoi.kipoimodeldescription import KipoiModelDescription, KipoiModelSchema, Dependencies, KipoiModelTest, KipoiModelInfo, Author
 
 @pytest.fixture
 def model_parameters():
@@ -42,19 +42,28 @@ def model_parameters():
             'md5': '1adb12be84240ffb7d7ca556eeb19e01'
             }
     )
-    return (args, schema, dependencies, test)
+    doc = 'Predicting the Impact of cis-Regulatory Variation on Alternative Polyadenylation \
+    Abstract \
+    Alternative polyadenylation (APA) is a major driver of transcriptome diversity in human cells.'
+    trained_on = "isoform expression data from over 3 million APA reporters, built by inserting random sequence into 12 distinct 3'UTR contexts."
+
+    info = KipoiModelInfo(authors=(Author("Nicholas Bogard"), Author("Johannes Linder")), doc=doc, trained_on=trained_on, 
+                          cite_as="https://doi.org/10.1101/300061", contributors=(Author("Shabnam Sadegharmaki", "shabnamsadegh"), 
+                          Author("Ziga Avsec", "avsecz"), Author("Muhammed Hasan Çelik", "MuhammedHasan"), Author("Florian R. Hölzlwimmer", "hoeze")))
+ 
+    return (args, schema, info, dependencies, test)
 
 def test_modeldescription_missing_modeltype(model_parameters):
     with pytest.raises(ValueError):
         mdc = KipoiModelDescription(args=model_parameters[0], schema=model_parameters[1], 
-                            defined_as='', dependencies=model_parameters[2], 
-                            test=model_parameters[3])
+                            info = model_parameters[2], defined_as='', 
+                            dependencies=model_parameters[3], test=model_parameters[4])
 
 
 def test_basic_modeldescription_class(model_parameters):
     mdc = KipoiModelDescription(args=model_parameters[0], schema=model_parameters[1], 
-                            defined_as='model.APARENTModel', dependencies=model_parameters[2], 
-                            test=model_parameters[3])
+                            info = model_parameters[2], defined_as='model.APARENTModel', 
+                            dependencies=model_parameters[3], test=model_parameters[4])
     assert mdc.args['weights']['md5'] == '4878981d84499eb575abd0f3b45570d3'
     assert mdc.schema.inputs['shape'][0] == 205
     assert mdc.schema.targets['distal_prop']['shape'][0] == 1

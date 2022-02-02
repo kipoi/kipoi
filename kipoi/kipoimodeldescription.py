@@ -313,12 +313,55 @@ class KipoiModelSchema:
 
         return True
 
+@dataclass
+class Author:
+    name: str
+    github: str = "" 
+    email: str = ""
 
+@dataclass
+class Info:
+    """Class holding information about the component.
+
+    info:
+      authors:
+        - name: Ziga Avsec
+      doc: RBP binding prediction
+      name: rbp_eclip
+      version: 0.1
+    """
+    authors: tuple[Author] = ()
+    doc: str = ""
+    name: str = ""  # TODO - deprecate
+    version : str = "0.1"
+    license : str = "MIT"
+    tags: Tuple[str] = ()
+
+    def __post_init__(self):
+        self.authors = list(self.authors)
+        self.tags = list(self.tags)
+        if self.authors and self.doc == "":
+            logger.warning("doc empty for the `info:` field")
+
+
+
+@dataclass
+class KipoiModelInfo(Info):
+    """Additional information for the model - not applicable to the dataloader
+    """
+    contributors: tuple[Author] = ()
+    cite_as: str = ""
+    trained_on: str = ""
+    training_procedure: str = ""
+
+    def __post_init__(self) -> None:
+        self.contributors = list(self.contributors)
 
 @dataclass
 class KipoiModelDescription:
     args: Dict
     schema: KipoiModelSchema 
+    info: KipoiModelInfo
     defined_as: str 
     model_type: str = ""
     default_dataloader: str = '.'
