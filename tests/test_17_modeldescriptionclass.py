@@ -73,3 +73,4 @@ def test_basic_modeldescription_class(model_parameters):
     assert mdc.default_dataloader == '.'
     assert len(mdc.info.authors) == 2
     assert mdc.info.contributors[0].github == "shabnamsadegh"
+    assert mdc.writers == {}

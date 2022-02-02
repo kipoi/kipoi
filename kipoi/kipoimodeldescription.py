@@ -231,7 +231,7 @@ class KipoiModelSchema:
     inputs: Dict 
     targets: Dict
 
-# TODO:    def compatible_with_schema(self, dataloader_schema, verbose=True)
+# TODO: def compatible_with_schema(self, dataloader_schema, verbose=True)
 
 
 
