@@ -63,6 +63,9 @@ def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
 
+def get_component_python_file(component_dir, which="model", raise_err=True):
+    # TODO - if component_dir has an extension, then just return that file path
+    return get_file_path(component_dir, which, extensions=[".py"], raise_err=raise_err)
 
 def list_yamls_recursively(root_dir, basename):
     return [os.path.dirname(x) for x in list_files_recursively(root_dir, basename, suffix='y?ml')]
@@ -536,6 +539,13 @@ class LocalSource(Source):
         else:
             return False
 
+    def _is_python_component(self, component, which):
+        path = os.path.join(self.local_path, os.path.normpath(component))
+        if get_component_python_file(path, which=which, raise_err=False) is not None:
+            return True
+        else:
+            return False 
+
     def _get_component_dir(self, component, which='model'):
         component = os.path.normpath(component)
 
@@ -572,6 +582,8 @@ class LocalSource(Source):
         component = os.path.normpath(component)
         if self._is_nongroup_component(component, which):
             # it contains a {which}.y?ml
+            return True
+        elif self._is_python_component(component, which):
             return True
         else:
             # it's present in one of the groups
