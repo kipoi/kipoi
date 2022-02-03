@@ -63,7 +63,7 @@ def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
 
-def get_component_python_file(component_dir, which="model", raise_err=True):
+def get_python_component(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".py"], raise_err=raise_err)
 
@@ -94,6 +94,25 @@ def load_component_descr(component_dir, which="model"):
         else:
             raise ValueError("which needs to be from {'model', 'dataloader'}")
 
+def load_python_component_descr(component_dir, which="model"):
+    """Return the parsed yaml file
+    """
+    import importlib
+    from kipoi.kipoimodeldescription import KipoiModelDescription
+    # fname = get_python_component(os.path.abspath(component_dir), which, raise_err=True)
+
+    # with cd(os.path.dirname(fname)):
+    if which == "model":
+        mod = importlib.import_module(f"{component_dir.replace('/', '.')}.{which}")
+
+        model_description = getattr(mod, which)
+        print(model_description)
+        return load_component_descr.load(fname)
+
+    # elif which == "dataloader":
+    #     return DataLoaderDescription.load(fname)
+    else:
+        raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 def list_softlink_dependencies(component_dir, source_path):
     """List dependencies of a directory
@@ -541,7 +560,7 @@ class LocalSource(Source):
 
     def _is_python_component(self, component, which):
         path = os.path.join(self.local_path, os.path.normpath(component))
-        if get_component_python_file(path, which=which, raise_err=False) is not None:
+        if get_python_component(path, which=which, raise_err=False) is not None:
             return True
         else:
             return False 
@@ -552,6 +571,8 @@ class LocalSource(Source):
         self.assert_is_component(component, which)
         # special case: component can be outside of the root directory
         if self._is_nongroup_component(component, which):
+            return os.path.join(self.local_path, os.path.normpath(component))
+        elif self._is_python_component(component, which):
             return os.path.join(self.local_path, os.path.normpath(component))
         else:
             k = self.get_group_name(component, which)
@@ -609,6 +630,8 @@ class LocalSource(Source):
 
             # TODO - move into the component directory when loading
             return load_component_descr(os.path.join(self.local_path, component), which)
+        elif self._is_python_component(component, which):
+            return load_python_component_descr(component, which)
         else:
             k = self.get_group_name(component, which)
             if k is None:
