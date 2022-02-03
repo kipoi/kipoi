@@ -99,16 +99,10 @@ def load_python_component_descr(component_dir, which="model"):
     """
     import importlib
     from kipoi.kipoimodeldescription import KipoiModelDescription
-    # fname = get_python_component(os.path.abspath(component_dir), which, raise_err=True)
-
-    # with cd(os.path.dirname(fname)):
+    component = f"{component_dir.replace('/', '.')}.{which}"
     if which == "model":
-        mod = importlib.import_module(f"{component_dir.replace('/', '.')}.{which}")
-
-        model_description = getattr(mod, which)
-        print(model_description)
-        return load_component_descr.load(fname)
-
+        mod = importlib.import_module(component)
+        return getattr(mod, "description")
     # elif which == "dataloader":
     #     return DataLoaderDescription.load(fname)
     else:
