@@ -1,3 +1,5 @@
+from kipoi.kipoimodeldescription import Dependencies, KipoiModelInfo, Author
+from kipoi.kipoidataloaderdescription import KipoiDataLoaderDescription, KipoiDataLoaderSchema
 from kipoi.data import SampleIterator
 from kipoiseq import Interval, Variant
 from kipoiseq.transforms import OneHot
@@ -136,3 +138,64 @@ class Kipoi_APARENT_DL(APARENT_DL):
             regions_of_interest=roi,
             reference_sequence=FastaStringExtractor(fasta_file),
         )
+
+
+dataloader_type = "SampleIterator"
+args = {
+    'fasta_file':
+    { 
+        'doc': 'Reference genome sequence',
+        'example': {
+            'url': 'https://zenodo.org/record/5483589/files/GRCh38.primary_assembly.chr22.fa?download=1',
+            'md5': '247f06333fda6a8956198cbc3721d11e',
+            'name': 'chr22.fa'
+        }
+    },
+    'gtf_file': 
+    {
+        'doc': 'Genome annotation GTF file',
+        'example': {
+            'url': 'https://zenodo.org/record/5483589/files/gencode.v34.annotation.chr22_15518158-20127355.gtf.gz?download=1',
+            'md5': 'edb3198d43b7e3dd6428ab3d86e1ae1d',
+            'name': 'chr22.gtf.gz'
+        }
+    }
+}
+
+defined_as = 'dataloader.Kipoi_APARENT_DL'
+
+dependencies = Dependencies(conda=('python=3.9', 'bioconda::kipoi', 'bioconda::kipoiseq>=0.7.1', 'bioconda::cyvcf2', 'bioconda::pyranges'),
+                            conda_channels=('conda-forge', 'bioconda', 'defaults'))
+
+
+info = KipoiModelInfo(doc='Dataloader for APARENT sequence scoring',
+                      authors=(Author("Shabnam Sadegharmaki", "shabnamsadegh"), Author("Ziga Avsec", "avsecz"), 
+                      Author("Muhammed Hasan Çelik", "MuhammedHasan"), Author("Florian R. Hölzlwimmer", "hoeze")))
+
+
+output_schema = KipoiDataLoaderSchema(
+    inputs={
+        'name': 'seq',
+        'associated_metadata': 'ranges',
+        'doc': '205bp long sequence of PolyA-cut-site',
+        'shape': (205, 4),
+        'special_type': 'DNASeq'
+    },
+    metadata = {
+        'ranges': {
+            'doc': 'Ranges describing inputs.seq',
+            'type': 'GenomicRanges'
+        },
+        'gene_id': {
+            'doc': 'gene ID',
+            'type': str
+        },
+        'transcript_id': {
+            'doc': 'transcript ID',
+            'type': str
+        }
+    }
+)
+
+description = KipoiDataLoaderDescription(defined_as=defined_as, args=args, output_schema=output_schema, 
+                                        dataloader_type=dataloader_type, info=info, dependencies=dependencies)
