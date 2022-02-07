@@ -582,9 +582,8 @@ class LocalSource(Source):
         if name is None:
             name = which
         insert_path = os.path.join("downloaded", '{}_files'.format(name))
-
         # special case: component can be outside of the root directory
-        if self._is_nongroup_component(component, which):
+        if self._is_nongroup_component(component, which) or self._is_python_component(component, which):
             return os.path.join(self.local_path, os.path.normpath(component), insert_path)
         else:
             k = self.get_group_name(component, which)
@@ -624,7 +623,6 @@ class LocalSource(Source):
 
         if self._is_nongroup_component(component, which):
             # component has an explicit yaml file
-
             # TODO - move into the component directory when loading
             return load_component_descr(os.path.join(self.local_path, component), which)
         elif self._is_python_component(component, which):

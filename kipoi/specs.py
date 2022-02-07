@@ -926,6 +926,8 @@ def download_default_args(args, output_dir):
     """Download the default files
     """
     override = {}
+    print(args)
+    exit()
     for k in args:
         # arg.default is None
         if args[k].default is not None:
