@@ -10,7 +10,7 @@ class KipoiDataLoaderArgument:
     example: Dict = field(default_factory=dict)
     default: Dict = field(default_factory=dict)
     name: str = ""
-    dataloader_type: str = 'str'
+    type: str = 'str'
     optional: bool = False 
     tags: tuple[str] = ()
 
@@ -96,7 +96,7 @@ class KipoiDataLoaderDescription:
     defined_as: str 
     args: KipoiDataLoaderArgument
     output_schema: KipoiDataLoaderSchema
-    dataloader_type: str = "" 
+    type: str = "" 
     info: KipoiModelInfo = KipoiModelInfo()
     dependencies: Dependencies = Dependencies()
     path: str = ''

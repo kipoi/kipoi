@@ -139,8 +139,6 @@ class Kipoi_APARENT_DL(APARENT_DL):
             reference_sequence=FastaStringExtractor(fasta_file),
         )
 
-
-dataloader_type = "SampleIterator"
 args = {
     'fasta_file':
     { 
@@ -198,4 +196,4 @@ output_schema = KipoiDataLoaderSchema(
 )
 
 description = KipoiDataLoaderDescription(defined_as=defined_as, args=args, output_schema=output_schema, 
-                                        dataloader_type=dataloader_type, info=info, dependencies=dependencies)
+                                        type="SampleIterator", info=info, dependencies=dependencies)

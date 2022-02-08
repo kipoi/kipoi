@@ -285,14 +285,14 @@ class KipoiModelDescription:
     schema: KipoiModelSchema 
     info: KipoiModelInfo
     defined_as: str 
-    model_type: str = ""
+    type: str = ""
     default_dataloader: str = '.'
     dependencies: Dependencies = Dependencies()
     test: KipoiModelTest = KipoiModelTest() 
     writers: Dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.defined_as and not self.model_type:
+        if not self.defined_as and not self.type:
             raise ValueError("Either defined_as or type need to be specified")
         if self.writers:
             self.writers = OrderedDict(self.writers)
