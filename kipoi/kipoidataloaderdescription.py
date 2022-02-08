@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import enum
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from kipoi.kipoimodeldescription import Dependencies, KipoiModelInfo
 
@@ -12,7 +12,7 @@ class KipoiDataLoaderArgument:
     name: str = ""
     type: str = 'str'
     optional: bool = False 
-    tags: tuple[str] = ()
+    tags: Tuple[str] = ()
 
     def __post_init__(self):
         self.tags = list(self.tags)

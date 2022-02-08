@@ -256,8 +256,8 @@ class KipoiArraySchema:
     doc: str = ""
     name: str = ""
     special_type: str = ArraySpecialType.DNASeq
-    associated_metadata: tuple[str] = ()
-    column_labels: tuple[str] = () 
+    associated_metadata: Tuple[str] = ()
+    column_labels: Tuple[str] = () 
 
     def print_msg(self, msg):
         if self.verbose:
@@ -479,7 +479,7 @@ class Info:
       name: rbp_eclip
       version: 0.1
     """
-    authors: tuple[Author] = ()
+    authors: Tuple[Author] = ()
     doc: str = ""
     name: str = ""  # TODO - deprecate
     version : str = "0.1"
@@ -497,7 +497,7 @@ class Info:
 class KipoiModelInfo(Info):
     """Additional information for the model - not applicable to the dataloader
     """
-    contributors: tuple[Author] = ()
+    contributors: Tuple[Author] = ()
     cite_as: str = ""
     trained_on: str = ""
     training_procedure: str = ""
