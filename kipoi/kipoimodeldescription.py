@@ -14,6 +14,48 @@ logger.addHandler(logging.NullHandler())
 
 
 @dataclass
+class KipoiRemoteFile:
+    url: str
+    md5: str = "" 
+    name: str = ""
+
+    def __post_init__(self) -> None:
+        if self.md5 == "":
+            logger.warning("md5 not specified for url: {}".format(self.url))
+        if os.path.basename(self.name) != self.name:
+            logger.warning("'name' does not seem to be a valid file name: {}".format(self.name))
+            self.name = os.path.basename(self.name)
+
+    def validate(self, path):
+        """Validate if the path complies with the provided md5 hash
+        """
+        return check_integrity(path, self.md5)
+
+    def get_file(self, path):
+        """Download the remote file to cache_dir and return
+        the file path to it
+        """
+        if self.md5:
+            file_hash = self.md5
+        else:
+            file_hash = None
+        root, filename = os.path.dirname(path), os.path.basename(path)
+        root = os.path.abspath(root)
+        download_url(self.url, root, filename, file_hash)
+        return os.path.join(root, filename)
+
+def recursive_url_lookup(args):
+    if isinstance(args, dict):
+        if 'url' in args:
+            return KipoiRemoteFile(url=args['url'], name=args.get('name', ''), md5=args.get('md5', ''))
+        else:
+            return OrderedDict([(k, recursive_url_lookup(v)) for k, v in args.items()])
+    elif isinstance(args, list):
+        return [recursive_url_lookup(v, 'url') for v in args]
+    else:
+        return args
+
+@dataclass
 class Dependencies:
     conda: Tuple[str] = ()
     pip: Tuple[str] = ()
@@ -154,37 +196,6 @@ class Dependencies:
 
 
 @dataclass
-class KipoiRemoteFile:
-    url: str
-    md5: str = "" 
-    name: str = ""
-
-    def __post_init__(self) -> None:
-        if self.md5 == "":
-            logger.warning("md5 not specified for url: {}".format(self.url))
-        if os.path.basename(self.name) != self.name:
-            logger.warning("'name' does not seem to be a valid file name: {}".format(self.name))
-            self.name = os.path.basename(self.name)
-
-    def validate(self, path):
-        """Validate if the path complies with the provided md5 hash
-        """
-        return check_integrity(path, self.md5)
-
-    def get_file(self, path):
-        """Download the remote file to cache_dir and return
-        the file path to it
-        """
-        if self.md5:
-            file_hash = self.md5
-        else:
-            file_hash = None
-        root, filename = os.path.dirname(path), os.path.basename(path)
-        root = os.path.abspath(root)
-        download_url(self.url, root, filename, file_hash)
-        return os.path.join(root, filename)
-
-@dataclass
 class KipoiDataLoaderImport:
     """Dataloader specification for the import
     """
@@ -252,7 +263,7 @@ class Info:
       name: rbp_eclip
       version: 0.1
     """
-    authors: tuple(Author) = ()
+    authors: tuple[Author] = ()
     doc: str = ""
     name: str = ""  # TODO - deprecate
     version : str = "0.1"
@@ -296,7 +307,8 @@ class KipoiModelDescription:
             raise ValueError("Either defined_as or type need to be specified")
         if self.writers:
             self.writers = OrderedDict(self.writers)
-
+        
+        self.args = recursive_url_lookup(self.args)
 
         # parse default_dataloader
         if isinstance(self.default_dataloader, dict):

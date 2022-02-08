@@ -18,6 +18,7 @@ import yaml
 import importlib
 
 from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
+from .kipoimodeldescription import KipoiRemoteFile
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -161,7 +162,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
         # download url links if specified under args
         for k in md.args:
-            if isinstance(md.args[k], RemoteFile):
+            if isinstance(md.args[k], RemoteFile) or isinstance(md.args[k], KipoiRemoteFile):
                 output_dir = os.path.join(model_download_dir, k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 makedir_exist_ok(output_dir)
@@ -204,8 +205,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 raise ImportError("Unable to import {}".format(md.defined_as))
             if not inherits_from(Mod, BaseModel):
                 raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
-            print(md.args)
-            exit()
+
             mod = Mod(**md.args)
             for k, v in six.iteritems(AVAILABLE_MODELS):
                 if isinstance(mod, v):
