@@ -1,8 +1,9 @@
-from collections import OrderedDict
+from collections import Mapping, OrderedDict, Sequence
 from dataclasses import dataclass, field
 import os
 import logging
 from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+import enum
 
 import kipoi_conda as kconda
 from kipoi_utils.utils import inherits_from, load_obj, override_default_kwargs, unique_list
@@ -12,6 +13,13 @@ from kipoi_utils.external.torchvision.dataset_utils import download_url, check_i
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+@enum.unique
+class ArraySpecialType(enum.Enum):
+    DNASeq = "DNASeq"
+    DNAStringSeq = "DNAStringSeq"
+    BIGWIG = "bigwig"
+    VPLOT = "v-plot"
+    Array = "Array"
 
 @dataclass
 class KipoiRemoteFile:
@@ -235,6 +243,128 @@ class KipoiModelTest:
     precision_decimal: int = 7
 
 @dataclass
+class KipoiArraySchema:
+    """
+    Args:
+      shape: Tuple of shape (same as in Keras for the input)
+      doc: Description of the array
+      special_type: str, special type name. Could also be an array of special entries?
+      metadata_entries: str or list of metadata
+    """
+    shape: Tuple[int]
+    verbose: bool = True
+    doc: str = ""
+    name: str = ""
+    special_type: str = ArraySpecialType.DNASeq
+    associated_metadata: tuple[str] = ()
+    column_labels: tuple[str] = () 
+
+    def print_msg(self, msg):
+        if self.verbose:
+            print("KipoiArraySchema mismatch")
+            print(msg)
+
+    def _validate_list_column_labels(self):
+        dim_ok = len(self.shape) >= 1
+        if dim_ok and (self.shape[0] is not None):
+            dim_ok &= len(self.column_labels) == self.shape[0]
+        if not dim_ok:
+            self.print_msg("Column annotation does not match array dimension with shape %s and %d labels (%s ...)"
+                           % (str(self.shape), len(self.column_labels), str(self.column_labels)[:30]))
+
+    def __post_init__(self):
+        self.associated_metadata = list(self.associated_metadata)
+        self.column_labels = list(self.column_labels)
+
+        from io import open
+
+        if len(self.column_labels) > 1:
+            # check that length is ok with columns
+            self._validate_list_column_labels()
+        elif len(self.column_labels) == 1:
+            label = self.column_labels.list[0]
+            import os
+            # check if path exists raise exception only test time, but only a warning in prediction time
+            if os.path.exists(label):
+                with open(label, "r", encoding="utf-8") as ifh:
+                    object.__setattr__(self, "column_labels", [l.rstrip() for l in ifh])
+            self._validate_list_column_labels()
+        else:
+            object.__setattr__(self, "column_labels", None)
+
+    def compatible_with_batch(self, batch, verbose=True):
+        """Checks compatibility with a particular batch of data
+
+        Args:
+          batch: numpy array
+          ignore_batch_axis: if True, the batch axis is not considered
+          verbose: print the fail reason
+        """
+
+        def print_msg(msg):
+            if verbose:
+                print("KipoiArraySchema mismatch")
+                print(msg)
+
+        # type = np.ndarray
+        if not isinstance(batch, np.ndarray):
+            print_msg("Expecting a np.ndarray. Got type(batch) = {0}".format(type(batch)))
+            return False
+
+        if not batch.ndim >= 1:
+            print_msg("The array is a scalar (expecting at least the batch dimension)")
+            return False
+
+        return self.compatible_with_schema(KipoiArraySchema(shape=batch.shape[1:],
+                                                       doc=""))
+
+    def compatible_with_schema(self, schema, name_self="", name_schema="", verbose=True):
+        """Checks the compatibility with another schema
+
+        Args:
+          schema: Other KipoiArraySchema
+          name_self: How to call self in the error messages
+          name_schema: analogously to name_self for the schema KipoiArraySchema
+          verbose: bool, describe what went wrong through print()
+        """
+
+        def print_msg(msg):
+            if verbose:
+                # print("KipoiArraySchema mismatch")
+                print(msg)
+
+        if not isinstance(schema, KipoiArraySchema):
+            print_msg("Expecting KipoiArraySchema. Got type({0} schema) = {1}".format(name_schema,
+                                                                                 type(schema)))
+            return False
+
+        def print_msg_template():
+            print("KipoiArraySchema mismatch")
+            print("Array shapes don't match for the fields:")
+            print("--")
+            print(name_self)
+            print("--")
+            print(self.get_config_as_yaml())
+            print("--")
+            print(name_schema)
+            print("--")
+            print(schema.get_config_as_yaml())
+            print("--")
+            print("Provided shape (without the batch axis): {0}, expected shape: {1} ".format(bshape, self.shape))
+
+        bshape = schema.shape
+        if not len(bshape) == len(self.shape):
+            print_msg_template()
+            return False
+        for i in range(len(bshape)):
+            if bshape[i] is not None and self.shape[i] is not None:
+                # shapes don't match
+                if not bshape[i] == self.shape[i]:
+                    print_msg_template()
+                    return False
+        return True
+
+@dataclass
 class KipoiModelSchema:
     """Describes the model schema
     """
@@ -242,7 +372,90 @@ class KipoiModelSchema:
     inputs: Dict 
     targets: Dict
 
-# TODO: def compatible_with_schema(self, dataloader_schema, verbose=True)
+    def compatible_with_schema(self, dataloader_schema, verbose=True):
+        """Check the compatibility: model.schema <-> dataloader.output_schema
+
+        Checks preformed:
+        - nested structure is the same (i.e. dictionary names, list length etc)
+        - array shapes are compatible
+        - returned obj classess are compatible
+
+        # Arguments
+            dataloader_schema: a dataloader_schema of data returned by one iteraton of dataloader's dataloader_schema_iter
+                nested dictionary
+            verbose: verbose error logging if things don't match
+
+        # Returns
+           bool: True only if everyhing is ok
+        """
+        def print_msg(msg):
+            if verbose:
+                print(msg)
+
+        # Inputs check
+        def compatible_nestedmapping(dschema, descr, cls, verbose=True):
+            """Recursive function of checks
+
+            shapes match, dschema-dim matches
+            """
+            if isinstance(descr, cls):
+                # Recursion stop
+                return descr.compatible_with_schema(dschema,
+                                                    name_self="Model",
+                                                    name_schema="Dataloader",
+                                                    verbose=verbose)
+            elif isinstance(dschema, Mapping) and isinstance(descr, Mapping):
+                if not set(descr.keys()).issubset(set(dschema.keys())):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("dataloader fields: {0}".format(dschema.keys()))
+                    print_msg("model fields: {0}".format(descr.keys()))
+                    return False
+                return all([compatible_nestedmapping(dschema[key], descr[key], cls, verbose) for key in descr])
+            elif isinstance(dschema, Sequence) and isinstance(descr, Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
+            elif isinstance(dschema, Mapping) and isinstance(descr, Sequence):
+                if not len(descr) <= len(dschema):
+                    print_msg("Dataloader doesn't provide all the fields required by the model:")
+                    print_msg("len(dataloader): {0}".format(len(dschema)))
+                    print_msg("len(model): {0}".format(len(descr)))
+                    return False
+                compatible = []
+                for i in range(len(descr)):
+                    if descr[i].name in dschema:
+                        compatible.append(compatible_nestedmapping(dschema[descr[i].name], descr[i], cls, verbose))
+                    else:
+                        print_msg("Model array name: {0} not found in dataloader keys: {1}".
+                                  format(descr[i].name, list(dschema.keys())))
+                        return False
+                return all(compatible)
+
+            print_msg("Invalid types:")
+            print_msg("type(Dataloader schema): {0}".format(type(dschema)))
+            print_msg("type(Model schema): {0}".format(type(descr)))
+            return False
+
+        if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, KipoiArraySchema, verbose):
+            return False
+
+        # checking targets
+        if dataloader_schema.targets is None:
+            return True
+
+        if (isinstance(dataloader_schema.targets, KipoiArraySchema) or
+            len(dataloader_schema.targets) > 0) and not compatible_nestedmapping(dataloader_schema.targets,
+                                                                                 self.targets,
+                                                                                 KipoiArraySchema,
+                                                                                 verbose):
+            return False
+
+        return True
+
+
 
 
 
@@ -275,7 +488,6 @@ class Info:
         self.tags = list(self.tags)
         if self.authors and self.doc == "":
             logger.warning("doc empty for the `info:` field")
-
 
 
 @dataclass
