@@ -372,6 +372,10 @@ class KipoiModelSchema:
     inputs: Dict 
     targets: Dict
 
+    def __post_init__(self):
+        self.inputs = KipoiArraySchema(**self.inputs)
+
+
     def compatible_with_schema(self, dataloader_schema, verbose=True):
         """Check the compatibility: model.schema <-> dataloader.output_schema
 
@@ -438,7 +442,6 @@ class KipoiModelSchema:
             print_msg("type(Dataloader schema): {0}".format(type(dschema)))
             print_msg("type(Model schema): {0}".format(type(descr)))
             return False
-
         if not compatible_nestedmapping(dataloader_schema.inputs, self.inputs, KipoiArraySchema, verbose):
             return False
 
