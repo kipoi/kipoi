@@ -174,7 +174,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 # download the parameters and override the model
                 path = md.args[k].get_file(os.path.join(output_dir, fname))
                 md.args[k] = path
-        if md.type is not None:
+        if md.type not in [None, ""]:
             # old API
             if md.type == 'custom':
                 Mod = load_model_custom(**md.args)
@@ -204,6 +204,8 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 raise ImportError("Unable to import {}".format(md.defined_as))
             if not inherits_from(Mod, BaseModel):
                 raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+            print(md.args)
+            exit()
             mod = Mod(**md.args)
             for k, v in six.iteritems(AVAILABLE_MODELS):
                 if isinstance(mod, v):

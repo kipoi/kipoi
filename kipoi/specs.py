@@ -928,7 +928,8 @@ def download_default_args(args, output_dir):
     override = {}
     for k in args:
         # arg.default is None
-        if 'default' in args[k] and args[k].default is not None:
+        # TODO: Any need to do this when args[k] is a dict
+        if isinstance(args[k], kipoi.specs.DataLoaderArgument) and args[k].default is not None:
             if isinstance(args[k].default, UNSPECIFIED):
                 continue
             if isinstance(args[k].default, RemoteFile):
