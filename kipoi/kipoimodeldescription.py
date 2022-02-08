@@ -252,7 +252,7 @@ class Info:
       name: rbp_eclip
       version: 0.1
     """
-    authors: tuple[Author] = ()
+    authors: tuple(Author) = ()
     doc: str = ""
     name: str = ""  # TODO - deprecate
     version : str = "0.1"
