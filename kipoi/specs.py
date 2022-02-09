@@ -869,11 +869,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     def __attrs_post_init__(self):
         if self.defined_as is None and self.type is None:
             raise ValueError("Either defined_as or type need to be specified")
-        # parse args
-        # print(self.args)
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
-        # print(self.args)
-        # exit()
         # parse default_dataloader
         if isinstance(self.default_dataloader, dict):
             self.default_dataloader = DataLoaderImport.from_config(self.default_dataloader)

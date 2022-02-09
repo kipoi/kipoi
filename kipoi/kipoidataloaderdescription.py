@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from dataclasses import dataclass, field
 import enum
 from typing import Any, Dict, Tuple
@@ -42,7 +43,7 @@ class MetadataType(enum.Enum):
 @dataclass
 class MetadataStruct:
     doc: str = "" 
-    type: MetadataType = MetadataType.GENOMIC_RANGES
+    type: str = MetadataType.GENOMIC_RANGES
     name: str = ""
 
     def compatible_with_batch(self, batch, verbose=True):
@@ -115,14 +116,11 @@ class KipoiDataLoaderSchema:
 
     def __post_init__(self):
         self.inputs = KipoiArraySchema(**self.inputs)
-        # self.targets = ?
-        self.metadata =  MetadataStruct(**self.metadata)
-        # keyword="doc", key="name",
-    # inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
-    # targets = NestedMappingField(ArraySchema, keyword="shape", key="name", required=False)
-    # metadata = NestedMappingField(MetadataStruct, keyword="doc", key="name",
-    #                               required=False)
-
+        self.targets = KipoiArraySchema(**self.targets)
+        self.metadata = OrderedDict(self.metadata)
+        for key, value in self.metadata.items():
+            self.metadata[key] = MetadataStruct(**value)
+            
     def compatible_with_batch(self, batch, verbose=True):
         """Validate if the batch of data complies with the schema
 

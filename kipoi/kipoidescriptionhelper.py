@@ -199,7 +199,7 @@ class KipoiArraySchema:
       special_type: str, special type name. Could also be an array of special entries?
       metadata_entries: str or list of metadata
     """
-    shape: Tuple[int]
+    shape: Tuple[int] = () # TODO: Should it be a default field??
     verbose: bool = True
     doc: str = ""
     name: str = ""
