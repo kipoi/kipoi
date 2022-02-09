@@ -557,7 +557,7 @@ class LocalSource(Source):
 
     def _is_python_component(self, component, which):
         path = os.path.join(self.local_path, os.path.normpath(component))
-        if get_python_component(path, which=which, raise_err=False) is not None:
+        if get_python_component(path, which=which, raise_err=False) is not None and get_component_file(path, which=which, raise_err=False) is None:
             return True
         else:
             return False 

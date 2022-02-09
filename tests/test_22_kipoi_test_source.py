@@ -141,13 +141,13 @@ def test_is_component(source):
     assert source._is_component("pyt", 'model')
     assert source._is_component("pyt", 'dataloader')
 
-    assert not source._is_component("multiple_models", 'model')
+    assert source._is_component("multiple_models", 'model') # Now it is allowed to have a python only component
     assert not source._is_component("multiple_models", 'dataloader')
 
     assert source._is_component("multiple_models/model1", 'model')
     assert not source._is_component("multiple_models/model1", 'dataloader')
 
-    assert not source._is_component("multiple_models", 'model')
+    assert source._is_component("multiple_models", 'model') # Now it is allowed to have a python only component
     assert not source._is_component("multiple_models", 'dataloader')
 
     assert source._is_component("multiple_models/submodel/model2", 'model')
