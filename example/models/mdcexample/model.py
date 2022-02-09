@@ -34,7 +34,7 @@ class APARENTModel(BaseModel):
 
 args = {
         'weights': {
-            'md5': '4878981d84499eb575abd0f3b45570d3',
+            'md5': '31902fb40125679e655b8b6d2747ada7',
             'url': 'https://github.com/johli/aparent/raw/8a884f0bc4073ed0edd588f71b61a5be4a37e831/saved_models/aparent_large_lessdropout_all_libs_no_sampleweights.h5'
         }
     }
