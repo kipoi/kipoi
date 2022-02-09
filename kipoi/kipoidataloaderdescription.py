@@ -2,7 +2,9 @@ from dataclasses import dataclass, field
 import enum
 from typing import Any, Dict, Tuple
 
-from kipoi.kipoimodeldescription import Dependencies, KipoiModelInfo
+from kipoi.kipoimodeldescription import KipoiModelInfo
+from kipoi.kipoidescriptionhelper import Dependencies, KipoiArraySchema
+
 
 @dataclass
 class KipoiDataLoaderArgument:
@@ -46,6 +48,8 @@ class KipoiDataLoaderSchema:
     targets: Dict = field(default_factory=dict)
     metadata: Dict = field(default_factory=dict)
 
+    def __post_init__(self):
+        self.inputs = KipoiArraySchema(**self.inputs)
     def compatible_with_batch(self, batch, verbose=True):
         """Validate if the batch of data complies with the schema
 
