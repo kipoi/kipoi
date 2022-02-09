@@ -58,14 +58,17 @@ def get_dataloader_descr(dataloader, source="kipoi"):
 # --------------------------------------------
 
 # helper
-
+    
 def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
 
 def get_python_component(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
-    return get_file_path(component_dir, which, extensions=[".py"], raise_err=raise_err)
+    if get_file_path(component_dir, f"{which}-template", extensions=[".yml", ".yaml"], raise_err=raise_err) is None:
+        return get_file_path(component_dir, which, extensions=[".py"], raise_err=raise_err)
+    else:
+        return None
 
 def list_yamls_recursively(root_dir, basename):
     return [os.path.dirname(x) for x in list_files_recursively(root_dir, basename, suffix='y?ml')]
