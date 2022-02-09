@@ -9,7 +9,7 @@ import kipoi_conda as kconda
 from kipoi_utils.utils import inherits_from, load_obj, override_default_kwargs, unique_list
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
 
-from kipoi.kipoidescriptionhelper import KipoiRemoteFile, Dependencies, KipoiArraySchema, Info
+from kipoi.kipoidescriptionhelper import Author, Dependencies, Info, KipoiArraySchema, KipoiRemoteFile
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
