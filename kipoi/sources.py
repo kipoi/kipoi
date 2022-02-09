@@ -88,7 +88,7 @@ def load_component_descr(component_dir, which="model"):
     from kipoi.specs import ModelDescription, DataLoaderDescription
 
     fname = get_component_file(os.path.abspath(component_dir), which, raise_err=True)
-
+    
     with cd(os.path.dirname(fname)):
         if which == "model":
             return ModelDescription.load(fname)

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import enum
 from typing import Any, Dict, Tuple
 
+from kipoi.metadata import GenomicRanges
 from kipoi.kipoimodeldescription import KipoiModelInfo
 from kipoi.kipoidescriptionhelper import Dependencies, KipoiArraySchema
 
@@ -30,6 +31,70 @@ class ArraySpecialType(enum.Enum):
     VPLOT = "v-plot"
     Array = "Array"
 
+@enum.unique
+class MetadataType(enum.Enum):
+    GENOMIC_RANGES = "GenomicRanges"
+    STR = "str"
+    INT = "int"
+    FLOAT = "float"
+    ARRAY = "array"
+
+@dataclass
+class MetadataStruct:
+    doc: str = "" 
+    type: MetadataType = MetadataType.GENOMIC_RANGES
+    name: str = ""
+
+    def compatible_with_batch(self, batch, verbose=True):
+        """Checks compatibility with a particular numpy array
+
+        Args:
+          batch: numpy array of a batch
+
+          verbose: print the fail reason
+        """
+
+        def print_msg(msg):
+            if verbose:
+                print("MetadataStruct mismatch")
+                print(msg)
+
+        # custom classess
+        if self.type == MetadataType.GENOMIC_RANGES:
+            if not isinstance(batch, GenomicRanges):
+                # TODO - do we strictly require the GenomicRanges class?
+                #          - relates to metadata.py TODO about numpy_collate
+                #        for now we should just be able to convert to the GenomicRanges class
+                #        without any errors
+                try:
+                    GenomicRanges.from_dict(batch)
+                except Exception as e:
+                    print_msg("expecting a GenomicRanges object or a GenomicRanges-like dict")
+                    print_msg("convertion error: {0}".format(e))
+                    return False
+                else:
+                    return True
+            else:
+                return True
+
+        # type = np.ndarray
+        if not isinstance(batch, np.ndarray):
+            print_msg("Expecting a np.ndarray. Got type(batch) = {0}".format(type(batch)))
+            return False
+
+        if not batch.ndim >= 1:
+            print_msg("The array is a scalar (expecting at least the batch dimension)")
+            return False
+
+        bshape = batch.shape[1:]
+
+        # scalars
+        if self.type in {MetadataType.INT, MetadataType.STR, MetadataType.FLOAT}:
+            if bshape != () and bshape != (1,):
+                print_msg("expecting a scalar, got an array with shape (without the batch axis): {0}".format(bshape))
+                return False
+        return True
+
 
 @dataclass
 class KipoiDataLoaderSchema:
@@ -50,6 +115,14 @@ class KipoiDataLoaderSchema:
 
     def __post_init__(self):
         self.inputs = KipoiArraySchema(**self.inputs)
+        # self.targets = ?
+        self.metadata =  MetadataStruct(**self.metadata)
+        # keyword="doc", key="name",
+    # inputs = NestedMappingField(ArraySchema, keyword="shape", key="name")
+    # targets = NestedMappingField(ArraySchema, keyword="shape", key="name", required=False)
+    # metadata = NestedMappingField(MetadataStruct, keyword="doc", key="name",
+    #                               required=False)
+
     def compatible_with_batch(self, batch, verbose=True):
         """Validate if the batch of data complies with the schema
 

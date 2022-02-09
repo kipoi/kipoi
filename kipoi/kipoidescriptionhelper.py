@@ -282,8 +282,6 @@ class KipoiArraySchema:
                 print(msg)
 
         if not isinstance(schema, KipoiArraySchema):
-            print(schema)
-            exit()
             print_msg("Expecting KipoiArraySchema. Got type({0} schema) = {1}".format(name_schema,
                                                                                  type(schema)))
             return False
