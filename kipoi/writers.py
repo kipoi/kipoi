@@ -198,9 +198,9 @@ class ParquetDirBatchWriter(BatchWriter):
 
         if self.file_path.exists():
             if not append:
-                raise FileExistsError("'{}' already exists!")
+                raise FileExistsError(f"'{file_path}' already exists!")
             if not self.file_path.is_dir():
-                raise FileExistsError("'{}' is no directory!")
+                raise FileExistsError(f"'{file_path}' is no directory!")
         else:
             self.file_path.mkdir()
 
@@ -261,7 +261,7 @@ class ParquetFileBatchWriter(BatchWriter):
         self.pq_writer = None
 
         if self.file_path.exists():
-            raise FileExistsError("'{}' already exists!")
+            raise FileExistsError(f"'{file_path}' already exists!")
 
     def batch_write(self, batch):
         df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
