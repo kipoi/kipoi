@@ -176,10 +176,14 @@ class ParquetDirBatchWriter(BatchWriter):
     def __init__(
             self,
             file_path,
-            chunk_size=1000000,  # 10^6 rows per file by default
+            chunk_size=None,
             nested_sep="/",
             append=True,
     ):
+        if chunk_size is None:
+            # 10^6 rows per file by default
+            chunk_size = 10000
+
         from pathlib import Path
         import uuid
         from datetime import datetime
@@ -230,9 +234,12 @@ class ParquetFileBatchWriter(BatchWriter):
     def __init__(
             self,
             file_path,
-            chunk_size=10000,
+            chunk_size=None,
             nested_sep="/",
     ):
+        if chunk_size is None:
+            chunk_size = 10000
+
         # optional import of pyarrow
         import pyarrow as pa
         import pyarrow.parquet as pq

@@ -24,7 +24,6 @@ import pandas as pd
 from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
 from collections import OrderedDict
 
-from kipoi.writers import ParquetFileBatchWriter
 from kipoi_utils.utils import get_subsuffix
 import zarr
 
