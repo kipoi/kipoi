@@ -182,7 +182,7 @@ class ParquetDirBatchWriter(BatchWriter):
     ):
         if chunk_size is None:
             # 10^6 rows per file by default
-            chunk_size = 10000
+            chunk_size = 1000000
 
         from pathlib import Path
         import uuid
