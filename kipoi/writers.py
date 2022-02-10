@@ -275,7 +275,7 @@ class ParquetFileBatchWriter(BatchWriter):
 
     def _flush(self):
         df_all = pd.concat(self.write_buffer, axis=0)
-        table = self.pa.Table.from_pandas(df_all)
+        table = self.pa.Table.from_pandas(df_all, preserve_index=False)
 
         if self.pq_writer is None:
             self.pq_writer = self.pq.ParquetWriter(self.file_path, table.schema)
