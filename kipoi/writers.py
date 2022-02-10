@@ -171,6 +171,123 @@ class TsvBatchWriter(BatchWriter):
         pass
 
 
+class ParquetDirBatchWriter(BatchWriter):
+
+    def __init__(
+            self,
+            file_path,
+            chunk_size=1000000,  # 10^6 rows per file by default
+            nested_sep="/",
+            append=True,
+    ):
+        from pathlib import Path
+        import uuid
+        from datetime import datetime
+        self.file_path = Path(file_path)
+        self.uuid = datetime.now().strftime('%Y%m%d-%H%M-%S.%f') + str(uuid.uuid4())
+
+        self.chunk_size = chunk_size
+        self.nested_sep = nested_sep
+        self.write_buffer = list()
+        self.num_rows = 0
+        self.batch_num = 0
+
+        if self.file_path.exists():
+            if not append:
+                raise FileExistsError("'{}' already exists!")
+            if not self.file_path.is_dir():
+                raise FileExistsError("'{}' is no directory!")
+        else:
+            self.file_path.mkdir()
+
+    def batch_write(self, batch):
+        df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
+        df.sort_index(axis=1, inplace=True)
+
+        self.write_buffer.append(df)
+        self.num_rows += df.shape[0]
+
+        if self.num_rows >= self.chunk_size:
+            self._flush()
+
+    def _flush(self):
+        df_all = pd.concat(self.write_buffer, axis=0)
+
+        part_file = self.file_path / f"part-{self.batch_num}-{self.uuid}.parquet"
+        df_all.to_parquet(part_file, index=False)
+
+        self.write_buffer = list()
+        self.num_rows = 0
+        self.batch_num += 1
+
+    def close(self):
+        if self.num_rows > 0:
+            self._flush()
+
+
+class ParquetFileBatchWriter(BatchWriter):
+
+    def __init__(
+            self,
+            file_path,
+            chunk_size=10000,
+            nested_sep="/",
+    ):
+        # optional import of pyarrow
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        self.pa = pa
+        self.pq = pq
+
+        from pathlib import Path
+        import uuid
+        from datetime import datetime
+        self.file_path = Path(file_path)
+        self.uuid = datetime.now().strftime('%Y%m%d-%H%M-%S.%f') + str(uuid.uuid4())
+
+        self.chunk_size = chunk_size
+        self.nested_sep = nested_sep
+        self.write_buffer = list()
+        self.num_rows = 0
+        self.batch_num = 0
+
+        self.pq_writer = None
+
+        if self.file_path.exists():
+            raise FileExistsError("'{}' already exists!")
+
+    def batch_write(self, batch):
+        df = pd.DataFrame(flatten_batch(batch, nested_sep=self.nested_sep))
+        df.sort_index(axis=1, inplace=True)
+
+        self.write_buffer.append(df)
+        self.num_rows += df.shape[0]
+
+        if self.num_rows >= self.chunk_size:
+            self._flush()
+
+    def _flush(self):
+        df_all = pd.concat(self.write_buffer, axis=0)
+        table = self.pa.Table.from_pandas(df_all)
+
+        if self.pq_writer is None:
+            self.pq_writer = self.pq.ParquetWriter(self.file_path, table.schema)
+
+        self.pq_writer.write_table(table)
+
+        self.write_buffer = list()
+        self.num_rows = 0
+        self.batch_num += 1
+
+    def close(self):
+        if self.num_rows > 0:
+            self._flush()
+
+        # close the parquet writer
+        if self.pq_writer:
+            self.pq_writer.close()
+
+
 class ParquetBatchWriter(BatchWriter):
     """
     Args:
@@ -192,9 +309,12 @@ class ParquetBatchWriter(BatchWriter):
     # Install: conda install -c conda-forge fastparquet
     """
 
-    def __init__(self,
-                 file_path,
-                 nested_sep="/", **kwargs):
+    def __init__(
+            self,
+            file_path,
+            nested_sep="/",
+            **kwargs
+    ):
         try:
             import fastparquet as fp
         except:
@@ -575,6 +695,15 @@ def get_writer(output_file, metadata_schema=None, **kwargs):
             return HDF5BatchWriter(file_path=output_file, chunk_size=kwargs['hdf5_chunk_size'])
         else:
             return HDF5BatchWriter(file_path=output_file)
+    elif ending in ["parquet", "pq", "pqt"]:
+        if 'parquet_chunk_size' in kwargs:
+            chunk_size = kwargs["parquet_chunk_size"]
+        else:
+            chunk_size = None
+        return ParquetFileBatchWriter(
+            file_path=output_file,
+            chunk_size=chunk_size
+        )
     else:
         return None
 

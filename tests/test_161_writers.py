@@ -4,16 +4,27 @@ import os
 import pytest
 from pytest import fixture
 from kipoi.metadata import GenomicRanges
-from kipoi.writers import (AsyncBatchWriter, BedBatchWriter,
-                           TsvBatchWriter, ZarrBatchWriter, get_zarr_store,
-                           HDF5BatchWriter, BedGraphWriter, MultipleBatchWriter,
-                           ParquetBatchWriter)
+from kipoi.writers import (
+    AsyncBatchWriter,
+    BedBatchWriter,
+    TsvBatchWriter,
+    ZarrBatchWriter,
+    get_zarr_store,
+    HDF5BatchWriter,
+    BedGraphWriter,
+    MultipleBatchWriter,
+    ParquetBatchWriter,
+    ParquetFileBatchWriter,
+    ParquetDirBatchWriter,
+)
 from kipoi.readers import HDF5Reader, ZarrReader
 from kipoi.cli.main import prepare_batch
 import numpy as np
 import pandas as pd
 from kipoi.specs import DataLoaderSchema, ArraySchema, MetadataStruct, MetadataType
 from collections import OrderedDict
+
+from kipoi.writers import ParquetFileBatchWriter
 from kipoi_utils.utils import get_subsuffix
 import zarr
 
@@ -110,6 +121,48 @@ def test_TsvBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
                                      'preds/1',
                                      'preds/2'}
     assert list(df['metadata/ranges/id']) == [0, 1, 2, 0, 1, 2]
+
+
+def test_ParquetFileBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.parquet"))
+    writer = ParquetFileBatchWriter(tmpfile)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    df = pd.read_parquet(tmpfile)
+
+    assert set(list(df.columns)) == {'metadata/ranges/id',
+                                     'metadata/ranges/strand',
+                                     'metadata/ranges/chr',
+                                     'metadata/ranges/start',
+                                     'metadata/ranges/end',
+                                     'metadata/gene_id',
+                                     'preds/0',
+                                     'preds/1',
+                                     'preds/2'}
+    assert list(df['metadata/ranges/id']) == ['0', '1', '2', '0', '1', '2']
+
+
+def test_ParquetDirBatchWriter_array(dl_batch, pred_batch_array, tmpdir):
+    tmpfile = str(tmpdir.mkdir("example").join("out.parquet"))
+    writer = ParquetDirBatchWriter(tmpfile)
+    batch = prepare_batch(dl_batch, pred_batch_array, keep_metadata=True)
+    writer.batch_write(batch)
+    writer.batch_write(batch)
+    writer.close()
+    df = pd.read_parquet(tmpfile)
+
+    assert set(list(df.columns)) == {'metadata/ranges/id',
+                                     'metadata/ranges/strand',
+                                     'metadata/ranges/chr',
+                                     'metadata/ranges/start',
+                                     'metadata/ranges/end',
+                                     'metadata/gene_id',
+                                     'preds/0',
+                                     'preds/1',
+                                     'preds/2'}
+    assert list(df['metadata/ranges/id']) == ['0', '1', '2', '0', '1', '2']
 
 
 # For no good reason this test fails when installing
