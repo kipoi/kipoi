@@ -50,9 +50,9 @@ schema = KipoiModelSchema(
     {   
         'distal_prop':
         {
-            'shape': (1, )
+            'shape': (1, ),    
+            'doc': 'Predicts proportion of cleavage occuring outside of the specified DNA range',
         },
-        'doc': 'Predicts proportion of cleavage occuring outside of the specified DNA range',
         'site_props':
         {
             'shape': (205, ),
