@@ -81,6 +81,7 @@ class KipoiModelSchema:
         self.inputs = KipoiArraySchema(**self.inputs)
         for key, value in self.targets.items():
             self.targets[key] = KipoiArraySchema(**value)
+        self.targets = OrderedDict(self.targets)
 
     def compatible_with_schema(self, dataloader_schema, verbose=True):
         """Check the compatibility: model.schema <-> dataloader.output_schema
@@ -108,7 +109,6 @@ class KipoiModelSchema:
 
             shapes match, dschema-dim matches
             """
-
             if isinstance(descr, cls):
                 # Recursion stop
                 return descr.compatible_with_schema(dschema,
@@ -145,7 +145,7 @@ class KipoiModelSchema:
                         return False
                 return all(compatible)
 
-            print_msg("Invalid types:")
+            print_msg("Invalid types model:")
             print_msg("type(Dataloader schema): {0}".format(type(dschema)))
             print_msg("type(Model schema): {0}".format(type(descr)))
             return False
@@ -158,9 +158,9 @@ class KipoiModelSchema:
 
         if (isinstance(dataloader_schema.targets, KipoiArraySchema) or
             len(dataloader_schema.targets) > 0) and not compatible_nestedmapping(dataloader_schema.targets,
-                                                                                 self.targets,
-                                                                                 KipoiArraySchema,
-                                                                                 verbose):
+                                                                                self.targets,
+                                                                                KipoiArraySchema,
+                                                                                verbose):
             return False
 
         return True

@@ -98,11 +98,6 @@ class Pipeline(object):
         self.dataloader_cls = dataloader_cls
 
         # validate if model and datalaoder_cls are compatible
-        # print(f"model schema inputs = {self.model.schema.inputs}")
-        # print(f"model schema targets = {self.model.schema.targets}")
-        # print(f"dataloaders inputs = {self.dataloader_cls.get_output_schema().inputs}")
-        # print(f"dataloaders targets = {self.dataloader_cls.get_output_schema().targets}")
-
         if not self.model.schema.compatible_with_schema(self.dataloader_cls.get_output_schema()):
             logger.warning("dataloader.output_schema is not compatible with model.schema")
         else:

@@ -116,10 +116,12 @@ class KipoiDataLoaderSchema:
 
     def __post_init__(self):
         self.inputs = KipoiArraySchema(**self.inputs)
-        self.targets = KipoiArraySchema(**self.targets)
-        self.metadata = OrderedDict(self.metadata)
-        for key, value in self.metadata.items():
-            self.metadata[key] = MetadataStruct(**value)
+        if self.targets:
+            self.targets = KipoiArraySchema(**self.targets)
+        if self.metadata:
+            self.metadata = OrderedDict(self.metadata)
+            for key, value in self.metadata.items():
+                self.metadata[key] = MetadataStruct(**value)
             
     def compatible_with_batch(self, batch, verbose=True):
         """Validate if the batch of data complies with the schema
@@ -178,7 +180,7 @@ class KipoiDataLoaderSchema:
                     return False
                 return all([compatible_nestedmapping(batch[i], descr[i], cls, verbose) for i in range(len(batch))])
 
-            print_msg("Invalid types:")
+            print_msg("Invalid types dataloader:")
             print_msg("type(batch): {0}".format(type(batch)))
             print_msg("type(descr): {0}".format(type(descr)))
             return False
