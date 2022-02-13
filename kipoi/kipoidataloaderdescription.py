@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, Mapping, Sequence
 from dataclasses import dataclass, field
 import enum
 from typing import Any, Dict, Tuple
@@ -158,10 +158,61 @@ class KipoiDataLoaderSchema:
 
             shapes match, batch-dim matches
             """
-            # TODO
-            pass
+            # we expect a numpy array/special class, a list or a dictionary
 
+            # Special case for the metadat
+            if isinstance(descr, cls):
+                return descr.compatible_with_batch(batch, verbose=verbose)
+            elif isinstance(batch, Mapping) and isinstance(descr, Mapping):
+                if not set(batch.keys()) == set(descr.keys()):
+                    print_msg("The dictionary keys don't match:")
+                    print_msg("batch: {0}".format(batch.keys()))
+                    print_msg("descr: {0}".format(descr.keys()))
+                    return False
+                return all([compatible_nestedmapping(batch[key], descr[key], cls, verbose) for key in batch])
+            elif isinstance(batch, Sequence) and isinstance(descr, Sequence):
+                if not len(batch) == len(descr):
+                    print_msg("Lengths dont match:")
+                    print_msg("len(batch): {0}".format(len(batch)))
+                    print_msg("len(descr): {0}".format(len(descr)))
+                    return False
+                return all([compatible_nestedmapping(batch[i], descr[i], cls, verbose) for i in range(len(batch))])
 
+            print_msg("Invalid types:")
+            print_msg("type(batch): {0}".format(type(batch)))
+            print_msg("type(descr): {0}".format(type(descr)))
+            return False
+
+        # inputs needs to be present allways
+        if "inputs" not in batch:
+            print_msg('not "inputs" in batch')
+            return False
+
+        if not compatible_nestedmapping(batch["inputs"], self.inputs, KipoiArraySchema, verbose):
+            return False
+
+        if "targets" in batch and not \
+                (len(batch["targets"]) == 0):  # unspecified
+            if self.targets is None:
+                # targets need to be specified if we want to use them
+                print_msg('self.targets is None')
+                return False
+            if not compatible_nestedmapping(batch["targets"], self.targets, KipoiArraySchema, verbose):
+                return False
+
+        # metadata needs to be present if it is defined in the description
+        if self.metadata is not None:
+            if "metadata" not in batch:
+                print_msg('not "metadata" in batch')
+                return False
+            if not compatible_nestedmapping(batch["metadata"], self.metadata, MetadataStruct, verbose):
+                return False
+        else:
+            if "metadata" in batch:
+                print_msg('"metadata" in batch')
+                return False
+
+        return True
 
 
 @dataclass

@@ -79,7 +79,8 @@ class KipoiModelSchema:
 
     def __post_init__(self):
         self.inputs = KipoiArraySchema(**self.inputs)
-
+        for key, value in self.targets.items():
+            self.targets[key] = KipoiArraySchema(**value)
 
     def compatible_with_schema(self, dataloader_schema, verbose=True):
         """Check the compatibility: model.schema <-> dataloader.output_schema
@@ -107,6 +108,7 @@ class KipoiModelSchema:
 
             shapes match, dschema-dim matches
             """
+
             if isinstance(descr, cls):
                 # Recursion stop
                 return descr.compatible_with_schema(dschema,
