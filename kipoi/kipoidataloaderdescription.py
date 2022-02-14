@@ -45,7 +45,7 @@ class MetadataType(enum.Enum):
 @dataclass
 class MetadataStruct:
     doc: str = "" 
-    type: str = MetadataType.GENOMIC_RANGES
+    type: str = MetadataType.GENOMIC_RANGES.value
     name: str = ""
 
     def compatible_with_batch(self, batch, verbose=True):
@@ -56,14 +56,13 @@ class MetadataStruct:
 
           verbose: print the fail reason
         """
-
         def print_msg(msg):
             if verbose:
                 print("MetadataStruct mismatch")
                 print(msg)
 
         # custom classess
-        if self.type == MetadataType.GENOMIC_RANGES:
+        if self.type == MetadataType.GENOMIC_RANGES.value:
             if not isinstance(batch, GenomicRanges):
                 # TODO - do we strictly require the GenomicRanges class?
                 #          - relates to metadata.py TODO about numpy_collate
@@ -92,7 +91,7 @@ class MetadataStruct:
         bshape = batch.shape[1:]
 
         # scalars
-        if self.type in {MetadataType.INT, MetadataType.STR, MetadataType.FLOAT}:
+        if self.type in {MetadataType.INT.value, MetadataType.STR.value, MetadataType.FLOAT.value}:
             if bshape != () and bshape != (1,):
                 print_msg("expecting a scalar, got an array with shape (without the batch axis): {0}".format(bshape))
                 return False
