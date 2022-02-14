@@ -109,7 +109,6 @@ def load_python_component_descr(component_dir, which="model"):
         return getattr(mod, "description")
     elif which == "dataloader":
         mod = importlib.import_module(component)
-        print(mod)
         return getattr(mod, "description")
     else:
         raise ValueError("which needs to be from {'model', 'dataloader'}")
