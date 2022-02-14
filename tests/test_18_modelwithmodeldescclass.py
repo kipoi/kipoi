@@ -79,4 +79,4 @@ def test_predict_to_file_without_metadata_tsv(tmpdir):
     assert 'preds/site_props/204' in preds.columns
     assert preds.at[0,'preds/site_props/204'] == pytest.approx(0.0002023181, rel=1e-05)
     preds_expected = pd.read_csv("example/models/mdcexample/expected_pred.tsv", sep="\t")
-    np.testing.assert_almost_equal(preds.to_numpy(), preds_expected.to_numpy())
+    np.testing.assert_almost_equal(preds.to_numpy(), preds_expected.to_numpy(), decimal=6)
