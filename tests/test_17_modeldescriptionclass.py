@@ -22,9 +22,9 @@ def model_parameters():
         {   
             'distal_prop':
             {
-                'shape': (1, )
+                'shape': (1, ),
+                'doc': 'Predicts proportion of cleavage occuring outside of the specified DNA range',
             },
-            'doc': 'Predicts proportion of cleavage occuring outside of the specified DNA range',
             'site_props':
             {
                 'shape': (205, ),
@@ -66,7 +66,7 @@ def test_basic_modeldescription_class(model_parameters):
                             dependencies=model_parameters[3], test=model_parameters[4])
     assert mdc.args['weights'].md5 == '4878981d84499eb575abd0f3b45570d3'
     assert mdc.schema.inputs.shape[0] == 205
-    assert mdc.schema.targets['distal_prop']['shape'][0] == 1
+    assert mdc.schema.targets['distal_prop'].shape[0] == 1
     assert mdc.dependencies.conda== ['python=3.9', 'tensorflow', 'keras>=2.0.4,<3']
     assert mdc.dependencies.pip == []
     assert mdc.test.expect['md5'] == '1adb12be84240ffb7d7ca556eeb19e01'
