@@ -4,7 +4,7 @@ import os
 import logging
 from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 import enum
-
+import numpy as np
 import kipoi_conda as kconda
 from kipoi_utils.utils import inherits_from, load_obj, override_default_kwargs, unique_list
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
