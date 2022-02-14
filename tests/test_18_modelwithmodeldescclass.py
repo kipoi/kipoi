@@ -8,19 +8,16 @@ from kipoi_utils.utils import cd
 def test_model():
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")
-    # model = kipoi.get_model("APARENT/site_probabilities", source="kipoi")
 
 def test_model_predict_example():
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")
-    # model = kipoi.get_model("APARENT/site_probabilities", source="kipoi")
     pred = model.pipeline.predict_example(batch_size=32)
 
 
 def test_model_predict():
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")
-    # model = kipoi.get_model("APARENT/site_probabilities", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
     with cd(model.source_dir):
         ret = model.pipeline.predict(dl_kwargs)
@@ -54,12 +51,11 @@ def test_predict_to_file_with_metadata_hdf5(tmpdir):
     assert len(preds_and_metadata['metadata']['ranges']['chr']) == 618
     assert len(preds_and_metadata['preds']['distal_prop']) == 618
     assert len(preds_and_metadata['preds']['site_props']) == 618
-
+    
 def test_predict_to_file_with_metadata_tsv(tmpdir):
     tsv_tmpfile_metadata = str(tmpdir.mkdir("example").join("out_with_metadata.tsv"))
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")
-    # model = kipoi.get_model("APARENT/site_probabilities", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
     with cd(model.source_dir):
         model.pipeline.predict_to_file(tsv_tmpfile_metadata, dl_kwargs,keep_metadata=True)
@@ -75,7 +71,6 @@ def test_predict_to_file_without_metadata_tsv(tmpdir):
     tsv_tmpfile = str(tmpdir.mkdir("example").join("out.tsv"))
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")
-    # model = kipoi.get_model("APARENT/site_probabilities", source="kipoi")
     dl_kwargs = model.default_dataloader.example_kwargs
     with cd(model.source_dir):
         model.pipeline.predict_to_file(tsv_tmpfile, dl_kwargs)
@@ -83,3 +78,5 @@ def test_predict_to_file_without_metadata_tsv(tmpdir):
     assert 'metadata/ranges/chr' not in preds.columns 
     assert 'preds/site_props/204' in preds.columns
     assert preds.at[0,'preds/site_props/204'] == pytest.approx(0.0002023181, rel=1e-05)
+    preds_expected = pd.read_csv("example/models/mdcexample/expected_pred.tsv", sep="\t")
+    np.testing.assert_almost_equal(preds.to_numpy(), preds_expected.to_numpy())
