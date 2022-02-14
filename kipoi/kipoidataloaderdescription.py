@@ -4,7 +4,7 @@ import enum
 from typing import Any, Dict, Tuple
 
 from kipoi.metadata import GenomicRanges
-from kipoi.kipoimodeldescription import KipoiModelInfo
+from kipoi.kipoimodeldescription import KipoiModelInfo, KipoiRemoteFile
 from kipoi.kipoidescriptionhelper import Dependencies, KipoiArraySchema
 
 
@@ -22,7 +22,8 @@ class KipoiDataLoaderArgument:
         self.tags = list(self.tags)
         if self.doc == "":
             logger.warning("doc empty for one of the dataloader `args` fields")
-
+        if self.example:
+            self.example = KipoiRemoteFile(**self.example)
 
 @enum.unique
 class ArraySpecialType(enum.Enum):
@@ -222,7 +223,7 @@ class KipoiDataLoaderDescription:
     """Class representation of dataloader.yaml
     """
     defined_as: str 
-    args: KipoiDataLoaderArgument
+    args: Dict
     output_schema: KipoiDataLoaderSchema
     type: str = "" 
     info: KipoiModelInfo = KipoiModelInfo()
@@ -230,10 +231,39 @@ class KipoiDataLoaderDescription:
     path: str = ''
     writers: Dict = field(default_factory=dict)
 
+    def __post_init__(self):
+        for key, value in self.args.items():
+            if 'name' not in value:
+                value['name'] = key
+            self.args[key] = KipoiDataLoaderArgument(**value)
+        self.args = OrderedDict(self.args)
+
     def get_example_kwargs(self):
-        # TODO
-        pass
+        if self.path is None:
+            path = "."
+        else:
+            path = self.path
+        return example_kwargs(self.args, os.path.join(os.path.dirname(path), "downloaded/example_files"))
 
     def download_example(self, output_dir, absolute_path=False, dry_run=False):
-        # TODO
-        pass
+        return example_kwargs(self.args,
+                              output_dir,
+                              absolute_path=absolute_path,
+                              dry_run=dry_run)
+
+    def print_kwargs(self, format_examples_json=False):
+        from kipoi_utils.external.related.fields import UNSPECIFIED
+        if not hasattr(self, "args"):
+            logger.warning("No keyword arguments defined for the given dataloader.")
+            return None
+
+        args = self.args
+        for k in args:
+            print("{0}:".format(k))
+            for elm in ["doc", "type", "optional", "example"]:
+                if hasattr(args[k], elm) and \
+                        (not isinstance(getattr(args[k], elm), UNSPECIFIED)):
+                    print("    {0}: {1}".format(elm, getattr(args[k], elm)))
+
+    print_args = print_kwargs
+
