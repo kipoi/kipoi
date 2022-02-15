@@ -23,10 +23,18 @@ def recursive_url_lookup(args):
         else:
             return OrderedDict([(k, recursive_url_lookup(v)) for k, v in args.items()])
     elif isinstance(args, list):
-        return [recursive_url_lookup(v, 'url') for v in args]
+        return [recursive_url_lookup(v) for v in args]
     else:
         return args
 
+def recursive_dict_lookup(args, kw='shape'):
+    if isinstance(args, dict):
+        if kw in args:
+            return KipoiArraySchema(**args)
+        else:
+            return OrderedDict([(k, recursive_dict_lookup(v, kw)) for k, v in args.items()])
+    else:
+        return args
 
 
 @dataclass
@@ -79,9 +87,7 @@ class KipoiModelSchema:
 
     def __post_init__(self):
         self.inputs = KipoiArraySchema(**self.inputs)
-        for key, value in self.targets.items():
-            self.targets[key] = KipoiArraySchema(**value)
-        self.targets = OrderedDict(self.targets)
+        self.targets = recursive_dict_lookup(self.targets)
 
     def compatible_with_schema(self, dataloader_schema, verbose=True):
         """Check the compatibility: model.schema <-> dataloader.output_schema
