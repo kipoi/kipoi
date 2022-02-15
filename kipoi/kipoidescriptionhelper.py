@@ -205,7 +205,7 @@ class KipoiArraySchema:
     name: str = ""
     special_type: str = ArraySpecialType.DNASeq
     associated_metadata: Tuple[str] = ()
-    column_labels: Tuple[str] = () 
+    column_labels: List[str] = field(default_factory=list)
 
     def print_msg(self, msg):
         if self.verbose:
@@ -222,24 +222,9 @@ class KipoiArraySchema:
 
     def __post_init__(self):
         self.associated_metadata = list(self.associated_metadata)
-        self.column_labels = list(self.column_labels)
-
-        from io import open
-
-        if len(self.column_labels) > 1:
-            # check that length is ok with columns
-            self._validate_list_column_labels()
-        elif len(self.column_labels) == 1:
-            label = self.column_labels.list[0]
-            import os
-            # check if path exists raise exception only test time, but only a warning in prediction time
-            if os.path.exists(label):
-                with open(label, "r", encoding="utf-8") as ifh:
-                    object.__setattr__(self, "column_labels", [l.rstrip() for l in ifh])
-            self._validate_list_column_labels()
-        else:
-            object.__setattr__(self, "column_labels", None)
-
+        if not self.column_labels:
+            self.column_labels = None
+        
     def compatible_with_batch(self, batch, verbose=True):
         """Checks compatibility with a particular batch of data
 
