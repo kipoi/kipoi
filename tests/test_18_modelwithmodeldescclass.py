@@ -5,9 +5,19 @@ import pytest
 import kipoi
 from kipoi_utils.utils import cd
 
-def test_model_torch():
+def test_model_torch(tmpdir):
     example_dir = "example/models/mdcexamplepytorch"
     model = kipoi.get_model(example_dir, source="dir")
+    dl_kwargs = model.default_dataloader.example_kwargs
+    tsv_tmpfile_metadata = str(tmpdir.mkdir("example").join("out_with_metadata.tsv"))
+    with cd(model.source_dir):
+        model.pipeline.predict_to_file(tsv_tmpfile_metadata, dl_kwargs,keep_metadata=True)
+    preds_and_metadata = pd.read_csv(tsv_tmpfile_metadata, sep='\t')
+    assert 'metadata/ranges/chr' in preds_and_metadata.columns 
+    assert 'preds/100' in preds_and_metadata.columns
+    assert len(preds_and_metadata['metadata/ranges/chr']) == 10
+    assert len(preds_and_metadata['preds/100']) == 10
+    assert preds_and_metadata.at[0,'preds/100'] == pytest.approx(0.4168229, rel=1e-05)
 
 def test_model():
     example_dir = "example/models/mdcexample"

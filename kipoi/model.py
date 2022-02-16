@@ -196,7 +196,6 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
         else:
             # new API
             try:
-                print(md.defined_as)
                 Mod = load_obj(md.defined_as)
             except ImportError:
                 if md.defined_as.startswith("kipoi.model."):
