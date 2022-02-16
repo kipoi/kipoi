@@ -14,8 +14,8 @@ args = {
         'module_file': 'pretrained_model_reloaded_th.py',
         'module_obj': 'model',
         'weights': {
-            'md5': '31902fb40125679e655b8b6d2747ada7',
-            'url': 'https://github.com/johli/aparent/raw/8a884f0bc4073ed0edd588f71b61a5be4a37e831/saved_models/aparent_large_lessdropout_all_libs_no_sampleweights.h5'
+            'md5': '4878981d84499eb575abd0f3b45570d3',
+            'url': 'https://zenodo.org/record/1466068/files/pretrained_model_reloaded_th.pth?download=1'
         }
     }
 default_dataloader = {
@@ -23,11 +23,10 @@ default_dataloader = {
   'default_args': {
     'alphabet_axis': 0,
     'auto_resize_len': 600,
-    'dtype': 'np.float32',
+    'dtype': np.float32,
     'dummy_axis': 2,
   }
 }
-
 schema = KipoiModelSchema(
     inputs = 
     {
@@ -67,4 +66,5 @@ info = KipoiModelInfo(authors=(Author("David R. Kelley", "davek44"), ), doc=doc,
                         cite_as="https://doi.org/10.1101/gr.200535.115", contributors=(Author("Roman Kreuzhuber", "krrome"), ), 
                         name='Basset', tags=('DNA accessibility'), version='0.1.0')
 
-description = KipoiModelDescription(args=args, schema=schema, info=info, defined_as='pytorch', dependencies=dependencies, test=test)
+description = KipoiModelDescription(args=args, schema=schema, info=info, type='pytorch', default_dataloader=default_dataloader,
+                                    dependencies=dependencies, test=test)

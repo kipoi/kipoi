@@ -5,6 +5,10 @@ import pytest
 import kipoi
 from kipoi_utils.utils import cd
 
+def test_model_torch():
+    example_dir = "example/models/mdcexamplepytorch"
+    model = kipoi.get_model(example_dir, source="dir")
+
 def test_model():
     example_dir = "example/models/mdcexample"
     model = kipoi.get_model(example_dir, source="dir")

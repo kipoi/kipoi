@@ -49,8 +49,11 @@ class KipoiDataLoaderImport:
     def get(self):
         """Get the dataloader
         """
+
         from kipoi.data import BaseDataLoader
         from copy import deepcopy
+        from kipoi_utils.external.related.fields import UNSPECIFIED
+
         obj = load_obj(self.defined_as)
 
         # check that it inherits from BaseDataLoader
@@ -63,9 +66,10 @@ class KipoiDataLoaderImport:
 
         # override also the values in the example in case
         # they were previously specified
-        for k, v in self.default_args.items():
-            if 'example' in obj.args[k] and obj.args[k]['example'] != '':
-                obj.args[k]['example'] = v
+        # TODO: How to modify this code with KipoiDataLoaderImport in mind?
+        for k, v in self.default_args.items():            
+            if not isinstance(obj.args[k].example, UNSPECIFIED):
+                obj.args[k].example = v
 
         return obj
 
@@ -188,7 +192,7 @@ class KipoiModelDescription:
     args: Dict
     schema: KipoiModelSchema 
     info: KipoiModelInfo
-    defined_as: str 
+    defined_as: str = "" 
     type: str = ""
     default_dataloader: str = '.'
     dependencies: Dependencies = Dependencies()

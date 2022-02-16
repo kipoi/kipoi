@@ -18,7 +18,7 @@ import yaml
 import importlib
 
 from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
-from .kipoimodeldescription import KipoiRemoteFile
+from .kipoimodeldescription import KipoiRemoteFile, KipoiDataLoaderImport
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -114,6 +114,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
     # TODO - validate md.default_dataloader <-> model
 
     # Load the dataloader
+
     if with_dataloader:
         if kwargs.get("default_dataloader_name"): #TODO: Maybe not use with_dataloader?
             default_dataloader_name = kwargs.get("default_dataloader_name")
@@ -121,9 +122,10 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
             mod = importlib.import_module(mod_name)
             default_dataloader = getattr(mod, func_name)
         # load from python
-        elif isinstance(md.default_dataloader, DataLoaderImport):
+        elif isinstance(md.default_dataloader, DataLoaderImport) or isinstance(md.default_dataloader, KipoiDataLoaderImport):
             with cd(source_dir):
                 default_dataloader = md.default_dataloader.get()
+
             default_dataloader.source_dir = source_dir
             # download util links if specified under default & override the default parameters
             override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
@@ -194,6 +196,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
         else:
             # new API
             try:
+                print(md.defined_as)
                 Mod = load_obj(md.defined_as)
             except ImportError:
                 if md.defined_as.startswith("kipoi.model."):
