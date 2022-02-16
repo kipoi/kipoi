@@ -41,6 +41,7 @@ dependencies:
   - keras>=2.2.4
   # for plugins (double check)
   - fastparquet
+  - pyarrow
   - zarr 
   - numcodecs
   # singularity

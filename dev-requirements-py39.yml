@@ -22,6 +22,7 @@ dependencies:
   - pandas
   - pillow
   - pip
+  - pyarrow
   - pybedtools
   - pybigwig
   - pyfaidx
