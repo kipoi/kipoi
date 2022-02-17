@@ -18,6 +18,7 @@ import yaml
 import importlib
 
 from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_default_args
+from .kipoimodeldescription import KipoiRemoteFile, KipoiDataLoaderImport
 from .pipeline import Pipeline
 import logging
 from distutils.version import LooseVersion
@@ -113,6 +114,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
     # TODO - validate md.default_dataloader <-> model
 
     # Load the dataloader
+
     if with_dataloader:
         if kwargs.get("default_dataloader_name"): #TODO: Maybe not use with_dataloader?
             default_dataloader_name = kwargs.get("default_dataloader_name")
@@ -120,9 +122,10 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
             mod = importlib.import_module(mod_name)
             default_dataloader = getattr(mod, func_name)
         # load from python
-        elif isinstance(md.default_dataloader, DataLoaderImport):
+        elif isinstance(md.default_dataloader, DataLoaderImport) or isinstance(md.default_dataloader, KipoiDataLoaderImport):
             with cd(source_dir):
                 default_dataloader = md.default_dataloader.get()
+
             default_dataloader.source_dir = source_dir
             # download util links if specified under default & override the default parameters
             override = download_default_args(default_dataloader.args, source.get_dataloader_download_dir(model))
@@ -161,7 +164,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
         # download url links if specified under args
         for k in md.args:
-            if isinstance(md.args[k], RemoteFile):
+            if isinstance(md.args[k], RemoteFile) or isinstance(md.args[k], KipoiRemoteFile):
                 output_dir = os.path.join(model_download_dir, k)
                 logger.info("Downloading model arguments {} from {}".format(k, md.args[k].url))
                 makedir_exist_ok(output_dir)
@@ -174,7 +177,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 # download the parameters and override the model
                 path = md.args[k].get_file(os.path.join(output_dir, fname))
                 md.args[k] = path
-        if md.type is not None:
+        if md.type not in [None, ""]:
             # old API
             if md.type == 'custom':
                 Mod = load_model_custom(**md.args)
@@ -204,6 +207,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 raise ImportError("Unable to import {}".format(md.defined_as))
             if not inherits_from(Mod, BaseModel):
                 raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
+
             mod = Mod(**md.args)
             for k, v in six.iteritems(AVAILABLE_MODELS):
                 if isinstance(mod, v):
