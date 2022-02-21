@@ -21,6 +21,7 @@ from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingF
     UNSPECIFIED
 from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
+from kipoi.kipoimodeldescription import KipoiRemoteFile
 from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_yaml,
                                load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
@@ -818,6 +819,7 @@ class DataLoaderImport(RelatedConfigMixin):
         # override also the values in the example in case
         # they were previously specified
         for k, v in six.iteritems(self.default_args):
+            
             if not isinstance(obj.args[k].example, UNSPECIFIED):
                 obj.args[k].example = v
 
@@ -869,9 +871,7 @@ class ModelDescription(RelatedLoadSaveMixin):
     def __attrs_post_init__(self):
         if self.defined_as is None and self.type is None:
             raise ValueError("Either defined_as or type need to be specified")
-        # parse args
         self.args = recursive_dict_parse(self.args, 'url', RemoteFile.from_config)
-
         # parse default_dataloader
         if isinstance(self.default_dataloader, dict):
             self.default_dataloader = DataLoaderImport.from_config(self.default_dataloader)
@@ -888,7 +888,7 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
     for k, v in six.iteritems(dl_args):
         if isinstance(v.example, UNSPECIFIED):
             continue
-        if isinstance(v.example, RemoteFile) and cache_path is not None:
+        if (isinstance(v.example, RemoteFile) or isinstance(v.example, KipoiRemoteFile)) and cache_path is not None:
             if absolute_path:
                 dl_dir = os.path.abspath(cache_path)
             else:
@@ -928,7 +928,8 @@ def download_default_args(args, output_dir):
     override = {}
     for k in args:
         # arg.default is None
-        if args[k].default is not None:
+        # TODO: Any need to do this when args[k] is a dict
+        if isinstance(args[k], kipoi.specs.DataLoaderArgument) and args[k].default is not None:
             if isinstance(args[k].default, UNSPECIFIED):
                 continue
             if isinstance(args[k].default, RemoteFile):
