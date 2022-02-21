@@ -413,8 +413,8 @@ class Source(object):
                 ("authors", d.info.authors),
                 ("doc", d.info.doc),
                 ("type", d.type),
-                ("inputs", to_namelist(d.get_output_schema().inputs)),
-                ("targets", to_namelist(d.get_output_schema().targets)),
+                ("inputs", to_namelist(d.output_schema.inputs)),
+                ("targets", to_namelist(d.output_schema.targets)),
                 ("license", d.info.license),
                 ("tags", d.info.tags),
             ])
