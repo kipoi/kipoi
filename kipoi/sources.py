@@ -8,6 +8,7 @@ import six
 import subprocess
 import logging
 from collections import OrderedDict
+from pathlib import Path
 from kipoi_utils.utils import unique_list, lfs_installed, get_file_path, cd, list_files_recursively, is_subdir, relative_path
 import pandas as pd
 import kipoi
@@ -648,6 +649,139 @@ class LocalSource(Source):
         return OrderedDict([("type", self.TYPE),
                             ("local_path", self.local_path)])
 
+class HFHubSource(Source):
+
+    TYPE = "hfhub"
+
+    def __init__(self, remote_url, local_path, auto_update=True, use_lfs=False, name=None):
+        """HuggingFaceHub Source
+        """
+        self.name = name
+        self.remote_url = remote_url
+        self.local_path = os.path.join(os.path.realpath(local_path), '')  # add trailing slash
+        self.local_source = LocalSource(self.local_path, name=name)
+
+        self.auto_update = auto_update
+        self._pulled = False
+        self.use_lfs = use_lfs
+        if self.use_lfs:
+            lfs_installed(raise_exception=False)
+
+    def clone(self, model, depth=1):
+        """Clone the self.remote_url into self.local_path
+
+        Args:
+          depth: --depth argument to git clone. If None, clone the whole history.
+        """
+        local_path_model = Path(self.local_path, model)
+        remote_path_model = Path(self.remote_url, model)
+        if os.path.exists(local_path_model) and os.listdir(local_path_model):
+            raise IOError("Directory {0} already exists and is non-empty".
+                          format(local_path_model))
+        logger.info("Cloning {remote} into {local}".
+                    format(remote=remote_path_model,
+                           local=local_path_model))
+        cmd = ["git", "clone"]
+        if depth is not None:
+            cmd.append("--depth={0}".format(depth))
+        cmd.append(remote_path_model)
+        cmd.append(local_path_model)
+        subprocess.call(cmd,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+        self._pulled = True
+
+    def pull_source(self, model):
+        """Pull/update the source
+        """
+        local_path_model = Path(self.local_path, model)
+        remote_path_model = Path(self.remote_url, model)
+
+        if not os.path.exists(local_path_model) or not os.listdir(local_path_model):
+            return self.clone(model)
+
+        if not self.auto_update:
+            logger.warning("Pulling source even though auto_update=False")
+
+        logger.info("Update {0}".
+                    format(local_path_model))
+        subprocess.call(["git",
+                         "pull"],
+                        cwd=local_path_model,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+
+        self._pulled = True
+
+    # def _commit_checkout(self, commit):
+    #     """Checkout a particular commit
+    #     """
+    #     logger.info("Update {0}".
+    #                 format(self.local_path))
+    #     subprocess.call(["git",
+    #                      "reset",
+    #                      "--hard",
+    #                      commit],
+    #                     cwd=self.local_path,
+    #                     env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+
+    # def _list_components(self, which="model"):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+    #     return self.local_source._list_components(which)
+
+    # def _get_component_dir(self, component, which='model'):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+    #     return self.local_source._get_component_dir(component, which)
+
+    # def _get_component_download_dir(self, component, which='model'):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+    #     return self.local_source._get_component_download_dir(component, which)
+
+    # def _pull_component(self, component, which="model"):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+
+    #     component_dir = self.local_source._get_component_dir(component, which)
+
+    #     if self.use_lfs:
+    #         # the only call to git-lfs -> pulling specific sub-files
+
+    #         lfs_installed(raise_exception=True)
+    #         # get a list of directories to source (relative to the local_path)
+    #         softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
+    #         # pull these softlinks
+    #         for pull_dir in [component, relative_path(component_dir, self.local_path)] + softlink_dirs:
+    #             cmd = ["git-lfs",
+    #                    "pull",
+    #                    "-I {0}/**".format(pull_dir)]
+    #             logger.info(" ".join(cmd))
+    #             subprocess.call(cmd,
+    #                             cwd=self.local_path,
+    #                             env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+
+    #     return self.local_source._pull_component(component, which)
+
+    # def _is_component(self, component, which="model"):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+    #     return self.local_source._is_component(component, which)
+
+    # def get_group_name(self, component, which='model'):
+    #     return self.local_source.get_group_name(component, which)
+
+    # def _get_component_descr(self, component, which="model"):
+    #     if not self._pulled and self.auto_update:
+    #         self.pull_source()
+    #     return self.local_source._get_component_descr(component, which)
+
+    # def get_config(self):
+    #     return OrderedDict([("type", self.TYPE),
+    #                         ("remote_url", self.remote_url),
+    #                         ("local_path", self.local_path),
+    #                         ("auto_update", self.auto_update),
+    #                         ("use_lfs", self.use_lfs)])
+
 
 class GitSource(Source):
 
@@ -676,7 +810,6 @@ class GitSource(Source):
         if os.path.exists(self.local_path) and os.listdir(self.local_path):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(self.local_path))
-
         logger.info("Cloning {remote} into {local}".
                     format(remote=self.remote_url,
                            local=self.local_path))
@@ -880,7 +1013,7 @@ class GithubPermalinkSource(Source):
 
 # --------------------------------------------
 # all available models
-source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource]
+source_classes = [GitLFSSource, GitSource, LocalSource, GithubPermalinkSource, HFHubSource]
 
 
 def load_source(config, name):

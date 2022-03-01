@@ -10,7 +10,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 import six
-from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
+from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource, HFHubSource
 from kipoi_utils.utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 
@@ -38,7 +38,7 @@ def model_sources():
             "kipoi": GitSource(remote_url="https://github.com/kipoi/models.git",
                                local_path=os.path.join(_kipoi_dir, "models/"),
                                auto_update=True),
-            "kipoi-hfhub": GitSource(remote_url="https://huggingface.co/haimasree",
+            "kipoi-hfhub": HFHubSource(remote_url="https://huggingface.co/haimasree",
                                        local_path=os.path.join(_kipoi_dir, "hfhubmodels/")),
             "github-permalink": GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")),
         }
