@@ -27,7 +27,8 @@ requirements = [
     "tinydb",
     "kipoi-utils>=0.3.8",
     "kipoi-conda>=0.1.6",
-    "deprecation>=2.0.6"
+    "deprecation>=2.0.6",
+    "dataclasses"
 ]
 
 test_requirements = [
@@ -49,7 +50,8 @@ test_requirements = [
     "zarr>=2.2.0",  # test_161_writers.py
     # "cyvcf2>=0.10.0",        # test_20_cli_examples.py (and others) (fails on circle-ci)
     "kipoi-interpret>=0.1.2",  # test_42_kipoi_interpret.py
-    "concise>=0.6.6" # Necessary for tests under folder tests/legacy-keras. Does not work for python>=3.8
+    "concise>=0.6.6", # Necessary for tests under folder tests/legacy-keras. Does not work for python>=3.8
+    "dataclasses"
 ]
 
 setup(

@@ -7,7 +7,7 @@ import pytest
 from kipoi.cli.singularity import singularity_command
 
 def test_singularity_command_dry_run():
-    singularity_command(['kipoi', 'test', 'Basset', '--source=kipoi'], 'Basset', {}, dry_run=True)
+    singularity_command(['kipoi', 'test', 'AttentiveChrome/E003', '--source=kipoi'], 'AttentiveChrome', {}, dry_run=True)
 
 def test_singularity_command_non_existing_model():
     singularity_command(['kipoi', 'test', 'abc', '--source=kipoi'], 'abc', {})
