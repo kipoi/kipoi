@@ -39,7 +39,7 @@ def model_sources():
                                local_path=os.path.join(_kipoi_dir, "models/"),
                                auto_update=True),
             "kipoi-hfhub": GitSource(remote_url="https://huggingface.co/haimasree",
-                                       local_path=os.path.join(_kipoi_dir, "hfhubmodels/"),
+                                       local_path=os.path.join(_kipoi_dir, "hfhubmodels/")),
             "github-permalink": GithubPermalinkSource(local_path=os.path.join(_kipoi_dir, "github-permalink/")),
         }
 

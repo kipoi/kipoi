@@ -5,9 +5,23 @@ import pytest
 import sys
 import subprocess as sp
 from kipoi.cli.source_test import modified_files
-from kipoi.sources import list_softlink_dependencies, LocalSource
+from kipoi.sources import list_softlink_dependencies, LocalSource, GitSource
 import kipoi
 import os
+
+
+def test_huggingsource():
+    kipoi.get_model("DeepSTARR", source="kipoi-hfhub")
+    # MODEL = "DeepSTARR"
+    # try:
+    #     proc = sp.Popen(["python", os.path.abspath("./kipoi/__main__.py"), "test",
+    #                       "kipoi-hfhub",
+    #                       f"-k {MODEL}"], stdout=sp.PIPE, stderr=sp.PIPE)
+    #     proc.wait()
+    #     stdout, stderr = proc.communicate()
+    # except sp.CalledProcessError as err:
+    #     print(f"Error: {err.stderr}")
+
 
 def test_singularity_non_kipoi_src_fail():
     returncode = sp.call(["python", os.path.abspath("./kipoi/__main__.py"),
