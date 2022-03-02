@@ -708,75 +708,60 @@ class HFHubSource(Source):
 
         self._pulled = True
 
-    # def _commit_checkout(self, commit):
-    #     """Checkout a particular commit
-    #     """
-    #     logger.info("Update {0}".
-    #                 format(self.local_path))
-    #     subprocess.call(["git",
-    #                      "reset",
-    #                      "--hard",
-    #                      commit],
-    #                     cwd=self.local_path,
-    #                     env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
+    def _commit_checkout(self, commit):
+        """Checkout a particular commit
+        """
+        logger.info("Update {0}".
+                    format(self.local_path))
+        subprocess.call(["git",
+                         "reset",
+                         "--hard",
+                         commit],
+                        cwd=self.local_path,
+                        env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
-    # def _list_components(self, which="model"):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
-    #     return self.local_source._list_components(which)
+    def _list_components(self, which="model"):
+        if not self._pulled and self.auto_update:
+            self.pull_source()
+        return self.local_source._list_components(which)
 
     def _get_component_dir(self, component, which='model'):
         if not self._pulled and self.auto_update:
             self.pull_source()
         return self.local_source._get_component_dir(component, which)
 
-    # def _get_component_download_dir(self, component, which='model'):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
-    #     return self.local_source._get_component_download_dir(component, which)
+    def _get_component_download_dir(self, component, which='model'):
+        if not self._pulled and self.auto_update:
+            self.pull_source()
+        return self.local_source._get_component_download_dir(component, which)
 
     def _pull_component(self, component, which="model"):
         if not self._pulled and self.auto_update:
             self.pull_source(component)
 
         component_dir = self.local_source._get_component_dir(component, which)
-    #     if self.use_lfs:
-    #         # the only call to git-lfs -> pulling specific sub-files
-
-    #         lfs_installed(raise_exception=True)
-    #         # get a list of directories to source (relative to the local_path)
-    #         softlink_dirs = list(list_softlink_dependencies(component_dir, self.local_path))
-    #         # pull these softlinks
-    #         for pull_dir in [component, relative_path(component_dir, self.local_path)] + softlink_dirs:
-    #             cmd = ["git-lfs",
-    #                    "pull",
-    #                    "-I {0}/**".format(pull_dir)]
-    #             logger.info(" ".join(cmd))
-    #             subprocess.call(cmd,
-    #                             cwd=self.local_path,
-    #                             env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
         return self.local_source._pull_component(component, which)
 
-    # def _is_component(self, component, which="model"):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
-    #     return self.local_source._is_component(component, which)
+    def _is_component(self, component, which="model"):
+        if not self._pulled and self.auto_update:
+            self.pull_source()
+        return self.local_source._is_component(component, which)
 
-    # def get_group_name(self, component, which='model'):
-    #     return self.local_source.get_group_name(component, which)
+    def get_group_name(self, component, which='model'):
+        return self.local_source.get_group_name(component, which)
 
-    # def _get_component_descr(self, component, which="model"):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
-    #     return self.local_source._get_component_descr(component, which)
+    def _get_component_descr(self, component, which="model"):
+        if not self._pulled and self.auto_update:
+            self.pull_source()
+        return self.local_source._get_component_descr(component, which)
 
-    # def get_config(self):
-    #     return OrderedDict([("type", self.TYPE),
-    #                         ("remote_url", self.remote_url),
-    #                         ("local_path", self.local_path),
-    #                         ("auto_update", self.auto_update),
-    #                         ("use_lfs", self.use_lfs)])
+    def get_config(self):
+        return OrderedDict([("type", self.TYPE),
+                            ("remote_url", self.remote_url),
+                            ("local_path", self.local_path),
+                            ("auto_update", self.auto_update),
+                            ("use_lfs", self.use_lfs)])
 
 
 class GitSource(Source):

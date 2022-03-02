@@ -106,8 +106,6 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
 
     # get model description
     md = source.get_model_descr(model)
-    print(md)
-    exit()
     # TODO - is there a way to prevent code duplication here?
     # TODO - possible to inherit from both classes and call the corresponding inits?
     # --------------------------------------------
