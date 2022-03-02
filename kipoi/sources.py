@@ -667,23 +667,20 @@ class HFHubSource(Source):
         if self.use_lfs:
             lfs_installed(raise_exception=False)
 
-    def clone(self, model, depth=1):
+    def clone(self, model):
         """Clone the self.remote_url into self.local_path
 
         Args:
-          depth: --depth argument to git clone. If None, clone the whole history.
+          model: Name of the model
         """
-        local_path_model = Path(self.local_path, model)
-        remote_path_model = Path(self.remote_url, model)
+        local_path_model = f"{self.local_path}/{model}"
+        remote_path_model = f"{self.remote_url}/{model}"
+
         if os.path.exists(local_path_model) and os.listdir(local_path_model):
             raise IOError("Directory {0} already exists and is non-empty".
                           format(local_path_model))
-        logger.info("Cloning {remote} into {local}".
-                    format(remote=remote_path_model,
-                           local=local_path_model))
+        logger.info(f"Cloning {remote_path_model} into {local_path_model}")
         cmd = ["git", "clone"]
-        if depth is not None:
-            cmd.append("--depth={0}".format(depth))
         cmd.append(remote_path_model)
         cmd.append(local_path_model)
         subprocess.call(cmd,
@@ -693,8 +690,8 @@ class HFHubSource(Source):
     def pull_source(self, model):
         """Pull/update the source
         """
-        local_path_model = Path(self.local_path, model)
-        remote_path_model = Path(self.remote_url, model)
+        local_path_model = f"{self.local_path}/{model}"
+        remote_path_model = f"{self.remote_url}/{model}"
 
         if not os.path.exists(local_path_model) or not os.listdir(local_path_model):
             return self.clone(model)
@@ -738,11 +735,11 @@ class HFHubSource(Source):
     #         self.pull_source()
     #     return self.local_source._get_component_download_dir(component, which)
 
-    # def _pull_component(self, component, which="model"):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
+    def _pull_component(self, component, which="model"):
+        if not self._pulled and self.auto_update:
+            self.pull_source(component)
 
-    #     component_dir = self.local_source._get_component_dir(component, which)
+        component_dir = self.local_source._get_component_dir(component, which)
 
     #     if self.use_lfs:
     #         # the only call to git-lfs -> pulling specific sub-files
@@ -760,7 +757,7 @@ class HFHubSource(Source):
     #                             cwd=self.local_path,
     #                             env=dict(os.environ, GIT_LFS_SKIP_SMUDGE="1"))
 
-    #     return self.local_source._pull_component(component, which)
+        return self.local_source._pull_component(component, which)
 
     # def _is_component(self, component, which="model"):
     #     if not self._pulled and self.auto_update:
