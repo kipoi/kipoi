@@ -725,10 +725,10 @@ class HFHubSource(Source):
     #         self.pull_source()
     #     return self.local_source._list_components(which)
 
-    # def _get_component_dir(self, component, which='model'):
-    #     if not self._pulled and self.auto_update:
-    #         self.pull_source()
-    #     return self.local_source._get_component_dir(component, which)
+    def _get_component_dir(self, component, which='model'):
+        if not self._pulled and self.auto_update:
+            self.pull_source()
+        return self.local_source._get_component_dir(component, which)
 
     # def _get_component_download_dir(self, component, which='model'):
     #     if not self._pulled and self.auto_update:
@@ -740,7 +740,6 @@ class HFHubSource(Source):
             self.pull_source(component)
 
         component_dir = self.local_source._get_component_dir(component, which)
-
     #     if self.use_lfs:
     #         # the only call to git-lfs -> pulling specific sub-files
 
