@@ -59,13 +59,6 @@ In detail, `kipoi test <model>` checks for three things:
 
 
 ### env 
-#### install
-Install model dependencies
-
-```bash
-kipoi env install Basset
-```
-
 #### create
 Create a new conda environment for the model
 
