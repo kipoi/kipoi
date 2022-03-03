@@ -126,7 +126,9 @@ def list_models(sources=None):
 
     pd_list = []
     for name, source in six.iteritems(sources):
-        if name != "dir":
+        if name not in ["dir", "kipoi-hfhub"]: 
+            # TODO:This needs to be addressed when we have a solution for
+            # how to represent list of models
             pd_list.append(get_df(name, source))
 
     return pd.concat(pd_list)[pd_list[0].columns]

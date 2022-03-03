@@ -38,7 +38,7 @@ def test_list_models():
                         'license', 'cite_as', 'trained_on', 'training_procedure', 'tags']
     assert df_model_columns == list(df.columns)
 
-    #
+    
     df_all = kipoi.list_models()
     assert ["source"] + df_model_columns == list(df_all.columns)
 
