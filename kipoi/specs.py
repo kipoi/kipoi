@@ -261,21 +261,21 @@ class ModelSchema(RelatedConfigMixin):
                                                     name_self="Model",
                                                     name_schema="Dataloader",
                                                     verbose=verbose)
-            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
+            elif isinstance(dschema, collections.abc.Mapping) and isinstance(descr, collections.abc.Mapping):
                 if not set(descr.keys()).issubset(set(dschema.keys())):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("dataloader fields: {0}".format(dschema.keys()))
                     print_msg("model fields: {0}".format(descr.keys()))
                     return False
                 return all([compatible_nestedmapping(dschema[key], descr[key], cls, verbose) for key in descr])
-            elif isinstance(dschema, collections.Sequence) and isinstance(descr, collections.Sequence):
+            elif isinstance(dschema, collections.abc.Sequence) and isinstance(descr, collections.abc.Sequence):
                 if not len(descr) <= len(dschema):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("len(dataloader): {0}".format(len(dschema)))
                     print_msg("len(model): {0}".format(len(descr)))
                     return False
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
-            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Sequence):
+            elif isinstance(dschema, collections.abc.Mapping) and isinstance(descr, collections.abc.Sequence):
                 if not len(descr) <= len(dschema):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("len(dataloader): {0}".format(len(dschema)))
@@ -448,14 +448,14 @@ class DataLoaderSchema(RelatedConfigMixin):
             # Special case for the metadat
             if isinstance(descr, cls):
                 return descr.compatible_with_batch(batch, verbose=verbose)
-            elif isinstance(batch, collections.Mapping) and isinstance(descr, collections.Mapping):
+            elif isinstance(batch, collections.abc.Mapping) and isinstance(descr, collections.abc.Mapping):
                 if not set(batch.keys()) == set(descr.keys()):
                     print_msg("The dictionary keys don't match:")
                     print_msg("batch: {0}".format(batch.keys()))
                     print_msg("descr: {0}".format(descr.keys()))
                     return False
                 return all([compatible_nestedmapping(batch[key], descr[key], cls, verbose) for key in batch])
-            elif isinstance(batch, collections.Sequence) and isinstance(descr, collections.Sequence):
+            elif isinstance(batch, collections.abc.Sequence) and isinstance(descr, collections.abc.Sequence):
                 if not len(batch) == len(descr):
                     print_msg("Lengths dont match:")
                     print_msg("len(batch): {0}".format(len(batch)))
