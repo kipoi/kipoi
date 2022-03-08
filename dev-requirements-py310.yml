@@ -1,6 +1,5 @@
 name: kipoi-dev
 channels:
-  - pytorch
   - conda-forge
   - bioconda
   - defaults
@@ -27,7 +26,6 @@ dependencies:
   - pybigwig
   - pyfaidx
   - pysam
-  - pytorch
   - pytest
   - pytest-cov
   - pyvcf
@@ -41,6 +39,7 @@ dependencies:
   - keras
   - pkgconfig
   - pip:
+    - pytorch # Not available in conda yet
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
