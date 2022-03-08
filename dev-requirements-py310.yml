@@ -1,0 +1,46 @@
+name: kipoi-dev
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - bedtools
+  - cookiecutter
+  - cython
+  - cyvcf2
+  - fastparquet
+  - git
+  - git-lfs
+  - h5py
+  - hdf5
+  - htslib
+  - matplotlib
+  - numcodecs
+  - numpy
+  - pandas
+  - pillow
+  - pip
+  - pyarrow
+  - pybedtools
+  - pybigwig
+  - pyfaidx
+  - pysam
+  - pytest
+  - pytest-cov
+  - pyvcf
+  - pyyaml
+  - scikit-learn
+  - scipy
+  - setuptools
+  - wheel
+  - zarr
+  - tensorflow
+  - keras
+  - pkgconfig
+  - pip:
+    - pytorch # Not available in conda yet
+    - kipoi-conda
+    - kipoi-interpret
+    - kipoi-utils
+    - kipoiseq
