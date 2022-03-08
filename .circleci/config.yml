@@ -73,12 +73,12 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-  install_from_dev_requirements_py39: &install_from_dev_requirements_py39
+  install_from_dev_requirements_py310: &install_from_dev_requirements_py310
     run:
-      name: Install from dev-requirements-py39.yml
+      name: Install from dev-requirements-py310.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py39.yml
+        conda env create --name kipoi-env -f dev-requirements-py310.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -119,7 +119,7 @@ variables:
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
-  activate_and_run_tests_py39: &activate_and_run_tests_py39
+  activate_and_run_tests_py310: &activate_and_run_tests_py310
     run:
       name: Run tests
       command: |
@@ -227,7 +227,7 @@ jobs:
       # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
-  test-py39-yml:
+  test-py310-yml:
     machine: # executor type
       image: ubuntu-2004:202104-01
     resource_class: medium
@@ -237,11 +237,11 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
+      - *install_from_dev_requirements_py310
       - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests_py39
+      - *activate_and_run_tests_py310
       # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
@@ -283,7 +283,7 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
+      - *install_from_dev_requirements_py310
       - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -313,7 +313,7 @@ jobs:
       - *install_conda
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
+      - *install_from_dev_requirements_py310
       - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
@@ -340,16 +340,10 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - test-py36-yml
-      - test-py37-yml
-      - test-py38-yml
-      - test-py39-yml
+      - test-py310-yml
       - build-deploy-docs:
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-py310-yml
           filters:
             branches:
               only:
@@ -357,10 +351,7 @@ workflows:
                 - test_deployment_script
       - test-deploy-pypi:
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-py310-yml
           filters:
 #            tags:
 #              only: /^v.*/
@@ -370,10 +361,7 @@ workflows:
                 - test_deployment_script
       - productive-deploy-pypi:
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-py310-yml
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -394,4 +382,4 @@ workflows:
       - test-py36-yml
       - test-py37-yml
       - test-py38-yml
-      - test-py39-yml
+      - test-py310-yml
