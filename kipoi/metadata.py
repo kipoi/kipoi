@@ -3,7 +3,7 @@
 All classes inherit from `collections.abc.Mapping` which allows to use
 `kipoi.data_utils.numpy_collate` on them (e.g. they behave as a dictionary).
 """
-from collections import Mapping
+from collections.abc import Mapping
 from kipoi_utils.data_utils import numpy_collate, numpy_collate_concat
 
 import pandas as pd
