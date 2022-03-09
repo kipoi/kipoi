@@ -11,6 +11,9 @@ dependencies:
   - h5py
   - numpy
   - pandas
+  - git
+  - git-lfs
+  - gitpython
   - pip
   - pip:
     - pytest
