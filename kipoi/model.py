@@ -2,7 +2,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from io import open
 
-from collections import OrderedDict, Mapping
+from collections import OrderedDict
+from collections.abc import Mapping
 import sys
 import os
 import yaml

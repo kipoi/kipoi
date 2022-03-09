@@ -6,41 +6,30 @@ channels:
 dependencies:
   - python=3.10
   - bedtools
-  - cookiecutter
   - cython
-  - cyvcf2
-  - fastparquet
-  - git
-  - git-lfs
-  - h5py
   - hdf5
-  - htslib
-  - matplotlib
-  - numcodecs
+  - h5py
   - numpy
   - pandas
-  - pillow
+  - git
+  - git-lfs
+  - gitpython
   - pip
-  - pyarrow
-  - pybedtools
-  - pybigwig
-  - pyfaidx
-  - pysam
-  - pytest
-  - pytest-cov
-  - pyvcf
-  - pyyaml
-  - scikit-learn
-  - scipy
-  - setuptools
-  - wheel
-  - zarr
-  - tensorflow
-  - keras
-  - pkgconfig
   - pip:
-    - pytorch # Not available in conda yet
+    - pyarrow
+    - zarr
+    - pytest
+    - pytest-cov
+    - tensorflow
+    - keras
+    - scikit-learn
+    - pkgconfig
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
+    - cyvcf2
+    - pybedtools
+    - pybigwig
+    - pyfaidx
+

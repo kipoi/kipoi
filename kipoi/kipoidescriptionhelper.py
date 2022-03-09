@@ -1,4 +1,5 @@
-from collections import Mapping, OrderedDict, Sequence
+from collections.abc import Mapping, Sequence
+from collections import OrderedDict
 from dataclasses import dataclass, field
 import os
 import logging
