@@ -16,6 +16,7 @@ dependencies:
   - gitpython
   - pip
   - pip:
+    - zarr
     - pytest
     - pytest-cov
     - tensorflow
