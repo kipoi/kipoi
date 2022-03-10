@@ -16,7 +16,6 @@ dependencies:
   - pytest-sugar
   - pytest-cov>=2.6.1
   - deprecation>=2.0.6
-  #- coveralls
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - coveralls
   - scipy>=1.0.0
