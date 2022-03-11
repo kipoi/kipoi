@@ -83,6 +83,16 @@ variables:
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
+  install_from_dev_requirements_py310: &install_from_dev_requirements_py310
+    run:
+      name: Install from dev-requirements-py310.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env -f dev-requirements-py310.yml
+        source activate kipoi-env
+        pip install -e .
+        git lfs install
+        # ln -s /opt/conda/bin/python /usr/bin/python     
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -127,6 +137,14 @@ variables:
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
+  activate_and_run_tests_py310: &activate_and_run_tests_py310
+    run:
+      name: Run tests
+      command: |
+        source activate kipoi-env
+        mkdir test-reports
+        $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
+      no_output_timeout: 30m 
   run_coveralls: &run_coveralls
     run:
       name: run coveralls
@@ -188,7 +206,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
-      - *activate_and_run_coveralls
+#       - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-py37-yml:
@@ -245,7 +263,24 @@ jobs:
       # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
-
+  test-py310-yml:
+    machine: # executor type
+      image: ubuntu-2004:202104-01
+    resource_class: medium
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - *install_conda
+      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_sys_deps # Installed in install_conda step
+      - *install_from_dev_requirements_py310
+      - *install_singularity
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests_py310
+      # - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
@@ -344,6 +379,7 @@ workflows:
       - test-py37-yml
       - test-py38-yml
       - test-py39-yml
+      - test-py310-yml
       - build-deploy-docs:
           requires:
             - test-py36-yml
