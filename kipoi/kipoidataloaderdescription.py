@@ -1,4 +1,5 @@
-from collections import OrderedDict, Mapping, Sequence
+from collections import OrderedDict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 import enum
 from typing import Any, Dict, Tuple
