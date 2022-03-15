@@ -13,7 +13,7 @@
 	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
 </a>
 <a href=https://www.python.org/downloads>
-	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-cyan style="max-height:20px;width:auto;">
+	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9%20%7C%203.10-cyan style="max-height:20px;width:auto;">
 </a>
 <a href=https://opensource.org/licenses/MIT>
 	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
@@ -36,7 +36,7 @@ This repository implements a python package and a command-line interface (CLI) t
 ## Installation
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.9. 
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.10. 
 
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
@@ -51,10 +51,10 @@ For systems using python 3.6 and 3.7, pretrained kipoi models of type kipoi.mode
 ```bash
 pip install h5py==2.10.0
 ```
-This is not a problem with systems using python 3.8 and 3.9.
+This is not a problem with systems using python >=3.8<=3.10.
 More information available [here](https://github.com/tensorflow/tensorflow/issues/44467)
 
-For systems using python 3.8 and 3.9, it is necessary to install hdf5 and pkgconfig prior to installing kipoi.
+For systems using python >=3.8<=3.10, it is necessary to install hdf5 and pkgconfig prior to installing kipoi.
 
 ```bash
 conda install --yes -c conda-forge hdf5 pkgconfig
