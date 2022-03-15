@@ -16,6 +16,7 @@ dependencies:
   - gitpython
   - pip
   - pip:
+    - torch
     - pyarrow
     - zarr
     - pytest
