@@ -9,7 +9,6 @@ import kipoi  # for .config module
 from kipoi_utils import (load_module, cd, merge_dicts, read_pickle, override_default_kwargs,
                          load_obj, inherits_from, infer_parent_class, makedir_exist_ok)
 import abc
-import six
 import numpy as np
 import json
 import yaml
@@ -208,7 +207,7 @@ def get_model(model, source="kipoi", with_dataloader=True, **kwargs):
                 raise ValueError("Model {} needs to inherit from kipoi.model.BaseModel".format(md.defined_as))
 
             mod = Mod(**md.args)
-            for k, v in six.iteritems(AVAILABLE_MODELS):
+            for k, v in AVAILABLE_MODELS.items():
                 if isinstance(mod, v):
                     md.type = k
             if md.type is None:
@@ -474,7 +473,7 @@ class KerasModel(BaseModel, GradientMixin, LayerActivationMixin):
                 else:
                     selected_layer = self.model.get_layer(index=layer - 1)
 
-            elif isinstance(layer, six.string_types):
+            elif isinstance(layer, str):
                 selected_layer = self.model.get_layer(name=layer)
             selected_layers = [selected_layer]
             # get the outputs from all nodes of the selected layer (selecting output from individual output nodes
@@ -927,7 +926,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         if module_class is not None:
             kwargs = {}
             if module_kwargs is not None:
-                if isinstance(module_kwargs, six.string_types):
+                if isinstance(module_kwargs, str):
                     kwargs = yaml.safe_load(module_kwargs)
                 else:
                     kwargs = module_kwargs
@@ -1164,11 +1163,10 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     @classmethod
     def get_grad_tens(self, forward_values, filter_slices, filter_func):
         import torch
-        import six
         if (filter_slices is None) and (filter_func is None):
             raise Exception("Either filter slices or filter function have to be defined")
         if filter_func is not None:
-            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+            if not (isinstance(filter_func, str) and filter_func in self.allowed_functions):
                 raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
 
         # perform given operations in numpy, simpler implementation...
@@ -1400,7 +1398,7 @@ class OldPyTorchModel(PyTorchModel):
             if callable(build_fn):
                 gen_fn_callable = build_fn
 
-            elif isinstance(build_fn, six.string_types):
+            elif isinstance(build_fn, str):
                 file_path = file
                 obj_name = build_fn
                 gen_fn_callable = getattr(load_module(file_path), obj_name)
@@ -1499,7 +1497,7 @@ def get_op_outputs(graph, node_names):
     """
     if isinstance(node_names, dict):
         return {k: graph.get_operation_by_name(v).outputs[0]
-                for k, v in six.iteritems(node_names)}
+                for k, v in node_names.items()}
     elif isinstance(node_names, list):
         return [graph.get_operation_by_name(v).outputs[0]
                 for v in node_names]
@@ -1595,7 +1593,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             # Load the feed dictionary from the pickle file
             const_feed_dict = read_pickle(self.const_feed_dict_pkl)
             self.const_feed_dict = {self.graph.get_operation_by_name(k).outputs[0]: v
-                                    for k, v in six.iteritems(const_feed_dict)}
+                                    for k, v in const_feed_dict.items()}
         else:
             self.const_feed_dict = {}
 
@@ -1604,7 +1602,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
         if isinstance(self.input_nodes, dict):
             # dict
             assert isinstance(x, dict)
-            feed_dict = {v: x[k] for k, v in six.iteritems(self.input_ops)}
+            feed_dict = {v: x[k] for k, v in self.input_ops.items()}
         elif isinstance(self.input_nodes, list):
             # list
             assert isinstance(x, list)
@@ -1624,11 +1622,10 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
 
     @classmethod
     def get_grad_tens(self, forward_values, filter_slices, filter_func):
-        import six
         if (filter_slices is None) and (filter_func is None):
             raise Exception("Either filter slices or filter function have to be defined")
         if filter_func is not None:
-            if not (isinstance(filter_func, six.string_types) and filter_func in self.allowed_functions):
+            if not (isinstance(filter_func, str) and filter_func in self.allowed_functions):
                 raise Exception("filter_func has to be a string within %s" % str(self.allowed_functions))
         # perform given operations in numpy, simpler implementation...
         if filter_slices is not None:
@@ -1693,7 +1690,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
         feed_dict = self._build_feed_dict(x)
 
         # get the correct layer with respect to which the gradients should be calculated
-        assert isinstance(layer, six.string_types)
+        assert isinstance(layer, str)
         if not final_layer:
             new_target_ops = get_op_outputs(self.graph, layer)
         else:
@@ -1726,7 +1723,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             # dict
             grad_pred_formatted = {}
             for op, ret_val in zip(input_ops, grad_pred):
-                for k, v in six.iteritems(self.input_ops):
+                for k, v in self.input_ops.items():
                     if v == op:
                         grad_pred_formatted[k] = ret_val
         elif isinstance(self.input_nodes, list):

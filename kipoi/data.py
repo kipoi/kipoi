@@ -2,7 +2,6 @@ import sys
 import re
 import os
 import abc
-import six
 import textwrap
 import inspect
 from collections import OrderedDict
@@ -210,7 +209,7 @@ def kipoi_dataloader(override=dict()):
         dl_descr = DataLoaderDescription.from_config(yaml_dict)
 
         # override parameters
-        for k, v in six.iteritems(override):
+        for k, v in override.items():
             rsetattr(dl_descr, k, v)
 
         # setup optional parameters

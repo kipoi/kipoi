@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 import sys
 import os
-import six
 import subprocess
 import logging
 from collections import OrderedDict
@@ -459,7 +458,7 @@ class Source(object):
         conf.pop("type")
 
         kwargs = ', '.join('{0}={1}'.format(k, repr(v))
-                           for k, v in six.iteritems(conf))
+                           for k, v in conf.items())
         return "{0}({1})".format(cls_name, kwargs)
 
 
@@ -528,7 +527,7 @@ class LocalSource(Source):
     def _list_components(self, which="model"):
         self.cache_component_list(force=self._local_path is None)
         return self.component_yaml_list[which] + [os.path.join(k, c)
-                                                  for k, grp in six.iteritems(self.component_group_list[which])
+                                                  for k, grp in self.component_group_list[which].items()
                                                   for c in grp._list_components()]
 
     def get_group_name(self, component, which='model'):

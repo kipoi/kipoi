@@ -10,7 +10,6 @@ from kipoi.cli.parser_utils import add_model, add_source, add_dataloader, add_da
 from kipoi.sources import list_subcomponents
 from ..data import numpy_collate_concat
 # import h5py
-# import six
 import numpy as np
 import pandas as pd
 from tqdm import tqdm

@@ -8,7 +8,6 @@ from collections import OrderedDict
 import enum
 import numpy as np
 import related
-import six
 
 import kipoi
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
@@ -815,7 +814,7 @@ class DataLoaderImport(RelatedConfigMixin):
 
         # override also the values in the example in case
         # they were previously specified
-        for k, v in six.iteritems(self.default_args):
+        for k, v in self.default_args.items():
             
             if not isinstance(obj.args[k].example, UNSPECIFIED):
                 obj.args[k].example = v
@@ -882,7 +881,7 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
       cache_path: if specified, save the examples to that directory
     """
     example_files = {}
-    for k, v in six.iteritems(dl_args):
+    for k, v in dl_args.items():
         if isinstance(v.example, UNSPECIFIED):
             continue
         if (isinstance(v.example, RemoteFile) or isinstance(v.example, KipoiRemoteFile)) and cache_path is not None:

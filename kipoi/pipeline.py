@@ -5,9 +5,7 @@ from kipoi_utils.utils import cd
 import kipoi  # for .config module
 from .data import numpy_collate_concat
 # import h5py
-import six
 from tqdm import tqdm
-import six
 import deprecation
 from ._version import __version__
 import logging
@@ -74,7 +72,7 @@ def validate_kwargs(dataloader, dataloader_kwargs):
     unused = set(dataloader_kwargs.keys()) - set(dataloader.args.keys())
     if len(unused) > 0:
         logger.warning("Some provided dataloader kwargs were not used: {0}".format(unused))
-    return {k: v for k, v in six.iteritems(dataloader_kwargs) if k in dataloader.args}
+    return {k: v for k, v in dataloader_kwargs.items() if k in dataloader.args}
 
 
 class Pipeline(object):

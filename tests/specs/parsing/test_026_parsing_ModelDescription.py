@@ -4,7 +4,6 @@ import pytest
 from pytest import raises
 from kipoi.specs import ModelDescription, RemoteFile
 from related import from_yaml
-import six
 
 # Class to test
 CLS = ModelDescription
@@ -158,7 +157,7 @@ def test_model_loading_on_examples(example):
     md.schema
     md.schema.inputs
 
-    inp_elem = six.next(six.itervalues(md.schema.inputs))
+    inp_elem = list(md.schema.inputs.values())[0]
     inp_elem.shape
     inp_elem.special_type
     inp_elem.associated_metadata
