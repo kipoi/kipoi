@@ -45,5 +45,5 @@ dependencies:
   - pip:
     - kipoi-conda
     - kipoi-interpret
-    - kipoi-utils
+    - git+https://github.com/kipoi/kipoi-utils.git
     - kipoiseq
