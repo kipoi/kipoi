@@ -43,7 +43,7 @@ dependencies:
   - pip
   - matplotlib
   - pip:
-    - kipoi-utils
+    - kipoi-utils>=0.7.5
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
     - kipoiseq

@@ -24,7 +24,7 @@ requirements = [
     "h5py",
     "urllib3>=1.21.1",  # ,<1.23",
     "tinydb",
-    "kipoi-utils>=0.3.8",
+    "kipoi-utils>=0.7.5",
     "kipoi-conda>=0.1.6",
     "deprecation>=2.0.6",
     "dataclasses"
