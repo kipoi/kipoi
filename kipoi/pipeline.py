@@ -1,8 +1,5 @@
 """Whole model pipeline: dataloader + model
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
 import os
 from kipoi_utils.utils import cd
 import kipoi  # for .config module

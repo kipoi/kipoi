@@ -1,6 +1,5 @@
 """Test the different dataloader wrappers
 """
-from __future__ import print_function, division
 import numpy as np
 from pytest import fixture
 from kipoi.data import (PreloadedDataset, Dataset, BatchDataset,

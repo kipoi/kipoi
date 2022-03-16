@@ -12,7 +12,6 @@ version = '0.8.1'
 
 requirements = [
     "pyyaml",
-    "future",
     "numpy",
     "pandas>=0.21.0",
     "tqdm",

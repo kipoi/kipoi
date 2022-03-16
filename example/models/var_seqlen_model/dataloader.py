@@ -1,5 +1,3 @@
-# python2, 3 compatibility
-from __future__ import absolute_import, division, print_function
 import six
 from builtins import str, open, range, dict
 

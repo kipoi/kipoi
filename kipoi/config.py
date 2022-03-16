@@ -3,9 +3,6 @@
 Following the Keras configuration management:
 https://github.com/fchollet/keras/blob/6f3e6bb6fc97e706f37dc078ae821f490b78035b/keras/backend/__init__.py#L14-L43
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
 import os
 from collections import OrderedDict
 import pandas as pd

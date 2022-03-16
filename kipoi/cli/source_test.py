@@ -1,7 +1,5 @@
 """test-source command
 """
-from __future__ import absolute_import
-from __future__ import print_function
 from io import open
 
 import argparse

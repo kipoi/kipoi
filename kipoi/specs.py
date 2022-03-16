@@ -1,8 +1,5 @@
 """Defines the classes for Yaml parsing using related: https://github.com/genomoncology/related
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
 import collections
 import logging
 import os
