@@ -22,7 +22,7 @@ from .specs import ModelDescription, RemoteFile, DataLoaderImport, download_defa
 from .kipoimodeldescription import KipoiRemoteFile, KipoiDataLoaderImport
 from .pipeline import Pipeline
 import logging
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -1063,7 +1063,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         import re
         import torch
         sqb_restr = r"\[([A-Za-z0-9_]+)\]"
-        if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
+        if Version(torch.__version__) < Version('0.4.0'):
             scopeName = trace_node_obj.scopeName()
         else:
             scopeName = trace_node_obj.node().scopeName()
@@ -1089,9 +1089,9 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
     def _get_trace(self, x):
         import torch
         # Versions of Pytorch prior to '0.4.0':
-        if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
+        if Version(torch.__version__) < Version('0.4.0'):
             trace_fn = torch.jit.trace
-        elif LooseVersion(torch.__version__) < LooseVersion('1.2.0'):
+        elif Version(torch.__version__) < Version('1.2.0'):
             trace_fn = torch.jit.get_trace_graph
         else:
             trace_fn = torch.jit._get_trace_graph
@@ -1114,7 +1114,7 @@ class PyTorchModel(BaseModel, GradientMixin, LayerActivationMixin):
         """
         import torch
         trace = self._get_trace(x)
-        if LooseVersion(torch.__version__) < LooseVersion('1.4.0'):
+        if Version(torch.__version__) < Version('1.4.0'):
             layer_idxs = [self.extract_module_id(n) for n in trace.graph().outputs()]
         else:
             layer_idxs = [self.extract_module_id(n) for n in trace.outputs()]
@@ -1482,7 +1482,7 @@ class TensorFlow2Model(BaseModel):
     """
     def __init__(self, savedmodel_path):
         import tensorflow as tf
-        if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+        if Version(tf.__version__) < Version('2.0.0'):
             raise IOError("kipoi.model.TensorFlow2 is only available with tensorflow >= 2")
         self.reconstructed_model = tf.saved_model.load(savedmodel_path)
 
@@ -1576,7 +1576,7 @@ class TensorFlowModel(BaseModel, GradientMixin, LayerActivationMixin):
             provided by the Dataloader.
         """
         import tensorflow as tf
-        if LooseVersion(tf.__version__) >= LooseVersion('2.0.0'):
+        if Version(tf.__version__) >= Version('2.0.0'):
             import tensorflow.compat.v1 as tf
             tf.disable_v2_behavior()
         self.input_nodes = input_nodes
