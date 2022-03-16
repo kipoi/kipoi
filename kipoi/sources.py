@@ -162,7 +162,7 @@ def list_models_by_group(df, group_filter=""):
         group = "/" + group_filter + "/"
     df = df[df.model.str.contains("^" + group[1:])].copy()
     # df['parent_group'] = group[1:]
-    df['model'] = df.model.str.replace("^" + group[1:], "")
+    df['model'] = df.model.str.replace("^" + group[1:], "", regex=True)
     df['is_group'] = df.model.str.contains("/")
     if not df.is_group.any():
         return None
