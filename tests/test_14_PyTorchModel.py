@@ -2,7 +2,7 @@ import numpy as np
 from kipoi.model import PyTorchModel, OldPyTorchModel, infer_pyt_class
 from kipoi_utils.utils import cd
 import torch
-from torch import nn
+from torch import nn, sigmoid
 import torch.nn.functional as F
 import kipoi
 import pytest
@@ -278,7 +278,7 @@ class PyTNet(nn.Module):
         self.fc2 = nn.Linear(2, 1)
     def forward(self, x):
         x1 = self.pool(F.relu(self.conv1(x)))
-        x2 = self.pool(F.sigmoid(self.conv1(x)))
+        x2 = self.pool(sigmoid(self.conv1(x)))
         x1 = x1.view(-1, 240)
         x2 = x2.view(-1, 240)
         x = torch.cat((x1, x2), 0)

@@ -82,7 +82,6 @@ Here is a table showing the (recommended) requirements for each dataloader type:
 Here is an example dataloader that gets as input a [fasta](http://genetics.bwh.harvard.edu/pph/FASTA.html) file and a [bed](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) file and returns a one-hot encoded sequence (under 'inputs') along with the used genomic interval (under 'metadata/ranges').
 
 ```python
-from __future__ import absolute_import, division, print_function
 import numpy as np
 from pybedtools import BedTool
 from kipoi.data import Dataset
@@ -129,7 +128,6 @@ If your dataloader requires an external data file as for example in
 and using that file is by adding an argument to the dataloader implementation:
 
 ```python
-from __future__ import absolute_import, division, print_function
 from kipoi.data import Dataset
 
 class SeqDataset(Dataset):

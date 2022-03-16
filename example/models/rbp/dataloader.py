@@ -1,6 +1,3 @@
-# python2, 3 compatibility
-from __future__ import absolute_import, division, print_function
-import six
 import os
 import inspect
 from builtins import str, open, range, dict
@@ -138,7 +135,7 @@ class DistToClosestLandmarkExtractor(BaseExtractor):
 
         # set index to chromosome and strand - faster access
         self.landmarks = {k: v.set_index(["seqname", "strand"])
-                          for k, v in six.iteritems(self.landmarks)}
+                          for k, v in self.landmarks.items()}
 
     def _extract(self, intervals, out, **kwargs):
 

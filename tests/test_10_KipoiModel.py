@@ -4,7 +4,6 @@ import pytest
 import kipoi
 import sys
 import config
-import six
 import kipoi
 from kipoi.specs import Dependencies
 from kipoi.pipeline import install_model_requirements

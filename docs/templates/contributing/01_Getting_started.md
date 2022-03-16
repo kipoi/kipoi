@@ -225,8 +225,7 @@ output_schema: # Define the dataloader output schema according to the returned v
             type: GenomicRanges
             doc: Ranges describing inputs.seq`;
 
-var dataloader_py = `from __future__ import absolute_import, division, print_function
-import numpy as np
+var dataloader_py = `import numpy as np
 from kipoi.data import Dataset
 from kipoi.metadata import GenomicRanges
 from kipoiseq.dataloaders.sequence import BedDataset

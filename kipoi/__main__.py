@@ -3,10 +3,6 @@
 
 adopted from https://github.com/kundajelab/tf-dragonn/blob/master/tfdragonn/__main__.py
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import kipoi
 import kipoi_utils
 from kipoi import cli
