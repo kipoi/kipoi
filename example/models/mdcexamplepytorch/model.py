@@ -54,11 +54,11 @@ test = KipoiModelTest(
         'md5': '9df59f9899b27e65ab95426cb9557ad3'
         }
 )
-doc = "This is the Basset model published by David Kelley converted to pytorch by\
-    \ Roman Kreuzhuber. It categorically predicts probabilities of accesible genomic\
-    \ regions in  164 cell types (ENCODE project and Roadmap Epigenomics Consortium). Data was generated using DNAse-seq. The sequence\
-    \ length the model uses as input is 600bp. The input of the tensor has to be (N,\
-    \ 4, 600, 1) for N samples, 600bp window size and 4 nucleotides. Per sample, 164\
+doc = "This is the Basset model published by David Kelley converted to pytorch by \
+    \ Roman Kreuzhuber. It categorically predicts probabilities of accesible genomic \
+    \ regions in  164 cell types (ENCODE project and Roadmap Epigenomics Consortium). Data was generated using DNAse-seq. The sequence \
+    \ length the model uses as input is 600bp. The input of the tensor has to be (N, \
+    \ 4, 600, 1) for N samples, 600bp window size and 4 nucleotides. Per sample, 164 \
     \ probabilities of accessible chromatin will be predicted. \n"
 trained_on =  "From 2,071,886 total sites, 71,886 randomly reserved for testing and 70,000 for validation, leaving 1,930,000 for training."
 
