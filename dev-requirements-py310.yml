@@ -27,7 +27,7 @@ dependencies:
     - pkgconfig
     - kipoi-conda
     - kipoi-interpret
-    - git+https://github.com/kipoi/kipoi-utils.git
+    - kipoi-utils
     - kipoiseq
     - cyvcf2
     - pybedtools

@@ -52,7 +52,7 @@ dependencies:
   - gitpython
   - pip=21.3.1 
   - pip:
-    - git+https://github.com/kipoi/kipoi-utils.git
+    - kipoi-utils
     - kipoi-conda>=0.1.6
     - kipoi-interpret>=0.1.2
     - kipoiseq
