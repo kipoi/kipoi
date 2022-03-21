@@ -16,15 +16,15 @@ dependencies:
   - git-lfs
   - gitpython
   - pytorch
+  - tensorflow
+  - keras
+  - scikit-learn
   - pip
   - pip:
     - pyarrow
     - zarr
     - pytest
     - pytest-cov
-    - tensorflow
-    - keras
-    - scikit-learn
     - pkgconfig
     - kipoi-conda
     - kipoi-interpret
