@@ -1,5 +1,6 @@
 name: kipoi-dev
 channels:
+  - pytorch
   - conda-forge
   - bioconda
   - defaults
@@ -14,16 +15,16 @@ dependencies:
   - git
   - git-lfs
   - gitpython
+  - pytorch
+  - tensorflow
+  - keras
+  - scikit-learn
   - pip
   - pip:
-    - torch
     - pyarrow
     - zarr
     - pytest
     - pytest-cov
-    - tensorflow
-    - keras
-    - scikit-learn
     - pkgconfig
     - kipoi-conda
     - kipoi-interpret
