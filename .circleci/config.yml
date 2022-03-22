@@ -61,7 +61,7 @@ variables:
       name: Install from dev-requirements-py37.yml
       command: |  
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py37.yml
+        mamba env create --name kipoi-env -f dev-requirements-py37.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -71,7 +71,7 @@ variables:
       name: Install from dev-requirements-py38.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py38.yml
+        mamba env create --name kipoi-env -f dev-requirements-py38.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -81,7 +81,7 @@ variables:
       name: Install from dev-requirements-py39.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py39.yml
+        mamba env create --name kipoi-env -f dev-requirements-py39.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -91,7 +91,7 @@ variables:
       name: Install from dev-requirements-py310.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py310.yml
+        mamba env create --name kipoi-env -f dev-requirements-py310.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -221,6 +221,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py37
@@ -239,6 +240,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
@@ -257,6 +259,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
@@ -275,6 +278,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py310
@@ -320,6 +324,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
@@ -350,6 +355,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
