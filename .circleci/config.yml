@@ -193,7 +193,7 @@ variables:
 jobs:
   test-py36-yml:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -211,7 +211,7 @@ jobs:
       - *store_test_artifacts
   test-py37-yml:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -229,7 +229,7 @@ jobs:
       - *store_test_artifacts
   test-py38-yml:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -247,7 +247,7 @@ jobs:
       - *store_test_artifacts
   test-py39-yml:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -265,7 +265,7 @@ jobs:
       - *store_test_artifacts
   test-py310-yml:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -310,7 +310,7 @@ jobs:
 
   test-deploy-pypi:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
@@ -340,7 +340,7 @@ jobs:
 
   productive-deploy-pypi:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:

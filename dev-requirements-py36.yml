@@ -12,14 +12,9 @@ dependencies:
   - numpy>=1.13.0
   - pandas
   - pytest>=3.3.1
-  - pytest-xdist
-  - pytest-sugar
   - pytest-cov>=2.6.1
-  - deprecation>=2.0.6
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - coveralls
-  - scipy>=1.0.0
-  - attrs>=18.2.0
   - matplotlib
   - tinydb>=3.12.2
   # Bio
