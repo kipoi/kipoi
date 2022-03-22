@@ -17,6 +17,10 @@ variables:
     run:
       name: Update conda
       command: conda update -n base conda -c anaconda
+  install_mamba: &install_mamba
+    run:
+      name: Install mamba
+      command: conda install mamba -y -n base -c conda-forge
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -27,7 +31,6 @@ variables:
       command: |
         source activate kipoi-env
         conda install --yes -c conda-forge singularity
-
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -48,7 +51,7 @@ variables:
       name: Install from dev-requirements-py36.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        mamba env create --name kipoi-env -f dev-requirements-py36.yml
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -199,6 +202,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
