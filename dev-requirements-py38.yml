@@ -43,7 +43,7 @@ dependencies:
   - tensorflow
   - keras
   - pip:
-    - kipoi-conda
+    - git+https://github.com/kipoi/kipoi-conda.git@add-mamba
     - kipoi-interpret
     - kipoi-utils>=0.7.5
     - kipoiseq

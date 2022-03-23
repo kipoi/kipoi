@@ -48,7 +48,7 @@ dependencies:
   - pip=21.3.1 
   - pip:
     - kipoi-utils>=0.7.5
-    - kipoi-conda>=0.1.6
+    - git+https://github.com/kipoi/kipoi-conda.git@add-mamba
     - kipoi-interpret>=0.1.2
     - kipoiseq
     - concise>=0.6.5

@@ -438,7 +438,7 @@ def cli_create(cmd, raw_args):
 
         # setup the conda env from file
         logger.info("Creating conda env from file: {0}".format(env_file))
-        kipoi_conda.create_env_from_file(env_file, use_stdout=args.verbose)
+        kipoi_conda.create_env_from_file(env_file, use_stdout=args.verbose, mamba=True)
         env_db_entry.successful = True
 
         # env is environment name
