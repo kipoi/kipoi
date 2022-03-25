@@ -377,6 +377,14 @@ jobs:
             source activate kipoi-env
             python -m pip install --user kipoi --verbose
             python -c "import kipoi; print(kipoi.__version__)"
+          
+      - run:
+          name: Update all containers with new version of kipoi
+          command: |
+            curl -X POST https://api.github.com/repos/kipoi/kipoi-containers/dispatches \
+            -H 'Accept: application/vnd.github.v3+json' \
+            -u $SYNC_TOKEN \
+            --data '{"event_type": "updateall"}' 
 
 workflows:
   version: 2
