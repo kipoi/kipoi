@@ -306,7 +306,7 @@ jobs:
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
-      - image: continuumio/anaconda3:5.0.1
+      - image: continuumio/anaconda3:latest
       # - image: circleci/python:3.5
     working_directory: ~/repo
     steps:
@@ -314,15 +314,23 @@ jobs:
           fingerprints:
             - 60:0f:05:31:12:3d:bc:8b:df:9d:08:da:71:a5:43:b6
       - checkout
+      - create_env:
+          name: Create a separate conda environment
+          command: conda create -n py39 -y python=3.9
       - run:
           name: Install pip - Kipoi
-          command: pip install -e .
+          command: |
+            source activate py39
+            pip install -e .
       - run:
           name: Install build deps
-          command: pip install pandas==0.20.3 mistune==0.8.4 jinja2==2.10.1 nbconvert==5.4.0 tornado==5.1.1 mkdocs git+https://github.com/kipoi/pydoc-markdown@master
+          command: |
+            source activate py39
+            pip install pandas mistune jinja2 nbconvert tornado mkdocs git+https://github.com/kipoi/pydoc-markdown@master
       - run:
           name: Build docs
           command: |
+            source activate py39
             cd docs/
             ./render_ipynb.bash
             pydocmd build
@@ -428,6 +436,7 @@ workflows:
               only:
                 - master
                 - test_deployment_script
+                - fix-build-docs
       - test-deploy-pypi:
           requires:
             - test-py36-yml
