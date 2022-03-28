@@ -16,11 +16,15 @@ variables:
   update_conda: &update_conda
     run:
       name: Update conda
-      command: conda update -n base conda -c anaconda
+      command: conda update -n base conda
   install_mamba: &install_mamba
     run:
       name: Install mamba
       command: conda install mamba -y -n base -c conda-forge
+  update_mamba: &update_mamba
+    run:
+      name: Update mamba
+      command: conda update -y mamba -c conda-forge
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
@@ -202,7 +206,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
@@ -221,7 +227,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py37
@@ -240,7 +248,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
@@ -259,7 +269,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
@@ -278,7 +290,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py310
@@ -324,7 +338,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
@@ -355,7 +371,9 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
+      - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
