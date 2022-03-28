@@ -16,7 +16,7 @@ variables:
   update_conda: &update_conda
     run:
       name: Update conda
-      command: conda update -n base conda -c anaconda
+      command: conda update -n base conda
   install_mamba: &install_mamba
     run:
       name: Install mamba
@@ -202,6 +202,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
@@ -221,6 +222,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
@@ -240,6 +242,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
@@ -259,6 +262,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
@@ -278,6 +282,7 @@ jobs:
     steps:
       - checkout
       - *install_conda
+      - *update_conda
       - *install_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
