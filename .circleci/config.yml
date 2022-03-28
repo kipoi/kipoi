@@ -423,18 +423,17 @@ workflows:
       - test-py39-yml
       - test-py310-yml
       - build-deploy-docs:
-          # requires:
-          #   - test-py36-yml
-          #   - test-py37-yml
-          #   - test-py38-yml
-          #   - test-py39-yml
-          #   - test-py310-yml
+          requires:
+            - test-py36-yml
+            - test-py37-yml
+            - test-py38-yml
+            - test-py39-yml
+            - test-py310-yml
           filters:
             branches:
               only:
                 - master
                 - test_deployment_script
-                - fix-build-docs
       - test-deploy-pypi:
           requires:
             - test-py36-yml
