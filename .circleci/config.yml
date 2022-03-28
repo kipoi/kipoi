@@ -314,12 +314,10 @@ jobs:
           fingerprints:
             - 60:0f:05:31:12:3d:bc:8b:df:9d:08:da:71:a5:43:b6
       - checkout
-      - create_env:
-          name: Create a separate conda environment
-          command: conda create -n py39 -y python=3.9
       - run:
-          name: Install pip - Kipoi
+          name: Install Kipoi in a conda environment
           command: |
+            conda create -n py39 -y python=3.9
             source activate py39
             pip install -e .
       - run:
@@ -425,12 +423,12 @@ workflows:
       - test-py39-yml
       - test-py310-yml
       - build-deploy-docs:
-          requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
-            - test-py310-yml
+          # requires:
+          #   - test-py36-yml
+          #   - test-py37-yml
+          #   - test-py38-yml
+          #   - test-py39-yml
+          #   - test-py310-yml
           filters:
             branches:
               only:
