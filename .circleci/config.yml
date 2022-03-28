@@ -20,7 +20,7 @@ variables:
   install_mamba: &install_mamba
     run:
       name: Install mamba
-      command: conda install mamba -y -n base -c conda-forge
+      command: conda install mamba=0.21.1 -y -n base -c conda-forge
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
