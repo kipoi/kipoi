@@ -51,7 +51,7 @@ variables:
       name: Install from dev-requirements-py36.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        mamba env create --name kipoi-env -f dev-requirements-py36.yml
+        mamba env create --name kipoi-env -f dev-requirements-py36.yml --verbose
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -61,7 +61,7 @@ variables:
       name: Install from dev-requirements-py37.yml
       command: |  
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        mamba env create --name kipoi-env -f dev-requirements-py37.yml
+        mamba env create --name kipoi-env -f dev-requirements-py37.yml --verbose
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -71,7 +71,7 @@ variables:
       name: Install from dev-requirements-py38.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        mamba env create --name kipoi-env -f dev-requirements-py38.yml
+        mamba env create --name kipoi-env -f dev-requirements-py38.yml --verbose
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -81,7 +81,7 @@ variables:
       name: Install from dev-requirements-py39.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        mamba env create --name kipoi-env -f dev-requirements-py39.yml
+        mamba env create --name kipoi-env -f dev-requirements-py39.yml --verbose
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -91,7 +91,7 @@ variables:
       name: Install from dev-requirements-py310.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        mamba env create --name kipoi-env -f dev-requirements-py310.yml
+        mamba env create --name kipoi-env -f dev-requirements-py310.yml --verbose
         source activate kipoi-env
         pip install -e .
         git lfs install
