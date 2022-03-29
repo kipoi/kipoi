@@ -34,7 +34,7 @@ variables:
       name: Install Singularity
       command: |
         source activate kipoi-env
-        conda install --yes -c conda-forge singularity=3.8.6
+        mamba install --yes -c conda-forge singularity=3.8.6
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
