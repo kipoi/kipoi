@@ -211,7 +211,7 @@ jobs:
       - *update_mamba
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py37
+      - *install_from_dev_requirements_py36
       - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
