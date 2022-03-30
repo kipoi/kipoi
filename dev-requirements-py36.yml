@@ -6,46 +6,41 @@ channels:
   - defaults
 dependencies:
   - python=3.6
-  - numpy>=1.13.0
+  - numpy
   - pandas
-  - pytest>=3.3.1
-  - pytest-cov>=2.6.1
+  - pytest
+  - pytest-cov
   - coveralls
-  - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
-  - scipy>=1.0.0
-  - pybigwig>=0.3.10
-  - pybedtools>=0.7.10
-  - pyvcf>=0.6.8
-  - pysam>=0.14.0
-  - pyfaidx>=0.5.5.2
-  - cython=0.29.23
-  - cyvcf2>=0.8.4
-  - bedtools>=2.27.1
-  - htslib>=1.7
+  - h5py # h5py >= 3.* is incompatible with keras 
+  - scipy
+  - pybigwig
+  - pybedtools
+  - pyvcf
+  - pysam
+  - pyfaidx
+  - cython
+  - cyvcf2
+  - bedtools
+  - htslib
   # ML
-  - scikit-learn>=0.19.1,<=0.22
-  - tensorflow==1.13.1
-  - pytorch-cpu>=0.3.1
-  - keras>=2.2.4
+  - scikit-learn
+  - tensorflow
+  - pytorch
+  - keras
   # for plugins (double check)
   - fastparquet
   - pyarrow
   - zarr 
   - numcodecs
-  - tinydb>=3.12.2
-  # singularity
-  #- singularity
   - git
   - git-lfs
-  - cookiecutter>=1.6.0
+  - cookiecutter
   - wheel
-  - gitpython
   - pip
   - matplotlib
   - pip:
-    - kipoi-utils>=0.7.5
-    - kipoi-conda>=0.1.6
-    - kipoi-interpret>=0.1.2
+    - kipoi-utils
+    - kipoi-conda
+    - kipoi-interpret
     - kipoiseq
-    - concise>=0.6.5
-    - joblib==0.17.0
+    - concise
