@@ -40,12 +40,8 @@ variables:
       name: Install Apptainer from source
       command: |
         sudo apt-get -q update && sudo apt-get install -y build-essential squashfs-tools libseccomp-dev cryptsetup libhdf5-serial-dev pkg-config
-        export VERSION=1.0.1 && \
-        wget https://github.com/apptainer/apptainer/releases/download/v${VERSION}/apptainer-${VERSION}.tar.gz && \
-        tar -xzf apptainer-${VERSION}.tar.gz && \
-        cd apptainer-${VERSION}
-        ./mconfig -v -p /usr/local
-        make -C ./builddir all && sudo make -C ./builddir install
+        wget https://github.com/apptainer/apptainer/releases/download/v1.0.1/apptainer_1.0.1_amd64.deb
+        sudo apt install apptainer_1.0.1_amd64.deb
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -209,12 +205,12 @@ variables:
         echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
-  apptainer:
-    docker:
-      - image: cimg/go:1.18.0
-    steps:
-      - checkout
-      - *install_apptainer
+  # apptainer:
+  #   docker:
+  #     - image: cimg/go:1.18.0
+  #   steps:
+  #     - checkout
+  #     - *install_apptainer
   test-py36-yml:
     machine: # executor type
       image: ubuntu-2004:current
@@ -222,6 +218,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -242,6 +239,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -262,6 +260,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -282,6 +281,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -355,6 +355,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -387,6 +388,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -427,7 +429,6 @@ workflows:
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - apptainer
       - test-py36-yml
       - test-py37-yml
       - test-py38-yml
@@ -435,7 +436,6 @@ workflows:
       - test-py310-yml
       - build-deploy-docs:
           requires:
-            - apptainer
             - test-py36-yml
             - test-py37-yml
             - test-py38-yml
@@ -448,7 +448,6 @@ workflows:
                 - test_deployment_script
       - test-deploy-pypi:
           requires:
-            - apptainer
             - test-py36-yml
             - test-py37-yml
             - test-py38-yml
@@ -463,7 +462,6 @@ workflows:
                 - test_deployment_script
       - productive-deploy-pypi:
           requires:
-            - apptainer
             - test-py36-yml
             - test-py37-yml
             - test-py38-yml
@@ -486,7 +484,6 @@ workflows:
               only:
                 - master
     jobs:
-      - apptainer
       - test-py36-yml
       - test-py37-yml
       - test-py38-yml
