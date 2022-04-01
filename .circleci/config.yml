@@ -34,7 +34,16 @@ variables:
       name: Install Singularity
       command: |
         source activate kipoi-env
-        mamba install --yes -c conda-forge singularity=3.8.6
+        mamba install --yes -c conda-forge singularity
+  install_apptainer: &install_apptainer
+    run:
+      name: Install Apptainer from source
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        sudo apt-get -q update && sudo apt-get install -y build-essential squashfs-tools libseccomp-dev cryptsetup libhdf5-serial-dev pkg-config
+        wget https://github.com/apptainer/apptainer/releases/download/v1.0.1/apptainer_1.0.1_amd64.deb 
+        sudo apt install ~/repo/apptainer_1.0.1_amd64.deb
+        apptainer --version
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -205,6 +214,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -212,7 +222,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
@@ -226,6 +235,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -233,7 +243,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py37
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
@@ -247,6 +256,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -254,7 +264,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py38
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py38
@@ -268,6 +277,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -275,7 +285,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py39
@@ -289,6 +298,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -296,7 +306,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py310
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py310
@@ -350,7 +359,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -383,7 +391,6 @@ jobs:
       # - *update_conda # No need to use this anymore since the latest miniconda is installed always
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py39
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
