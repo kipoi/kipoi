@@ -41,7 +41,7 @@ variables:
       command: |
         sudo apt-get -q update && sudo apt-get install -y build-essential squashfs-tools libseccomp-dev cryptsetup libhdf5-serial-dev pkg-config
         wget https://github.com/apptainer/apptainer/releases/download/v1.0.1/apptainer_1.0.1_amd64.deb 
-        de ~/repo/
+        cd ~/repo/
         sudo apt install apptainer_1.0.1_amd64.deb
         apptainer --version
   install_kipoi_plugins: &install_kipoi_plugins
