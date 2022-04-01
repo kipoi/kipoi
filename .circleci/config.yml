@@ -298,6 +298,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -351,7 +352,6 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
@@ -384,7 +384,6 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - *install_apptainer
       - *install_conda
       - *update_conda
       - *install_mamba
