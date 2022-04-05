@@ -41,7 +41,7 @@ dependencies:
   - keras
   - pkgconfig
   - pip:
-    - git+https://github.com/kipoi/kipoi-conda.git@add-mamba
+    - kipoi-conda
     - kipoi-interpret
     - kipoi-utils>=0.7.5
     - kipoiseq

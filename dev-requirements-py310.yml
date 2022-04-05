@@ -26,7 +26,7 @@ dependencies:
     - pytest
     - pytest-cov
     - pkgconfig
-    - git+https://github.com/kipoi/kipoi-conda.git@add-mamba
+    - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
