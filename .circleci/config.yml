@@ -122,6 +122,7 @@ variables:
         source activate kipoi-env
         pip install -e .
         git lfs install    
+        no_output_timeout: 30m
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -147,7 +148,7 @@ variables:
       command: |
         source activate kipoi-env
         mkdir test-reports
-        $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
+        $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
   # Special case for running without concise 
   activate_and_run_tests_py38: &activate_and_run_tests_py38
