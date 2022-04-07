@@ -6,41 +6,50 @@ channels:
   - defaults
 dependencies:
   - python=3.6
-  - numpy
+  # general packages
+  # - git-lfs 
+  # General
+  - numpy>=1.13.0
   - pandas
-  - pytest
-  - pytest-cov
+  - pytest>=3.3.1
+  - pytest-cov>=2.6.1
+  - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - coveralls
-  - h5py=2.10 # h5py >= 3.* is incompatible with keras 
-  - scipy
-  - pybigwig
-  - pybedtools
-  - pyvcf
-  - pysam
-  - pyfaidx
-  - cython
-  - cyvcf2
-  - bedtools
-  - htslib
+  - matplotlib
+  - tinydb>=3.12.2
+  # Bio
+  - pybigwig>=0.3.10
+  # could not pin pydedtools ins conda
+  - pybedtools>=0.7.10
+  - pyvcf>=0.6.8
+  - pysam>=0.14.0
+  - pyfaidx>=0.5.5.2
+  - cython=0.29.23
+  - cyvcf2>=0.8.4
+  - bedtools>=2.27.1
+  - htslib>=1.7
   # ML
-  - scikit-learn=0.22
-  - tensorflow<2
-  - pytorch
-  - keras
+  - scikit-learn>=0.19.1,<=0.22
+  - tensorflow==1.13.1
+  - pytorch-cpu>=0.3.1
+  - keras>=2.2.4
   # for plugins (double check)
   - fastparquet
   - pyarrow
   - zarr 
   - numcodecs
+  # singularity
+  #- singularity
   - git
   - git-lfs
-  - cookiecutter
+  - cookiecutter>=1.6.0
   - wheel
-  - pip
-  - matplotlib
+  - gitpython
+  - pip=21.3.1 
   - pip:
-    - kipoi-utils
+    - kipoi-utils>=0.7.5
     - kipoi-conda
-    - kipoi-interpret
+    - kipoi-interpret>=0.1.2
     - kipoiseq
-    - concise
+    - concise>=0.6.5
+    - joblib==0.17.0

@@ -18,6 +18,7 @@ dependencies:
   - tensorflow
   - keras
   - scikit-learn
+  - coveralls
   - pip
   - pip:
     - pyarrow
