@@ -440,11 +440,11 @@ workflows:
                 - test_deployment_script
       - test-deploy-pypi:
           requires:
-            - test-py36-yml
+            # - test-py36-yml
             # - test-py37-yml
-            # - test-py38-yml
-            # - test-py39-yml
-            # - test-py310-yml
+            - test-py38-yml
+            - test-py39-yml
+            - test-py310-yml
           filters:
 #            tags:
 #              only: /^v.*/
