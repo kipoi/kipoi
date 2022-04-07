@@ -97,6 +97,14 @@ variables:
         source activate kipoi-env
         kipoi ls
   # run_coveralls: &run_coveralls
+  activate_and_run_tests_py367: &activate_and_run_tests_py367
+    run:
+      name: Run tests
+      command: |
+        source activate kipoi-env
+        mkdir test-reports
+        $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
+      no_output_timeout: 30m
   activate_and_run_tests: &activate_and_run_tests
     run:
       name: Run tests
@@ -188,7 +196,7 @@ jobs:
       - *install_from_dev_requirements_py36
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests
+      - *activate_and_run_tests_py367
       - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
@@ -207,7 +215,7 @@ jobs:
       - *install_from_dev_requirements_py37
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests
+      - *activate_and_run_tests_py367
       # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
