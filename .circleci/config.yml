@@ -264,7 +264,7 @@ jobs:
       - *update_conda
       - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py38
+      - *install_from_dev_requirements_py310
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py38
@@ -284,7 +284,7 @@ jobs:
       - *update_conda
       - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
+      - *install_from_dev_requirements_py310
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py39
