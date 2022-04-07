@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 variables:
   install_conda: &install_conda
@@ -112,7 +112,16 @@ variables:
         source activate kipoi-env
         pip install -e .
         git lfs install
-        # ln -s /opt/conda/bin/python /usr/bin/python     
+        # ln -s /opt/conda/bin/python /usr/bin/python  
+  install_from_dev_requirements: &install_from_dev_requirements
+    run:
+      name: Install from dev-requirements.yml
+      command: |
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        conda env create --name kipoi-env  -f dev-requirements.yml python=<< parameters.python-version >> --experimental-solver=libmamba 
+        source activate kipoi-env
+        pip install -e .
+        git lfs install    
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -211,6 +220,28 @@ variables:
         echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
+  test:
+    parameters:
+      python-version:
+        type: string
+    machine: # executor type
+      image: ubuntu-2004:current  
+    resource_class: medium
+    working_directory: ~/repo  
+    steps:
+      - checkout
+      - *install_apptainer
+      - *install_conda
+      - *update_conda
+      - *install_mamba_solver
+      - *install_from_dev_requirements  
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+
   test-py36-yml:
     machine: # executor type
       image: ubuntu-2004:current
@@ -415,58 +446,62 @@ jobs:
             --data '{"event_type": "updateall"}' 
 
 workflows:
-  version: 2
+  version: 2.1
 
   # TODO - consider running the deploy only on
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
+      - test:
+          matrix:
+            parameters:
+              python-version: ["3.8", "3.9", "3.10"]
       # - test-py36-yml
       # - test-py37-yml
-      - test-py38-yml
-      - test-py39-yml
-      - test-py310-yml
-      - build-deploy-docs:
-          requires:
-            # - test-py36-yml
-            # - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
-            - test-py310-yml
-          filters:
-            branches:
-              only:
-                - master
-                - test_deployment_script
-      - test-deploy-pypi:
-          requires:
-            # - test-py36-yml
-            # - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
-            - test-py310-yml
-          filters:
-#            tags:
-#              only: /^v.*/
-            branches:
-              only:
-                - test_deployment_pypi
-                - test_deployment_script
-      - productive-deploy-pypi:
-          requires:
-            # - test-py36-yml
-            # - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
-            - test-py310-yml
-          filters:
-#            # Trigger only on a tagged commit starting with v.
-#            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
-#            tags:
-#              only: /^v.*/
-            branches:
-              only:
-                - master
+#       - test-py38-yml
+#       - test-py39-yml
+#       - test-py310-yml
+#       - build-deploy-docs:
+#           requires:
+#             # - test-py36-yml
+#             # - test-py37-yml
+#             - test-py38-yml
+#             - test-py39-yml
+#             - test-py310-yml
+#           filters:
+#             branches:
+#               only:
+#                 - master
+#                 - test_deployment_script
+#       - test-deploy-pypi:
+#           requires:
+#             # - test-py36-yml
+#             # - test-py37-yml
+#             - test-py38-yml
+#             - test-py39-yml
+#             - test-py310-yml
+#           filters:
+# #            tags:
+# #              only: /^v.*/
+#             branches:
+#               only:
+#                 - test_deployment_pypi
+#                 - test_deployment_script
+#       - productive-deploy-pypi:
+#           requires:
+#             # - test-py36-yml
+#             # - test-py37-yml
+#             - test-py38-yml
+#             - test-py39-yml
+#             - test-py310-yml
+#           filters:
+# #            # Trigger only on a tagged commit starting with v.
+# #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+# #            tags:
+# #              only: /^v.*/
+#             branches:
+#               only:
+#                 - master
   kipoi-nightly-test:
     triggers:
       - schedule:
