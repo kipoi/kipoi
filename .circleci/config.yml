@@ -245,6 +245,10 @@ jobs:
           command: .circleci/deploy_docs.bash
 
   test-deploy-pypi:
+    parameters:
+      python-version:
+        type: string
+        default: "3.9"
     machine: # executor type
       image: ubuntu-2004:current
     resource_class: medium
@@ -256,7 +260,7 @@ jobs:
       - *update_conda 
       - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py37
+      - *install_from_dev_requirements
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -276,6 +280,10 @@ jobs:
             python -c "import kipoi; print(kipoi.__version__)"
 
   productive-deploy-pypi:
+    parameters:
+      python-version:
+        type: string
+        default: "3.9"
     machine: # executor type
       image: ubuntu-2004:current
     resource_class: medium
@@ -287,7 +295,7 @@ jobs:
       - *update_conda
       - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py37
+      - *install_from_dev_requirements
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -337,6 +345,7 @@ workflows:
               only:
                 - master
                 - test_deployment_script
+                - improved-ci
       - test-deploy-pypi:
           requires:
             - test-36
@@ -349,6 +358,7 @@ workflows:
               only:
                 - test_deployment_pypi
                 - test_deployment_script
+                - improved-ci
       - productive-deploy-pypi:
           requires:
             - test-36
