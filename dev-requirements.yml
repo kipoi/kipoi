@@ -1,0 +1,29 @@
+name: kipoi-dev
+channels:
+  - pytorch
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - git-lfs
+  - bedtools
+  - pytorch
+  - coveralls
+  - pytest
+  - pytest-cov
+  - pip
+  - pip:
+    - sklearn
+    - pybigwig
+    - pyarrow
+    - pybedtools
+    - zarr
+    - cyvcf2
+    - pybedtools
+    - tensorflow
+    - kipoi-conda
+    - kipoi-interpret
+    - kipoi-utils
+    - kipoiseq
+
+

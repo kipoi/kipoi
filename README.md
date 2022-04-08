@@ -211,12 +211,25 @@ If you use Kipoi for your research, please cite the publication of the model you
 
 If you want to help with the development of Kipoi, you are more than welcome to join in! 
 
-For the local setup for development, you should install all required dependencies using one of the provided dev-requirements-py<36|37|38|39>.yml files
+For the local setup for development, you should install all required dependencies using one of the provided dev-requirements(-py<36|37>).yml files
 
+For systems using python 3.6/3.7:
 ```bash
-conda env create -f dev-requirements-py39.yml
+conda env create -f dev-requirements-py36.yml --experimental-solver=libmamba
+or
+conda env create -f dev-requirements-py37.yml --experimental-solver=libmamba
 conda activate kipoi-dev
 pip install -e .
+git lfs install
+```
+
+For systems using python >=3.8<=3.10:
+```bash
+conda create --name kipoi-dev python=3.8 (or 3.9, 3.10)
+conda activate kipoi-dev
+pip install -e .
+conda env update --name kipoi-dev --file dev-requirements.yml --experimental-solver=libmamba 
+git lfs install    
 ```
 
 You can test the package by running `py.test`. 
