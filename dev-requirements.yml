@@ -19,19 +19,20 @@ dependencies:
   - keras
   - scikit-learn
   - coveralls
+  - cyvcf2
+  - pybedtools
+  - pybigwig
+  - pyfaidx
+  - pyarrow
+  - zarr
+  - pytest
+  - pytest-cov
+  - pkgconfig
   - pip
   - pip:
-    - pyarrow
-    - zarr
-    - pytest
-    - pytest-cov
-    - pkgconfig
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
-    - cyvcf2
-    - pybedtools
-    - pybigwig
-    - pyfaidx
+
 
