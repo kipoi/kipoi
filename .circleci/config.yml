@@ -34,6 +34,7 @@ variables:
         wget https://github.com/apptainer/apptainer/releases/download/v1.0.1/apptainer_1.0.1_amd64.deb 
         sudo apt install ~/repo/apptainer_1.0.1_amd64.deb
         apptainer --version
+        rm ~/repo/apptainer_1.0.1_amd64.deb
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -354,7 +355,6 @@ workflows:
               only:
                 - master
                 - test_deployment_script
-                - improved-ci
       - test-deploy-pypi:
           requires:
             - test-36
@@ -367,7 +367,6 @@ workflows:
               only:
                 - test_deployment_pypi
                 - test_deployment_script
-                - improved-ci
       - productive-deploy-pypi:
           requires:
             - test-36
