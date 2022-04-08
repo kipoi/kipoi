@@ -77,7 +77,6 @@ variables:
         source activate kipoi-env
         pip install -e .
         conda env update --name kipoi-env --file dev-requirements.yml --experimental-solver=libmamba 
-        source activate kipoi-env
         git lfs install    
       no_output_timeout: 30m
   install_kipoi: &install_kipoi
