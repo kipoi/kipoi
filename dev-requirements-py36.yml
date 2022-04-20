@@ -16,7 +16,8 @@ dependencies:
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - coveralls
   - matplotlib
-  - tinydb>=3.12.2
+  - importlib_metadata=4.8.1
+  - tinydb=4.7.0
   # Bio
   - pybigwig>=0.3.10
   # could not pin pydedtools ins conda
@@ -53,3 +54,4 @@ dependencies:
     - kipoiseq
     - concise>=0.6.5
     - joblib==0.17.0
+    - typing-extensions==4.1.1
