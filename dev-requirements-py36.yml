@@ -14,7 +14,6 @@ dependencies:
   - pytest>=3.3.1
   - pytest-cov>=2.6.1
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
-  - coveralls
   - matplotlib
   - importlib_metadata=4.8.1
   - tinydb=4.7.0

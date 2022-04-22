@@ -8,7 +8,6 @@ dependencies:
   - git-lfs
   - bedtools
   - pytorch
-  - coveralls
   - pytest
   - pytest-cov
   - pip
