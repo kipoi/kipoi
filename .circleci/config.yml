@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  coveralls: coveralls/coveralls@1.0.6
 
 variables:
   install_conda: &install_conda
@@ -121,12 +119,12 @@ variables:
   #   run:
   #     name: run coveralls
   #     command: coveralls || true
-  # activate_and_run_coveralls: &activate_and_run_coveralls
-  #   run:
-  #     name: activate and run coveralls
-  #     command: |
-  #       source activate kipoi-env
-  #       coveralls
+  activate_and_run_coveralls: &activate_and_run_coveralls
+    run:
+      name: activate and run coveralls
+      command: |
+        source activate kipoi-env
+        coveralls
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -221,8 +219,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py367
-      - coveralls/upload
-      # - *activate_and_run_coveralls
+      - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   build-deploy-docs:
