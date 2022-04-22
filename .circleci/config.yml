@@ -100,7 +100,6 @@ variables:
       command: |  
         source activate kipoi-env
         kipoi ls
-  # run_coveralls: &run_coveralls
   activate_and_run_tests_py367: &activate_and_run_tests_py367
     run:
       name: Run tests
