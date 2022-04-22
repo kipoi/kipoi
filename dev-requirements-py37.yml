@@ -10,7 +10,6 @@ dependencies:
   - pandas
   - pytest>=3.3.1
   - pytest-cov>=2.6.1
-  #- coveralls
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - scipy>=1.0.0
   - pybigwig>=0.3.10
