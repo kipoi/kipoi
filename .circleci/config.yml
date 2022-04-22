@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  coveralls: coveralls/coveralls@1.0.6
 
 variables:
   install_conda: &install_conda
@@ -116,16 +118,16 @@ variables:
         $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
   # Special case for running without concise 
-  run_coveralls: &run_coveralls
-    run:
-      name: run coveralls
-      command: coveralls || true
-  activate_and_run_coveralls: &activate_and_run_coveralls
-    run:
-      name: activate and run coveralls
-      command: |
-        source activate kipoi-env
-        coveralls
+  # run_coveralls: &run_coveralls
+  #   run:
+  #     name: run coveralls
+  #     command: coveralls || true
+  # activate_and_run_coveralls: &activate_and_run_coveralls
+  #   run:
+  #     name: activate and run coveralls
+  #     command: |
+  #       source activate kipoi-env
+  #       coveralls
   store_test_results: &store_test_results
     store_test_results:
       path: test-reports
@@ -180,7 +182,8 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
-      - *activate_and_run_coveralls
+      # - coveralls/upload
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-36:
@@ -199,7 +202,8 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py367
-      - *activate_and_run_coveralls
+      # - coveralls/upload
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-37:
@@ -218,6 +222,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py367
+      - coveralls/upload
       # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
