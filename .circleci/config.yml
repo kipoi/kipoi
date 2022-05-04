@@ -74,10 +74,9 @@ variables:
       name: Install from dev-requirements.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda create --name kipoi-env python=<< parameters.python-version >>
+        conda create --name kipoi-env --file dev-requirements.yml --experimental-solver=libmamba python=<< parameters.python-version >>
         source activate kipoi-env
         pip install -e .
-        conda env update --name kipoi-env --file dev-requirements.yml --experimental-solver=libmamba 
         git lfs install    
       no_output_timeout: 30m
   install_kipoi: &install_kipoi
