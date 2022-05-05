@@ -235,7 +235,7 @@ git lfs install
 
 ### A note about cyvcf2 and pybigwig
 
-For python >= 3.10, cyvcf2 and pybigwig are not available in conda yet. Install them from source like [here]() and [here]() instead. 
+For python >= 3.10, cyvcf2 and pybigwig are not available in conda yet. Install them from source like [here](https://github.com/kipoi/kipoi/blob/2aff30e93e3b5b6ea0116a65c32ee55d74a52743/.circleci/config.yml#L84-L97) and [here](https://github.com/kipoi/kipoi/blob/2aff30e93e3b5b6ea0116a65c32ee55d74a52743/.circleci/config.yml#L98-L105) instead. I will recommend against installing them using pip as it may lead to unexpected inconsistencies.
 
 You can test the package by running `py.test`. 
 
