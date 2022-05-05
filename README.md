@@ -227,10 +227,15 @@ For systems using python >=3.8<=3.10:
 ```bash
 conda create --name kipoi-dev python=3.8 (or 3.9, 3.10)
 conda activate kipoi-dev
-pip install -e .
 conda env update --name kipoi-dev --file dev-requirements.yml --experimental-solver=libmamba 
+pip install -e .
+conda install -c bioconda cyvcf2 pybigwig
 git lfs install    
 ```
+
+### A note about cyvcf2 and pybigwig
+
+For python >= 3.10, cyvcf2 and pybigwig are not available in conda yet. Install them from source like [here]() and [here]() instead. 
 
 You can test the package by running `py.test`. 
 
