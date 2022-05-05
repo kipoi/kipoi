@@ -75,11 +75,34 @@ variables:
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         conda create --name kipoi-env python=<< parameters.python-version >>
+
         source activate kipoi-env
         conda env update --name kipoi-env --file dev-requirements.yml --experimental-solver=libmamba 
         pip install -e .
         git lfs install    
       no_output_timeout: 30m
+  install_cyvcf2: &install_cyvcf2
+    run:
+      name: Install cyvcf2 (conda package is not yet available for 3.10)
+      command: |
+        source activate kipoi-env
+        git clone --recursive https://github.com/brentp/cyvcf2
+        cd cyvcf2/htslib
+        autoheader
+        autoconf
+        ./configure --enable-libcurl
+        make
+        cd ..
+        pip install -r requirements.txt
+        CYTHONIZE=1 pip install -e .
+  install_pybigwig: &install_pybigwig
+    run:
+      name: Install pybigwig (conda package is not yet available for 3.10)
+      command: |
+        source activate kipoi-env
+        git clone https://github.com/deeptools/pyBigWig.git
+        cd pyBigWig
+        pip install .    
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -175,7 +198,9 @@ jobs:
       - *install_conda
       - *update_conda
       - *install_mamba_solver
-      - *install_from_dev_requirements  
+      - *install_from_dev_requirements
+      - *install_cyvcf2
+      - *install_pybigwig
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests

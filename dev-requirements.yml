@@ -10,8 +10,6 @@ dependencies:
   - pytorch
   - pytest
   - pytest-cov
-  - cyvcf2
-  - pybigwig
   - pip
   - pip:
     - sklearn
