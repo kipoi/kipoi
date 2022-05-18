@@ -18,7 +18,8 @@ git clone git@github.com:kipoi/models.git -o /data/kipoi/models
 pip install kipoi
 
 # create all the environments
-kipoi env create shared/envs/kipoi-py3-keras2
+kipoi env create shared/envs/kipoi-py3-keras2-tf1
+kipoi env create shared/envs/kipoi-py3-keras2-tf2
 kipoi env create shared/envs/kipoi-py3-keras1.2
 
 ## Running models

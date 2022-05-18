@@ -69,7 +69,8 @@ Explore available models on [https://kipoi.org/groups/](http://kipoi.org/groups/
 Use `kipoi env create <model>` to create a new conda environment for the model. You can use the following two commands to create common environments suitable for multiple models.
 
 ```
-kipoi env create shared/envs/kipoi-py3-keras2   # add --gpu to install gpu-compatible deps
+kipoi env create shared/envs/kipoi-py3-keras2-tf1
+kipoi env create shared/envs/kipoi-py3-keras2-tf2
 kipoi env create shared/envs/kipoi-py3-keras1.2
 ```
 
