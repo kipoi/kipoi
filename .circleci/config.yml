@@ -31,10 +31,10 @@ variables:
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
         sudo apt-get -q update && sudo apt-get install -y build-essential squashfs-tools libseccomp-dev cryptsetup libhdf5-serial-dev pkg-config
-        wget https://github.com/apptainer/apptainer/releases/download/v1.0.1/apptainer_1.0.1_amd64.deb 
-        sudo apt install ~/repo/apptainer_1.0.1_amd64.deb
+        wget https://github.com/apptainer/apptainer/releases/download/v1.0.2/apptainer_1.0.2_amd64.deb 
+        sudo apt install ~/repo/apptainer_1.0.2_amd64.deb
         apptainer --version
-        rm ~/repo/apptainer_1.0.1_amd64.deb
+        rm ~/repo/apptainer_1.0.2_amd64.deb
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
