@@ -49,3 +49,4 @@ dependencies:
     - kipoiseq
     - concise>=0.6.5
     - joblib==0.17.0
+    - sorted-nearest<=0.0.33
