@@ -22,5 +22,5 @@ dependencies:
     - kipoi-interpret
     - kipoi-utils
     - kipoiseq
-
+    - sorted-nearest<=0.0.33
 
