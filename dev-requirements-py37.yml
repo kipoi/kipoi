@@ -21,7 +21,6 @@ dependencies:
   - cyvcf2>=0.8.4
   - bedtools>=2.27.1
   - htslib>=1.7
-  - coveralls
   # ML
   - scikit-learn>=0.19.1,<=0.22
   - tensorflow==1.13.1

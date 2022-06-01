@@ -204,8 +204,7 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests
-      # - coveralls/upload
-      # - *activate_and_run_coveralls
+      - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   test-36:
@@ -244,7 +243,6 @@ jobs:
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *activate_and_run_tests_py367
-      - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
   build-deploy-docs:
