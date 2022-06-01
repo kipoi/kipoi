@@ -2,13 +2,12 @@
 """
 import os
 import subprocess
-import sys
 
 import pandas as pd
 import pytest
 import yaml
 
-import config
+from config import install_req, pythonversion
 # import filecmp
 import kipoi
 import kipoi_conda
@@ -18,11 +17,7 @@ from kipoi.readers import HDF5Reader
 from utils import cp_tmpdir
 
 
-pythonversion = pytest.mark.skipif(
-    sys.version_info.major == 3 and sys.version_info.minor < 8, reason="These tests are repeated in tests/legacy/test_cli_examples.py"
-)
-
-if config.install_req:
+if install_req:
     INSTALL_FLAG = "--install_req"
 else:
     INSTALL_FLAG = ""
@@ -91,8 +86,6 @@ def test_postproc_cli_fail():
 def test_predict_activation_example(example, tmpdir):
     """Kipoi predict --layer=x with a specific output layer specified
     """
-    if example in {"rbp", "non_bedinput_model", "iris_model_template"} and sys.version_info[0] == 2:
-        pytest.skip("rbp example not supported on python 2 ")
     if example in {'kipoi_dataloader_decorator'}:
         pytest.skip("Automatically-dowloaded input files skipped for prediction")
 
@@ -146,8 +139,6 @@ def test_kipoi_pull():
 def test_kipoi_info():
     """Test that pull indeed pulls the right model
     """
-    if sys.version_info[0] == 2:
-        pytest.skip("example not supported on python 2 ")
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "info",
             "rbp_eclip/AARS"]
     returncode = subprocess.call(args=args)
