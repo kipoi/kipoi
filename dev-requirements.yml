@@ -10,6 +10,7 @@ dependencies:
   - pytorch
   - pytest
   - pytest-cov
+  - coveralls
   - pip
   - pip:
     - sklearn

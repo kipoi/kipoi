@@ -21,7 +21,7 @@ info:
   doc: Dataloader for the DeepSEA model.
 dependencies:
   conda:
-    - python=3.5
+    - python=3.7
     - numpy
     - pandas
   pip:
