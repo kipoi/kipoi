@@ -17,6 +17,11 @@ from kipoi.env_db import EnvDbEntry
 from kipoi.readers import HDF5Reader
 from utils import cp_tmpdir
 
+
+pythonversion = pytest.mark.skipif(
+    sys.version_info.major == 3 and sys.version_info.minor < 8, reason="These tests are repeated in tests/legacy/test_cli_examples.py"
+)
+
 if config.install_req:
     INSTALL_FLAG = "--install_req"
 else:
@@ -30,7 +35,7 @@ predict_activation_layers = {
 }
 ACTIVATION_EXAMPLES = ['pyt']
 
-
+@pythonversion
 def test_cli_get_example(tmpdir):
     """kipoi test ..., add also output file writing
     """
@@ -46,7 +51,7 @@ def test_cli_get_example(tmpdir):
     assert os.path.exists(os.path.join(outdir, "targets_file"))
 
 
-
+@pythonversion
 def test_cli_test_expect(tmpdir):
     """kipoi test - check that the expected predictions also match
     """
@@ -68,7 +73,7 @@ def test_cli_test_expect(tmpdir):
                                      "-e", os.path.join(example_dir, "expected.pred.h5"),
                                      example_dir])
 
-
+@pythonversion
 def test_postproc_cli_fail():
     """kipoi test ...
     """
@@ -81,6 +86,7 @@ def test_postproc_cli_fail():
     returncode = subprocess.call(args=args)
     assert returncode > 0
 
+@pythonversion
 @pytest.mark.parametrize("example", ACTIVATION_EXAMPLES)
 def test_predict_activation_example(example, tmpdir):
     """Kipoi predict --layer=x with a specific output layer specified
@@ -122,7 +128,7 @@ def test_predict_activation_example(example, tmpdir):
         with kipoi_utils.utils.cd(os.path.join(example_dir, "example_files")):
             kipoi.cli.main.cli_predict("predict", args[3:])
 
-
+@pythonversion
 def test_kipoi_pull():
     """Test that pull indeed pulls the right model
     """
@@ -136,7 +142,7 @@ def test_kipoi_pull():
 
     kipoi.cli.main.cli_pull("pull", ["rbp_eclip/AARS"])
 
-
+@pythonversion
 def test_kipoi_info():
     """Test that pull indeed pulls the right model
     """
@@ -147,7 +153,7 @@ def test_kipoi_info():
     returncode = subprocess.call(args=args)
     assert returncode == 0
 
-
+@pythonversion
 def assert_rec(a, b):
     if isinstance(a, dict):
         assert set(a.keys()) == set(b.keys())
@@ -205,7 +211,7 @@ class PseudoConda:
         else:
             raise Exception("Failed")
 
-
+@pythonversion
 def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     from kipoi.cli.env import cli_create, cli_cleanup, cli_remove, cli_get, cli_get_cli, cli_list
     tempfile = os.path.join(str(tmpdir), "envs.json")
@@ -325,7 +331,7 @@ def test_kipoi_env_create_cleanup_remove(tmpdir, monkeypatch):
     kipoi.config._env_db_path = old_env_db_path
     kipoi.env_db.reload_model_env_db()
 
-
+@pythonversion
 def test_kipoi_env_create_all(tmpdir, monkeypatch):
     from kipoi.cli.env import cli_create
     conda = PseudoConda(tmpdir)
@@ -337,13 +343,14 @@ def test_kipoi_env_create_all(tmpdir, monkeypatch):
     # pretend to run the CLI
     cli_create(*process_args(args))
 
-
+@pythonversion
 def test_kipoi_env_create_all_dry_run():
     from kipoi.cli.env import cli_create
     args = ["python", os.path.abspath("./kipoi/__main__.py"), "env", "create", "all", "--dry-run"]
     # pretend to run the CLI
     cli_create(*process_args(args))
 
+@pythonversion
 def test_kipoi_datalaoder_from_cli(tmp_path):
     tmp_output_dir = tmp_path / "output"
     tmp_output_dir.mkdir()
