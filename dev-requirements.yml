@@ -16,7 +16,7 @@ dependencies:
   - zarr
   - pip
   - pip:
-    - protobuf
+    - protobuf==3.20
     - sklearn
     - pybedtools
     - kipoi-conda
