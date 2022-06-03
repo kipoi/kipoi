@@ -17,7 +17,6 @@ from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingF
     UNSPECIFIED
 from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.kipoimodeldescription import KipoiRemoteFile
 from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_yaml,
                                load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
@@ -884,7 +883,7 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
     for k, v in dl_args.items():
         if isinstance(v.example, UNSPECIFIED):
             continue
-        if (isinstance(v.example, RemoteFile) or isinstance(v.example, KipoiRemoteFile)) and cache_path is not None:
+        if isinstance(v.example, RemoteFile) and cache_path is not None:
             if absolute_path:
                 dl_dir = os.path.abspath(cache_path)
             else:
@@ -925,7 +924,7 @@ def download_default_args(args, output_dir):
     for k in args:
         # arg.default is None
         # TODO: Any need to do this when args[k] is a dict
-        if isinstance(args[k], kipoi.specs.DataLoaderArgument) and args[k].default is not None:
+        if args[k].default is not None:
             if isinstance(args[k].default, UNSPECIFIED):
                 continue
             if isinstance(args[k].default, RemoteFile):
