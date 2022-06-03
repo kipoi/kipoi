@@ -883,7 +883,7 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
     for k, v in dl_args.items():
         if isinstance(v.example, UNSPECIFIED):
             continue
-        if (isinstance(v.example, RemoteFile) and cache_path is not None:
+        if isinstance(v.example, RemoteFile) and cache_path is not None:
             if absolute_path:
                 dl_dir = os.path.abspath(cache_path)
             else:
