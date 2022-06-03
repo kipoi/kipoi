@@ -12,6 +12,7 @@ dependencies:
   - pytest-cov
   - coveralls
   - tensorflow
+  - keras
   - pyarrow
   - zarr
   - pip
