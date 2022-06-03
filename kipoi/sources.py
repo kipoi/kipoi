@@ -59,12 +59,6 @@ def get_component_file(component_dir, which="model", raise_err=True):
     # TODO - if component_dir has an extension, then just return that file path
     return get_file_path(component_dir, which, extensions=[".yml", ".yaml"], raise_err=raise_err)
 
-def get_python_component(component_dir, which="model", raise_err=True):
-    # TODO - if component_dir has an extension, then just return that file path
-    if get_file_path(component_dir, f"{which}-template", extensions=[".yml", ".yaml"], raise_err=raise_err) is None:
-        return get_file_path(component_dir, which, extensions=[".py"], raise_err=raise_err)
-    else:
-        return None
 
 def list_yamls_recursively(root_dir, basename):
     return [os.path.dirname(x) for x in list_files_recursively(root_dir, basename, suffix='y?ml')]
@@ -92,22 +86,6 @@ def load_component_descr(component_dir, which="model"):
             return DataLoaderDescription.load(fname)
         else:
             raise ValueError("which needs to be from {'model', 'dataloader'}")
-
-def load_python_component_descr(component_dir, which="model"):
-    """Return the parsed yaml file
-    """
-    import importlib
-    from kipoi.kipoimodeldescription import KipoiModelDescription
-    from kipoi.kipoidataloaderdescription import KipoiDataLoaderDescription
-    component = f"{component_dir.replace('/', '.')}.{which}"
-    if which == "model":
-        mod = importlib.import_module(component)
-        return getattr(mod, "description")
-    elif which == "dataloader":
-        mod = importlib.import_module(component)
-        return getattr(mod, "description")
-    else:
-        raise ValueError("which needs to be from {'model', 'dataloader'}")
 
 def list_softlink_dependencies(component_dir, source_path):
     """List dependencies of a directory
@@ -553,21 +531,12 @@ class LocalSource(Source):
         else:
             return False
 
-    def _is_python_component(self, component, which):
-        path = os.path.join(self.local_path, os.path.normpath(component))
-        if get_python_component(path, which=which, raise_err=False) is not None and get_component_file(path, which=which, raise_err=False) is None:
-            return True
-        else:
-            return False 
-
     def _get_component_dir(self, component, which='model'):
         component = os.path.normpath(component)
 
         self.assert_is_component(component, which)
         # special case: component can be outside of the root directory
         if self._is_nongroup_component(component, which):
-            return os.path.join(self.local_path, os.path.normpath(component))
-        elif self._is_python_component(component, which):
             return os.path.join(self.local_path, os.path.normpath(component))
         else:
             k = self.get_group_name(component, which)
@@ -581,7 +550,7 @@ class LocalSource(Source):
             name = which
         insert_path = os.path.join("downloaded", '{}_files'.format(name))
         # special case: component can be outside of the root directory
-        if self._is_nongroup_component(component, which) or self._is_python_component(component, which):
+        if self._is_nongroup_component(component, which):
             return os.path.join(self.local_path, os.path.normpath(component), insert_path)
         else:
             k = self.get_group_name(component, which)
@@ -598,11 +567,8 @@ class LocalSource(Source):
         if self._is_nongroup_component(component, which):
             # it contains a {which}.y?ml
             return True
-        elif self._is_python_component(component, which):
-            return True
         else:
             # it's present in one of the groups
-
             k = self.get_group_name(component, which)
             if k is not None:
                 # check that it's indeed found in one of the components
@@ -623,8 +589,6 @@ class LocalSource(Source):
             # component has an explicit yaml file
             # TODO - move into the component directory when loading
             return load_component_descr(os.path.join(self.local_path, component), which)
-        elif self._is_python_component(component, which):
-            return load_python_component_descr(component, which)
         else:
             k = self.get_group_name(component, which)
             if k is None:
