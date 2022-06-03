@@ -11,14 +11,13 @@ dependencies:
   - pytest
   - pytest-cov
   - coveralls
+  - tensorflow
+  - pyarrow
+  - zarr
   - pip
   - pip:
     - sklearn
-    - pyarrow
     - pybedtools
-    - zarr
-    - pybedtools
-    - tensorflow
     - kipoi-conda
     - kipoi-interpret
     - kipoi-utils
