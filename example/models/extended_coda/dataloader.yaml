@@ -27,7 +27,6 @@ info:
 dependencies:
     pip:
         - cython
-        - genomelake
 output_schema:
     inputs:
         H3K27AC_subsampled:

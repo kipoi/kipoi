@@ -30,7 +30,6 @@ dependencies:
         - pybedtools
         - pysam
         - cython
-        - genomelake
 output_schema:
     inputs:
         seq:

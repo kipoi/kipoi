@@ -82,46 +82,6 @@ def test_postproc_cli_fail():
     assert returncode > 0
 
 @pythonversion
-@pytest.mark.parametrize("example", ACTIVATION_EXAMPLES)
-def test_predict_activation_example(example, tmpdir):
-    """Kipoi predict --layer=x with a specific output layer specified
-    """
-    if example in {'kipoi_dataloader_decorator'}:
-        pytest.skip("Automatically-dowloaded input files skipped for prediction")
-
-    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
-    # example_dir = "example/models/{0}".format(example)
-
-    print(example)
-    print("tmpdir: {0}".format(tmpdir))
-    tmpfile = str(tmpdir.mkdir("output").join("out.h5"))
-
-    # run the
-    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
-            "../",  # directory
-            "--source=dir",
-            "--layer", predict_activation_layers[example],
-            "--batch_size=4",
-            "--num_workers=2",
-            "--keep_metadata",
-            "--dataloader_args=test.json",
-            "--output", tmpfile]
-    if INSTALL_FLAG:
-        args.append(INSTALL_FLAG)
-    returncode = subprocess.call(args=args,
-                                 cwd=os.path.realpath(example_dir + "/example_files"))
-    assert returncode == 0
-
-    assert os.path.exists(tmpfile)
-
-    data = HDF5Reader.load(tmpfile)
-    assert {'metadata', 'preds'} <= set(data.keys())
-    if example == 'pyt':
-        args[-1] = tmpfile + "2.h5"
-        with kipoi_utils.utils.cd(os.path.join(example_dir, "example_files")):
-            kipoi.cli.main.cli_predict("predict", args[3:])
-
-@pythonversion
 def test_kipoi_pull():
     """Test that pull indeed pulls the right model
     """
@@ -367,3 +327,42 @@ def test_kipoi_datalaoder_from_cli(tmp_path):
     output_cli_dataloader_df = pd.read_csv(output_cli_dataloader)
     assert returncode == 0
     assert output_model_dataloader_df.equals(output_cli_dataloader_df)
+
+@pythonversion
+@pytest.mark.parametrize("example", ACTIVATION_EXAMPLES)
+def test_predict_activation_example(example, tmpdir):
+    """Kipoi predict --layer=x with a specific output layer specified
+    """
+    if example in {'kipoi_dataloader_decorator'}:
+        pytest.skip("Automatically-dowloaded input files skipped for prediction")
+
+    example_dir = cp_tmpdir("example/models/{0}".format(example), tmpdir)
+    # example_dir = "example/models/{0}".format(example)
+
+    print(example)
+    print("tmpdir: {0}".format(tmpdir))
+    tmpfile = str(tmpdir.mkdir("output").join("out.h5"))
+
+    # run the
+    args = ["python", os.path.abspath("./kipoi/__main__.py"), "predict",
+            "../",  # directory
+            "--source=dir",
+            "--layer", predict_activation_layers[example],
+            "--batch_size=4",
+            "--keep_metadata",
+            "--dataloader_args=test.json",
+            "--output", tmpfile]
+    if INSTALL_FLAG:
+        args.append(INSTALL_FLAG)
+    returncode = subprocess.call(args=args,
+                                 cwd=os.path.realpath(example_dir + "/example_files"))
+    assert returncode == 0
+
+    assert os.path.exists(tmpfile)
+
+    data = HDF5Reader.load(tmpfile)
+    assert {'metadata', 'preds'} <= set(data.keys())
+    if example == 'pyt':
+        args[-1] = tmpfile + "2.h5"
+        with kipoi_utils.utils.cd(os.path.join(example_dir, "example_files")):
+            kipoi.cli.main.cli_predict("predict", args[3:])

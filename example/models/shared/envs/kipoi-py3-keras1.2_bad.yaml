@@ -10,7 +10,6 @@ dependencies:
 - pysam
 - python=3.7
 - h5py
-- genomelake
 - numpy
 - pandas
 - cython
