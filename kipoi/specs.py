@@ -762,6 +762,8 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
+        deps.pip = [dep for dep in deps.pip if dep != "cpuonly"]
         return Dependencies(
             conda=[replace_gpu(dep) for dep in deps.conda],
             pip=[replace_gpu(dep) for dep in deps.pip],
