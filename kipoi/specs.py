@@ -686,12 +686,12 @@ class Dependencies(RelatedConfigMixin):
         # pytorch-mutex, on centos it will. 
         for torchpkg in ["^pytorch-cpu",  "^torchvision-cpu"]:
             matcher = re.compile(torchpkg)
-            for pkg in list(filter(matcher.match, packages)):
+            for pkg in filter(matcher.match, packages):
                 packages.remove(pkg)
                 packages.append(pkg.replace("-cpu", ""))
                 if "cpuonly" not in packages:
                     packages.append("cpuonly")
-        return channels, packages
+        return channels, packages   
 
     def to_env_dict(self, env_name):
         deps = self.normalized()

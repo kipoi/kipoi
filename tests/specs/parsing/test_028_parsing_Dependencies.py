@@ -65,3 +65,8 @@ def test_gpu():
     # nothing changed
     deps = Dependencies(pip=["foo"], conda=["bar"])
     assert deps.gpu() == deps.normalized()
+
+def test_pytorch_cpu():
+    deps = Dependencies(conda=['python=3.7', 'numpy=1.19.2', 'pytorch-cpu=1.3.1', 'torchvision-cpu=0.3.0', 'pip=21.0.1', 'numpy'])
+    print(sorted(deps.normalized().conda))
+    assert sorted(deps.normalized().conda) == ['cpuonly', 'numpy', 'numpy=1.19.2', 'pip=21.0.1', 'python=3.7', 'pytorch=1.3.1', 'torchvision=0.3.0']
