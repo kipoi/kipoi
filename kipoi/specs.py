@@ -8,6 +8,7 @@ from collections import OrderedDict
 import enum
 import numpy as np
 import related
+import re
 
 import kipoi
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
@@ -678,14 +679,18 @@ class Dependencies(RelatedConfigMixin):
                                "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
                 channels.insert(len(channels), "defaults")
-        # Add special case for pytorch-cpu. There is no longer any
-        # need to provide pytorch-cpu in model(/dataloader).yaml. Recent 
+        # Add special case for pytorch-cpu and torchvision-cpu. There is no 
+        # longer any need to provide pytorch-cpu in model(/dataloader).yaml. Recent 
         # versions of pytorch (since 1.3.0) will install necessary libraries 
         # on its own - for example, on mac it will not install 
         # pytorch-mutex, on centos it will. 
-        packages = [pkg.replace('-cpu', '') if ('pytorch-cpu' in pkg or 'torchvision-cpu' in pkg) \
-            else pkg for pkg in packages]
-        
+        for torchpkg in ["^pytorch-cpu",  "^torchvision-cpu"]:
+            matcher = re.compile(torchpkg)
+            for pkg in list(filter(matcher.match, packages)):
+                packages.remove(pkg)
+                packages.append(pkg.replace("-cpu", ""))
+                if "cpuonly" not in packages:
+                    packages.append("cpuonly")
         return channels, packages
 
     def to_env_dict(self, env_name):
