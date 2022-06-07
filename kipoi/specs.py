@@ -763,7 +763,6 @@ class Dependencies(RelatedConfigMixin):
 
         deps = self.normalized()
         deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
-        deps.pip = [dep for dep in deps.pip if dep != "cpuonly"]
         return Dependencies(
             conda=[replace_gpu(dep) for dep in deps.conda],
             pip=[replace_gpu(dep) for dep in deps.pip],
@@ -772,6 +771,11 @@ class Dependencies(RelatedConfigMixin):
     def osx(self):
         """Get the os - x compatible dependencies
         """
+        # As of pytorch 1.11 from here https://pytorch.org/get-started/locally/
+        # Linux installation: conda install pytorch torchvision torchaudio 
+        # cpuonly -c pytorch
+        # Mac installation: conda install pytorch torchvision torchaudio 
+        # -c pytorch
         from sys import platform
         if platform != 'darwin':
             logger.warning("Calling osx dependency conversion on non-osx platform: {}".
@@ -786,6 +790,8 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
+
         return Dependencies(
             conda=[replace_osx(dep) for dep in deps.conda],
             pip=[replace_osx(dep) for dep in deps.pip],
