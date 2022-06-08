@@ -673,12 +673,28 @@ class Dependencies(RelatedConfigMixin):
         if "bioconda" in channels and "conda-forge" not in channels:
             # Insert 'conda-forge' right after bioconda if it is not included
             channels.insert(channels.index("bioconda") + 1, "conda-forge")
-        if "pysam" in packages and "bioconda" in channels:
-            if channels.index("defaults") < channels.index("bioconda"):
+        
+        # Add special handling for pysam. With kipoi<=0.8.2, if pysam is 
+        # versioned, prioritizing of bioconda over defaults and conda-forge
+        # channel was ignored. Also, I have noticed unless pysam is downloaded
+        # from bioconda channel the resulting conda environment sometimes
+        # fails to get resolved. Specifically mentioning bioconda::pysam
+        # resolves this. However, users may not be aware of this
+        # Bioconda now is always added as a channel if pysam is mentioned as a
+        # dependency.
+        
+        pysam_matcher = re.compile("^pysam")
+        for pkg in filter(pysam_matcher.match, packages):
+            if "bioconda" not in channels:
+                channels.remove("defaults")
+                channels.append("bioconda")
+                channels.append("defaults")
+            elif channels.index("defaults") < channels.index("bioconda"):     
                 logger.warning("Swapping channel order - putting defaults last. " +
                                "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
-                channels.insert(len(channels), "defaults")
+                channels.append("defaults")
+
         # Add special case for pytorch-cpu and torchvision-cpu. These 
         # packages are not being updated in conda pytorch channel 
         # anymore. There is no longer any need to provide pytorch-cpu 
