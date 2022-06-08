@@ -8,6 +8,7 @@ from collections import OrderedDict
 import enum
 import numpy as np
 import related
+import re
 
 import kipoi
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
@@ -672,13 +673,42 @@ class Dependencies(RelatedConfigMixin):
         if "bioconda" in channels and "conda-forge" not in channels:
             # Insert 'conda-forge' right after bioconda if it is not included
             channels.insert(channels.index("bioconda") + 1, "conda-forge")
-        if "pysam" in packages and "bioconda" in channels:
-            if channels.index("defaults") < channels.index("bioconda"):
+        
+        # Add special handling for pysam. With kipoi<=0.8.2, if pysam is 
+        # versioned, prioritizing of bioconda over defaults and conda-forge
+        # channel was ignored. Also, I have noticed unless pysam is downloaded
+        # from bioconda channel the resulting conda environment sometimes
+        # fails to get resolved. Specifically mentioning bioconda::pysam
+        # resolves this. However, users may not be aware of this
+        # Bioconda now is always added as a channel if pysam is mentioned as a
+        # dependency.
+        
+        pysam_matcher = re.compile("^pysam")
+        for pkg in filter(pysam_matcher.match, packages):
+            if "bioconda" not in channels:
+                channels.remove("defaults")
+                channels.append("bioconda")
+                channels.append("defaults")
+            elif channels.index("defaults") < channels.index("bioconda"):     
                 logger.warning("Swapping channel order - putting defaults last. " +
                                "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
-                channels.insert(len(channels), "defaults")
-        return channels, packages
+                channels.append("defaults")
+
+        # Add special case for pytorch-cpu and torchvision-cpu. These 
+        # packages are not being updated in conda pytorch channel 
+        # anymore. There is no longer any need to provide pytorch-cpu 
+        # in model( or dataloader).yaml. Recent 
+        # versions of pytorch (since 1.3.0) will install necessary libraries 
+        # on its own. 
+        for torchpkg in ["^pytorch-cpu",  "^torchvision-cpu"]:
+            matcher = re.compile(torchpkg)
+            for pkg in filter(matcher.match, packages):
+                packages.remove(pkg)
+                packages.append(pkg.replace("-cpu", ""))
+                if "cpuonly" not in packages:
+                    packages.append("cpuonly")
+        return channels, packages   
 
     def to_env_dict(self, env_name):
         deps = self.normalized()
@@ -749,6 +779,7 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
         return Dependencies(
             conda=[replace_gpu(dep) for dep in deps.conda],
             pip=[replace_gpu(dep) for dep in deps.pip],
@@ -757,6 +788,11 @@ class Dependencies(RelatedConfigMixin):
     def osx(self):
         """Get the os - x compatible dependencies
         """
+        # As of pytorch 1.11 from here https://pytorch.org/get-started/locally/
+        # Linux installation: conda install pytorch torchvision torchaudio 
+        # cpuonly -c pytorch
+        # Mac installation: conda install pytorch torchvision torchaudio 
+        # -c pytorch
         from sys import platform
         if platform != 'darwin':
             logger.warning("Calling osx dependency conversion on non-osx platform: {}".
@@ -771,6 +807,8 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
+
         return Dependencies(
             conda=[replace_osx(dep) for dep in deps.conda],
             pip=[replace_osx(dep) for dep in deps.pip],
