@@ -679,11 +679,12 @@ class Dependencies(RelatedConfigMixin):
                                "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
                 channels.insert(len(channels), "defaults")
-        # Add special case for pytorch-cpu and torchvision-cpu. There is no 
-        # longer any need to provide pytorch-cpu in model(/dataloader).yaml. Recent 
+        # Add special case for pytorch-cpu and torchvision-cpu. These 
+        # packages are not being updated in conda pytorch channel 
+        # anymore. There is no longer any need to provide pytorch-cpu 
+        # in model( or dataloader).yaml. Recent 
         # versions of pytorch (since 1.3.0) will install necessary libraries 
-        # on its own - for example, on mac it will not install 
-        # pytorch-mutex, on centos it will. 
+        # on its own. 
         for torchpkg in ["^pytorch-cpu",  "^torchvision-cpu"]:
             matcher = re.compile(torchpkg)
             for pkg in filter(matcher.match, packages):
