@@ -1,6 +1,5 @@
 name: kipoi-dev
 channels:
-  - pytorch
   - conda-forge
   - bioconda
   - defaults
