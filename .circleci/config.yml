@@ -335,12 +335,12 @@ jobs:
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc
-      # - run:
-      #     name: check if commit is tagged
-      #     command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
-      # - run:
-      #     name: upload to PyPI
-      #     command: twine upload --repository pypi dist/* --verbose
+      - run:
+          name: check if commit is tagged
+          command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
+      - run:
+          name: upload to PyPI
+          command: twine upload --repository pypi dist/* --verbose
       - run:
           name: pip install from PyPI
           command: |
