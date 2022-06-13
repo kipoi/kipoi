@@ -346,13 +346,10 @@ jobs:
           command: |
             source activate kipoi-env
             python -m pip install --user kipoi --verbose
-            python -c "import kipoi; print(kipoi.__version__)"
-          
+            python -c "import kipoi; print(kipoi.__version__)"          
       - run:
           name: Update all containers with new version of kipoi
-          command: curl -X POST \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token $SYNC_TOKEN" https://api.github.com/repos/kipoi/kipoi-containers/dispatches -d '{"event_type":"updateall"}'
+          command: curl -X POST -H "Accept:application/vnd.github.v3+json" -H "Authorization:token $SYNC_TOKEN" https://api.github.com/repos/kipoi/kipoi-containers/dispatches -d '{"event_type":"updateall"}'
 workflows:
   version: 2.1
 
@@ -389,6 +386,8 @@ workflows:
                 - test_deployment_pypi
                 - test_deployment_script
       - productive-deploy-pypi:
+          context:
+            - sync-kipoi-containers
           requires:
             - test-36
             - test-37
