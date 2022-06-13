@@ -335,19 +335,18 @@ jobs:
       - *build_pypi_package
       - *conda_install_twine
       - *pypi_create_pypirc
-      - run:
-          name: check if commit is tagged
-          command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
-      - run:
-          name: upload to PyPI
-          command: twine upload --repository pypi dist/* --verbose
+      # - run:
+      #     name: check if commit is tagged
+      #     command: git describe --exact-match --tags HEAD && echo "commit is tagged; continuing" || circleci step halt
+      # - run:
+      #     name: upload to PyPI
+      #     command: twine upload --repository pypi dist/* --verbose
       - run:
           name: pip install from PyPI
           command: |
             source activate kipoi-env
             python -m pip install --user kipoi --verbose
-            python -c "import kipoi; print(kipoi.__version__)"
-          
+            python -c "import kipoi; print(kipoi.__version__)"          
       - run:
           name: Update all containers with new version of kipoi
           command: curl -X POST \
@@ -400,6 +399,7 @@ workflows:
 #              only: /^v.*/
             branches:
               only:
+                - deploy
                 - master
   kipoi-nightly-test:
     triggers:
