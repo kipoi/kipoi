@@ -6,8 +6,7 @@ https://github.com/fchollet/keras/blob/6f3e6bb6fc97e706f37dc078ae821f490b78035b/
 import os
 from collections import OrderedDict
 import pandas as pd
-from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
-from kipoi_utils.utils import yaml_ordered_dump, yaml_ordered_load, du
+from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource, HFHubSource
 import logging
 
 logger = logging.getLogger(__name__)
