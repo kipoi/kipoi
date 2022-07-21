@@ -9,7 +9,6 @@ dependencies:
 - cyvcf2
 - pybedtools
 - pysam
-- genomelake
 - numpy
 - cython
 - h5py

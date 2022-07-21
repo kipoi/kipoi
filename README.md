@@ -13,7 +13,7 @@
 	<img alt='PyPi' src=https://img.shields.io/pypi/v/kipoi.svg style="max-height:20px;width:auto;">
 </a>
 <a href=https://www.python.org/downloads>
-	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-cyan style="max-height:20px;width:auto;">
+	<img alt='Python' src=https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9%20%7C%203.10-cyan style="max-height:20px;width:auto;">
 </a>
 <a href=https://opensource.org/licenses/MIT>
 	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
@@ -36,7 +36,7 @@ This repository implements a python package and a command-line interface (CLI) t
 ## Installation
 
 Kipoi requires [conda](https://conda.io/) to manage model dependencies.
-Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.9. 
+Make sure you have either anaconda ([download page](https://www.anaconda.com/download/)) or miniconda ([download page](https://conda.io/miniconda.html)) installed. If you are using OSX, see [Installing python on OSX](http://kipoi.org/docs/using/04_Installing_on_OSX). Maintained python versions: >=3.6<=3.10. 
 
 
 Install Kipoi using [pip](https://pip.pypa.io/en/stable/):
@@ -51,10 +51,10 @@ For systems using python 3.6 and 3.7, pretrained kipoi models of type kipoi.mode
 ```bash
 pip install h5py==2.10.0
 ```
-This is not a problem with systems using python 3.8 and 3.9.
+This is not a problem with systems using python >=3.8<=3.10.
 More information available [here](https://github.com/tensorflow/tensorflow/issues/44467)
 
-For systems using python 3.8 and 3.9, it is necessary to install hdf5 and pkgconfig prior to installing kipoi.
+For systems using python >=3.8<=3.10, it is necessary to install hdf5 and pkgconfig prior to installing kipoi.
 
 ```bash
 conda install --yes -c conda-forge hdf5 pkgconfig
@@ -69,7 +69,8 @@ Explore available models on [https://kipoi.org/groups/](http://kipoi.org/groups/
 Use `kipoi env create <model>` to create a new conda environment for the model. You can use the following two commands to create common environments suitable for multiple models.
 
 ```
-kipoi env create shared/envs/kipoi-py3-keras2   # add --gpu to install gpu-compatible deps
+kipoi env create shared/envs/kipoi-py3-keras2-tf1
+kipoi env create shared/envs/kipoi-py3-keras2-tf2
 kipoi env create shared/envs/kipoi-py3-keras1.2
 ```
 
@@ -78,9 +79,12 @@ Before using a model in any way, activate the right conda enviroment:
 source activate $(kipoi env get <model>)
 ```
 
-### Using pre-made containers 
+### Using pre-made containers
 
-Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi predict` commands. For example: Look at the sigularity tab under http://kipoi.org/models/Xpresso/human_median/. Alternatively, you can use the docker containers directly. For more information: Look at the docker tab under any model web page on kipoi.org such as http://kipoi.org/models/Xpresso/human_median/
+Alternatively, you can use the Singularity or Docker containers with all dependencies installed. Singularity containers can be seamlessly used with the CLI by adding the `--singularity` flag to `kipoi predict` commands. For example: Look at the sigularity tab under [this](http://kipoi.org/models/Xpresso/human_median/). Alternatively, you can use the docker containers directly. For more information: Look at the docker tab under any model web page on kipoi.org such as [this](http://kipoi.org/models/Xpresso/human_median/). We are currently offering two types of docker images. A full sized version (under the banner `Get the full sized docker image`) comes with conda pre-installed along with model (group) specific dependencies. Use this if you plan to experiment with conda funcitonalities. A slim sized version (under the banner `Get the docker image`) comes with all dependencies installed. However, it does not come with a working conda packge manager. Use the slim versions if you plan to use it for kipoi related tasks only.
+
+### A note about installing singularity
+Singularity has been renamed to [Apptainer](https://apptainer.org/). However, it is also possible to use SingularityCE from [Sylabs](https://sylabs.io/). Current versions of kipoi containers are compatible with the latest version of Apptainer (1.0.2) and SingularityCE 3.9. Install Apptainer from [here](https://apptainer.org/docs/user/main/quick_start.html#quick-installation-steps) or SingularityCE from [here](https://sylabs.io/guides/3.9/admin-guide/installation.html).
 
 ### Python
 
@@ -208,13 +212,31 @@ If you use Kipoi for your research, please cite the publication of the model you
 
 If you want to help with the development of Kipoi, you are more than welcome to join in! 
 
-For the local setup for development, you should install all required dependencies using one of the provided dev-requirements-py<36|37|38|39>.yml files
+For the local setup for development, you should install all required dependencies using one of the provided dev-requirements(-py<36|37>).yml files
 
+For systems using python 3.6/3.7:
 ```bash
-conda env create -f dev-requirements-py39.yml
+conda env create -f dev-requirements-py36.yml --experimental-solver=libmamba
+or
+conda env create -f dev-requirements-py37.yml --experimental-solver=libmamba
 conda activate kipoi-dev
 pip install -e .
+git lfs install
 ```
+
+For systems using python >=3.8<=3.10:
+```bash
+conda create --name kipoi-dev python=3.8 (or 3.9, 3.10)
+conda activate kipoi-dev
+conda env update --name kipoi-dev --file dev-requirements.yml --experimental-solver=libmamba 
+pip install -e .
+conda install -c bioconda cyvcf2 pybigwig
+git lfs install    
+```
+
+### A note about cyvcf2 and pybigwig
+
+For python >= 3.10, cyvcf2 and pybigwig are not available in conda yet. Install them from source like [here](https://github.com/kipoi/kipoi/blob/2aff30e93e3b5b6ea0116a65c32ee55d74a52743/.circleci/config.yml#L84-L97) and [here](https://github.com/kipoi/kipoi/blob/2aff30e93e3b5b6ea0116a65c32ee55d74a52743/.circleci/config.yml#L98-L105) instead. I will recommend against installing them using pip as it may lead to unexpected inconsistencies.
 
 You can test the package by running `py.test`. 
 

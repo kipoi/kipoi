@@ -77,7 +77,7 @@ def pred_batch_list():
 def pred_batch_vlen():
     return [
         np.arange(9).reshape((3, 3)),
-        np.asarray([np.arange(i + 3) for i in range(3)]),
+        np.asarray([np.arange(i + 3) for i in range(3)], dtype=object),
     ]
 
 

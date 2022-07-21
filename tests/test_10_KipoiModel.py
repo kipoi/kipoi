@@ -2,9 +2,8 @@
 """
 import pytest
 import kipoi
-import sys
-import config
-import six
+
+from config import install_req, pythonversion
 import kipoi
 from kipoi.specs import Dependencies
 from kipoi.pipeline import install_model_requirements
@@ -15,17 +14,12 @@ from tensorflow import keras
 
 EXAMPLES_TO_RUN = ["pyt", "upgradedkeras"]
 # TODO - finish the unit-test
-INSTALL_REQ = config.install_req
+INSTALL_REQ = install_req
 
-
+@pythonversion
 @pytest.mark.parametrize("example", EXAMPLES_TO_RUN)
 def test_load_model(example):
     example_dir = "example/models/{0}".format(example)
-
-    if example in {"rbp", "iris_model_template"} and sys.version_info[0] == 2:
-        pytest.skip("example not supported on python 2 ")
-    if example == "upgradedkeras" and sys.version_info.major == 3 and sys.version_info.minor < 8:
-        pytest.skip("example is only supported >= python 3.8 ")
 
     if INSTALL_REQ:
         install_model_requirements(example_dir, "dir")

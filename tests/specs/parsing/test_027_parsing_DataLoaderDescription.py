@@ -2,7 +2,6 @@
 """
 import os
 import pytest
-import six
 from pytest import raises
 from kipoi.specs import DataLoaderDescription, example_kwargs, RemoteFile
 from related import from_yaml
@@ -149,7 +148,7 @@ def test_model_loading_on_examples(example):
 
     dl.defined_as
     dl.args
-    arg_elem = six.next(six.itervalues(dl.args))
+    arg_elem = list(dl.args.values())[0]
     arg_elem.doc
     arg_elem.type
     arg_elem.optional
@@ -163,7 +162,7 @@ def test_model_loading_on_examples(example):
 
     dl.output_schema
     dl.output_schema.inputs
-    inp_elem = six.next(six.itervalues(dl.output_schema.inputs))
+    inp_elem = list(dl.output_schema.inputs.values())[0]
     inp_elem.shape
     inp_elem.special_type
     inp_elem.associated_metadata

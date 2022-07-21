@@ -21,12 +21,12 @@ info:
   doc: Dataloader for the DeepSEA model.
 dependencies:
   conda:
-    - python=3.5
+    - python
     - numpy
     - pandas
+    - cython
   pip:
     - cython
-    - genomelake
     - pybedtools
 output_schema:
   inputs:

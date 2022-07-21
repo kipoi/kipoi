@@ -1,8 +1,5 @@
 """Defines the classes for Yaml parsing using related: https://github.com/genomoncology/related
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
 import collections
 import logging
 import os
@@ -11,7 +8,7 @@ from collections import OrderedDict
 import enum
 import numpy as np
 import related
-import six
+import re
 
 import kipoi
 from kipoi_utils.external.torchvision.dataset_utils import download_url, check_integrity
@@ -21,7 +18,6 @@ from kipoi_utils.external.related.fields import StrSequenceField, NestedMappingF
     UNSPECIFIED
 from kipoi_utils.external.related.mixins import RelatedConfigMixin, RelatedLoadSaveMixin
 from kipoi.metadata import GenomicRanges
-from kipoi.kipoimodeldescription import KipoiRemoteFile
 from kipoi_utils.utils import (unique_list, yaml_ordered_dump, read_txt, read_yaml,
                                load_obj, inherits_from, override_default_kwargs, recursive_dict_parse)
 
@@ -261,21 +257,21 @@ class ModelSchema(RelatedConfigMixin):
                                                     name_self="Model",
                                                     name_schema="Dataloader",
                                                     verbose=verbose)
-            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Mapping):
+            elif isinstance(dschema, collections.abc.Mapping) and isinstance(descr, collections.abc.Mapping):
                 if not set(descr.keys()).issubset(set(dschema.keys())):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("dataloader fields: {0}".format(dschema.keys()))
                     print_msg("model fields: {0}".format(descr.keys()))
                     return False
                 return all([compatible_nestedmapping(dschema[key], descr[key], cls, verbose) for key in descr])
-            elif isinstance(dschema, collections.Sequence) and isinstance(descr, collections.Sequence):
+            elif isinstance(dschema, collections.abc.Sequence) and isinstance(descr, collections.abc.Sequence):
                 if not len(descr) <= len(dschema):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("len(dataloader): {0}".format(len(dschema)))
                     print_msg("len(model): {0}".format(len(descr)))
                     return False
                 return all([compatible_nestedmapping(dschema[i], descr[i], cls, verbose) for i in range(len(descr))])
-            elif isinstance(dschema, collections.Mapping) and isinstance(descr, collections.Sequence):
+            elif isinstance(dschema, collections.abc.Mapping) and isinstance(descr, collections.abc.Sequence):
                 if not len(descr) <= len(dschema):
                     print_msg("Dataloader doesn't provide all the fields required by the model:")
                     print_msg("len(dataloader): {0}".format(len(dschema)))
@@ -448,14 +444,14 @@ class DataLoaderSchema(RelatedConfigMixin):
             # Special case for the metadat
             if isinstance(descr, cls):
                 return descr.compatible_with_batch(batch, verbose=verbose)
-            elif isinstance(batch, collections.Mapping) and isinstance(descr, collections.Mapping):
+            elif isinstance(batch, collections.abc.Mapping) and isinstance(descr, collections.abc.Mapping):
                 if not set(batch.keys()) == set(descr.keys()):
                     print_msg("The dictionary keys don't match:")
                     print_msg("batch: {0}".format(batch.keys()))
                     print_msg("descr: {0}".format(descr.keys()))
                     return False
                 return all([compatible_nestedmapping(batch[key], descr[key], cls, verbose) for key in batch])
-            elif isinstance(batch, collections.Sequence) and isinstance(descr, collections.Sequence):
+            elif isinstance(batch, collections.abc.Sequence) and isinstance(descr, collections.abc.Sequence):
                 if not len(batch) == len(descr):
                     print_msg("Lengths dont match:")
                     print_msg("len(batch): {0}".format(len(batch)))
@@ -677,13 +673,42 @@ class Dependencies(RelatedConfigMixin):
         if "bioconda" in channels and "conda-forge" not in channels:
             # Insert 'conda-forge' right after bioconda if it is not included
             channels.insert(channels.index("bioconda") + 1, "conda-forge")
-        if "pysam" in packages and "bioconda" in channels:
-            if channels.index("defaults") < channels.index("bioconda"):
+        
+        # Add special handling for pysam. With kipoi<=0.8.2, if pysam is 
+        # versioned, prioritizing of bioconda over defaults and conda-forge
+        # channel was ignored. Also, I have noticed unless pysam is downloaded
+        # from bioconda channel the resulting conda environment sometimes
+        # fails to get resolved. Specifically mentioning bioconda::pysam
+        # resolves this. However, users may not be aware of this
+        # Bioconda now is always added as a channel if pysam is mentioned as a
+        # dependency.
+        
+        pysam_matcher = re.compile("^pysam")
+        for pkg in filter(pysam_matcher.match, packages):
+            if "bioconda" not in channels:
+                channels.remove("defaults")
+                channels.append("bioconda")
+                channels.append("defaults")
+            elif channels.index("defaults") < channels.index("bioconda"):     
                 logger.warning("Swapping channel order - putting defaults last. " +
                                "Using pysam bioconda instead of anaconda")
                 channels.remove("defaults")
-                channels.insert(len(channels), "defaults")
-        return channels, packages
+                channels.append("defaults")
+
+        # Add special case for pytorch-cpu and torchvision-cpu. These 
+        # packages are not being updated in conda pytorch channel 
+        # anymore. There is no longer any need to provide pytorch-cpu 
+        # in model( or dataloader).yaml. Recent 
+        # versions of pytorch (since 1.3.0) will install necessary libraries 
+        # on its own. 
+        for torchpkg in ["^pytorch-cpu",  "^torchvision-cpu"]:
+            matcher = re.compile(torchpkg)
+            for pkg in filter(matcher.match, packages):
+                packages.remove(pkg)
+                packages.append(pkg.replace("-cpu", ""))
+                if "cpuonly" not in packages:
+                    packages.append("cpuonly")
+        return channels, packages   
 
     def to_env_dict(self, env_name):
         deps = self.normalized()
@@ -754,6 +779,7 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
         return Dependencies(
             conda=[replace_gpu(dep) for dep in deps.conda],
             pip=[replace_gpu(dep) for dep in deps.pip],
@@ -762,6 +788,11 @@ class Dependencies(RelatedConfigMixin):
     def osx(self):
         """Get the os - x compatible dependencies
         """
+        # As of pytorch 1.11 from here https://pytorch.org/get-started/locally/
+        # Linux installation: conda install pytorch torchvision torchaudio 
+        # cpuonly -c pytorch
+        # Mac installation: conda install pytorch torchvision torchaudio 
+        # -c pytorch
         from sys import platform
         if platform != 'darwin':
             logger.warning("Calling osx dependency conversion on non-osx platform: {}".
@@ -776,6 +807,8 @@ class Dependencies(RelatedConfigMixin):
             return dep
 
         deps = self.normalized()
+        deps.conda = [dep for dep in deps.conda if dep != "cpuonly"]
+
         return Dependencies(
             conda=[replace_osx(dep) for dep in deps.conda],
             pip=[replace_osx(dep) for dep in deps.pip],
@@ -818,7 +851,7 @@ class DataLoaderImport(RelatedConfigMixin):
 
         # override also the values in the example in case
         # they were previously specified
-        for k, v in six.iteritems(self.default_args):
+        for k, v in self.default_args.items():
             
             if not isinstance(obj.args[k].example, UNSPECIFIED):
                 obj.args[k].example = v
@@ -885,10 +918,10 @@ def example_kwargs(dl_args, cache_path=None, absolute_path=True, dry_run=False):
       cache_path: if specified, save the examples to that directory
     """
     example_files = {}
-    for k, v in six.iteritems(dl_args):
+    for k, v in dl_args.items():
         if isinstance(v.example, UNSPECIFIED):
             continue
-        if (isinstance(v.example, RemoteFile) or isinstance(v.example, KipoiRemoteFile)) and cache_path is not None:
+        if isinstance(v.example, RemoteFile) and cache_path is not None:
             if absolute_path:
                 dl_dir = os.path.abspath(cache_path)
             else:
@@ -929,7 +962,7 @@ def download_default_args(args, output_dir):
     for k in args:
         # arg.default is None
         # TODO: Any need to do this when args[k] is a dict
-        if isinstance(args[k], kipoi.specs.DataLoaderArgument) and args[k].default is not None:
+        if args[k].default is not None:
             if isinstance(args[k].default, UNSPECIFIED):
                 continue
             if isinstance(args[k].default, RemoteFile):

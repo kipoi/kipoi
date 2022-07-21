@@ -12,10 +12,6 @@ OR
 `conda install -c conda-forge singularity`
 
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
-import six
 import os
 import json
 from kipoi_utils.utils import unique_list, makedir_exist_ok, is_subdir
@@ -98,7 +94,7 @@ def involved_directories(dataloader_kwargs, output_files=[], exclude_dirs=[]):
     """
     dirs = []
     # dataloader kwargs
-    for k, v in six.iteritems(dataloader_kwargs):
+    for k, v in dataloader_kwargs.items():
         if os.path.exists(v):
             dirs.append(os.path.dirname(os.path.abspath(v)))
 

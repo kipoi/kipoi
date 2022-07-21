@@ -3,14 +3,10 @@
 Following the Keras configuration management:
 https://github.com/fchollet/keras/blob/6f3e6bb6fc97e706f37dc078ae821f490b78035b/keras/backend/__init__.py#L14-L43
 """
-from __future__ import absolute_import
-from __future__ import print_function
-
 import os
 from collections import OrderedDict
 import pandas as pd
-import six
-from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource, HFHubSource
+from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource
 from kipoi_utils.utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 
@@ -46,7 +42,7 @@ def model_sources():
 
 def model_sources_dict():
     return OrderedDict([(k, v.get_config())
-                        for k, v in six.iteritems(model_sources())])
+                        for k, v in model_sources().items()])
 
 
 def set_model_sources(_model_sources):
@@ -103,7 +99,7 @@ def list_sources():
                             # last_updated=TODO - implement?
                             ])
 
-    return pd.DataFrame([src2dict(k, s) for k, s in six.iteritems(model_sources()) if k != "dir"])
+    return pd.DataFrame([src2dict(k, s) for k, s in model_sources().items() if k != "dir"])
 
 
 def list_models(sources=None):
@@ -125,7 +121,7 @@ def list_models(sources=None):
         sources = model_sources()
 
     pd_list = []
-    for name, source in six.iteritems(sources):
+    for name, source in sources.items():
         if name not in ["dir", "kipoi-hfhub"]: 
             # TODO:This needs to be addressed when we have a solution for
             # how to represent list of models
@@ -153,7 +149,7 @@ def list_dataloaders(sources=None):
         sources = model_sources()
 
     pd_list = []
-    for name, source in six.iteritems(sources):
+    for name, source in sources.items():
         if name != "dir":
             pd_list.append(get_df(name, source))
 
@@ -181,7 +177,7 @@ if os.path.exists(_config_path):
                          " and hence can't be used")
 
     _model_sources = OrderedDict([(k, load_source(v, k))
-                                  for k, v in six.iteritems(_model_sources)])
+                                  for k, v in _model_sources.items()])
     assert isinstance(_model_sources, OrderedDict)
     set_model_sources(_model_sources)
 

@@ -10,7 +10,6 @@ dependencies:
   - pandas
   - pytest>=3.3.1
   - pytest-cov>=2.6.1
-  #- coveralls
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - scipy>=1.0.0
   - pybigwig>=0.3.10
@@ -29,7 +28,7 @@ dependencies:
   - keras>=2.2.4
   # for plugins (double check)
   - fastparquet
-  - pyarrow
+  - pyarrow=7.0.0
   - zarr 
   - numcodecs
   - tinydb>=3.12.2
@@ -43,9 +42,10 @@ dependencies:
   - pip
   - matplotlib
   - pip:
-    - kipoi-utils>=0.3.8
-    - kipoi-conda>=0.1.6
+    - kipoi-utils>=0.7.5
+    - kipoi-conda
     - kipoi-interpret>=0.1.2
     - kipoiseq
     - concise>=0.6.5
     - joblib==0.17.0
+    - sorted-nearest<=0.0.33

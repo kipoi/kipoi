@@ -16,7 +16,7 @@ RUN conda config --add channels defaults && \
 # Create all the environments
 RUN mkdir -p /kipoi && \
     kipoi ls && \
-    kipoi env create shared/envs/kipoi-py3-keras2 && \
+    kipoi env create shared/envs/kipoi-py3-keras2-tf1 && \
     kipoi env create shared/envs/kipoi-py3-keras1.2 && \
     kipoi env create MMSplice && \
     kipoi env create deepTarget

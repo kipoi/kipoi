@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 variables:
   install_conda: &install_conda
@@ -16,18 +16,25 @@ variables:
   update_conda: &update_conda
     run:
       name: Update conda
-      command: conda update -n base conda -c anaconda
+      command: conda update -n base conda
+  install_mamba_solver: &install_mamba_solver
+    run:
+      name: Install mamba solver (experimental)
+      command: conda install -n base conda-libmamba-solver
   install_sys_deps: &install_sys_deps
     run:
       name: install build-essential
       command: apt-get update --allow-releaseinfo-change && apt-get install -y build-essential libz-dev libcurl3-dev libarchive-dev gcc
-  install_singularity: &install_singularity
+  install_apptainer: &install_apptainer
     run:
-      name: Install Singularity
+      name: Install Apptainer from source
       command: |
-        source activate kipoi-env
-        conda install --yes -c conda-forge singularity
-
+        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
+        sudo apt-get -q update && sudo apt-get install -y build-essential squashfs-tools libseccomp-dev cryptsetup libhdf5-serial-dev pkg-config
+        wget https://github.com/apptainer/apptainer/releases/download/v1.0.2/apptainer_1.0.2_amd64.deb 
+        sudo apt install ~/repo/apptainer_1.0.2_amd64.deb
+        apptainer --version
+        rm ~/repo/apptainer_1.0.2_amd64.deb
   install_kipoi_plugins: &install_kipoi_plugins
     run:
       name: Install kipoi plugins
@@ -36,7 +43,6 @@ variables:
         pip install kipoiseq
         pip install pyfaidx
         conda install --yes -c conda-forge fastparquet zarr numcodecs
-
   export_shortcuts: &export_shortcuts
     run:
       name: Export shortcuts
@@ -48,7 +54,7 @@ variables:
       name: Install from dev-requirements-py36.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py36.yml
+        conda env create --name kipoi-env -f dev-requirements-py36.yml --experimental-solver=libmamba
         source activate kipoi-env
         pip install -e .
         git lfs install
@@ -58,31 +64,45 @@ variables:
       name: Install from dev-requirements-py37.yml
       command: |  
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py37.yml
+        conda env create --name kipoi-env -f dev-requirements-py37.yml --experimental-solver=libmamba
         source activate kipoi-env
         pip install -e .
         git lfs install
         # ln -s /opt/conda/bin/python /usr/bin/python
-  install_from_dev_requirements_py38: &install_from_dev_requirements_py38
+  install_from_dev_requirements: &install_from_dev_requirements
     run:
-      name: Install from dev-requirements-py38.yml
+      name: Install from dev-requirements.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py38.yml
+        conda create --name kipoi-env python=<< parameters.python-version >>
+
         source activate kipoi-env
+        conda env update --name kipoi-env --file dev-requirements.yml --experimental-solver=libmamba 
         pip install -e .
-        git lfs install
-        # ln -s /opt/conda/bin/python /usr/bin/python
-  install_from_dev_requirements_py39: &install_from_dev_requirements_py39
+        git lfs install    
+      no_output_timeout: 30m
+  install_cyvcf2: &install_cyvcf2
     run:
-      name: Install from dev-requirements-py39.yml
+      name: Install cyvcf2 (conda package is not yet available for 3.10)
       command: |
-        echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda env create --name kipoi-env -f dev-requirements-py39.yml
         source activate kipoi-env
-        pip install -e .
-        git lfs install
-        # ln -s /opt/conda/bin/python /usr/bin/python
+        git clone --recursive https://github.com/brentp/cyvcf2
+        cd cyvcf2/htslib
+        autoheader
+        autoconf
+        ./configure --enable-libcurl
+        make
+        cd ..
+        pip install -r requirements.txt
+        CYTHONIZE=1 pip install -e .
+  install_pybigwig: &install_pybigwig
+    run:
+      name: Install pybigwig (conda package is not yet available for 3.10)
+      command: |
+        source activate kipoi-env
+        git clone https://github.com/deeptools/pyBigWig.git
+        cd pyBigWig
+        pip install .    
   install_kipoi: &install_kipoi
     run:
       name: Install Kipoi
@@ -101,8 +121,7 @@ variables:
       command: |  
         source activate kipoi-env
         kipoi ls
-  # run_coveralls: &run_coveralls
-  activate_and_run_tests: &activate_and_run_tests
+  activate_and_run_tests_py367: &activate_and_run_tests_py367
     run:
       name: Run tests
       command: |
@@ -110,27 +129,19 @@ variables:
         mkdir test-reports
         $PYTEST --cov=kipoi/ tests/ -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
       no_output_timeout: 30m
+  activate_and_run_tests: &activate_and_run_tests
+    run:
+      name: Run tests
+      command: |
+        source activate kipoi-env
+        mkdir test-reports
+        $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
+      no_output_timeout: 30m
   # Special case for running without concise 
-  activate_and_run_tests_py38: &activate_and_run_tests_py38
-    run:
-      name: Run tests
-      command: |
-        source activate kipoi-env
-        mkdir test-reports
-        $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 30m
-  activate_and_run_tests_py39: &activate_and_run_tests_py39
-    run:
-      name: Run tests
-      command: |
-        source activate kipoi-env
-        mkdir test-reports
-        $PYTEST --cov=kipoi/ tests/ -k "not legacy" -p no:sugar --no-cov-on-fail --junitxml=test-reports/junit.xml
-      no_output_timeout: 30m
-  run_coveralls: &run_coveralls
-    run:
-      name: run coveralls
-      command: coveralls || true
+  # run_coveralls: &run_coveralls
+  #   run:
+  #     name: run coveralls
+  #     command: coveralls || true
   activate_and_run_coveralls: &activate_and_run_coveralls
     run:
       name: activate and run coveralls
@@ -173,83 +184,71 @@ variables:
         echo -e "password: $PYPI_PASSWORD" >> ~/.pypirc
 
 jobs:
-  test-py36-yml:
+  test:
+    parameters:
+      python-version:
+        type: string
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current  
+    resource_class: medium
+    working_directory: ~/repo  
+    steps:
+      - checkout
+      - *install_apptainer
+      - *install_conda
+      - *update_conda
+      - *install_mamba_solver
+      - *install_from_dev_requirements
+      - *install_cyvcf2
+      - *install_pybigwig
+      - *export_shortcuts
+      - *activate_and_kipoi_ls
+      - *activate_and_run_tests
+      - *activate_and_run_coveralls
+      - *store_test_results
+      - *store_test_artifacts
+  test-36:
+    machine: # executor type
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      - *update_conda
+      - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py36
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests
-#       - *activate_and_run_coveralls
+      - *activate_and_run_tests_py367
+      # - coveralls/upload
+      # - *activate_and_run_coveralls
       - *store_test_results
       - *store_test_artifacts
-  test-py37-yml:
+  test-37:
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
+      - *install_apptainer
       - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      - *update_conda
+      - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
       - *install_from_dev_requirements_py37
-      - *install_singularity
       - *export_shortcuts
       - *activate_and_kipoi_ls
-      - *activate_and_run_tests
-      # - *activate_and_run_coveralls
+      - *activate_and_run_tests_py367
       - *store_test_results
       - *store_test_artifacts
-  test-py38-yml:
-    machine: # executor type
-      image: ubuntu-2004:202104-01
-    resource_class: medium
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
-      # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py38
-      - *install_singularity
-      - *export_shortcuts
-      - *activate_and_kipoi_ls
-      - *activate_and_run_tests_py38
-      # - *activate_and_run_coveralls
-      - *store_test_results
-      - *store_test_artifacts
-  test-py39-yml:
-    machine: # executor type
-      image: ubuntu-2004:202104-01
-    resource_class: medium
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
-      # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
-      - *install_singularity
-      - *export_shortcuts
-      - *activate_and_kipoi_ls
-      - *activate_and_run_tests_py39
-      # - *activate_and_run_coveralls
-      - *store_test_results
-      - *store_test_artifacts
-
   build-deploy-docs:
     docker:
       # - image: continuumio/miniconda3:4.5.12
-      - image: continuumio/anaconda3:5.0.1
+      - image: continuumio/anaconda3:latest
       # - image: circleci/python:3.5
     working_directory: ~/repo
     steps:
@@ -258,14 +257,20 @@ jobs:
             - 60:0f:05:31:12:3d:bc:8b:df:9d:08:da:71:a5:43:b6
       - checkout
       - run:
-          name: Install pip - Kipoi
-          command: pip install -e .
+          name: Install Kipoi in a conda environment
+          command: |
+            conda create -n py39 -y python=3.9
+            source activate py39
+            pip install -e .
       - run:
           name: Install build deps
-          command: pip install pandas==0.20.3 mistune==0.8.4 jinja2==2.10.1 nbconvert==5.4.0 tornado==5.1.1 mkdocs git+https://github.com/kipoi/pydoc-markdown@master
+          command: |
+            source activate py39
+            pip install pandas mistune jinja2 nbconvert tornado mkdocs git+https://github.com/kipoi/pydoc-markdown@master
       - run:
           name: Build docs
           command: |
+            source activate py39
             cd docs/
             ./render_ipynb.bash
             pydocmd build
@@ -274,17 +279,22 @@ jobs:
           command: .circleci/deploy_docs.bash
 
   test-deploy-pypi:
+    parameters:
+      python-version:
+        type: string
+        default: "3.9"
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
       - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_mamba
+      - *update_conda 
+      - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
-      - *install_singularity
+      - *install_from_dev_requirements
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -304,17 +314,22 @@ jobs:
             python -c "import kipoi; print(kipoi.__version__)"
 
   productive-deploy-pypi:
+    parameters:
+      python-version:
+        type: string
+        default: "3.9"
     machine: # executor type
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:current
     resource_class: medium
     working_directory: ~/repo
     steps:
       - checkout
       - *install_conda
-      # - *update_conda # No need to use this anymore since the latest miniconda is installed always
+      # - *install_mamba
+      - *update_conda
+      - *install_mamba_solver
       # - *install_sys_deps # Installed in install_conda step
-      - *install_from_dev_requirements_py39
-      - *install_singularity
+      - *install_from_dev_requirements
       - *export_shortcuts
       - *activate_and_kipoi_ls
       - *build_pypi_package
@@ -331,25 +346,28 @@ jobs:
           command: |
             source activate kipoi-env
             python -m pip install --user kipoi --verbose
-            python -c "import kipoi; print(kipoi.__version__)"
-
+            python -c "import kipoi; print(kipoi.__version__)"          
+      - run:
+          name: Update all containers with new version of kipoi
+          command: curl -X POST -H "Accept:application/vnd.github.v3+json" -H "Authorization:token $SYNC_TOKEN" https://api.github.com/repos/kipoi/kipoi-containers/dispatches -d '{"event_type":"updateall"}'
 workflows:
-  version: 2
+  version: 2.1
 
   # TODO - consider running the deploy only on
   # tag commits: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
   test-n-deploy:
     jobs:
-      - test-py36-yml
-      - test-py37-yml
-      - test-py38-yml
-      - test-py39-yml
+      - test:
+          matrix:
+            parameters:
+              python-version: ["3.8", "3.9", "3.10"]
+      - test-36
+      - test-37
       - build-deploy-docs:
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-36
+            - test-37
+            - test
           filters:
             branches:
               only:
@@ -357,10 +375,9 @@ workflows:
                 - test_deployment_script
       - test-deploy-pypi:
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-36
+            - test-37
+            - test
           filters:
 #            tags:
 #              only: /^v.*/
@@ -369,11 +386,12 @@ workflows:
                 - test_deployment_pypi
                 - test_deployment_script
       - productive-deploy-pypi:
+          context:
+            - sync-kipoi-containers
           requires:
-            - test-py36-yml
-            - test-py37-yml
-            - test-py38-yml
-            - test-py39-yml
+            - test-36
+            - test-37
+            - test
           filters:
 #            # Trigger only on a tagged commit starting with v.
 #            # https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
@@ -391,7 +409,9 @@ workflows:
               only:
                 - master
     jobs:
-      - test-py36-yml
-      - test-py37-yml
-      - test-py38-yml
-      - test-py39-yml
+      - test:
+          matrix:
+            parameters:
+              python-version: ["3.8", "3.9", "3.10"]
+      - test-36
+      - test-37
