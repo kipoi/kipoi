@@ -7,6 +7,7 @@ import os
 from collections import OrderedDict
 import pandas as pd
 from .sources import load_source, GitSource, GitLFSSource, GithubPermalinkSource, LocalSource, HFHubSource
+from kipoi_utils.utils import yaml_ordered_dump, yaml_ordered_load, du
 import logging
 
 logger = logging.getLogger(__name__)
