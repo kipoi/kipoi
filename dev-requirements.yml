@@ -11,7 +11,7 @@ dependencies:
   - pytest-cov>=3.0.0
   - coveralls>=3.3.1
   - tensorflow>=2.8
-  - keras>=2.8
+  - keras>=2.9
   - pyarrow>=8.0
   - zarr>=2.11.3
   - pip>=21.2.4
