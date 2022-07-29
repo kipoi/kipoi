@@ -15,7 +15,6 @@ requirements = [
     "numpy",
     "pandas>=0.21.0",
     "tqdm",
-    "attrs>=17.4.0",
     "related>=0.6.0",
     "colorlog",
     "jinja2",
