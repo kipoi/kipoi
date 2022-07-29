@@ -26,7 +26,8 @@ requirements = [
     "tinydb",
     "kipoi-utils>=0.7.5",
     "kipoi-conda>=0.1.6",
-    "deprecation>=2.0.6"
+    "deprecation>=2.0.6",
+    "attrs<=21.4.0"
 ]
 
 test_requirements = [
