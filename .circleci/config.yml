@@ -9,7 +9,7 @@ variables:
         wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
         /usr/bin/bash ~/miniconda.sh -b && \
         rm ~/miniconda.sh && \
-        ~/miniconda3/bin/conda clean -tipsy && \
+        ~/miniconda3/bin/conda clean -tipy && \
         sudo ln -s ~/miniconda3/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
         echo ". ~/miniconda3/etc/profile.d/conda.sh" >> $BASH_ENV && \
         echo "conda activate base" >> $BASH_ENV
