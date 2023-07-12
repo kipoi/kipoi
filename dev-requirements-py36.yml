@@ -36,7 +36,7 @@ dependencies:
   # for plugins (double check)
   - fastparquet
   - pyarrow
-  - zarr 
+  - zarr=2.8.0
   - numcodecs
   # singularity
   #- singularity
