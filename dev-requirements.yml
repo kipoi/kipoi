@@ -16,7 +16,7 @@ dependencies:
   - pip>=21.2.4
   - scikit-learn
   - bioconda::pybedtools>=0.9.0
-  - bioconda::sorted_nearest=0.0.33
+  - bioconda::sorted_nearest
   - pip:
     - kipoi-interpret
     - kipoiseq
