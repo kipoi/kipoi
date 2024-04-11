@@ -74,7 +74,7 @@ variables:
       name: Install from dev-requirements.yml
       command: |
         echo 'export CI_JOB_PY_YAML="$CI_JOB_PY_YAML"' >> $BASH_ENV
-        conda create --name kipoi-env python=<< parameters.python-version >>
+        conda create --name kipoi-env -c conda-forge python=<< parameters.python-version >>
 
         source activate kipoi-env
         conda env update --name kipoi-env --file dev-requirements.yml
@@ -259,7 +259,7 @@ jobs:
       - run:
           name: Install Kipoi in a conda environment
           command: |
-            conda create -n py39 -y python=3.9
+            conda create --name py39 -c conda-forge -y python=3.9
             source activate py39
             pip install -e .
       - run:
