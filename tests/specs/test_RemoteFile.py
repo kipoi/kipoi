@@ -4,7 +4,7 @@ from kipoi.specs import RemoteFile
 
 
 def test_RemoteFile(tmpdir):
-    f = RemoteFile("https://i12g-gagneurweb.in.tum.de/public/docs/concise/index.html", "a10361dc7f4582bb30eea089549bfc46")
+    f = RemoteFile("https://raw.githubusercontent.com/kipoi/kipoi/d35d30b10dd25cc5f6d85de48cb201f3c01d4b3e/README.md", "2ff2e3f12d0986fb7e32453f8451a3e2")
     p = tmpdir.mkdir("sub").join("output")
     f.get_file(str(p))
     assert f.validate(str(p)) is False
