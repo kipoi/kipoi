@@ -19,6 +19,23 @@
 	<img alt='License: MIT' src=https://img.shields.io/badge/License-MIT-yellow.svg style="max-height:20px;width:auto;">
 </a>
 
+
+> [!WARNING]
+> ### **Kipoi Project - Sunset Announcement**
+> 
+> After several impactful years, we have made the decision to **archive the Kipoi repositories and end active maintenance** of the project.
+> 
+> This is a bittersweet moment. While it’s always a little sad to sunset a project, the field of machine learning in genomics has evolved rapidly, with new technologies and platforms emerging that better meet current needs. Kipoi played an important role in its time, helping researchers **share, reuse, and benchmark trained models** in regulatory genomics. We’re proud of what it accomplished and grateful for the strong community support that made it possible.
+> 
+> Kipoi’s impact continues, however:
+> 
+> *   [The Kipoi webinar series](seminar.html) will carry on, supporting discussions around model reuse and interpretability.
+> *   [Kipoiseq](https://github.com/kipoi/kipoiseq), our standard set of data-loaders for sequence-based modeling, also remains active and relevant.
+> 
+> Thanks to everyone who contributed, used, or supported Kipoi. It’s been a fantastic journey, and we're glad the project helped shape how models are shared in the field.
+> 
+> \- The Kipoi Team
+
 This repository implements a python package and a command-line interface (CLI) to access and use models from Kipoi-compatible model zoo's.
 
 <img src="http://kipoi.org/static/img/fig1_v8_hires.png" width=600>
