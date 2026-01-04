@@ -1,9 +1,7 @@
 name: kipoi-dev
 channels:
-  - bioconda
-  - pytorch
   - conda-forge
-  - defaults
+  - bioconda
 dependencies:
   - python=3.7
   - numpy>=1.13.0
@@ -12,13 +10,10 @@ dependencies:
   - pytest-cov>=2.6.1
   - h5py=2.10.0 # h5py >= 3.* is incompatible with keras 
   - scipy>=1.0.0
-  - pybigwig>=0.3.10
-  - pybedtools>=0.7.10
   - pyvcf>=0.6.8
   - pysam>=0.14.0
   - pyfaidx>=0.5.5.2
-  - cython=0.29.23
-  - cyvcf2>=0.8.4
+  - cython
   - bedtools>=2.27.1
   - htslib>=1.7
   # ML
@@ -32,20 +27,16 @@ dependencies:
   - zarr=2.12.0
   - numcodecs
   - tinydb>=3.12.2
-  # singularity
-  #- singularity
   - git
   - git-lfs
   - cookiecutter>=1.6.0
   - wheel
   - gitpython
   - pip
-  - matplotlib
+  - bioconda::pybedtools>=0.9.0
+  - bioconda::sorted_nearest
+  - bioconda::cyvcf2
+  - bioconda::pybigwig>=0.3.10
   - pip:
-    - kipoi-utils>=0.7.5
-    - kipoi-conda
-    - kipoi-interpret>=0.1.2
+    - kipoi-interpret
     - kipoiseq
-    - concise>=0.6.5
-    - joblib==0.17.0
-    - sorted-nearest<=0.0.33
