@@ -8,11 +8,11 @@ import kipoi_utils
 from kipoi import cli
 
 import argparse
+import os
 import sys
-import pkg_resources
 import logging
 import logging.config
-logging.config.fileConfig(pkg_resources.resource_filename(__name__, "logging.conf"))
+logging.config.fileConfig(os.path.join(os.path.dirname(__file__), "logging.conf"))
 logger = logging.getLogger(__name__)
 
 
